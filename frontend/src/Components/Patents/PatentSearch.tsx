@@ -432,10 +432,16 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
 
   // Handler for direct family search
   const handleDirectFamilySearch = () => {
-    if (searchQuery.trim()) {
+    // Split the searchQuery by commas or spaces to get multiple patent IDs
+    const patentIds = searchQuery
+      .split(/[\s,]+/)
+      .map(id => id.trim())
+      .filter(id => id);
+    
+    if (patentIds.length > 0) {
       setShowFamilySearchModal(true);
     } else {
-      toast.error('Please enter a patent ID first');
+      toast.error('Please enter at least one valid patent ID to search for family members.');
     }
   };
 
@@ -501,7 +507,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
       {/* Family Search Modal */}
       {showFamilySearchModal && (
         <FamilySearchModal
-          patentId={searchQuery.trim()}
+          patentId={patentIds.length > 0 ? patentIds : searchQuery.trim()}
           onClose={() => setShowFamilySearchModal(false)}
           onPatentSelect={handlePatentSelect}
         />

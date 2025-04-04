@@ -52,30 +52,36 @@
       }
     }
     
-    .original-patent-info {
-      background-color: var(--secondary-bg, #eaedf2);
-      padding: 1rem;
-      border-radius: 6px;
+    .original-patents-info {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
       margin-top: 1rem;
-      border: 1px solid var(--border-color, #ddd);
-      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
       
-      p {
-        margin: 0.5rem 0;
-        color: var(--text-color, #333);
-        font-weight: 400;
+      .original-patent-info {
+        background-color: var(--secondary-bg, #eaedf2);
+        padding: 1rem;
+        border-radius: 6px;
+        border: 1px solid var(--border-color, #ddd);
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
         
-        strong {
-          font-weight: 600;
-          color: var(--accent-color, #4a6da7);
-        }
-        
-        &:first-child {
-          margin-top: 0;
-        }
-        
-        &:last-child {
-          margin-bottom: 0;
+        p {
+          margin: 0.5rem 0;
+          color: var(--text-color, #333);
+          font-weight: 400;
+          
+          strong {
+            font-weight: 600;
+            color: var(--accent-color, #4a6da7);
+          }
+          
+          &:first-child {
+            margin-top: 0;
+          }
+          
+          &:last-child {
+            margin-bottom: 0;
+          }
         }
       }
     }
@@ -172,6 +178,16 @@
       flex-direction: column;
       gap: 0.75rem;
       
+      .family-members-group-header {
+        padding: 0.75rem 1rem;
+        background-color: var(--accent-color-light, #eaedf2);
+        border-radius: 6px;
+        color: var(--accent-color, #4a6da7);
+        font-weight: 600;
+        border: 1px solid var(--accent-color-lighter, #d0d6e2);
+        margin-bottom: 0.5rem;
+      }
+      
       .family-member-item {
         display: flex;
         gap: 1rem;
@@ -196,6 +212,15 @@
           font-weight: 500;
           flex-grow: 1;
           color: var(--text-color, #333);
+          
+          .source-patent {
+            display: inline-block;
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: var(--text-secondary, #666);
+            margin-left: 0.5rem;
+            font-style: italic;
+          }
           
           &.clickable {
             cursor: pointer;
