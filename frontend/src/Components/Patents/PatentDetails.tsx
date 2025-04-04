@@ -2,6 +2,7 @@ import Claims from './Claims';
 import Description from './Description';
 import Figures from './Figures';
 import FamilyMembers from './FamilyMembers';
+import PatentHighlighter from './PatentHighlighter';
 import { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../Redux/hooks';
 import { fetchFullPatentDetails } from '../../Redux/slices/patentSlice';
@@ -31,7 +32,6 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
   onPatentSelect,
   apiSource = 'unified'
 }) => {
-  const [showFigures, setShowFigures] = useState(true); // Default to show figures
   const dispatch = useAppDispatch();
   const { selectedPatent, isLoading, error } = useAppSelector((state) => state.patents);
 
@@ -74,45 +74,62 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
     figures: patentData.figures
   });
 
+  // Count the number of figures properly
+  let figuresCount = 0;
+  if (patentData.figures) {
+    if (Array.isArray(patentData.figures)) {
+      figuresCount = patentData.figures.length;
+    } else if (
+      typeof patentData.figures === 'object' && 
+      patentData.figures !== null && 
+      'figures' in patentData.figures && 
+      Array.isArray((patentData.figures as any).figures)
+    ) {
+      figuresCount = (patentData.figures as any).figures.length;
+    }
+  }
+
   return (
     <div className="patent-details">
       <h3>{title}</h3>
       
       <div className="patent-details-layout">
-        <div className="patent-details-content">
-          <div className="details-section">
-            <h4>Abstract</h4>
-            <p>{abstract}</p>
-          </div>
+        <div className="patent-details-main">
+          <PatentHighlighter targetSelector=".highlightable" />
 
-          <Claims 
-            initialClaims={patentData.claims || []} 
-            patentId={patentId} 
-          />
+          <div className="patent-details-content-scroll">
+            <div className="details-section">
+              <h4>Abstract</h4>
+              <p className="highlightable">{abstract}</p>
+            </div>
 
-          <Description 
-            initialDescription={patentData.description || ''} 
-            patentId={patentId} 
-          />
-          
-          {familyMembers && familyMembers.length > 0 && (
-            <FamilyMembers 
-              familyMembers={familyMembers} 
-              onPatentSelect={onPatentSelect}
+            <Claims 
+              initialClaims={patentData.claims || []} 
+              patentId={patentId} 
             />
-          )}
+
+            <Description 
+              initialDescription={patentData.description || ''} 
+              patentId={patentId} 
+            />
+            
+            {familyMembers && familyMembers.length > 0 && (
+              <FamilyMembers 
+                familyMembers={familyMembers} 
+                onPatentSelect={onPatentSelect}
+              />
+            )}
+          </div>
         </div>
         
         <div className="patent-details-figures">
-          <div className="details-section figures-section">
-            <div className="section-title">
-              <h4>Figures ({patentData.figures?.length || 0})</h4>
-            </div>
-            
-            <Figures 
-              initialFigures={patentData.figures || []} 
-            />
+          <div className="figures-title">
+            <h4>Figures ({figuresCount})</h4>
           </div>
+          
+          <Figures 
+            initialFigures={patentData.figures || []} 
+          />
         </div>
       </div>
     </div>

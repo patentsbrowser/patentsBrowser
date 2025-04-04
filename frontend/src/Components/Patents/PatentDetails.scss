@@ -8,6 +8,9 @@
   max-width: 100%;
   overflow-x: hidden;
   box-sizing: border-box;
+  height: calc(100vh - 10rem); /* Set a fixed height for the entire component */
+  display: flex;
+  flex-direction: column;
 
   h3 {
     color: var(--text-color);
@@ -19,22 +22,43 @@
   .patent-details-layout {
     display: flex;
     gap: 1.5rem;
+    flex: 1; /* Take up remaining height */
+    overflow: hidden; /* Prevent overflow */
     
-    .patent-details-content {
+    .patent-details-main {
       flex: 3;
-      min-width: 0; // Necessary for proper text wrapping
+      min-width: 0; /* Necessary for proper text wrapping */
+      display: flex;
+      flex-direction: column;
+      max-height: 100%;
+      
+      .patent-details-content-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+      }
     }
     
     .patent-details-figures {
       flex: 2;
-      position: sticky;
-      top: 2rem;
-      max-height: calc(100vh - 4rem);
-      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      max-height: 100%;
+      overflow: hidden;
       
-      .figures-section {
-        margin-bottom: 0;
-        height: 100%;
+      .figures-title {
+        padding: 0.75rem 1rem;
+        background: var(--primary-bg);
+        border-radius: 6px 6px 0 0;
+        border: 1px solid var(--border-color);
+        border-bottom: none;
+        
+        h4 {
+          margin: 0;
+          color: var(--accent-color);
+          font-size: 1rem;
+          font-weight: 500;
+        }
       }
     }
   }
@@ -104,29 +128,6 @@
     }
   }
 
-  .figures-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 1rem;
-    width: 100%;
-
-    .figure-item {
-      text-align: center;
-
-      img {
-        max-width: 100%;
-        height: auto;
-        border-radius: 4px;
-        margin-bottom: 0.5rem;
-      }
-
-      p {
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-      }
-    }
-  }
-
   .family-members-list {
     display: grid;
     gap: 1rem;
@@ -175,12 +176,20 @@
 
 @media (max-width: 1024px) {
   .patent-details {
+    height: auto;
+    
     .patent-details-layout {
       flex-direction: column;
       
+      .patent-details-main, 
       .patent-details-figures {
-        position: static;
         max-height: none;
+      }
+      
+      .patent-details-main {
+        .patent-details-content-scroll {
+          max-height: 70vh;
+        }
       }
     }
   }
@@ -202,9 +211,10 @@
       }
     }
     
-    .figures-grid {
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 0.75rem;
+    .patent-details-main {
+      .patent-details-content-scroll {
+        max-height: 60vh;
+      }
     }
     
     .claims-list {
@@ -249,16 +259,16 @@
     
     .details-section {
       padding: 0.625rem;
-      margin-bottom: 1rem;
       
-      p {
-        font-size: 0.85rem;
+      h4 {
+        font-size: 0.9rem;
       }
     }
     
-    .figures-grid {
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-      gap: 0.625rem;
+    .patent-details-main {
+      .patent-details-content-scroll {
+        max-height: 50vh;
+      }
     }
   }
 } 

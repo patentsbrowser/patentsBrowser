@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import './Figures.scss';
-import Loader from '../Common/Loader';
 
 interface Figure {
   path?: string;
@@ -111,28 +110,28 @@ const Figures = ({ initialFigures }: FiguresProps) => {
 
   if (!figuresArray || figuresArray.length === 0) {
     return (
-      <div className="no-data-message">
-        <p>No figures available for this patent</p>
+      <div className="section-content figures-content">
+        <div className="no-data-message">
+          <p>No figures available for this patent</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <>
-      <div className="section-content figures-content">
-        <div className="figures-grid">
-          {figuresArray.map((figure: Figure, index: number) => (
-            <div key={index} className="figure-item">
-              <img 
-                src={getImageSource(figure)}
-                alt={figure.title || `Figure ${index + 1}`}
-                loading="lazy"
-                onClick={() => handleImageClick(figure, index)}
-              />
-              <p>{figure.title || `Figure ${index + 1}`}</p>
-            </div>
-          ))}
-        </div>
+    <div className="section-content figures-content">
+      <div className="figures-grid">
+        {figuresArray.map((figure: Figure, index: number) => (
+          <div key={index} className="figure-item">
+            <img 
+              src={getImageSource(figure)}
+              alt={figure.title || `Figure ${index + 1}`}
+              loading="lazy"
+              onClick={() => handleImageClick(figure, index)}
+            />
+            <p>Figure {index + 1} of {figuresArray.length}: {figure.title || ''}</p>
+          </div>
+        ))}
       </div>
 
       {/* Fullscreen Image Modal */}
@@ -169,9 +168,10 @@ const Figures = ({ initialFigures }: FiguresProps) => {
               />
             </div>
             
-            {selectedImage.title && (
-              <p className="modal-title">{selectedImage.title}</p>
-            )}
+            <p className="modal-title">
+              Figure {selectedIndex + 1} of {figuresArray.length}
+              {selectedImage.title ? `: ${selectedImage.title}` : ''}
+            </p>
             
             <div className="modal-controls">
               {/* Navigation Style 2: Buttons */}
@@ -223,7 +223,7 @@ const Figures = ({ initialFigures }: FiguresProps) => {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 

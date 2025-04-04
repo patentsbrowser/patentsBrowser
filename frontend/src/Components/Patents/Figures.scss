@@ -1,570 +1,345 @@
-.details-section {
-  margin-bottom: 20px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  overflow: hidden;
+@use "sass:color";
+
+/* Figures component styles */
+.section-content.figures-content {
+  background-color: var(--primary-bg);
+  padding: 10px;
   width: 100%;
   box-sizing: border-box;
-
-  .section-title {
+  border: 1px solid var(--border-color);
+  border-radius: 0 0 6px 6px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  flex: 1;
+  height: 100%;
+  
+  /* Vertical column layout for figures */
+  .figures-grid {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    background-color: var(--secondary-bg);
-    cursor: pointer;
-    user-select: none;
-
-    h4 {
-      margin: 0;
-      color: var(--text-color);
-      font-size: 16px;
-      font-weight: 500;
-    }
-
-    .arrow {
-      color: var(--text-color);
-      font-size: 12px;
-      transition: transform 0.3s ease;
-
-      &.expanded {
-        transform: rotate(180deg);
-      }
-    }
-
-    &:hover {
-      background-color: var(--hover-bg);
-    }
-  }
-
-  .section-content {
-    border-top: 1px solid var(--border-color);
-    animation: slideDown 0.3s ease-out;
-  }
-
-  .figures-content {
-    padding: 15px;
-    background-color: var(--primary-bg);
+    flex-direction: column;
+    gap: 25px;
     width: 100%;
-    box-sizing: border-box;
-    max-height: calc(100vh - 12rem);
-    overflow-y: auto;
-
-    .figures-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 15px;
+    
+    /* Individual figure item */
+    .figure-item {
+      background: transparent;
+      padding: 0;
+      text-align: center;
       width: 100%;
-
-      .figure-item {
-        background: var(--secondary-bg);
-        border-radius: 8px;
-        padding: 10px;
-        text-align: center;
-        border: 1px solid var(--border-color);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.2s ease;
+      
+      /* Figure image */
+      img {
         width: 100%;
-        box-sizing: border-box;
-
-        img {
-          width: 100%;
-          height: auto;
-          border-radius: 4px;
-          margin-bottom: 8px;
-          cursor: pointer;
-          transition: transform 0.2s ease;
-
-          &:hover {
-            transform: scale(1.05);
-          }
+        max-width: 1000px;
+        max-height: 600px;
+        height: auto;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+        object-fit: contain;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        
+        &:hover {
+          transform: scale(1.02);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
-
-        p {
-          margin: 0;
-          font-size: 14px;
-          color: var(--text-color);
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
+      }
+      
+      /* Figure caption */
+      p {
+        margin: 0;
+        font-size: 14px;
+        color: var(--text-color);
+        width: 100%;
+        max-width: 1000px;
+        text-align: center;
+        white-space: normal;
       }
     }
   }
-
-  .no-data-message {
-    padding: 15px;
-    text-align: center;
-    background-color: var(--primary-bg);
-    color: var(--text-secondary);
-    font-size: 14px;
-    border-top: 1px solid var(--border-color);
-  }
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* No figures message */
+.no-data-message {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
 }
 
+/* Fullscreen modal for viewing figures */
 .fullscreen-modal {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.9);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  background-color: rgba(0, 0, 0, 0.85);
   z-index: 1000;
-  padding: 20px;
-  animation: fadeIn 0.3s ease-out;
-
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out;
+  
   .modal-content {
     position: relative;
-    max-width: 85vw;
-    max-height: 85vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background-color: rgba(30, 30, 30, 0.7);
-    padding: 15px;
+    max-width: 98vw;
+    max-height: 95vh;
+    background-color: var(--primary-bg);
     border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    overflow: visible;
-
-    .modal-image-container {
+    overflow: hidden;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    animation: zoomIn 0.2s ease-out;
+    
+    .close-button {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 24px;
+      color: var(--text-color);
+      background: none;
+      border: none;
+      cursor: pointer;
+      z-index: 2;
+      padding: 0;
+      width: 30px;
+      height: 30px;
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background-color: rgba(0, 0, 0, 0.2);
+      
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.4);
+      }
+    }
+    
+    .modal-image-container {
       width: 100%;
-      height: 100%;
-      position: relative;
-
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #000;
+      overflow: hidden;
+      max-height: 80vh;
+      
       img {
-        max-width: 100%;
-        max-height: 65vh;
+        max-width: 98%;
+        max-height: 75vh;
         object-fit: contain;
-        border-radius: 4px;
         transition: transform 0.3s ease;
       }
     }
-
-    .modal-title {
-      color: white;
-      margin-top: 12px;
-      margin-bottom: 0;
-      font-size: 16px;
-      text-align: center;
-      max-width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      padding: 0 10px;
-    }
     
-    // Style 1: Side arrows navigation
-    .nav-arrow {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      background-color: rgba(0, 0, 0, 0.5);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      font-size: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      z-index: 10;
-      
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.3);
-      }
-      
-      &:active {
-        transform: translateY(-50%) scale(0.95);
-      }
-      
-      &.nav-prev {
-        left: -60px;
-      }
-      
-      &.nav-next {
-        right: -60px;
-      }
+    .modal-title {
+      padding: 10px 15px;
+      text-align: center;
+      margin: 0;
+      color: var(--text-color);
+      font-size: 16px;
+      font-weight: 500;
+      max-height: 4rem;
+      overflow-y: auto;
     }
     
     .modal-controls {
+      padding: 10px 15px;
+      border-top: 1px solid var(--border-color);
       display: flex;
-      margin-top: 12px;
-      gap: 10px;
       flex-wrap: wrap;
+      gap: 10px;
       justify-content: center;
       align-items: center;
       
-      // Style 2: Button navigation
-      .nav-button {
+      button {
+        background-color: var(--primary-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-color);
+        border-radius: 4px;
+        padding: 8px 12px;
+        font-size: 14px;
+        cursor: pointer;
         display: flex;
         align-items: center;
         gap: 5px;
-        background-color: rgba(255, 255, 255, 0.2);
-        color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 6px 12px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: background-color 0.2s ease;
+        transition: all 0.2s;
         
         &:hover {
-          background-color: rgba(255, 255, 255, 0.3);
+          background-color: var(--hover-bg);
         }
         
-        &:active {
-          background-color: rgba(255, 255, 255, 0.4);
+        svg {
+          width: 16px;
+          height: 16px;
         }
       }
       
       .image-counter {
-        color: rgba(255, 255, 255, 0.8);
         font-size: 14px;
-        margin: 0 5px;
-      }
-      
-      .rotate-button {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        background-color: rgba(255, 255, 255, 0.2);
-        color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 6px 12px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: background-color 0.2s ease;
-        
-        svg {
-          transition: transform 0.3s ease;
-        }
-        
-        &:hover {
-          background-color: rgba(255, 255, 255, 0.3);
-          
-          svg {
-            transform: rotate(90deg);
-          }
-        }
-        
-        &:active {
-          background-color: rgba(255, 255, 255, 0.4);
-        }
-      }
-      
-      .toggle-nav-button {
-        background-color: rgba(255, 255, 255, 0.15);
-        color: rgba(255, 255, 255, 0.9);
-        border: none;
-        border-radius: 4px;
-        padding: 6px 12px;
-        cursor: pointer;
-        font-size: 13px;
-        transition: background-color 0.2s ease;
-        
-        &:hover {
-          background-color: rgba(255, 255, 255, 0.25);
-        }
+        color: var(--text-secondary);
+        margin: 0 10px;
       }
     }
     
     .keyboard-hint {
-      color: rgba(255, 255, 255, 0.6);
-      font-size: 12px;
-      margin-top: 8px;
+      padding: 8px 15px;
       text-align: center;
-      font-style: italic;
-      
-      &::before {
-        content: '⎋';
-        margin-right: 4px;
-        font-style: normal;
-      }
+      font-size: 12px;
+      color: var(--text-secondary);
+      background-color: rgba(0, 0, 0, 0.05);
     }
   }
-
-  .close-button {
+  
+  .nav-arrow {
     position: absolute;
-    top: -15px;
-    right: -15px;
-    background: rgba(0, 0, 0, 0.6);
-    border: none;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.3);
     color: white;
-    font-size: 28px;
+    border: none;
+    font-size: 30px;
+    padding: 15px 10px;
     cursor: pointer;
-    padding: 5px 12px;
-    z-index: 1001;
-    border-radius: 50%;
-    line-height: 1;
-
+    z-index: 2;
+    border-radius: 4px;
+    transition: background 0.2s;
+    
     &:hover {
-      color: var(--accent-color);
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.5);
+    }
+    
+    &.nav-prev {
+      left: 15px;
+    }
+    
+    &.nav-next {
+      right: 15px;
     }
   }
 }
 
+/* In the patent-details-figures context */
+.patent-details-figures {
+  .section-content.figures-content {
+    max-height: calc(100vh - 12rem);
+    
+    .figures-grid {
+      .figure-item {
+        img {
+          width: 100%;
+          max-width: 1000px;
+        }
+      }
+    }
+  }
+}
+
+/* Animations */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zoomIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 /* Responsive styles */
 @media (max-width: 768px) {
-  .details-section {
-    margin-bottom: 15px;
+  .section-content.figures-content {
+    padding: 8px;
     
-    .section-title {
-      padding: 12px 15px;
+    .figures-grid {
+      gap: 20px;
       
-      h4 {
-        font-size: 15px;
+      .figure-item {
+        img {
+          width: 100%;
+          max-width: 750px;
+          max-height: 450px;
+        }
+        
+        p {
+          width: 100%;
+          max-width: 750px;
+        }
       }
-    }
-    
-    .figures-content {
-      padding: 12px;
-      
-      .figures-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 12px;
-      }
-    }
-    
-    .no-data-message {
-      padding: 12px;
-      font-size: 13px;
     }
   }
   
   .fullscreen-modal {
-    padding: 15px;
-    
     .modal-content {
-      max-width: 92vw;
-      max-height: 80vh;
-      padding: 12px;
-      overflow: visible;
-      
-      .nav-arrow {
-        width: 40px;
-        height: 40px;
-        font-size: 28px;
-        
-        &.nav-prev {
-          left: -45px;
-        }
-        
-        &.nav-next {
-          right: -45px;
-        }
-      }
+      max-width: 98vw;
+      max-height: 90vh;
       
       .modal-image-container {
-        width: 100%;
-        height: 100%;
+        max-height: 70vh;
         
         img {
-          max-width: 100%;
-          max-height: 58vh;
+          max-width: 98%;
+          max-height: 65vh;
         }
-      }
-      
-      .modal-title {
-        font-size: 14px;
-        margin-top: 10px;
-      }
-      
-      .modal-controls {
-        margin-top: 10px;
-        gap: 8px;
-        
-        .nav-button, .rotate-button, .toggle-nav-button {
-          padding: 5px 10px;
-          font-size: 13px;
-          
-          svg {
-            width: 14px;
-            height: 14px;
-          }
-        }
-        
-        .image-counter {
-          font-size: 13px;
-        }
-      }
-      
-      .keyboard-hint {
-        font-size: 11px;
-        margin-top: 6px;
       }
     }
     
-    .close-button {
-      top: -15px;
-      right: -15px;
+    .nav-arrow {
       font-size: 24px;
-      padding: 4px 10px;
+      padding: 10px 8px;
     }
   }
 }
 
 @media (max-width: 576px) {
-  .details-section {
-    margin-bottom: 12px;
+  .section-content.figures-content {
+    padding: 5px;
     
-    .section-title {
-      padding: 10px 12px;
+    .figures-grid {
+      gap: 15px;
       
-      h4 {
-        font-size: 14px;
-      }
-    }
-    
-    .figures-content {
-      padding: 10px;
-      
-      .figures-grid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 10px;
+      .figure-item {
+        img {
+          width: 100%;
+          max-width: 100%;
+          max-height: 380px;
+        }
         
-        .figure-item {
-          padding: 8px;
-          
-          p {
-            font-size: 12px;
-          }
+        p {
+          width: 100%;
+          max-width: 100%;
         }
       }
     }
   }
   
   .fullscreen-modal {
-    padding: 10px;
-    
     .modal-content {
-      max-width: 95vw;
-      max-height: 75vh;
-      padding: 10px;
-      overflow: visible;
-      
-      .nav-arrow {
-        width: 36px;
-        height: 36px;
-        font-size: 24px;
-        background-color: rgba(0, 0, 0, 0.7);
-        
-        &.nav-prev {
-          left: 5px;
-        }
-        
-        &.nav-next {
-          right: 5px;
-        }
-      }
+      max-width: 100vw;
+      max-height: 90vh;
       
       .modal-image-container {
-        width: 100%;
-        height: 100%;
+        max-height: 70vh;
         
         img {
           max-width: 100%;
-          max-height: 52vh;
+          max-height: 65vh;
         }
-      }
-      
-      .modal-title {
-        font-size: 12px;
-        margin-top: 8px;
       }
       
       .modal-controls {
-        margin-top: 8px;
+        padding: 8px 10px;
         gap: 6px;
         
-        .nav-button, .rotate-button {
-          padding: 4px 8px;
+        button {
+          padding: 6px 10px;
           font-size: 12px;
-          
-          svg {
-            width: 12px;
-            height: 12px;
-          }
-        }
-        
-        .toggle-nav-button {
-          padding: 4px 8px;
-          font-size: 11px;
-          margin-top: 6px;
-          width: 100%;
-        }
-        
-        .image-counter {
-          font-size: 12px;
-        }
-      }
-      
-      .keyboard-hint {
-        font-size: 10px;
-        margin-top: 4px;
-      }
-    }
-    
-    .close-button {
-      top: -10px;
-      right: -10px;
-      font-size: 20px;
-      padding: 3px 8px;
-    }
-  }
-}
-
-// In the patent-details-figures context, adjust the figures display
-.patent-details-figures {
-  .details-section {
-    margin-bottom: 0;
-    height: 100%;
-    
-    .figures-content {
-      max-height: calc(100vh - 8rem);
-      
-      .figures-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
-        
-        .figure-item {
-          img {
-            max-height: 100%;
-            object-fit: contain;
-          }
-          
-          p {
-            white-space: normal;
-            max-height: 4rem;
-            overflow-y: auto;
-          }
         }
       }
     }

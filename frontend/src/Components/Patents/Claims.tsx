@@ -1,6 +1,4 @@
-import { useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
+import React from 'react';
 import './Claims.scss';
 
 interface ClaimsProps {
@@ -12,36 +10,14 @@ interface ClaimsProps {
 }
 
 const Claims = ({ initialClaims }: ClaimsProps) => {
-  const [showFullClaims, setShowFullClaims] = useState(false);
-
-  const getFirstLine = (text: string | undefined) => {
-    if (!text) return '';
-    return text.split('\n')[0];
-  };
-
+  // Always render the full claims without toggle functionality
   const renderClaimsList = () => {
-    if (showFullClaims) {
-      return initialClaims.map((claim, index) => (
-        <div key={index} className="claim-item">
-          <div className="claim-content">
-            <p>
-              <span className="claim-index">{index + 1}</span>
-              {claim.description || ''}
-            </p>
-            {claim.ucid && <small className="claim-id">ID: {claim.ucid}</small>}
-          </div>
-        </div>
-      ));
-    }
-
-    // Show only first line of each claim by default
     return initialClaims.map((claim, index) => (
       <div key={index} className="claim-item">
         <div className="claim-content">
-          <p className="claim-preview">
+          <p className="highlightable">
             <span className="claim-index">{index + 1}</span>
-            {getFirstLine(claim.description)}
-            <span className="ellipsis">...</span>
+            {claim.description || ''}
           </p>
           {claim.ucid && <small className="claim-id">ID: {claim.ucid}</small>}
         </div>
@@ -51,15 +27,13 @@ const Claims = ({ initialClaims }: ClaimsProps) => {
 
   return (
     <div className="claims-section">
-      <h4 className="clickable" onClick={() => setShowFullClaims(!showFullClaims)}>
-        <span className="title-with-icon">
-          Claims {showFullClaims ? '(Full)' : '(Summary)'}
-          <FontAwesomeIcon 
-            icon={showFullClaims ? faChevronUp : faChevronDown} 
-            className="toggle-icon"
-          />
-        </span>
-      </h4>
+      <div className="claims-header">
+        <h4>
+          <span className="title-with-icon">
+            Claims
+          </span>
+        </h4>
+      </div>
       <div className="claims-content">
         {renderClaimsList()}
       </div>

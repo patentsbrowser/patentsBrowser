@@ -1,44 +1,38 @@
 .description-section {
   margin-bottom: 2rem;
 
-  h4.clickable {
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    color: var(--accent-color);
+  .description-header {
     margin-bottom: 1rem;
-    font-size: 1.1rem;
-
-    &:hover {
-      color: var(--accent-color-hover);
-      
-      .toggle-icon {
-        transform: scale(1.1);
-      }
-    }
-
-    .title-with-icon {
+    padding: 0.5rem;
+    border-radius: 4px;
+    
+    h4 {
+      margin: 0;
+      color: var(--accent-color);
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      justify-content: space-between;
+      font-size: 1.1rem;
 
-      .toggle-icon {
-        font-size: 0.8em;
-        transition: transform 0.2s ease;
+      .title-with-icon {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        justify-content: space-between;
       }
-    }
-
-    .loading-indicator {
-      font-size: 0.9rem;
-      color: var(--text-secondary);
-      font-weight: normal;
+      
+      .loading-indicator {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        font-weight: normal;
+      }
     }
   }
 
   .description-content {
-    max-height: 400px;
-    overflow-y: auto;
+    max-height: none;
+    overflow-y: visible;
     padding: 1rem;
     border: 1px solid var(--border-color);
     border-radius: 8px;
