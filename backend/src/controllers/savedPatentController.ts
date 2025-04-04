@@ -5,6 +5,7 @@ import fs from 'fs-extra';
 import mammoth from 'mammoth';
 import path from 'path';
 import xlsx from 'xlsx';
+import { standardizePatentNumber } from '../utils/patentUtils.js';
 
 interface AuthRequest extends Request {
   user?: {
@@ -37,13 +38,17 @@ export const savePatent = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const savedPatents = [];
-    const duplicates = [];
+    // Standardize all patent IDs
+    const standardizedPatentIds = patentIds.map(id => standardizePatentNumber(id.trim()));
+    console.log('Standardized patent IDs:', standardizedPatentIds);
+
+    const savedPatents: any[] = [];
+    const duplicates: string[] = [];
 
     // Process each patent ID in the array
-    for (const patentId of patentIds) {
+    for (const patentId of standardizedPatentIds) {
       // Skip empty patent IDs
-      if (!patentId.trim()) continue;
+      if (!patentId) continue;
 
       // Check if patent is already saved by this user
       const existingPatent = await SavedPatent.findOne({ userId, patentId });
@@ -76,7 +81,7 @@ export const savePatent = async (req: AuthRequest, res: Response) => {
     let customList = null;
     if (folderName && patentIds.length > 0) {
       // Use the saved patent IDs that weren't duplicates
-      const nonDuplicateIds = patentIds.filter(id => !duplicates.includes(id));
+      const nonDuplicateIds = standardizedPatentIds.filter(id => !duplicates.includes(id));
       
       if (nonDuplicateIds.length > 0) {
         console.log(`Creating custom list "${folderName}" with ${nonDuplicateIds.length} patents`);
@@ -174,13 +179,17 @@ export const saveCustomPatentList = async (req: AuthRequest, res: Response) => {
     // Set source - default to 'customSearch' if not provided or invalid
     const folderSource = source === 'folderName' ? 'folderName' : 'customSearch';
     
-    console.log('Creating custom list with:', { userId, name, patentIds, source: folderSource });
+    // Standardize all patent IDs
+    const standardizedPatentIds = patentIds.map(id => standardizePatentNumber(id.trim()));
+    console.log('Standardized patent IDs:', standardizedPatentIds);
+    
+    console.log('Creating custom list with:', { userId, name, patentIds: standardizedPatentIds, source: folderSource });
     
     // Create and save the custom patent list
     const customList = new CustomPatentList({
       userId,
       name,
-      patentIds,
+      patentIds: standardizedPatentIds,
       timestamp: Date.now(),
       source: folderSource // Store the source information
     });
@@ -364,7 +373,7 @@ export const extractPatentIdsFromFile = async (req: AuthRequest, res: Response) 
           }
           
           // Try to find the column indices with our target headers
-          const headerRow = sheetData[0];
+          const headerRow = sheetData[0] as any[];
           console.log(`Headers in sheet ${sheetName}:`, headerRow);
           
           let pubNumberColumnIndex = -1;
@@ -533,13 +542,16 @@ export const extractPatentIdsFromFile = async (req: AuthRequest, res: Response) 
               // Combine publication number and kind code WITHOUT space between them
               const combined = `${pubNumber}${selectedKindCode}`;
               console.log(`Combined without space: ${pubNumber} + ${selectedKindCode} → ${combined}`);
-              return combined;
+              // Standardize the patent ID format
+              const standardized = standardizePatentNumber(combined);
+              console.log(`Standardized format: ${combined} → ${standardized}`);
+              return standardized;
             }
             
-            return pubNumber;
+            return standardizePatentNumber(pubNumber);
           } else {
             // If no kind code is available, just use the publication number
-            return pubNumber;
+            return standardizePatentNumber(pubNumber);
           }
         });
         
@@ -547,7 +559,9 @@ export const extractPatentIdsFromFile = async (req: AuthRequest, res: Response) 
       } else {
         // For non-Excel files, use regex to extract patent IDs
         const patentIdPattern = /(?:US|EP|WO|JP|CN|KR|DE|FR|GB|CA)[\s-]?\d{5,10}[\s-]?[A-Z]\d?/g;
-        extractedPatentIds = [...new Set(fileContent.match(patentIdPattern) || [])];
+        const matchedIds = fileContent.match(patentIdPattern) || [];
+        // Standardize each extracted patent ID
+        extractedPatentIds = [...new Set(matchedIds.map(id => standardizePatentNumber(id)))];
         console.log('Patent IDs extracted from text content:', extractedPatentIds);
       }
       
@@ -555,7 +569,19 @@ export const extractPatentIdsFromFile = async (req: AuthRequest, res: Response) 
       await fs.remove(filePath);
 
       // Create a response object
-      const responseData = {
+      const responseData: {
+        patentIds: string[];
+        count: number;
+        publicationNumbers: string[];
+        kindCodes: string[];
+        note?: string;
+        savedFolder?: {
+          id: string;
+          name: string;
+          patentCount: number;
+        };
+        folderError?: string;
+      } = {
         patentIds: extractedPatentIds,
         count: extractedPatentIds.length,
         publicationNumbers: isExcelFile ? publicationNumbers : [],
@@ -582,7 +608,7 @@ export const extractPatentIdsFromFile = async (req: AuthRequest, res: Response) 
           
           // Add the saved list info to the response
           responseData.savedFolder = {
-            id: savedList._id,
+            id: savedList._id.toString(),
             name: savedList.name,
             patentCount: savedList.patentIds.length
           };

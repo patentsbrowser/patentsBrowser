@@ -3,8 +3,9 @@ import { ApiSource } from './types';
 
 // Detect which API to use based on the patent ID format
 export const detectApiType = (patentId: string, defaultApi: ApiSource = 'serpapi'): ApiSource => {
-  // Pattern for Unified Patents API format (e.g., US-8125463-B2)
-  const unifiedPattern = /^[A-Z]{2}-\d+-[A-Z]\d$/i;
+  // Pattern for Unified Patents API format that handles various international formats
+  // Modified to support Korean patents (KR-1020120094549-A) with longer numeric sections
+  const unifiedPattern = /^[A-Z]{2}-\d+-[A-Z]\d?$/i;
   
   // Pattern for SerpAPI format (e.g., US8125463B2)
   const serpapiPattern = /^[A-Z]{2}\d+[A-Z]\d$/i;

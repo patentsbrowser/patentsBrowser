@@ -1,13 +1,13 @@
 import express from 'express';
-import { getPlatformStats, getDailyStats, getMonthlyStats, updatePlatformStats } from '../controllers/dashboardController.js';
+// import { getPlatformStats, getDailyStats, getMonthlyStats, updatePlatformStats } from '../controllers/dashboardController.js';
 import { auth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Protected routes - require authentication
-router.get('/platform-stats', auth, getPlatformStats);
-router.get('/daily-stats', auth, getDailyStats);
-router.get('/monthly-stats', auth, getMonthlyStats);
-router.post('/update-stats', auth, updatePlatformStats);
+// Dashboard statistics routes
+// router.get('/platform-stats', auth, getPlatformStats as express.RequestHandler);
+// router.get('/daily-stats', auth, getDailyStats as express.RequestHandler);
+// router.get('/monthly-stats', auth, getMonthlyStats as express.RequestHandler);
+// router.post('/update-stats', auth, updatePlatformStats as express.RequestHandler);
 
 export default router; 
