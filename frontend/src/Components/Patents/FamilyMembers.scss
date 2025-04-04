@@ -1,0 +1,89 @@
+.family-members-section {
+  margin-bottom: 2rem;
+
+  h4.clickable {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--accent-color);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+
+    &:hover {
+      color: var(--accent-color-hover);
+      
+      .toggle-icon {
+        transform: scale(1.1);
+      }
+    }
+
+    .title-with-icon {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .toggle-icon {
+        font-size: 0.8em;
+        transition: transform 0.2s ease;
+      }
+    }
+  }
+
+  .family-members-list {
+    .family-member-item {
+      display: flex;
+      gap: 1rem;
+      padding: 0.75rem;
+      background: var(--input-bg);
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+      
+      .member-number {
+        color: var(--text-color);
+        font-weight: 500;
+        min-width: 150px;
+      }
+
+      .member-date {
+        color: var(--text-secondary);
+        min-width: 100px;
+        font-family: monospace;
+      }
+
+      .member-kind {
+        color: var(--accent-color);
+        min-width: 60px;
+      }
+
+      .member-number.clickable {
+        cursor: pointer;
+        transition: color 0.2s ease;
+        text-decoration: underline;
+        text-decoration-style: dotted;
+        text-underline-offset: 3px;
+
+        &:hover {
+          color: var(--accent-color);
+        }
+      }
+    }
+
+    .show-more-info {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 0.5rem;
+      background: var(--input-bg);
+      border-radius: 4px;
+      margin-top: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: var(--accent-color);
+        color: var(--button-text);
+      }
+    }
+  }
+} 

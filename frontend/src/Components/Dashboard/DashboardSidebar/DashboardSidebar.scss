@@ -1,0 +1,1709 @@
+.dashboard-sidebar {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  transition: width 0.3s ease, background-color 0.3s ease;
+  background-color: var(--secondary-bg);
+  border-right: 1px solid var(--border-color);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+
+  &.expanded {
+    width: 300px;
+
+    .sidebar-content {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(0);
+      pointer-events: all;
+    }
+
+    .toggle-icon {
+      right: 10px;
+      opacity: 0.7;
+    }
+  }
+
+  &.collapsed {
+    width: 20px;
+    background-color: rgba(0, 128, 0, 0.3);
+    cursor: pointer;
+    border-right: 1px solid rgba(0, 200, 0, 0.2);
+
+    .sidebar-content {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(-50px);
+      pointer-events: none;
+    }
+
+    .toggle-icon {
+      right: 3px;
+      opacity: 0;
+      color: rgba(0, 255, 0, 0.7);
+    }
+
+    &:hover {
+      background-color: rgba(0, 150, 0, 0.5);
+      
+      .toggle-icon {
+        opacity: 1;
+        color: rgba(0, 255, 0, 1);
+      }
+    }
+  }
+
+  /* Manual mode styles */
+  &.manual-mode {
+    &.collapsed {
+      .pin-icon {
+        right: 3px;
+        opacity: 0;
+        color: rgba(0, 255, 0, 0.7);
+      }
+
+      &:hover {
+        .pin-icon {
+          opacity: 1;
+          color: rgba(0, 255, 0, 1);
+        }
+      }
+    }
+
+    &.expanded.pinned {
+      .pin-icon {
+        opacity: 1;
+        color: var(--accent-color);
+        transform: rotate(0deg);
+        animation: pin-bounce 0.5s ease;
+      }
+    }
+
+    &.expanded:not(.pinned) {
+      .pin-icon {
+        opacity: 0.5;
+        transform: rotate(45deg);
+        
+        &:hover {
+          opacity: 0.8;
+          transform: rotate(30deg);
+        }
+      }
+    }
+  }
+
+  .sidebar-toggle {
+    position: absolute;
+    top: 20px;
+    right: 0;
+    z-index: 11;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+
+    .toggle-icon {
+      position: absolute;
+      color: var(--text-secondary);
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .pin-icon {
+      position: absolute;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      right: 10px;
+      
+      &:hover {
+        transform: scale(1.2);
+      }
+    }
+  }
+
+  .sidebar-content {
+    width: 300px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+    box-sizing: border-box;
+    padding: 1rem 0;
+    overflow-y: auto;
+  }
+}
+
+@keyframes pin-bounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+/* Recent Patent IDs Section */
+.recent-patent-ids-section {
+  padding: 0 1rem;
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    
+    h3 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: var(--text-color);
+    }
+    
+    .clear-history {
+      background: none;
+      border: 1px solid var(--error-color);
+      color: var(--error-color);
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+  
+      &:hover {
+        background-color: var(--error-color);
+        color: white;
+      }
+    }
+  }
+
+  .recent-searches {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .recent-search-item {
+    padding: 0.75rem;
+    background-color: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  
+    &:hover {
+      background-color: var(--hover-bg);
+      border-color: var(--accent-color);
+    }
+    
+    &.from-folder {
+      border-left: 3px solid var(--accent-color);
+    }
+  
+    .patent-id {
+      color: var(--text-color);
+      font-weight: 500;
+      word-break: break-word;
+    }
+    
+    .folder-origin {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--accent-color);
+      font-size: 0.85rem;
+      background-color: rgba(var(--accent-rgb), 0.1);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      width: fit-content;
+      
+      .folder-icon {
+        font-size: 0.85rem;
+      }
+    }
+  
+    .search-time {
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+    }
+  }
+
+  .no-searches {
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 1rem;
+  }
+}
+
+/* Custom Search Section */
+.custom-search-section {
+  padding: 0 1rem;
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    
+    h3 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: var(--text-color);
+    }
+    
+    .add-folder-btn {
+      background: none;
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1.2rem;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+  
+      &:hover {
+        background-color: var(--hover-bg);
+        border-color: var(--accent-color);
+      }
+      
+      span {
+        line-height: 1;
+      }
+    }
+  }
+
+  .folder-search-container {
+    margin-bottom: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+    
+    .folder-search-input {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--input-bg);
+      color: var(--text-color);
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+      
+      &:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+      }
+      
+      &::placeholder {
+        color: var(--text-secondary);
+      }
+    }
+  }
+
+  .add-folder-form {
+    background: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    
+    .folder-name-input {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--input-bg);
+      color: var(--text-color);
+      margin-bottom: 0.75rem;
+      
+      &:focus {
+        outline: none;
+        border-color: var(--accent-color);
+      }
+    }
+    
+    .recent-patents-list {
+      margin-bottom: 1rem;
+      
+      h4 {
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-color);
+      }
+      
+      .patent-checkboxes {
+        max-height: 150px;
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 0.5rem;
+        
+        .patent-checkbox {
+          display: flex;
+          align-items: center;
+          padding: 0.25rem 0;
+          cursor: pointer;
+          
+          &:hover {
+            background: rgba(0, 0, 0, 0.05);
+          }
+          
+          input {
+            margin-right: 0.5rem;
+          }
+          
+          span {
+            font-size: 0.85rem;
+            color: var(--text-color);
+          }
+        }
+      }
+    }
+
+    .selected-count {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.75rem;
+      text-align: right;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 0.5rem;
+      
+      button {
+        padding: 0.5rem 0.75rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        
+        &.save-btn {
+          background: var(--accent-color);
+          color: white;
+          border: none;
+          
+          &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+          
+          &:hover:not(:disabled) {
+            opacity: 0.9;
+          }
+        }
+        
+        &.cancel-btn {
+          background: none;
+          border: 1px solid var(--border-color);
+          color: var(--text-color);
+          
+          &:hover {
+            background: var(--hover-bg);
+          }
+        }
+      }
+    }
+  }
+
+  .add-subfolder-form,
+  .add-patent-to-subfolder-form,
+  .add-patents-to-subfolder-form {
+    background: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    
+    h4 {
+      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+      color: var(--text-color);
+    }
+    
+    p {
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+      color: var(--text-color);
+    }
+    
+    .folder-name-input,
+    .patent-id-input {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--input-bg);
+      color: var(--text-color);
+      margin-bottom: 0.75rem;
+      
+      &:focus {
+        outline: none;
+        border-color: var(--accent-color);
+      }
+    }
+    
+    .manual-patent-input {
+      margin-bottom: 1rem;
+    }
+    
+    .recent-patents-list {
+      margin-bottom: 1rem;
+      
+      h4 {
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-color);
+      }
+      
+      .patent-checkboxes {
+        max-height: 150px;
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 0.5rem;
+        
+        .patent-checkbox {
+          display: flex;
+          align-items: center;
+          padding: 0.25rem 0;
+          cursor: pointer;
+          
+          &:hover {
+            background: rgba(0, 0, 0, 0.05);
+          }
+          
+          input {
+            margin-right: 0.5rem;
+          }
+          
+          span {
+            font-size: 0.85rem;
+            color: var(--text-color);
+          }
+        }
+      }
+    }
+    
+    .form-actions {
+      display: flex;
+      gap: 0.5rem;
+      
+      button {
+        padding: 0.5rem 0.75rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        
+        &.save-btn {
+          background: var(--accent-color);
+          color: white;
+          border: none;
+          
+          &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+          
+          &:hover:not(:disabled) {
+            opacity: 0.9;
+          }
+        }
+        
+        &.cancel-btn {
+          background: none;
+          border: 1px solid var(--border-color);
+          color: var(--text-color);
+          
+          &:hover {
+            background: var(--hover-bg);
+          }
+        }
+      }
+    }
+  }
+
+  .custom-folders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .patent-folder {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    margin-bottom: 0.75rem;
+    transition: box-shadow 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
+    
+    &:hover {
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .folder-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.85rem 0.75rem;
+      cursor: pointer;
+      border-radius: 8px 8px 0 0;
+      transition: background-color 0.2s ease;
+      background-color: var(--primary-bg);
+      position: relative;
+      overflow: hidden;
+      flex-wrap: nowrap;
+      
+      &:hover {
+        background-color: var(--hover-bg);
+      }
+      
+      .folder-info {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        overflow: hidden;
+        flex: 1;
+        padding-right: 5px;
+        white-space: nowrap;
+      }
+      
+      .folder-icon {
+        margin-right: 0.75rem;
+        font-size: 1.1rem;
+        color: var(--accent-color);
+        transition: transform 0.2s ease;
+        flex-shrink: 0;
+      }
+      
+      .folder-name {
+        font-weight: 500;
+        margin-right: 0.5rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+        max-width: calc(100% - 40px);
+      }
+      
+      .folder-count {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        background-color: var(--secondary-bg);
+        padding: 0.1rem 0.5rem;
+        border-radius: 10px;
+        flex-shrink: 0;
+      }
+      
+      .folder-actions {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.25rem;
+        position: relative;
+        z-index: 5;
+        margin-left: 0.5rem;
+        flex-shrink: 0;
+        white-space: nowrap;
+        
+        .add-subfolder-icon,
+        .delete-folder-icon {
+          cursor: pointer;
+          opacity: 0.7;
+          transition: all 0.2s ease;
+          padding: 0.2rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 4px;
+          width: 20px;
+          height: 20px;
+          text-align: center;
+          flex-shrink: 0;
+          
+          &:hover {
+            opacity: 1;
+            transform: scale(1.1);
+          }
+        }
+        
+        .add-subfolder-icon {
+          color: var(--accent-color);
+          background-color: rgba(var(--accent-rgb), 0.1);
+          line-height: 1;
+          
+          &:hover {
+            background-color: rgba(var(--accent-rgb), 0.2);
+          }
+        }
+        
+        .delete-folder-icon {
+          color: var(--error-color);
+          background-color: rgba(244, 67, 54, 0.1);
+          line-height: 1;
+          
+          &:hover {
+            background-color: rgba(244, 67, 54, 0.2);
+          }
+        }
+      }
+    }
+  
+    .folder-content {
+      padding: 0.5rem 0.5rem 0.5rem 1.5rem;
+      background-color: var(--secondary-bg);
+      border-top: 1px solid var(--border-color);
+      width: 100%;
+      box-sizing: border-box;
+      overflow: hidden;
+      
+      .folder-patent-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.6rem 0.75rem;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        margin-bottom: 0.25rem;
+        width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+        
+        span {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          flex: 1;
+        }
+        
+        &:hover, &.selected {
+          background-color: rgba(var(--accent-rgb), 0.1);
+          transform: translateX(2px);
+        }
+        
+        &.selected {
+          font-weight: 500;
+          color: var(--accent-color);
+          background-color: rgba(var(--accent-rgb), 0.15);
+        }
+        
+        .patent-actions {
+          display: flex;
+          gap: 0.75rem;
+          margin-left: 0.5rem;
+          flex-shrink: 0;
+          position: relative;
+          z-index: 3;
+          
+          .add-to-subfolder-icon,
+          .delete-patent-icon {
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.2s ease;
+            padding: 0.15rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            
+            &:hover {
+              opacity: 1;
+              transform: scale(1.1);
+            }
+          }
+          
+          .add-to-subfolder-icon {
+            color: var(--accent-color);
+            background-color: rgba(var(--accent-rgb), 0.1);
+            
+            &:hover {
+              background-color: rgba(var(--accent-rgb), 0.2);
+            }
+          }
+          
+          .delete-patent-icon {
+            color: var(--error-color);
+            background-color: rgba(244, 67, 54, 0.1);
+            
+            &:hover {
+              background-color: rgba(244, 67, 54, 0.2);
+            }
+          }
+        }
+      }
+      
+      .empty-subfolder {
+        padding: 0.75rem;
+        color: var(--text-secondary);
+        font-style: italic;
+        font-size: 0.9rem;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        
+        .add-patents-btn {
+          background: none;
+          border: 1px solid var(--border-color);
+          color: var(--text-color);
+          padding: 0.25rem 0.75rem;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.8rem;
+          transition: all 0.2s ease;
+          
+          &:hover {
+            background-color: var(--hover-bg);
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+          }
+        }
+      }
+      
+      .subfolders-container {
+        margin-top: 0.75rem;
+        margin-bottom: 0.75rem;
+        border-left: 3px solid var(--accent-color);
+        margin-left: 1.25rem;
+        padding-left: 0.75rem;
+        position: relative;
+        box-sizing: border-box;
+        width: calc(100% - 1.25rem);
+        overflow: hidden;
+        background-color: rgba(var(--accent-rgb), 0.03);
+        border-radius: 0 0 8px 8px;
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
+        
+        &::before {
+          content: '';
+          position: absolute;
+          top: -5px;
+          left: -3px;
+          width: 10px;
+          height: 3px;
+          background-color: var(--accent-color);
+          border-radius: 0 3px 3px 0;
+        }
+        
+        /* Add a label to the connecting line */
+        &::after {
+          content: 'sub';
+          position: absolute;
+          font-size: 8px;
+          color: var(--accent-color);
+          top: -10px;
+          left: -22px;
+          background-color: var(--secondary-bg);
+          padding: 0 3px;
+          border-radius: 2px;
+          font-weight: bold;
+        }
+        
+        .subfolders-title {
+          padding: 0.5rem 0.75rem;
+          font-size: 0.85rem;
+          color: var(--accent-color);
+          font-weight: 500;
+          margin-bottom: 0.75rem;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          box-sizing: border-box;
+          position: relative;
+          left: 0;
+          background-color: rgba(var(--accent-rgb), 0.06);
+          border-radius: 6px;
+          border: 1px solid rgba(var(--accent-rgb), 0.15);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+          overflow: hidden;
+          
+          .title-container {
+            display: flex;
+            align-items: center;
+            min-width: 0;
+            overflow: hidden;
+            flex: 1;
+            white-space: nowrap;
+            
+            &::before {
+              content: '↳';
+              display: inline-block;
+              margin-right: 0.5rem;
+              font-weight: bold;
+              color: var(--accent-color);
+              font-size: 1rem;
+              flex-shrink: 0;
+            }
+            
+            .title-text {
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+          }
+          
+          .subfolders-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-left: 0.5rem;
+            flex-shrink: 0;
+            
+            .add-subfolder-icon,
+            .delete-subfolder-icon {
+              cursor: pointer;
+              opacity: 0.7;
+              transition: all 0.2s ease;
+              padding: 0.15rem;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              border-radius: 4px;
+              width: 20px;
+              height: 20px;
+              text-align: center;
+              flex-shrink: 0;
+              
+              &:hover {
+                opacity: 1;
+                transform: scale(1.1);
+              }
+            }
+            
+            .add-subfolder-icon {
+              color: var(--accent-color);
+              background-color: rgba(var(--accent-rgb), 0.1);
+              
+              &:hover {
+                background-color: rgba(var(--accent-rgb), 0.2);
+              }
+            }
+            
+            .delete-subfolder-icon {
+              color: var(--error-color);
+              background-color: rgba(244, 67, 54, 0.1);
+              
+              &:hover {
+                background-color: rgba(244, 67, 54, 0.2);
+              }
+            }
+          }
+          
+          &::before {
+            content: none;
+          }
+        }
+        
+        .subfolder {
+          margin-left: 0;
+          border: 1px solid var(--border-color);
+          border-radius: 8px;
+          margin-bottom: 0.75rem;
+          background-color: rgba(var(--accent-rgb), 0.08);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+          width: 100%;
+          box-sizing: border-box;
+          overflow: hidden;
+          
+          &:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+          }
+          
+          .subfolder-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            box-sizing: border-box;
+            background-color: rgba(var(--accent-rgb), 0.1);
+            border-bottom: 1px solid rgba(var(--accent-rgb), 0.15);
+            flex-wrap: nowrap;
+            
+            &:hover {
+              background-color: rgba(var(--accent-rgb), 0.15);
+              transform: translateY(-1px);
+            }
+            
+            .folder-info {
+              display: flex;
+              align-items: center;
+              min-width: 0;
+              overflow: hidden;
+              flex: 1;
+              padding-right: 8px;
+              white-space: nowrap;
+            }
+            
+            .subfolder-icon {
+              font-size: 1rem;
+              color: var(--accent-color);
+              margin-right: 0.5rem;
+              flex-shrink: 0;
+            }
+            
+            .folder-name {
+              font-weight: 500;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              color: var(--text-color);
+              min-width: 0;
+              max-width: calc(100% - 40px);
+            }
+            
+            .folder-count {
+              background-color: rgba(var(--accent-rgb), 0.2);
+              color: var(--accent-color);
+              font-size: 0.7rem;
+              padding: 0.1rem 0.5rem;
+              border-radius: 10px;
+              margin-left: 0.5rem;
+              font-weight: 500;
+              flex-shrink: 0;
+            }
+            
+            .subfolder-actions {
+              display: flex;
+              gap: 0.5rem;
+              padding: 0.25rem;
+              position: relative;
+              z-index: 5;
+              flex-shrink: 0;
+              margin-left: 0.5rem;
+              white-space: nowrap;
+              
+              .add-patents-icon,
+              .delete-folder-icon {
+                cursor: pointer;
+                opacity: 0.7;
+                transition: all 0.2s ease;
+                padding: 0.15rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 4px;
+                width: 20px;
+                height: 20px;
+                text-align: center;
+                flex-shrink: 0;
+                
+                &:hover {
+                  opacity: 1;
+                  transform: scale(1.1);
+                }
+              }
+              
+              .add-patents-icon {
+                font-size: 1.2rem;
+                color: var(--accent-color);
+                background-color: rgba(var(--accent-rgb), 0.1);
+                line-height: 1;
+                
+                &:hover {
+                  background-color: rgba(var(--accent-rgb), 0.2);
+                }
+              }
+              
+              .delete-folder-icon {
+                color: var(--error-color);
+                background-color: rgba(244, 67, 54, 0.1);
+                line-height: 1;
+                
+                &:hover {
+                  background-color: rgba(244, 67, 54, 0.2);
+                }
+              }
+            }
+          }
+          
+          .subfolder-content {
+            background-color: rgba(var(--accent-rgb), 0.04);
+            width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+            padding: 0.5rem;
+            border-top: 1px solid rgba(var(--accent-rgb), 0.15);
+            border-radius: 0 0 8px 8px;
+            position: relative;
+            
+            &::before {
+              content: '';
+              position: absolute;
+              top: 0;
+              left: 10px;
+              height: 8px;
+              width: 1px;
+              background-color: var(--accent-color);
+              opacity: 0.5;
+            }
+            
+            .folder-patent-item {
+              border-radius: 4px;
+              margin-bottom: 0.25rem;
+              width: 100%;
+              box-sizing: border-box;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 0.5rem;
+              background-color: rgba(var(--accent-rgb), 0.03);
+              
+              /* Add subtle left border to indicate hierarchy */
+              border-left: 2px solid rgba(var(--accent-rgb), 0.2);
+              
+              span {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                flex: 1;
+              }
+              
+              &:hover {
+                background-color: rgba(var(--accent-rgb), 0.1);
+                border-left-color: var(--accent-color);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .no-folders-message {
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 1rem;
+    font-style: italic;
+    border: 1px dashed var(--border-color);
+    border-radius: 6px;
+  }
+}
+
+/* Patent Folders Section */
+.patent-folders-section {
+  padding: 0 1rem;
+  flex-shrink: 0;
+
+  .folders-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    
+    .folders-title {
+      margin: 0;
+      font-size: 1.2rem;
+      color: var(--text-color);
+    }
+    
+    .manage-folders {
+      background: none;
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+  
+      &:hover {
+        background-color: var(--hover-bg);
+        border-color: var(--accent-color);
+      }
+    }
+  }
+
+  .patent-folders {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .patent-folder {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow: hidden;
+    
+    .folder-header {
+      padding: 0.75rem;
+      background-color: var(--primary-bg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+  
+      &:hover {
+        background-color: var(--hover-bg);
+      }
+  
+      .folder-icon {
+        font-size: 1.2rem;
+        flex-shrink: 0;
+      }
+  
+      .folder-name {
+        flex: 1;
+        color: var(--text-color);
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+      }
+  
+      .folder-count {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        flex-shrink: 0;
+      }
+    }
+  
+    .folder-content {
+      background-color: var(--secondary-bg);
+      padding: 0.5rem;
+  
+      .folder-patent-item {
+        padding: 0.5rem;
+        cursor: pointer;
+        color: var(--text-color);
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        word-break: break-word;
+  
+        &:hover {
+          background-color: var(--hover-bg);
+          color: var(--accent-color);
+        }
+      }
+    }
+  }
+
+  .no-folders-message {
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 1rem;
+    font-style: italic;
+    border: 1px dashed var(--border-color);
+    border-radius: 6px;
+  }
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] {
+  .custom-search-section {
+    .add-folder-btn:hover {
+      background-color: rgba(76, 175, 80, 0.2);
+    }
+    
+    .patent-checkbox:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .form-actions .cancel-btn:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+  }
+  
+  .add-patent-to-folder-form {
+    background-color: var(--primary-bg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    
+    h4 {
+      color: var(--text-color);
+    }
+    
+    .patent-id-input {
+      background-color: var(--input-bg);
+      color: var(--text-color);
+      border-color: var(--border-color);
+      
+      &:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.25);
+      }
+    }
+    
+    .form-actions {
+      .save-btn {
+        background-color: var(--accent-color);
+      }
+      
+      .cancel-btn {
+        background-color: rgba(255, 255, 255, 0.05);
+        color: var(--text-color);
+        border-color: var(--border-color);
+        
+        &:hover {
+          background-color: rgba(255, 255, 255, 0.1);
+        }
+      }
+    }
+  }
+  
+  .manual-patent-input {
+    .patent-id-input {
+      background-color: var(--input-bg);
+      color: var(--text-color);
+      border-color: var(--border-color);
+    }
+    
+    .add-manual-btn {
+      background-color: var(--accent-color);
+    }
+  }
+  
+  /* Drag and drop dark theme styles */
+  .patent-folder, .subfolder {
+    &.drag-over {
+      background-color: rgba(var(--accent-rgb), 0.2);
+      border: 2px dashed var(--accent-color);
+    }
+  }
+}
+
+.add-patent-to-folder-form {
+  background-color: var(--primary-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 12px;
+  margin: 10px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+  h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: var(--text-color);
+  }
+
+  .patent-id-input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 14px;
+    outline: none;
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    
+    &:focus {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.25);
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: space-between;
+
+    button {
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+
+      &.save-btn {
+        background-color: var(--accent-color);
+        color: white;
+        border: none;
+        
+        &:hover {
+          opacity: 0.9;
+        }
+        
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+
+      &.cancel-btn {
+        background-color: var(--primary-bg);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+        
+        &:hover {
+          background-color: var(--hover-bg);
+        }
+      }
+    }
+  }
+}
+
+/* Manual patent input styles */
+.manual-patent-input {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+  
+  .patent-id-input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: var(--input-bg);
+    color: var(--text-color);
+  }
+  
+  .add-manual-btn {
+    align-self: flex-end;
+    padding: 6px 12px;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    
+    &:hover {
+      opacity: 0.9;
+    }
+    
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+/* Drag and drop styles */
+.folder-patent-item {
+  &[draggable=true] {
+    cursor: grab;
+    
+    &:active {
+      cursor: grabbing;
+    }
+  }
+}
+
+.patent-folder, .subfolder {
+  position: relative;
+  
+  &.drag-over {
+    background-color: rgba(74, 144, 226, 0.1);
+    border: 2px dashed #4a90e2;
+    border-radius: 4px;
+  }
+}
+
+.folder-header, .subfolder-header {
+  .add-patent-icon {
+    margin-right: 8px;
+    color: #28a745;
+    cursor: pointer;
+    font-size: 14px;
+    
+    &:hover {
+      color: #218838;
+    }
+  }
+}
+
+.empty-subfolder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+  color: #6c757d;
+  font-size: 13px;
+  
+  .add-patents-btn {
+    margin-top: 8px;
+    padding: 5px 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    
+    &:hover {
+      background-color: #e9ecef;
+    }
+  }
+}
+
+.imported-folders-section {
+  padding: 0 1rem;
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+  
+  .folders-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    
+    h3 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: var(--text-color);
+    }
+  }
+  
+  .loading-message,
+  .no-folders-message {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin: 0.5rem 0;
+    text-align: center;
+    padding: 0.5rem;
+  }
+  
+  .imported-folders-list {
+    max-height: 300px;
+    overflow-y: auto;
+    
+    .imported-folder {
+      margin-bottom: 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--secondary-bg);
+      
+      .folder-header {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem;
+        cursor: pointer;
+        transition: background 0.2s ease;
+        
+        &:hover {
+          background: var(--hover-bg);
+        }
+        
+        .folder-icon {
+          margin-right: 0.5rem;
+          font-size: 1.1rem;
+        }
+        
+        .folder-name {
+          flex: 1;
+          font-size: 0.95rem;
+          color: var(--text-color);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        
+        .folder-count {
+          margin-left: 0.5rem;
+          color: var(--text-muted);
+          font-size: 0.8rem;
+        }
+      }
+      
+      .folder-content {
+        border-top: 1px solid var(--border-color);
+        max-height: 200px;
+        overflow-y: auto;
+        
+        .folder-patent-item {
+          padding: 0.4rem 0.5rem 0.4rem 2rem;
+          font-size: 0.9rem;
+          cursor: pointer;
+          color: var(--text-color);
+          border-bottom: 1px solid var(--border-color-light, rgba(0,0,0,0.05));
+          transition: background 0.15s ease;
+          
+          &:last-child {
+            border-bottom: none;
+          }
+          
+          &:hover {
+            background: var(--hover-bg);
+            color: var(--accent-color);
+          }
+        }
+      }
+    }
+  }
+}
+
+/* Patent Selection Modal */
+.patent-selection-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.patent-selection-modal {
+  background-color: var(--primary-bg);
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  .modal-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h3 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: var(--text-color);
+    }
+
+    .close-button {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: color 0.2s ease;
+
+      &:hover {
+        color: var(--accent-color);
+      }
+    }
+  }
+
+  .modal-body {
+    padding: 15px 20px;
+    overflow-y: auto;
+    flex-grow: 1;
+
+    .select-all-container {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 10px;
+
+      .select-all-label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+        color: var(--text-color);
+        font-weight: 500;
+
+        input {
+          margin-right: 10px;
+        }
+      }
+    }
+
+    .patent-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+
+      .patent-checkbox-item {
+        padding: 8px 5px;
+        border-radius: 4px;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+          background-color: var(--hover-bg);
+        }
+
+        label {
+          display: flex;
+          align-items: center;
+          cursor: pointer;
+          user-select: none;
+          color: var(--text-color);
+
+          input {
+            margin-right: 10px;
+          }
+        }
+      }
+    }
+  }
+
+  .modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+
+    .cancel-button {
+      padding: 8px 15px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      background-color: transparent;
+      color: var(--text-color);
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: var(--hover-bg);
+      }
+    }
+
+    .submit-button {
+      padding: 8px 15px;
+      border-radius: 4px;
+      border: none;
+      background-color: var(--accent-color);
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: var(--accent-hover);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+} 

@@ -1,0 +1,264 @@
+.patent-details {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--secondary-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+
+  h3 {
+    color: var(--text-color);
+    margin-bottom: 1rem;
+    word-wrap: break-word;
+    font-size: 1.2rem;
+  }
+
+  .patent-details-layout {
+    display: flex;
+    gap: 1.5rem;
+    
+    .patent-details-content {
+      flex: 3;
+      min-width: 0; // Necessary for proper text wrapping
+    }
+    
+    .patent-details-figures {
+      flex: 2;
+      position: sticky;
+      top: 2rem;
+      max-height: calc(100vh - 4rem);
+      overflow-y: auto;
+      
+      .figures-section {
+        margin-bottom: 0;
+        height: 100%;
+      }
+    }
+  }
+
+  .details-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--primary-bg);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    width: 100%;
+    box-sizing: border-box;
+
+    h4 {
+      color: var(--accent-color);
+      margin-bottom: 0.75rem;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    p {
+      color: var(--text-color);
+      line-height: 1.5;
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      width: 100%;
+      font-size: 0.9rem;
+    }
+
+    &:empty {
+      display: none;
+    }
+  }
+
+  .claims-list {
+    width: 100%;
+    
+    .claim-item {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      width: 100%;
+      
+      .claim-number {
+        color: var(--accent-color);
+        font-weight: 500;
+        min-width: 2rem;
+      }
+
+      .claim-content {
+        flex: 1;
+        width: calc(100% - 3rem);
+
+        p {
+          margin-bottom: 0.5rem;
+        }
+
+        .claim-id {
+          color: var(--text-secondary);
+          font-size: 0.85rem;
+        }
+      }
+    }
+  }
+
+  .figures-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+    width: 100%;
+
+    .figure-item {
+      text-align: center;
+
+      img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+      }
+
+      p {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+      }
+    }
+  }
+
+  .family-members-list {
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--primary-bg);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+
+    .family-member-item {
+      display: flex;
+      gap: 1rem;
+      padding: 0.75rem;
+      background: var(--input-bg);
+      border-radius: 4px;
+      flex-wrap: wrap;
+      align-items: center;
+      width: 100%;
+      box-sizing: border-box;
+      
+      .member-number {
+        color: var(--text-color);
+        font-weight: 500;
+        word-break: break-all;
+        min-width: 120px;
+        max-width: 100%;
+      }
+
+      .member-date {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        white-space: nowrap;
+      }
+
+      .member-kind {
+        color: var(--accent-color);
+        font-size: 0.9rem;
+        white-space: nowrap;
+      }
+    }
+  }
+}
+
+@media (max-width: 1024px) {
+  .patent-details {
+    .patent-details-layout {
+      flex-direction: column;
+      
+      .patent-details-figures {
+        position: static;
+        max-height: none;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .patent-details {
+    padding: 0.75rem;
+    
+    h3 {
+      font-size: 1.1rem;
+    }
+    
+    .details-section {
+      padding: 0.75rem;
+      
+      h4 {
+        font-size: 0.95rem;
+      }
+    }
+    
+    .figures-grid {
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.75rem;
+    }
+    
+    .claims-list {
+      .claim-item {
+        flex-direction: column;
+        gap: 0.5rem;
+        
+        .claim-number {
+          min-width: auto;
+        }
+        
+        .claim-content {
+          width: 100%;
+        }
+      }
+    }
+    
+    .family-members-list {
+      padding: 0.75rem;
+      
+      .family-member-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding: 0.625rem;
+        
+        .member-number {
+          min-width: auto;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .patent-details {
+    padding: 0.625rem;
+    
+    h3 {
+      font-size: 1rem;
+    }
+    
+    .details-section {
+      padding: 0.625rem;
+      margin-bottom: 1rem;
+      
+      p {
+        font-size: 0.85rem;
+      }
+    }
+    
+    .figures-grid {
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 0.625rem;
+    }
+  }
+} 

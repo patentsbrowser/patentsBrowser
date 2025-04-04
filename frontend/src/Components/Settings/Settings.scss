@@ -1,0 +1,172 @@
+.settings-container {
+  padding: 25px;
+  max-width: 900px;
+  margin: 0 auto;
+
+  h2 {
+    color: var(--text-color, #333);
+    margin-bottom: 25px;
+    border-bottom: 1px solid var(--border-color, #eee);
+    padding-bottom: 15px;
+  }
+
+  .settings-section {
+    margin-bottom: 40px;
+
+    h3 {
+      color: var(--text-color, #333);
+      margin-bottom: 20px;
+      font-size: 1.3rem;
+    }
+
+    .setting-option {
+      padding: 15px;
+      background-color: var(--secondary-bg, #f8f8f8);
+      border-radius: 8px;
+      margin-bottom: 15px;
+      border: 1px solid var(--border-color, #eee);
+      transition: all 0.2s ease;
+
+      &:hover {
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+      }
+
+      .setting-label {
+        font-weight: 500;
+        margin-bottom: 10px;
+        color: var(--text-color, #333);
+      }
+
+      .toggle-control {
+        display: flex;
+        align-items: center;
+        background-color: var(--primary-bg, #fff);
+        border-radius: 30px;
+        border: 1px solid var(--border-color, #ddd);
+        overflow: hidden;
+        width: fit-content;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+        .toggle-option {
+          padding: 10px 20px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          user-select: none;
+          text-align: center;
+          position: relative;
+          min-width: 100px;
+
+          &:not(:last-child) {
+            border-right: 1px solid var(--border-color, #eee);
+          }
+
+          &:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+          }
+
+          &.active {
+            background-color: var(--accent-color, #4caf50);
+            color: white;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+            
+            &::after {
+              content: '';
+              position: absolute;
+              bottom: 0;
+              left: 0;
+              width: 100%;
+              height: 3px;
+              background: rgba(255, 255, 255, 0.5);
+            }
+          }
+        }
+      }
+
+      .setting-description {
+        color: var(--text-secondary, #666);
+        font-size: 0.9rem;
+        margin-top: 10px;
+        font-style: italic;
+      }
+    }
+  }
+
+  .orders-list {
+    list-style: none;
+    padding: 0;
+
+    .order-item {
+      background-color: var(--secondary-bg, #2a2a2a);
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      
+      &:hover {
+        background-color: var(--hover-bg, #333);
+      }
+
+      .order-pair {
+        font-weight: 500;
+        flex: 1;
+      }
+
+      .order-type {
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-weight: 500;
+        text-align: center;
+        min-width: 70px;
+        margin: 0 15px;
+
+        &.buy {
+          background-color: rgba(76, 175, 80, 0.2);
+          color: #4caf50;
+        }
+
+        &.sell {
+          background-color: rgba(244, 67, 54, 0.2);
+          color: #f44336;
+        }
+      }
+
+      .order-amount {
+        font-family: monospace;
+        font-weight: 500;
+        background-color: rgba(0, 0, 0, 0.1);
+        padding: 5px 10px;
+        border-radius: 4px;
+      }
+    }
+  }
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] {
+  .settings-container {
+    .setting-option {
+      background-color: rgba(255, 255, 255, 0.05);
+      
+      .toggle-control {
+        background-color: rgba(0, 0, 0, 0.2);
+        border-color: rgba(255, 255, 255, 0.1);
+        
+        .toggle-option {
+          &:not(.active) {
+            color: rgba(255, 255, 255, 0.8);
+          }
+          
+          &:hover:not(.active) {
+            background-color: rgba(255, 255, 255, 0.05);
+          }
+        }
+      }
+    }
+  }
+} 

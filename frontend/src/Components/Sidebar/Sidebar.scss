@@ -1,0 +1,39 @@
+.sidebar {
+  // background-color: #1a1a1a;
+  width: 250px;
+  height: 100vh;
+  position: fixed;
+  top: 78px;
+  left: 0;
+  padding-top: 2rem;
+  box-shadow: 2px 0 4px rgba(93, 153, 4, 0.1);
+
+
+  nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    a {
+      display: flex;
+      align-items: center;
+      padding: 1rem 2rem;
+      color: var(--text-color);
+      text-decoration: none;
+      transition: all 0.3s ease;
+      
+      &:hover {
+        background-color: var(--hover-bg);
+      }
+
+      &.active {
+        background-color: var(--accent-color);
+        color: var(--button-text);
+      }
+
+      .icon {
+        margin-right: 1rem;
+      }
+    }
+  }
+} 

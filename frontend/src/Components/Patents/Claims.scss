@@ -1,0 +1,138 @@
+.claims-section {
+  margin-bottom: 1.5rem;
+
+  h4 {
+    margin: 0 0 1rem 0;
+    color: var(--text-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: var(--hover-bg);
+    }
+
+    .title-with-icon {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .toggle-icon {
+      transition: transform 0.2s;
+    }
+  }
+
+  .claims-content {
+    background: var(--secondary-bg);
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+    margin-right: -0.5rem;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: var(--secondary-bg);
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 3px;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background: var(--text-secondary);
+      }
+    }
+  }
+
+  .claims-more {
+    text-align: center;
+    padding: 1rem 0;
+    color: var(--text-secondary);
+    font-style: italic;
+    border-top: 1px dashed var(--border-color);
+    margin-top: 1rem;
+  }
+
+  .claim-item {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: var(--primary-bg);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .claim-content {
+      p {
+        margin: 0;
+        line-height: 1.5;
+        color: var(--text-color);
+      }
+
+      .claim-preview {
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .claim-index {
+        font-weight: 600;
+        margin-right: 0.5rem;
+        color: var(--accent-color);
+      }
+
+      .ellipsis {
+        color: var(--text-secondary);
+        margin-left: 0.25rem;
+      }
+
+      .claim-id {
+        display: block;
+        margin-top: 0.5rem;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+      }
+    }
+
+    .claim-children {
+      margin-top: 0.75rem;
+      padding-left: 1.5rem;
+      border-left: 2px solid var(--border-color);
+
+      .claim-child {
+        margin-bottom: 0.5rem;
+        padding: 0.5rem;
+        background: var(--secondary-bg);
+        border-radius: 4px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        p {
+          margin: 0;
+          font-size: 0.95rem;
+          color: var(--text-secondary);
+        }
+      }
+    }
+  }
+} 
