@@ -1,4 +1,5 @@
 import axios from 'axios';
+import axiosInstance from './axiosConfig';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -211,7 +212,7 @@ export const normalizePatentResponse = (response: any, apiSource: ApiSource) => 
 export const patentApi = {
   // Search patents using SerpAPI
   searchPatentsSerpApi: async (query: string) => {
-    const response = await axios.get(`${API_URL}/patents/search`, {
+    const response = await axiosInstance.get(`/patents/search`, {
       params: {
         query: query
       }
@@ -221,33 +222,31 @@ export const patentApi = {
 
   // Search patents using Unified Patents API
   searchPatentsUnified: async (patentNumber: string): Promise<UnifiedPatentResponse> => {
+    // Keep direct axios for third-party APIs that don't need auth
     const response = await axios.get(`https://api.unifiedpatents.com/patents/${patentNumber}`);
     return response.data;
   },
 
   getSavedPatents: async () => {
-    const token = localStorage.getItem('token');
-    const response = await axios.get(`${API_URL}/saved-patents/list`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await axiosInstance.get(`/saved-patents/list`);
     return response.data;
   },
+  
   getCustomPatentList: async () => {
-    const token = localStorage.getItem('token');
-    const { data } = await axios.get(`${API_URL}/saved-patents/custom-list`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const { data } = await axiosInstance.get(`/saved-patents/custom-list`);
     return data;
   },
 
   // Add new method for fetching full language
   getFullLanguage: async (patentNumber: string): Promise<FullLanguageResponse> => {
+    // Keep direct axios for third-party APIs that don't need auth
     const response = await axios.get(`https://api.unifiedpatents.com/patents/${patentNumber}/full-language`);
     // The data is directly in the response, not nested under 'data'
     return response.data;
   },
 
   getFigures: async (patentNumber: string) => {
+    // Keep direct axios for third-party APIs that don't need auth
     const response = await axios.get(`https://api.unifiedpatents.com/patents/${patentNumber}/figures`);
     return response.data;
   },

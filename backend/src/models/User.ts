@@ -15,6 +15,8 @@ interface IUser extends mongoose.Document {
   nationality: string;  
   comparePassword(candidatePassword: string): Promise<boolean>;
   isEmailVerified: boolean;
+  activeToken: string;
+  lastLogin: Date;
 }
 
 const userSchema = new mongoose.Schema({
@@ -41,6 +43,14 @@ const userSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  activeToken: {
+    type: String,
+    default: null
+  },
+  lastLogin: {
+    type: Date,
+    default: null
   },
   paymentStatus: {
     type: String,

@@ -6,14 +6,15 @@ interface AuthGuardProps {
 }
 
 export const AuthGuard = ({ children }: AuthGuardProps) => {
-  const { isAuthenticated } = useAuth();
+  const { checkAuth } = useAuth();
 
+  // Check if the user is authenticated using our improved method
+  const isAuthenticated = checkAuth();
+  
   if (!isAuthenticated) {
-    const token = localStorage.getItem('token');
-    console.log('token', token)
-    if (!token) {
-      return <Navigate to="/" replace />;
-    }}
+    return <Navigate to="/" replace />;
+  }
+  
   // Render children if authenticated
   return <>{children}</>;
 }; 

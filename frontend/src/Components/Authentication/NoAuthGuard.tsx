@@ -6,16 +6,15 @@ interface NoAuthGuardProps {
 }
 
 export const NoAuthGuard = ({ children }: NoAuthGuardProps) => {
-  const { isAuthenticated } = useAuth();
+  const { checkAuth } = useAuth();
 
+  // Check if the user is authenticated using our improved method
+  const isAuthenticated = checkAuth();
+  
   if (isAuthenticated) {
-    console.log('isAuthenticated1', isAuthenticated)
-    const token = localStorage.getItem('token');
-    console.log('token', token)
-    if (!token) {
-      return <Navigate to="/" replace />;
-    }
+    return <Navigate to="/auth/dashboard" replace />;
   }
+  
   // Render children if not authenticated
   return <>{children}</>;
 }; 

@@ -88,7 +88,16 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
+    // Generate a new token
     const token = jwt.sign({ userId: user._id }, JWT_SECRET);
+    
+    // Update the user's activeToken and lastLogin
+    user.activeToken = token;
+    user.lastLogin = new Date();
+    await user.save();
+    
+    console.log('User logged in successfully, token updated');
+
     res.status(200).json({
       statusCode: 200,
       message: 'Successfully logged in!',

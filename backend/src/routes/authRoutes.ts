@@ -115,6 +115,13 @@ router.post('/verify-otp', async (req, res) => {
       { expiresIn: '24h' }
     );
 
+    // Update the user's activeToken and lastLogin
+    user.activeToken = token;
+    user.lastLogin = new Date();
+    await user.save();
+    
+    console.log('User verified and logged in successfully, token updated');
+
     res.status(200).json({
       statusCode: 200,
       message: 'OTP verified successfully',
@@ -225,9 +232,36 @@ router.post('/resend-otp', async (req, res) => {
 });
 
 // Logout route
-router.post('/logout', (req, res) => {
-  // Since we're using JWT, we don't need to do anything on the server side
-  res.json({ message: 'Logged out successfully' });
+router.post('/logout', auth, async (req, res) => {
+  try {
+    // Clear the activeToken from the user's record
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      { $set: { activeToken: null } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'User not found',
+        data: null
+      });
+    }
+
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Logged out successfully',
+      data: null
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Error logging out',
+      data: null
+    });
+  }
 });
 
 router.get('/profile', auth, getProfile);

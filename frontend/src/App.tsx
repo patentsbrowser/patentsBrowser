@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { AuthProvider } from "./AuthContext";
 import Header from "./Components/Header/Header";
@@ -18,6 +18,7 @@ import ProfilePage from './Components/Profile/ProfilePage';
 import { Provider } from 'react-redux';
 import { store } from "./Redux/store";
 import SavedPatentList from "./Components/SavedPatentList/savedPatentList";
+import SessionHandler from "./Components/Authentication/SessionHandler";
 // import { store } from './Redux/store';
 
 const queryClient = new QueryClient({
@@ -47,6 +48,7 @@ const App = () => {
         <AuthProvider>
           <ThemeProvider>
             <Router>
+              <SessionHandler />
               <Routes>
                 {/* Public route - Login page */}
                 <Route 
@@ -87,6 +89,9 @@ const App = () => {
                     </AuthGuard>
                   } 
                 />
+
+                {/* Catch-all route - redirect to login */}
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Router>
           </ThemeProvider>

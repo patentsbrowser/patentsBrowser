@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axiosInstance from './axiosConfig';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -11,11 +11,14 @@ export interface SignupCredentials extends LoginCredentials {
   name: string;
 }
 
+// Flag to prevent multiple logout calls
+let isLoggingOut = false;
+
 export const authApi = {
   login: async (credentials: LoginCredentials) => {
     try {
       console.log('Attempting login with credentials:', { email: credentials.email, password: '[REDACTED]' });
-      const { data } = await axios.post(`${API_URL}/auth/login`, credentials);
+      const { data } = await axiosInstance.post(`/auth/login`, credentials);
       console.log('Login response:', data);
       return data;
     } catch (error: any) {
@@ -31,7 +34,7 @@ export const authApi = {
   signup: async (credentials: SignupCredentials) => {
     try {
       console.log('Attempting signup with credentials:', { ...credentials, password: '[REDACTED]' });
-      const { data } = await axios.post(`${API_URL}/auth/signup`, credentials);
+      const { data } = await axiosInstance.post(`/auth/signup`, credentials);
       console.log('Signup response:', data);
       return data;
     } catch (error: any) {
@@ -47,7 +50,7 @@ export const authApi = {
   verifyOTP: async (email: string, otp: string) => {
     try {
       console.log('Verifying OTP for email:', email);
-      const { data } = await axios.post(`${API_URL}/auth/verify-otp`, { email, otp });
+      const { data } = await axiosInstance.post(`/auth/verify-otp`, { email, otp });
       console.log('OTP verification response:', data);
       if (data.statusCode === 200) {
         localStorage.setItem('token', data.data.token);
@@ -67,7 +70,7 @@ export const authApi = {
   resendOTP: async (email: string) => {
     try {
       console.log('Resending OTP for email:', email);
-      const { data } = await axios.post(`${API_URL}/auth/resend-otp`, { email });
+      const { data } = await axiosInstance.post(`/auth/resend-otp`, { email });
       console.log('Resend OTP response:', data);
       return data;
     } catch (error: any) {
@@ -81,26 +84,19 @@ export const authApi = {
   },
 
   getProfile: async () => {
-    const token = localStorage.getItem('token');
-
-    const { data } = await axios.get(`${API_URL}/auth/profile`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const { data } = await axiosInstance.get(`/auth/profile`);
     return data;
   },
+  
   updateProfile: async (profileData: any) => {
-    const token = localStorage.getItem('token');
-    const { data } = await axios.post(`${API_URL}/auth/update-profile`, profileData, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const { data } = await axiosInstance.post(`/auth/update-profile`, profileData);
     return data;
   },
+  
   savePatent: async (patentIds: string[], folderName?: string) => {
-    const token = localStorage.getItem('token');
     try {
-      const { data } = await axios.post(`${API_URL}/saved-patents`, 
-        { patentIds, folderName }, 
-        { headers: { Authorization: `Bearer ${token}` }}
+      const { data } = await axiosInstance.post(`/saved-patents`, 
+        { patentIds, folderName }
       );
       return data;
     } catch (error) {
@@ -108,17 +104,14 @@ export const authApi = {
       throw error;
     }
   },
+  
   saveCustomPatentList: async (name: string, patentIds: string[], source?: string) => {
     try {
-      const token = localStorage.getItem('token');
-      console.log('Saving custom patent list:', { name, patentIds, token, source });
+      console.log('Saving custom patent list:', { name, patentIds, source });
       
-      const response = await axios.post(
-        `${API_URL}/saved-patents/save-custom-list`, 
-        { name, patentIds, source },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+      const response = await axiosInstance.post(
+        `/saved-patents/save-custom-list`, 
+        { name, patentIds, source }
       );
       
       console.log('Custom patent list saved response:', response.data);
@@ -128,23 +121,17 @@ export const authApi = {
       throw error;
     }
   },
+  
   getCustomPatentList: async () => {
-    const token = localStorage.getItem('token');
-    const { data } = await axios.get(`${API_URL}/saved-patents/custom-list`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const { data } = await axiosInstance.get(`/saved-patents/custom-list`);
     return data;
   },
   
   removePatentFromFolder: async (folderId: string, patentId: string) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `${API_URL}/saved-patents/remove-from-folder`, 
-        { folderId, patentId },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+      const response = await axiosInstance.post(
+        `/saved-patents/remove-from-folder`, 
+        { folderId, patentId }
       );
       
       console.log('Patent removed from folder response:', response.data);
@@ -157,13 +144,9 @@ export const authApi = {
   
   deleteFolder: async (folderId: string) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `${API_URL}/saved-patents/delete-folder`, 
-        { folderId },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+      const response = await axiosInstance.post(
+        `/saved-patents/delete-folder`, 
+        { folderId }
       );
       
       console.log('Folder deletion response:', response.data);
@@ -176,13 +159,9 @@ export const authApi = {
   
   createSubfolder: async (name: string, parentFolderId: string, patentIds: string[] = []) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `${API_URL}/saved-patents/create-subfolder`,
-        { name, parentFolderId, patentIds },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+      const response = await axiosInstance.post(
+        `/saved-patents/create-subfolder`,
+        { name, parentFolderId, patentIds }
       );
       
       console.log('Subfolder creation response:', response.data);
@@ -195,13 +174,9 @@ export const authApi = {
   
   addPatentToSubfolder: async (subfolderId: string, patentId: string) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `${API_URL}/saved-patents/add-to-subfolder`,
-        { subfolderId, patentId },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+      const response = await axiosInstance.post(
+        `/saved-patents/add-to-subfolder`,
+        { subfolderId, patentId }
       );
       
       console.log('Patent added to subfolder response:', response.data);
@@ -213,30 +188,45 @@ export const authApi = {
   },
   
   logout: async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('No authentication token found');
+    // Prevent multiple logout calls
+    if (isLoggingOut) {
+      return { message: 'Logout already in progress' };
     }
     
+    isLoggingOut = true;
+    
     try {
-      const { data } = await axios.post(`${API_URL}/auth/logout`, null, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const { data } = await axiosInstance.post(`/auth/logout`);
+      // Clear local storage on logout
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Navigate to login page
+      window.location.href = '/';
+      
       return data;
     } catch (error) {
+      // Still clear local storage even if the server request fails
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Navigate to login page even if there's an error
+      window.location.href = '/';
+      
+      // Reset the flag (though this code won't execute due to page navigation)
+      isLoggingOut = false;
+      
       // Let the component handle the error
       throw error;
     }
   },
 
   uploadProfileImage: async (file: File) => {
-    const token = localStorage.getItem('token');
     const formData = new FormData();
     formData.append('profileImage', file);
     
-    const { data } = await axios.post(`${API_URL}/auth/upload-image`, formData, {
+    const { data } = await axiosInstance.post(`/auth/upload-image`, formData, {
       headers: { 
-        Authorization: `Bearer ${token}`,
         'Content-Type': 'multipart/form-data'
       }
     });
@@ -244,7 +234,6 @@ export const authApi = {
   },
   
   uploadPatentFile: async (file: File, folderName?: string) => {
-    const token = localStorage.getItem('token');
     const formData = new FormData();
     formData.append('patentFile', file);
     
@@ -254,9 +243,8 @@ export const authApi = {
     }
     
     try {
-      const { data } = await axios.post(`${API_URL}/saved-patents/extract-from-file`, formData, {
+      const { data } = await axiosInstance.post(`/saved-patents/extract-from-file`, formData, {
         headers: { 
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       });

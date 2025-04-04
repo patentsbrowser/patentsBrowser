@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { useMutation } from '@tanstack/react-query';
 import { authApi } from './api/auth';
 
@@ -21,6 +21,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   setUser: (user: User | null) => void;
+  checkAuth: () => boolean;
 }
 
 // const API_URL = 'http://localhost:5000/api';
@@ -28,7 +29,21 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  // Initialize user from localStorage if available
+  const [user, setUser] = useState<User | null>(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  // Check if token exists on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    
+    if (!token || !savedUser) {
+      setUser(null);
+    }
+  }, []);
 
   const loginMutation = useMutation({
     mutationFn: (credentials: { email: string; password: string }) => authApi.login(credentials),
@@ -47,14 +62,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   });
 
-  const logoutMutation:any = useMutation({
+  const logoutMutation = useMutation({
     mutationFn: authApi.logout,
-    onSettled: () => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+    onMutate: () => {
+      // Clear user state immediately when logout is initiated
       setUser(null);
     },
+    // No need for onSettled since the api logout function handles everything else
   });
+
+  // Function to check if user is authenticated
+  const checkAuth = (): boolean => {
+    const token = localStorage.getItem('token');
+    return !!token && !!user;
+  };
 
   return (
     <AuthContext.Provider value={{ 
@@ -63,7 +84,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signup: (credentials) => signupMutation.mutateAsync(credentials),
       logout: () => logoutMutation.mutateAsync(),
       isAuthenticated: !!user,
-      setUser
+      setUser,
+      checkAuth
     }}>
       {children}
     </AuthContext.Provider>
