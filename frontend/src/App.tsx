@@ -19,6 +19,8 @@ import { Provider } from 'react-redux';
 import { store } from "./Redux/store";
 import SavedPatentList from "./Components/SavedPatentList/savedPatentList";
 import SessionHandler from "./Components/Authentication/SessionHandler";
+import LandingPage from "./Components/LandingPage/LandingPage";
+import Forum from "./Components/Forum/Forum";
 // import { store } from './Redux/store';
 
 const queryClient = new QueryClient({
@@ -50,13 +52,28 @@ const App = () => {
             <Router>
               <SessionHandler />
               <Routes>
-                {/* Public route - Login page */}
+                {/* Landing Page - Public */}
+                <Route path="/" element={<LandingPage />} />
+                
+                {/* Forum Page - Public */}
+                <Route path="/forum" element={<Forum />} />
+                
+                {/* Authentication routes */}
                 <Route 
-                  path="/" 
+                  path="/auth/login" 
                   element={
                     <NoAuthGuard>
                       <Authentication />
-                     </NoAuthGuard>
+                    </NoAuthGuard>
+                  } 
+                />
+                
+                <Route 
+                  path="/auth/signup" 
+                  element={
+                    <NoAuthGuard>
+                      <Authentication />
+                    </NoAuthGuard>
                   } 
                 />
 
@@ -90,7 +107,7 @@ const App = () => {
                   } 
                 />
 
-                {/* Catch-all route - redirect to login */}
+                {/* Catch-all route - redirect to landing page */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Router>
