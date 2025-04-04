@@ -1,17 +1,20 @@
 import React from 'react';
 import { PatentSummary } from './types';
 import Loader from '../Common/Loader';
+import PatentFamilyButton from './PatentFamilyButton';
 
 interface PatentSummaryCardProps {
   summary: PatentSummary;
   onViewDetails: (patent: PatentSummary) => void;
   formatDate: (date: string | undefined) => string;
+  onPatentSelect?: (patentId: string) => void;
 }
 
 const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
   summary,
   onViewDetails,
-  formatDate
+  formatDate,
+  onPatentSelect
 }) => {
   return (
     <div 
@@ -61,12 +64,21 @@ const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
                   : 'No abstract available'}
               </div>
             </div>
-            <button 
-              onClick={() => onViewDetails(summary)}
-              className="view-details"
-            >
-              View Details
-            </button>
+            <div className="action-buttons">
+              <button 
+                onClick={() => onViewDetails(summary)}
+                className="view-details"
+              >
+                View Details
+              </button>
+              
+              {onPatentSelect && (
+                <PatentFamilyButton 
+                  patentId={summary.patentId} 
+                  onPatentSelect={onPatentSelect}
+                />
+              )}
+            </div>
           </div>
         ) : (
           <div className="error">

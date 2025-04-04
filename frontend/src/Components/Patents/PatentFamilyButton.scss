@@ -1,0 +1,40 @@
+.patent-family-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-radius: 4px;
+  background-color: var(--accent-color, #4a6da7);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background-color: var(--accent-color-hover, #3a5d97);
+  }
+  
+  .button-icon {
+    font-size: 0.9rem;
+  }
+  
+  .button-text {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .patent-family-button {
+    padding: 0.5rem 0.8rem;
+    
+    .button-text {
+      display: none;
+    }
+    
+    .button-icon {
+      font-size: 1rem;
+      margin: 0;
+    }
+  }
+} 

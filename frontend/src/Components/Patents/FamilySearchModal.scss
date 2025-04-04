@@ -1,0 +1,267 @@
+.family-search-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.family-search-modal {
+  background-color: var(--primary-bg, #fff);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  
+  .family-search-modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color, #eee);
+    position: relative;
+    
+    h2 {
+      margin: 0 0 1rem 0;
+      color: var(--text-color, #333);
+      font-size: 1.75rem;
+    }
+    
+    .close-button {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-secondary, #666);
+      transition: color 0.2s ease;
+      
+      &:hover {
+        color: var(--text-color, #333);
+      }
+    }
+    
+    .original-patent-info {
+      background-color: var(--secondary-bg, #eaedf2);
+      padding: 1rem;
+      border-radius: 6px;
+      margin-top: 1rem;
+      border: 1px solid var(--border-color, #ddd);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+      
+      p {
+        margin: 0.5rem 0;
+        color: var(--text-color, #333);
+        font-weight: 400;
+        
+        strong {
+          font-weight: 600;
+          color: var(--accent-color, #4a6da7);
+        }
+        
+        &:first-child {
+          margin-top: 0;
+        }
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+  
+  .search-options {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color, #eee);
+    
+    .search-mode-selector {
+      display: flex;
+      gap: 1rem;
+      
+      .search-mode-button {
+        padding: 0.75rem 1rem;
+        border-radius: 4px;
+        border: 1px solid var(--border-color, #ddd);
+        background-color: var(--secondary-bg, #eaedf2);
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        color: var(--text-color, #333);
+        
+        &.active {
+          background-color: var(--accent-color, #4a6da7);
+          color: white;
+          border-color: var(--accent-color, #4a6da7);
+        }
+        
+        &:hover:not(.active) {
+          background-color: var(--hover-bg, #d0d6e2);
+        }
+      }
+    }
+  }
+  
+  .family-members-container {
+    padding: 1rem 1.5rem 1.5rem;
+    overflow-y: auto;
+    flex-grow: 1;
+    max-height: calc(90vh - 200px);
+    
+    .loading-container, .error-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1rem;
+      text-align: center;
+      gap: 1rem;
+      
+      .fa-spinner {
+        font-size: 2rem;
+        color: var(--accent-color, #4a6da7);
+      }
+      
+      button {
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        background-color: var(--accent-color, #4a6da7);
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background-color 0.2s ease;
+        
+        &:hover {
+          background-color: var(--accent-color-hover, #3a5d97);
+        }
+      }
+    }
+    
+    .results-header {
+      margin-bottom: 1rem;
+      
+      h3 {
+        font-size: 1.2rem;
+        margin: 0;
+        color: var(--text-color, #333);
+      }
+    }
+    
+    .no-results-message {
+      padding: 2rem;
+      text-align: center;
+      background-color: var(--secondary-bg, #eaedf2);
+      border-radius: 6px;
+      color: var(--text-color, #555);
+      border: 1px solid var(--border-color, #ddd);
+    }
+    
+    .family-members-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      
+      .family-member-item {
+        display: flex;
+        gap: 1rem;
+        padding: 1rem;
+        background-color: var(--secondary-bg, #eaedf2);
+        border-radius: 6px;
+        transition: background-color 0.2s ease;
+        align-items: center;
+        border: 1px solid var(--border-color, #ddd);
+        
+        &:hover {
+          background-color: var(--hover-bg, #d0d6e2);
+        }
+        
+        .member-country {
+          font-weight: 600;
+          min-width: 40px;
+          color: var(--accent-color, #4a6da7);
+        }
+        
+        .member-number {
+          font-weight: 500;
+          flex-grow: 1;
+          color: var(--text-color, #333);
+          
+          &.clickable {
+            cursor: pointer;
+            color: var(--link-color, #2a7de1);
+            text-decoration: underline;
+            text-decoration-style: dotted;
+            text-underline-offset: 4px;
+            
+            &:hover {
+              color: var(--link-hover-color, #1a6bd1);
+            }
+          }
+        }
+        
+        .member-date, .member-kind {
+          color: var(--text-color, #555);
+          font-size: 0.9rem;
+        }
+        
+        .member-date {
+          min-width: 100px;
+        }
+        
+        .member-kind {
+          min-width: 40px;
+          text-align: center;
+          font-weight: 500;
+        }
+      }
+    }
+  }
+}
+
+// Responsive styles
+@media (max-width: 768px) {
+  .family-search-modal {
+    max-width: 95%;
+    
+    .search-options {
+      .search-mode-selector {
+        flex-direction: column;
+        
+        .search-mode-button {
+          width: 100%;
+        }
+      }
+    }
+    
+    .family-members-container {
+      .family-members-list {
+        .family-member-item {
+          flex-wrap: wrap;
+          
+          .member-country {
+            min-width: 40px;
+          }
+          
+          .member-number {
+            width: calc(100% - 60px);
+          }
+          
+          .member-date, .member-kind {
+            margin-left: 50px;
+          }
+        }
+      }
+    }
+  }
+} 

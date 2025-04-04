@@ -38,6 +38,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
             summary={summary}
             onViewDetails={onViewDetails}
             formatDate={formatDate}
+            onPatentSelect={onPatentSelect}
           />
         ))}
       </div>

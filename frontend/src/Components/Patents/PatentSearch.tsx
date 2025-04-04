@@ -11,6 +11,10 @@ import PatentSummaryList from './PatentSummaryList';
 import { detectApiType, formatDate } from './utils';
 import { PatentSummary } from './types';
 import { ApiSource, patentApi, normalizePatentResponse } from '../../api/patents';
+import FamilySearchModal from './FamilySearchModal';
+import toast from 'react-hot-toast';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faProjectDiagram } from '@fortawesome/free-solid-svg-icons';
 // import PatentSummaryList from './PatentSummaryList';
 // import { PatentSummary, ApiSource } from './types';
 // import { formatDate, detectApiType } from './utils';
@@ -30,6 +34,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
   const [showSmartSearchModal, setShowSmartSearchModal] = useState(false);
   const [patentSummaries, setPatentSummaries] = useState<PatentSummary[]>([]);
   const [selectedPatent, setSelectedPatent] = useState<PatentSummary | null>(null);
+  const [showFamilySearchModal, setShowFamilySearchModal] = useState(false);
   
   const dispatch = useAppDispatch();
   const patentsState = useAppSelector((state: RootState) => state.patents);
@@ -425,6 +430,15 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     };
   }, [selectedPatent]);
 
+  // Handler for direct family search
+  const handleDirectFamilySearch = () => {
+    if (searchQuery.trim()) {
+      setShowFamilySearchModal(true);
+    } else {
+      toast.error('Please enter a patent ID first');
+    }
+  };
+
   return (
     <div className="patent-search">
       {!selectedPatent && (
@@ -444,6 +458,19 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
             onSearch={handlePerformSearch}
             formatPatentId={formatPatentId}
           />
+          
+          {searchQuery.trim() && (
+            <div className="additional-search-options">
+              <button 
+                className="family-search-direct-btn" 
+                onClick={handleDirectFamilySearch}
+                disabled={isLoading || !searchQuery.trim()}
+              >
+                <FontAwesomeIcon icon={faProjectDiagram} />
+                Search Patent Family
+              </button>
+            </div>
+          )}
         </>
       )}
 
@@ -470,6 +497,15 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         onSearch={handleSmartSearch}
         selectedApi={selectedApi}
       />
+      
+      {/* Family Search Modal */}
+      {showFamilySearchModal && (
+        <FamilySearchModal
+          patentId={searchQuery.trim()}
+          onClose={() => setShowFamilySearchModal(false)}
+          onPatentSelect={handlePatentSelect}
+        />
+      )}
     </div>
   );
 };
