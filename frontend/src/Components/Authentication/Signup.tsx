@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../AuthContext';
 import OTPModal from './OTPModal/OTPModal';
 import Loader from '../Loader/Loader';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
   const [email, setEmail] = useState('');
@@ -92,37 +93,43 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
         <h2>Create Account</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Name</label>
+            <label htmlFor="name">Name</label>
             <input
               type="text"
+              id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your name"
               required
               disabled={signupMutation.isPending}
+              className="auth-input"
             />
           </div>
           <div className="form-group">
-            <label>Email Address</label>
+            <label htmlFor="email">Email Address</label>
             <input
               type="email"
+              id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
               required
               disabled={signupMutation.isPending}
+              className="auth-input"
             />
           </div>
           <div className="form-group">
-            <label>Password</label>
+            <label htmlFor="password">Password</label>
             <div className="password-input-container">
               <input
                 type={showPassword ? "text" : "password"}
+                id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Create a password"
                 required
                 disabled={signupMutation.isPending}
+                className="auth-input"
               />
               <button 
                 type="button" 
@@ -130,16 +137,20 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
                 onClick={togglePasswordVisibility}
                 tabIndex={-1}
               >
-                <i className={showPassword ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"}></i>
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
           </div>
-          <button type="submit" disabled={signupMutation.isPending}>
-            Create Account
+          <button 
+            type="submit" 
+            className="submit-btn"
+            disabled={signupMutation.isPending}
+          >
+            {signupMutation.isPending ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
         <p>
-          Already have an account?
+          Already have an account?{' '}
           <button 
             className="switch-btn"
             onClick={switchToLogin}

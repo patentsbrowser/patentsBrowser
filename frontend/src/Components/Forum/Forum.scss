@@ -5,6 +5,100 @@
   background-color: var(--primary-bg, #ffffff);
   color: var(--text-color, #333333);
   
+  .forum-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: rgba(89, 46, 131, 0.03);
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+    
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #592e83; // Royal violet
+      text-shadow: 0 0 2px rgba(255, 215, 0, 0.3);
+      cursor: pointer;
+      transition: color 0.3s ease;
+      
+      &:hover {
+        color: #ffd700; // Gold
+      }
+    }
+    
+    .nav-buttons {
+      display: flex;
+      gap: 1rem;
+      
+      .btn {
+        padding: 0.6rem 1.2rem;
+        border-radius: 4px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        
+        &::before {
+          content: '';
+          position: absolute;
+          top: -100%;
+          left: -100%;
+          width: 300%;
+          height: 300%;
+          background: linear-gradient(135deg, 
+            rgba(255, 215, 0, 0) 0%, 
+            rgba(255, 215, 0, 0.1) 50%, 
+            rgba(255, 215, 0, 0) 100%);
+          transition: all 0.5s ease;
+          transform: rotate(45deg);
+          z-index: 1;
+        }
+        
+        &:hover::before {
+          top: -30%;
+          left: -30%;
+        }
+        
+        &.btn-home {
+          background: transparent;
+          border: 1px solid #ffd700; // Gold
+          color: #592e83; // Royal violet
+          
+          &:hover {
+            background-color: rgba(255, 215, 0, 0.1);
+            color: #ffd700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+          }
+        }
+        
+        &.btn-outline {
+          background: transparent;
+          border: 1px solid #592e83; // Royal violet
+          color: #592e83;
+          
+          &:hover {
+            background-color: rgba(89, 46, 131, 0.1);
+            border-color: #ffd700; // Gold
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+          }
+        }
+        
+        &.btn-primary {
+          background-color: #28a745; // Royal green
+          border: 1px solid #28a745;
+          color: white;
+          
+          &:hover {
+            background-color: darken(#28a745, 10%);
+            box-shadow: 0 0 15px rgba(40, 167, 69, 0.5), 0 0 5px rgba(255, 215, 0, 0.5);
+            border-color: #ffd700; // Gold
+          }
+        }
+      }
+    }
+  }
+  
   .forum-header {
     background: linear-gradient(135deg, rgba(89, 46, 131, 0.1) 0%, rgba(40, 167, 69, 0.05) 100%);
     padding: 3rem 2rem;
@@ -327,6 +421,17 @@
 
 @media (max-width: 768px) {
   .forum-container {
+    .forum-nav {
+      padding: 1rem;
+      flex-direction: column;
+      gap: 1rem;
+      
+      .nav-buttons {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+    
     .forum-header {
       padding: 2rem 1rem;
       

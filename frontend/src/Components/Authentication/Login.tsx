@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import OTPModal from "./OTPModal/OTPModal";
 import { authApi } from "../../api/auth";
 import Loader from "../Loader/Loader";
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
   const [email, setEmail] = useState("");
@@ -95,30 +96,33 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
         }
       />
       <div className="auth-box">
-        <h2>Welcome Back</h2>
-
+        <h2>Sign In</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Email Address</label>
+            <label htmlFor="email">Email Address</label>
             <input
               type="email"
+              id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
               required
               disabled={loginMutation.isPending}
+              className="auth-input"
             />
           </div>
           <div className="form-group">
-            <label>Password</label>
+            <label htmlFor="password">Password</label>
             <div className="password-input-container">
               <input
                 type={showPassword ? "text" : "password"}
+                id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 required
                 disabled={loginMutation.isPending}
+                className="auth-input"
               />
               <button
                 type="button"
@@ -126,20 +130,20 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
                 onClick={togglePasswordVisibility}
                 tabIndex={-1}
               >
-                <i
-                  className={
-                    showPassword ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"
-                  }
-                ></i>
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
           </div>
-          <button type="submit" disabled={loginMutation.isPending}>
-            Sign In
+          <button 
+            type="submit" 
+            className="submit-btn"
+            disabled={loginMutation.isPending}
+          >
+            {loginMutation.isPending ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
         <p>
-          Don't have an account?
+          Don't have an account?{' '}
           <button
             className="switch-btn"
             onClick={switchToSignup}

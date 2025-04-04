@@ -72,8 +72,40 @@ const Forum = () => {
     navigate('/auth/login');
   };
 
+  const handleNavigation = (path: string) => {
+    navigate(path);
+  };
+
   return (
     <div className="forum-container">
+      <div className="forum-nav">
+        <div className="logo" onClick={() => handleNavigation('/')}>AllinoneSearch</div>
+        <div className="nav-buttons">
+          <button 
+            className="btn btn-home"
+            onClick={() => handleNavigation('/')}
+          >
+            Home
+          </button>
+          {!isLoggedIn && (
+            <>
+              <button 
+                className="btn btn-outline"
+                onClick={() => handleNavigation('/auth/login')}
+              >
+                Sign In
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={() => handleNavigation('/auth/signup')}
+              >
+                Sign Up
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
       <div className="forum-header">
         <h1>AllinoneSearch Forum</h1>
         <p>Join the discussion about patent search and our services</p>

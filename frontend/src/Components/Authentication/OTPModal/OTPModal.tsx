@@ -32,6 +32,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
     if (isOpen) {
       setTimer(60); // 60 seconds (1 minute)
       setCanResend(false);
+      setOtp(''); // Reset OTP when modal opens
     }
   }, [isOpen]);
 
@@ -85,6 +86,9 @@ const OTPModal: React.FC<OTPModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Mask email for privacy
+  const maskedEmail = email.replace(/(.{3})(.*)(@.*)/, '$1****$3');
+
   return (
     <Modal 
       onClose={onClose}
@@ -92,11 +96,12 @@ const OTPModal: React.FC<OTPModalProps> = ({
     >
       <div className="otp-modal">
         <h2>{mode === 'signup' ? 'Verify Your Email' : 'Verify Your Login'}</h2>
-        <p>
+        <div className="otp-instructions">
+          A verification code has been sent to <strong>{maskedEmail}</strong>. 
           {mode === 'signup' 
-            ? 'Please enter the verification code sent to your email to complete your registration.'
-            : 'Please enter the verification code sent to your email to complete your login.'}
-        </p>
+            ? ' Please enter the 6-digit code to complete your registration and secure your account.'
+            : ' Please enter the 6-digit code to verify your identity and access your account.'}
+        </div>
         <form onSubmit={handleSubmit}>
           <div className="otp-input-container">
             <OTPInput
@@ -111,7 +116,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
               renderInput={(props) => <input {...props} />}
             />
           </div>
-          <button type="submit">
+          <button type="submit" className="otp-button">
             {mode === 'signup' ? 'Verify & Complete Signup' : 'Verify & Login'}
           </button>
         </form>
@@ -120,7 +125,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
           <button 
             onClick={handleResendOTP} 
             disabled={isResendDisabled || !canResend}
-            className={timer > 0 ? 'disabled' : 'active'}
+            className={`resend-btn ${timer > 0 ? 'disabled' : 'active'}`}
           >
             {timer > 0 ? (
               <span>
