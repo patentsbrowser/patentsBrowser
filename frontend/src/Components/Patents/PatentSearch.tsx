@@ -510,6 +510,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
           patentId={patentIds.length > 0 ? patentIds : searchQuery.trim()}
           onClose={() => setShowFamilySearchModal(false)}
           onPatentSelect={handlePatentSelect}
+          apiSource={selectedApi}
         />
       )}
     </div>

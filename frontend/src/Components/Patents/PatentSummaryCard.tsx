@@ -1,20 +1,22 @@
 import React from 'react';
 import { PatentSummary } from './types';
 import Loader from '../Common/Loader';
-import PatentFamilyButton from './PatentFamilyButton';
+import { ApiSource } from '../../api/patents';
 
 interface PatentSummaryCardProps {
   summary: PatentSummary;
   onViewDetails: (patent: PatentSummary) => void;
   formatDate: (date: string | undefined) => string;
   onPatentSelect?: (patentId: string) => void;
+  apiSource?: ApiSource;
 }
 
 const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
   summary,
   onViewDetails,
   formatDate,
-  onPatentSelect
+  onPatentSelect,
+  apiSource = 'unified'
 }) => {
   return (
     <div 
@@ -71,13 +73,6 @@ const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
               >
                 View Details
               </button>
-              
-              {onPatentSelect && (
-                <PatentFamilyButton 
-                  patentId={summary.patentId} 
-                  onPatentSelect={onPatentSelect}
-                />
-              )}
             </div>
           </div>
         ) : (

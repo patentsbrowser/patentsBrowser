@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faSpinner, faArrowLeft, faTimes } from '@fortawesome/free-solid-svg-icons';
-import { patentApi } from '../../api/patents';
+import { patentApi, ApiSource } from '../../api/patents';
 import { standardizePatentNumber, getPatentCountry, isUSPatent } from '../../utils/patentUtils';
 import './FamilySearchModal.scss';
 
@@ -24,12 +24,14 @@ interface FamilySearchModalProps {
   patentId: string | string[]; // Can now be a single ID or array of IDs
   onClose: () => void;
   onPatentSelect: (patentId: string) => void;
+  apiSource?: ApiSource; // Add API source prop
 }
 
 const FamilySearchModal: React.FC<FamilySearchModalProps> = ({ 
   patentId, 
   onClose, 
-  onPatentSelect 
+  onPatentSelect,
+  apiSource = 'unified' // Default to unified if not specified
 }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [patentInfos, setPatentInfos] = useState<PatentInfo[]>([]);
@@ -53,35 +55,118 @@ const FamilySearchModal: React.FC<FamilySearchModalProps> = ({
             // Get the standardized patent ID format
             const standardizedId = standardizePatentNumber(pid);
             
-            // Fetch patent details including family members
-            const response = await patentApi.searchPatentsUnified(standardizedId);
-            
-            if (!response || !response._source) {
-              console.error(`Invalid response from API for patent ${pid}`);
-              continue; // Skip this patent but continue with others
+            // Use the appropriate API based on apiSource
+            if (apiSource === 'serpapi') {
+              // For SerpAPI - remove hyphens for proper query format
+              const serpApiFormatId = standardizedId.replace(/[-]/g, '');
+              
+              // For SerpAPI
+              const response = await patentApi.searchPatentsSerpApi(serpApiFormatId);
+              
+              if (!response || !response.data) {
+                console.error(`Invalid SerpAPI response for patent ${pid}`);
+                continue; // Skip this patent but continue with others
+              }
+              
+              // Process SerpAPI response to extract family members
+              const data = response.data;
+              let familyMembers: FamilyMember[] = [];
+              
+              // Check if we have organic_results (search results)
+              if (data.organic_results && data.organic_results.length > 0) {
+                const patent = data.organic_results[0];
+                // Extract family members if available
+                familyMembers = patent.family_members || [];
+                
+                // Add to patent infos array
+                patentInfoResults.push({
+                  patentId: pid,
+                  title: patent.title || 'Unknown Patent',
+                  country: getPatentCountry(standardizedId) || 'Unknown',
+                  familyMembers: familyMembers.map(member => {
+                    // Ensure publication_number is standardized but without hyphens for SerpAPI
+                    let pubNumber = member.publication_number || '';
+                    // First standardize it
+                    pubNumber = standardizePatentNumber(pubNumber);
+                    // For SerpAPI remove hyphens if they exist
+                    if (apiSource === 'serpapi') {
+                      pubNumber = pubNumber.replace(/[-]/g, '');
+                    }
+                    
+                    return {
+                      ...member,
+                      publication_number: pubNumber,
+                      country_code: getPatentCountry(standardizePatentNumber(member.publication_number || '')),
+                      sourcePatentId: pid
+                    };
+                  })
+                });
+              } else if (data.family_members) {
+                // Direct patent result
+                familyMembers = data.family_members || [];
+                
+                patentInfoResults.push({
+                  patentId: pid,
+                  title: data.title || 'Unknown Patent',
+                  country: getPatentCountry(standardizedId) || 'Unknown',
+                  familyMembers: familyMembers.map(member => {
+                    // Ensure publication_number is standardized but without hyphens for SerpAPI
+                    let pubNumber = member.publication_number || '';
+                    // First standardize it
+                    pubNumber = standardizePatentNumber(pubNumber);
+                    // For SerpAPI remove hyphens if they exist
+                    if (apiSource === 'serpapi') {
+                      pubNumber = pubNumber.replace(/[-]/g, '');
+                    }
+                    
+                    return {
+                      ...member,
+                      publication_number: pubNumber,
+                      country_code: getPatentCountry(standardizePatentNumber(member.publication_number || '')),
+                      sourcePatentId: pid
+                    };
+                  })
+                });
+              } else {
+                // No family members found
+                patentInfoResults.push({
+                  patentId: pid,
+                  title: data.title || 'Unknown Patent',
+                  country: getPatentCountry(standardizedId) || 'Unknown',
+                  familyMembers: []
+                });
+              }
+            } else {
+              // Use Unified Patents API (default)
+              const response = await patentApi.searchPatentsUnified(standardizedId);
+              
+              if (!response || !response._source) {
+                console.error(`Invalid response from API for patent ${pid}`);
+                continue; // Skip this patent but continue with others
+              }
+              
+              // Process family members
+              const members = response._source.family_members || [];
+              
+              // Add country code and source patent ID to each family member
+              const processedMembers = members.map(member => {
+                const standardized = standardizePatentNumber(member.publication_number);
+                const country = getPatentCountry(standardized);
+                return {
+                  ...member,
+                  country_code: country,
+                  sourcePatentId: pid
+                };
+              });
+              
+              // Add to patent infos array
+              patentInfoResults.push({
+                patentId: pid,
+                title: response._source.title || 'Unknown Patent',
+                country: getPatentCountry(standardizedId) || 'Unknown',
+                familyMembers: processedMembers
+              });
             }
-            
-            // Process family members
-            const members = response._source.family_members || [];
-            
-            // Add country code and source patent ID to each family member
-            const processedMembers = members.map(member => {
-              const standardized = standardizePatentNumber(member.publication_number);
-              const country = getPatentCountry(standardized);
-              return {
-                ...member,
-                country_code: country,
-                sourcePatentId: pid
-              };
-            });
-            
-            // Add to patent infos array
-            patentInfoResults.push({
-              patentId: pid,
-              title: response._source.title || 'Unknown Patent',
-              country: getPatentCountry(standardizedId) || 'Unknown',
-              familyMembers: processedMembers
-            });
           } catch (err) {
             console.error(`Error fetching family members for patent ${pid}:`, err);
             // Add error entry but continue with other patents
@@ -104,8 +189,9 @@ const FamilySearchModal: React.FC<FamilySearchModalProps> = ({
     };
     
     fetchFamilyMembers();
-  }, [patentIds]);
+  }, [patentIds, apiSource]);
 
+  // Format date for display
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -123,8 +209,35 @@ const FamilySearchModal: React.FC<FamilySearchModalProps> = ({
     }
   };
 
+  // Format publication number for display, ensuring consistent format
+  const formatPublicationNumber = (publicationNumber: string) => {
+    // For SerpAPI display, we want to ensure no hyphens
+    if (apiSource === 'serpapi') {
+      return publicationNumber.replace(/[-]/g, '');
+    }
+    
+    // For Unified API, we want to ensure proper hyphenation
+    if (!publicationNumber.includes('-')) {
+      // Try to add hyphens in standard format (XX-######-X#)
+      const match = publicationNumber.match(/^([A-Z]{2})(\d+)([A-Z]\d?)$/i);
+      if (match) {
+        const [, countryCode, numberPart, kindCode] = match;
+        return `${countryCode.toUpperCase()}-${numberPart}-${kindCode.toUpperCase()}`;
+      }
+    }
+    
+    return publicationNumber;
+  };
+
   const handlePatentSelect = (publicationNumber: string) => {
-    onPatentSelect(publicationNumber);
+    // Format patent number based on API source
+    let formattedNumber = publicationNumber;
+    if (apiSource === 'serpapi') {
+      // Remove hyphens for SerpAPI
+      formattedNumber = publicationNumber.replace(/[-]/g, '');
+    }
+    
+    onPatentSelect(formattedNumber);
     onClose();
   };
   
@@ -222,7 +335,7 @@ const FamilySearchModal: React.FC<FamilySearchModalProps> = ({
                           className="member-number clickable"
                           onClick={() => handlePatentSelect(member.publication_number)}
                         >
-                          {member.publication_number}
+                          {formatPublicationNumber(member.publication_number)}
                           {patentInfos.length > 1 && (
                             <span className="source-patent">
                               (from {sourcePatent?.patentId || 'unknown'})

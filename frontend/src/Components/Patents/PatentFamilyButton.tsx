@@ -2,16 +2,19 @@ import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faProjectDiagram } from '@fortawesome/free-solid-svg-icons';
 import FamilySearchModal from './FamilySearchModal';
+import { ApiSource } from '../../api/patents';
 import './PatentFamilyButton.scss';
 
 interface PatentFamilyButtonProps {
   patentId: string;
   onPatentSelect: (patentId: string) => void;
+  apiSource?: ApiSource;
 }
 
 const PatentFamilyButton: React.FC<PatentFamilyButtonProps> = ({ 
   patentId, 
-  onPatentSelect 
+  onPatentSelect,
+  apiSource = 'unified'
 }) => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
@@ -38,7 +41,8 @@ const PatentFamilyButton: React.FC<PatentFamilyButtonProps> = ({
         <FamilySearchModal 
           patentId={patentId} 
           onClose={handleCloseModal} 
-          onPatentSelect={onPatentSelect} 
+          onPatentSelect={onPatentSelect}
+          apiSource={apiSource}
         />
       )}
     </>
