@@ -93,6 +93,18 @@
           }
         }
         
+        &.btn-signup {
+          background: transparent;
+          border: 1px solid #ffd700; // Gold border like btn-forum
+          color: #592e83; // Royal violet
+          
+          &:hover {
+            background-color: rgba(255, 215, 0, 0.1);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+            color: #ffd700;
+          }
+        }
+        
         &.btn-primary {
           background-color: #28a745; // Royal green
           border: 1px solid #28a745;

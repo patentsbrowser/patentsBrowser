@@ -48,7 +48,7 @@ const LandingPage = () => {
             Sign In
           </button>
           <button 
-            className="btn btn-primary"
+            className="btn btn-signup"
             onClick={() => handleAuthClick('signup')}
           >
             Sign Up
