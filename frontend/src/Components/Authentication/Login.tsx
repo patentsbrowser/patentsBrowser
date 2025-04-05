@@ -24,7 +24,6 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
     },
     onSuccess: (data) => {
       console.log("Login response:", data);
-      console.log("Login response:");
 
 
       if (data.statusCode === 200) {
