@@ -24,7 +24,11 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
     },
     onSuccess: (data) => {
       console.log("Login response:", data);
-      console.log("Login response:", data.statusCode);
+      console.log("Login response:");
+      console.log("Login response:");
+      console.log("Login response:");
+      console.log("Login response:");
+
       if (data.statusCode === 200) {
         toast.success("Please verify your email with OTP");
         setShowOTPModal(true);
