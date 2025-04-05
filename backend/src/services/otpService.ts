@@ -1,5 +1,16 @@
 import nodemailer from 'nodemailer';
 import { User } from '../models/User.js';
+import dotenv from 'dotenv';
+
+// Load environment variables based on NODE_ENV
+const env = process.env.NODE_ENV || 'development';
+if (env === 'production') {
+  dotenv.config({ path: '.env.production' });
+} else if (env === 'stage') {
+  dotenv.config({ path: '.env.stage' });
+} else {
+  dotenv.config();
+}
 
 // Store OTPs temporarily (in production, use Redis or similar)
 const otpStore = new Map<string, { otp: string; timestamp: number }>();
@@ -7,14 +18,38 @@ const otpStore = new Map<string, { otp: string; timestamp: number }>();
 // Configure email transporter
 const createTransporter = async () => {
   try {
+    // Check if email credentials are available
+    const emailUser = process.env.EMAIL_USER;
+    const emailPassword = process.env.EMAIL_APP_PASSWORD;
+    
+    if (!emailUser || !emailPassword) {
+      if (env === 'production') {
+        console.error('Email credentials missing in production environment');
+        throw new Error('Email service configuration failed');
+      } else {
+        console.warn('Email credentials missing. Using mock transporter for development.');
+        return {
+          verify: () => Promise.resolve(true),
+          sendMail: (options) => {
+            console.log('MOCK EMAIL SENT:', {
+              to: options.to,
+              subject: options.subject,
+              otp: options.html.match(/\d{6}/)?.[0] || 'MOCK_OTP'
+            });
+            return Promise.resolve({ messageId: 'mock-message-id' });
+          }
+        } as any;
+      }
+    }
+    
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       host: 'smtp.gmail.com',
       port: 587,
       secure: false,
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_APP_PASSWORD
+        user: emailUser,
+        pass: emailPassword
       },
       tls: {
         rejectUnauthorized: false
@@ -27,7 +62,22 @@ const createTransporter = async () => {
     return transporter;
   } catch (error) {
     console.error('Failed to create email transporter:', error);
-    throw new Error('Email service configuration failed');
+    if (env === 'production') {
+      throw new Error('Email service configuration failed');
+    } else {
+      console.warn('Using mock transporter in development...');
+      return {
+        verify: () => Promise.resolve(true),
+        sendMail: (options) => {
+          console.log('MOCK EMAIL SENT:', {
+            to: options.to,
+            subject: options.subject,
+            otp: options.html.match(/\d{6}/)?.[0] || 'MOCK_OTP'
+          });
+          return Promise.resolve({ messageId: 'mock-message-id' });
+        }
+      } as any;
+    }
   }
 };
 
@@ -50,11 +100,6 @@ export const generateOTP = () => {
 
 export const sendOTP = async (email: string, otp: string) => {
   console.log('Starting OTP sending process for email:', email);
-  console.log('Current transporter status:', transporter ? 'Available' : 'Not available');
-  console.log('Email configuration check:', {
-    EMAIL_USER: process.env.EMAIL_USER ? 'Set' : 'Not set',
-    EMAIL_APP_PASSWORD: process.env.EMAIL_APP_PASSWORD ? 'Set' : 'Not set'
-  });
   
   if (!transporter) {
     console.log('Attempting to recreate transporter...');
@@ -63,13 +108,14 @@ export const sendOTP = async (email: string, otp: string) => {
       console.log('Transporter recreated successfully');
     } catch (error) {
       console.error('Failed to recreate transporter:', error);
-      throw new Error('Email service is not available');
+      if (env === 'production') {
+        throw new Error('Email service is not available');
+      } else {
+        console.warn('Using mock email in development');
+        console.log(`MOCK OTP for ${email}: ${otp}`);
+        return true;
+      }
     }
-  }
-
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
-    console.error('Email configuration is missing');
-    throw new Error('Email service is not properly configured');
   }
 
   const mailOptions = {
@@ -116,7 +162,13 @@ export const sendOTP = async (email: string, otp: string) => {
     console.error('Failed to send OTP email:', error);
     // Try to recreate transporter on failure
     transporter = null;
-    throw new Error('Failed to send OTP email. Please try again.');
+    if (env === 'production') {
+      throw new Error('Failed to send OTP email. Please try again.');
+    } else {
+      console.warn('Using mock email in development after send failure');
+      console.log(`MOCK OTP for ${email}: ${otp}`);
+      return true;
+    }
   }
 };
 

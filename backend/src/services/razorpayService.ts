@@ -3,8 +3,15 @@ import crypto from 'crypto';
 import { SubscriptionPlan } from '../models/Subscription.js';
 import dotenv from 'dotenv';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables based on NODE_ENV
+const env = process.env.NODE_ENV || 'development';
+if (env === 'production') {
+  dotenv.config({ path: '.env.production' });
+} else if (env === 'stage') {
+  dotenv.config({ path: '.env.stage' });
+} else {
+  dotenv.config();
+}
 
 // Create Razorpay instance if credentials are available
 let razorpay;
@@ -17,12 +24,18 @@ try {
       key_id,
       key_secret
     });
+    console.log('Razorpay initialized successfully');
   } else {
-    console.warn('Razorpay credentials not found in environment variables. Some functions may not work.');
+    console.warn('Razorpay credentials not found in environment variables. Using mock implementation.');
     // Create a mock object for development
     razorpay = {
       customers: {
-        create: async () => ({ id: 'mock_customer_id' })
+        create: async (options) => ({ 
+          id: 'mock_customer_id',
+          name: options.name,
+          email: options.email,
+          contact: options.contact
+        })
       },
       orders: {
         create: async (options) => ({
@@ -30,6 +43,26 @@ try {
           amount: options.amount,
           currency: options.currency,
           receipt: options.receipt
+        }),
+        fetch: async (orderId) => ({
+          id: orderId,
+          amount: 10000,
+          currency: 'INR',
+          receipt: 'mock_receipt',
+          status: 'created'
+        })
+      },
+      payments: {
+        fetch: async (paymentId) => ({
+          id: paymentId, 
+          order_id: 'mock_order_id',
+          amount: 10000,
+          status: 'captured'
+        }),
+        capture: async (options) => ({
+          id: options.payment_id,
+          amount: options.amount,
+          status: 'captured'
         })
       }
     };
@@ -95,12 +128,29 @@ export const verifyPaymentSignature = (
   razorpayPaymentId: string,
   razorpaySignature: string
 ) => {
-  const generatedSignature = crypto
-    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || '')
-    .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-    .digest('hex');
+  try {
+    const secret = process.env.RAZORPAY_KEY_SECRET || '';
+    if (!secret && process.env.NODE_ENV === 'production') {
+      console.error('RAZORPAY_KEY_SECRET is missing in production environment');
+      return false;
+    }
     
-  return generatedSignature === razorpaySignature;
+    // In development without real keys, always return true
+    if (!secret && process.env.NODE_ENV !== 'production') {
+      console.warn('Using mock signature verification in development');
+      return true;
+    }
+    
+    const generatedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+      .digest('hex');
+      
+    return generatedSignature === razorpaySignature;
+  } catch (error) {
+    console.error('Error verifying payment signature:', error);
+    return false;
+  }
 };
 
 /**

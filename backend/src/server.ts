@@ -16,23 +16,43 @@ import { createDefaultPlans } from './models/PricingPlan.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables
-dotenv.config();
+// Load environment variables based on NODE_ENV
+const env = process.env.NODE_ENV || 'development';
+console.log(`Running in ${env} environment`);
+
+if (env === 'production') {
+  dotenv.config({ path: '.env.production' });
+} else if (env === 'stage') {
+  dotenv.config({ path: '.env.stage' });
+} else {
+  dotenv.config();
+}
 
 // Verify required environment variables
-const requiredEnvVars = ['EMAIL_USER', 'EMAIL_APP_PASSWORD', 'JWT_SECRET', 'MONGODB_URI'];
+const requiredEnvVars = ['JWT_SECRET', 'MONGODB_URI'];
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingEnvVars.length > 0) {
   console.error('Missing required environment variables:', missingEnvVars);
-  process.exit(1);
+  if (env === 'production') {
+    process.exit(1); // Only exit in production
+  } else {
+    console.warn('Continuing without required environment variables. Some features may not work properly.');
+  }
 }
 
-console.log('Environment variables loaded successfully');
-console.log('Email configuration:', {
-  user: process.env.EMAIL_USER,
-  hasPassword: !!process.env.EMAIL_APP_PASSWORD
-});
+// Optional environment variables check
+const optionalEnvVars = ['EMAIL_USER', 'EMAIL_APP_PASSWORD'];
+const missingOptionalVars = optionalEnvVars.filter(varName => !process.env[varName]);
+if (missingOptionalVars.length > 0) {
+  console.warn('Missing optional environment variables:', missingOptionalVars);
+  console.warn('Email functionality may not work properly.');
+}
+
+// Log successful environment loading
+if (missingEnvVars.length === 0) {
+  console.log('Required environment variables loaded successfully');
+}
 
 const app = express();
 
@@ -47,7 +67,19 @@ app.use(cors());
 app.use(express.json());
 
 // Make sure uploadedImages directory is served as public
-app.use('/uploadedImages', express.static(path.join(__dirname, '../uploadedImages'), {
+const uploadDir = path.join(__dirname, '../uploadedImages');
+console.log('Upload directory path: ', uploadDir);
+
+// Ensure upload directory exists
+import fs from 'fs';
+if (!fs.existsSync(uploadDir)) {
+  console.log('Creating upload directory');
+  fs.mkdirSync(uploadDir, { recursive: true });
+} else {
+  console.log('Upload directory already exists');
+}
+
+app.use('/uploadedImages', express.static(uploadDir, {
   setHeaders: (res, path) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
@@ -63,7 +95,7 @@ app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/feedback', feedbackRoutes);
 
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/algo-trading';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/patent_db';
 
 mongoose.connect(MONGODB_URI)
   .then(async () => {
