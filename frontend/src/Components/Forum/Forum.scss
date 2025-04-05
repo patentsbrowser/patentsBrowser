@@ -90,7 +90,7 @@
           color: white;
           
           &:hover {
-            background-color: darken(#28a745, 10%);
+            background-color: #218838; // Darker green (10% darker than #28a745)
             box-shadow: 0 0 15px rgba(40, 167, 69, 0.5), 0 0 5px rgba(255, 215, 0, 0.5);
             border-color: #ffd700; // Gold
           }
@@ -357,7 +357,7 @@
         }
         
         &:hover {
-          background-color: darken(#28a745, 10%);
+          background-color: #218838; // Darker green (10% darker than #28a745)
           box-shadow: 0 0 15px rgba(40, 167, 69, 0.3), 0 0 5px rgba(255, 215, 0, 0.3);
           
           &::before {
@@ -405,7 +405,7 @@
           }
           
           &:hover {
-            background-color: darken(#592e83, 10%);
+            background-color: #452366; // Darker violet (10% darker than #592e83)
             box-shadow: 0 0 15px rgba(89, 46, 131, 0.3), 0 0 5px rgba(255, 215, 0, 0.3);
             
             &::before {
