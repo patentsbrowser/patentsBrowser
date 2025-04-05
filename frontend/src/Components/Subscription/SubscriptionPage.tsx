@@ -62,24 +62,24 @@ const SubscriptionPage: React.FC = () => {
       }
     };
 
-    const fetchUserSubscription = async () => {
-      if (isAuthenticated) {
-        try {
-          const result = await SubscriptionService.getUserSubscription();
-          if (result.success) {
-            setSubscription(result.data);
-          }
-        } catch (error) {
-          console.error('Error fetching user subscription:', error);
-        }
-      }
-    };
+    // const fetchUserSubscription = async () => {
+    //   if (isAuthenticated) {
+    //     try {
+    //       const result = await SubscriptionService.getUserSubscription();
+    //       if (result.success) {
+    //         setSubscription(result.data);
+    //       }
+    //     } catch (error) {
+    //       console.error('Error fetching user subscription:', error);
+    //     }
+    //   }
+    // };
 
     const initialize = async () => {
       setLoading(true);
       await loadScript();
       await fetchPlans();
-      await fetchUserSubscription();
+      // await fetchUserSubscription();
       setLoading(false);
     };
 
