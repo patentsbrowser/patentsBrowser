@@ -70,19 +70,12 @@ const Forum = () => {
 
   useEffect(() => {
     // In a real app, you would check if the user is logged in from your auth context/service
-    // For now, we'll just simulate a check
+    // For now, we'll just set isLoggedIn to false to always show Sign In and Sign Up buttons
     const checkAuth = async () => {
       try {
-        // This would be an API call to check if the user is logged in
-        // For now, we'll just set a fake email to simulate a logged-in user
-        const fakeCheckAuth = Math.random() > 0.5; // randomly simulate logged in or not
-        if (fakeCheckAuth) {
-          setIsLoggedIn(true);
-          setEmail('user@example.com');
-        } else {
-          setIsLoggedIn(false);
-          setEmail('');
-        }
+        // For demonstration purposes, always set to not logged in
+        setIsLoggedIn(false);
+        setEmail('');
       } catch (error) {
         console.error('Error checking authentication:', error);
       }
@@ -239,43 +232,13 @@ const Forum = () => {
               {guestErrorMessage && <p className="error-message">{guestErrorMessage}</p>}
               
               <button
-                className="btn btn-primary"
+                className="btn btn-home"
                 onClick={handleGuestSubmitComment}
                 disabled={submitFeedbackMutation.isPending}
               >
                 {submitFeedbackMutation.isPending ? 'Submitting...' : 'Submit'}
               </button>
             </div>
-            
-            {/* Navigation options */}
-            {!isLoggedIn && (
-              <div className="navigation-options">
-                <h3>Account Options</h3>
-                <p className="nav-description">
-                  Create an account or sign in to save your search history and preferences.
-                </p>
-                <div className="nav-buttons-container">
-                  <button 
-                    className="btn btn-home"
-                    onClick={() => handleNavigation('/')}
-                  >
-                    Home
-                  </button>
-                  <button 
-                    className="btn btn-home"
-                    onClick={() => handleNavigation('/auth/login')}
-                  >
-                    Sign In
-                  </button>
-                  <button 
-                    className="btn btn-home"
-                    onClick={() => handleNavigation('/auth/signup')}
-                  >
-                    Sign Up
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

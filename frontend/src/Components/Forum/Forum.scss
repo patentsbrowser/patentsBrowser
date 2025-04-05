@@ -419,49 +419,115 @@
               }
             }
           }
-        }
-        
-        .navigation-options {
-          background-color: rgba(89, 46, 131, 0.03);
-          border-radius: 8px;
-          padding: 2rem;
-          border: 1px solid rgba(89, 46, 131, 0.1);
-          position: relative;
-          margin-top: 2rem;
           
-          &::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.5), transparent);
-          }
-          
-          .nav-description {
-            color: var(--text-secondary, #64748b);
-            margin-bottom: 1.5rem;
-            font-size: 0.95rem;
-          }
-          
-          .nav-buttons-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            justify-content: space-between;
+          // Add styling for Home button within the guest-feedback-form
+          .btn.btn-home {
+            background: transparent;
+            border: 1px solid #ffd700; // Gold
+            color: #592e83; // Royal violet
+            padding: 0.6rem 1.2rem;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
             
-            .btn {
-              flex: 1;
-              min-width: 100px;
-              text-align: center;
+            &::before {
+              content: '';
+              position: absolute;
+              top: -100%;
+              left: -100%;
+              width: 300%;
+              height: 300%;
+              background: linear-gradient(135deg, 
+                rgba(255, 215, 0, 0) 0%, 
+                rgba(255, 215, 0, 0.1) 50%, 
+                rgba(255, 215, 0, 0) 100%);
+              transition: all 0.5s ease;
+              transform: rotate(45deg);
+              z-index: 1;
             }
             
-            @media (max-width: 480px) {
-              flex-direction: column;
+            &:hover {
+              background-color: rgba(255, 215, 0, 0.1);
+              color: #ffd700;
+              box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
               
-              .btn {
-                width: 100%;
+              &::before {
+                top: -30%;
+                left: -30%;
+              }
+            }
+            
+            &:disabled {
+              opacity: 0.7;
+              cursor: not-allowed;
+              
+              &:hover {
+                box-shadow: none;
+                
+                &::before {
+                  top: -100%;
+                  left: -100%;
+                }
+              }
+            }
+          }
+          
+          // Add styling for btn-primary within the guest-feedback-form
+          .btn.btn-primary {
+            display: inline-block;
+            padding: 0.8rem 2rem;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            background-color: #28a745; // Royal green
+            border: 1px solid #28a745;
+            color: white;
+            
+            &::before {
+              content: '';
+              position: absolute;
+              top: -100%;
+              left: -100%;
+              width: 300%;
+              height: 300%;
+              background: linear-gradient(135deg, 
+                rgba(255, 215, 0, 0) 0%, 
+                rgba(255, 215, 0, 0.2) 50%, 
+                rgba(255, 215, 0, 0) 100%);
+              transition: all 0.5s ease;
+              transform: rotate(45deg);
+              z-index: 1;
+            }
+            
+            &:hover {
+              background-color: #218838; // Darker green (10% darker than #28a745)
+              box-shadow: 0 0 15px rgba(40, 167, 69, 0.5), 0 0 5px rgba(255, 215, 0, 0.5);
+              border-color: #ffd700; // Gold
+              
+              &::before {
+                top: -30%;
+                left: -30%;
+              }
+            }
+            
+            &:disabled {
+              opacity: 0.7;
+              cursor: not-allowed;
+              
+              &:hover {
+                box-shadow: none;
+                
+                &::before {
+                  top: -100%;
+                  left: -100%;
+                }
               }
             }
           }

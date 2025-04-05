@@ -64,7 +64,7 @@ const LandingPage = () => {
         <div className="hero-content">
           <h1>Your All-in-One PatentsBrowser Search Solution</h1>
           <p>Discover, analyze, and save patents with our comprehensive search platform</p>
-          <div className="trial-info">
+          <div className="trial-info" onClick={() => handleAuthClick('signup')}>
             Try free for <span>14 days</span> - No credit card required
           </div>
         </div>
