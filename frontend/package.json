@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "vite",
     "start:stage": "vite --mode stage",
-    "build": "tsc -b && vite build",
-    "build:stage": "tsc -b && vite build --mode stage",
-    "lint": "eslint .",
+    "build": "tsc && vite build",
+    "build:stage": "tsc && vite build --mode stage",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
   "dependencies": {

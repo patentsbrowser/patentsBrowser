@@ -1,0 +1,45 @@
+services:
+  - type: web
+    name: patentsbrowser-frontend-stage
+    runtime: static
+    buildCommand: npm install && npm run build:stage
+    staticPublishPath: ./dist
+    envVars:
+      - key: NODE_VERSION
+        value: 18.x
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    domains:
+      - stage.patentsbrowser.com
+    envVars:
+      - key: VITE_API_URL
+        value: https://patentsbrowser-backend-stage.onrender.com/api
+
+  - type: web
+    name: patentsbrowser-frontend-prod
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: NODE_VERSION
+        value: 18.x
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=3600
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    domains:
+      - patentsbrowser.com
+      - www.patentsbrowser.com
+    envVars:
+      - key: VITE_API_URL
+        value: https://patentsbrowser-backend-prod.onrender.com/api 

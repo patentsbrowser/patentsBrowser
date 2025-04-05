@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import Feedback from '../models/Feedback';
+import Feedback from '../models/Feedback.js';
+// import Feedback from '../models/Feedback';
 
 // Submit feedback without requiring authentication
 export const submitFeedback = async (req: Request, res: Response) => {

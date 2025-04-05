@@ -19,8 +19,7 @@
   "references": [{ "path": "./tsconfig.node.json" }],
   "ts-node": {
     "compilerOptions": {
-      "module": "CommonJS",
-      "composite": true
+      "module": "CommonJS"
     }
   }
 }

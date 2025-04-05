@@ -1,0 +1,74 @@
+############################################
+# PatentsBrowser Deployment Configuration #
+############################################
+
+# FULL-STACK SERVICES
+services:
+  # Staging Environment
+  - type: web
+    name: patentsbrowser-stage
+    env: node
+    region: singapore
+    plan: starter
+    repo: https://github.com/sriharsh1104/AllinoneSearch.git
+    branch: main
+    buildCommand: |
+      cd frontend && npm install && npm run build && cd ../backend && npm install && npm run build:backend
+    startCommand: cd backend && NODE_ENV=stage node -r dotenv/config server.js dotenv_config_path=.env.stage
+    envVars:
+      - key: NODE_VERSION
+        value: 18.x
+      - key: MONGODB_URI
+        fromDatabase:
+          name: patentsbrowser-db-stage
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_APP_PASSWORD
+        sync: false
+    domains:
+      - stage.patentsbrowser.com
+
+  # Production Environment
+  - type: web
+    name: patentsbrowser-prod
+    env: node
+    region: singapore
+    plan: starter
+    repo: https://github.com/sriharsh1104/AllinoneSearch.git
+    branch: main
+    buildCommand: |
+      cd frontend && npm install && npm run build && cd ../backend && npm install && npm run build:backend
+    startCommand: cd backend && NODE_ENV=production node -r dotenv/config server.js dotenv_config_path=.env.production
+    envVars:
+      - key: NODE_VERSION
+        value: 18.x
+      - key: MONGODB_URI
+        fromDatabase:
+          name: patentsbrowser-db-prod
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: EMAIL_USER
+        sync: false  
+      - key: EMAIL_APP_PASSWORD
+        sync: false
+    domains:
+      - patentsbrowser.com
+      - www.patentsbrowser.com
+
+# DATABASES
+databases:
+  - name: patentsbrowser-db-stage
+    plan: free
+    region: singapore
+    databaseName: patentsbrowser_stage
+    user: patentsbrowser_stage_user
+
+  - name: patentsbrowser-db-prod
+    plan: free
+    region: singapore
+    databaseName: patentsbrowser_prod
+    user: patentsbrowser_prod_user 
