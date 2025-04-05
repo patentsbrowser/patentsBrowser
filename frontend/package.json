@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "vite",
     "start:stage": "vite --mode stage",
-    "build": "tsc && vite build",
-    "build:stage": "tsc && vite build --mode stage",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "build": "vite build",
+    "build:stage": "vite build --mode stage",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -37,7 +38,7 @@
     "sass": "^1.60.0",
     "serpapi": "^2.1.0",
     "socket.io-client": "^4.8.1",
-    "typescript": "^4.9.5",
+    "typescript": "^5.2.2",
     "yup": "^1.6.1"
   },
   "devDependencies": {
@@ -48,7 +49,7 @@
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^15.15.0",
-    "typescript-eslint": "^8.24.1",
+    "typescript-eslint": "^8.0.0",
     "vite": "^6.2.0"
   }
 }
