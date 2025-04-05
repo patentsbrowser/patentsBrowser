@@ -1,15 +1,12 @@
 {
   "type": "module",
   "scripts": {
-    "start": "node server.js",
+    "start": "node dist/server.js",
     "dev": "nodemon --exec tsx src/server.ts",
-    "build": "tsc && cd ../frontend && npm install && npm run build",
-    "build:frontend": "cd ../frontend && npm install && npm run build",
-    "build:backend": "tsc",
-    "build:stage": "npm run build:backend && NODE_ENV=stage node -r dotenv/config server.js dotenv_config_path=.env.stage",
-    "build:prod": "npm run build:backend && NODE_ENV=production node -r dotenv/config server.js dotenv_config_path=.env.production",
-    "deploy:stage": "npm run build && NODE_ENV=stage node -r dotenv/config server.js dotenv_config_path=.env.stage",
-    "deploy:prod": "npm run build && NODE_ENV=production node -r dotenv/config server.js dotenv_config_path=.env.production"
+    "build": "tsc",
+    "start:stage": "NODE_ENV=stage node -r dotenv/config dist/server.js dotenv_config_path=.env.stage",
+    "build:stage": "npm run build && npm run start:stage",
+    "dev:stage": "nodemon"
   },
   "dependencies": {
     "@types/multer": "^1.4.12",
