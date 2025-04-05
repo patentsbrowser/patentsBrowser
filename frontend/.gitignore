@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+ttsconfig.tsbuildinfo
+
+# Environment variables
+.env*
+!.env.example
+!.env.production
+!.env.stage
