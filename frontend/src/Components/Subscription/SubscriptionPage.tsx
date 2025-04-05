@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as SubscriptionService from '../../services/SubscriptionService';
 import './SubscriptionPage.scss';
-import { useAuth } from '../../context/AuthContext';
+// import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../AuthContext';
 
 interface Plan {
   _id: string;
@@ -285,7 +286,7 @@ const SubscriptionPage: React.FC = () => {
             <button 
               className="subscribe-btn"
               onClick={() => handleSubscribe(plan)}
-              disabled={processingPayment || (subscription && subscription.status === 'active')}
+              disabled={processingPayment || (subscription?.status === 'active')}
             >
               {processingPayment ? 'Processing...' : 'Subscribe Now'}
             </button>
