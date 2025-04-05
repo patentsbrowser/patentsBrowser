@@ -37,7 +37,7 @@ const Authentication = () => {
   return (
     <div className="auth-container">
       <div className="auth-nav">
-        <div className="logo" onClick={() => handleNavigation('/')}>AllinoneSearch</div>
+        <div className="logo" onClick={() => handleNavigation('/')}>PatentsBrowser</div>
         <div className="nav-buttons">
           <button 
             className="btn btn-home"

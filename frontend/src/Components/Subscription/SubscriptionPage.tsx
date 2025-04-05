@@ -129,7 +129,7 @@ const SubscriptionPage: React.FC = () => {
         key,
         amount: order.amount,
         currency: order.currency,
-        name: 'AllinoneSearch',
+        name: 'PatentsBrowser',
         description: `Subscribe to ${plan.name} Plan`,
         order_id: order.id,
         prefill: {

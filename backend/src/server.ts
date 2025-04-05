@@ -9,6 +9,7 @@ import patentRoutes from './routes/patentRoutes.js';
 import savedPatentRoutes from './routes/savedPatentRoutes.js';
 import otpRoutes from './routes/otpRoutes.js';
 import subscriptionRoutes from './routes/subscriptionRoutes.js';
+import feedbackRoutes from './routes/feedbackRoutes.js';
 import { createDefaultPlans } from './models/PricingPlan.js';
 
 // Get current directory in ES modules
@@ -59,6 +60,7 @@ app.use('/api/patents', patentRoutes);
 app.use('/api/saved-patents', savedPatentRoutes);
 app.use('/api/otp', otpRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/algo-trading';

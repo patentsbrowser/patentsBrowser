@@ -84,6 +84,18 @@
           }
         }
         
+        &.btn-signup {
+          background: transparent;
+          border: 1px solid #ffd700; // Gold border like btn-forum
+          color: #592e83; // Royal violet
+          
+          &:hover {
+            background-color: rgba(255, 215, 0, 0.1);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+            color: #ffd700;
+          }
+        }
+        
         &.btn-primary {
           background-color: #28a745; // Royal green
           border: 1px solid #28a745;
@@ -190,227 +202,411 @@
       }
     }
     
-    .comments-section {
-      margin-bottom: 2rem;
+    .forum-layout {
+      display: flex;
+      gap: 2rem;
       
-      .no-comments {
-        padding: 2rem;
-        text-align: center;
-        background-color: rgba(89, 46, 131, 0.03);
-        border-radius: 8px;
-        color: var(--text-secondary, #64748b);
-        font-style: italic;
+      @media (max-width: 768px) {
+        flex-direction: column;
       }
       
-      .comments-list {
+      .comments-section {
+        flex: 6;
+        
+        .loading-comments {
+          padding: 2rem;
+          text-align: center;
+          background-color: rgba(89, 46, 131, 0.03);
+          border-radius: 8px;
+          color: var(--text-secondary, #64748b);
+          font-style: italic;
+        }
+        
+        .no-comments {
+          padding: 2rem;
+          text-align: center;
+          background-color: rgba(89, 46, 131, 0.03);
+          border-radius: 8px;
+          color: var(--text-secondary, #64748b);
+          font-style: italic;
+        }
+        
+        .comments-list {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+          
+          .comment-card {
+            background-color: rgba(89, 46, 131, 0.05);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(89, 46, 131, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            
+            &::before {
+              content: '';
+              position: absolute;
+              top: -100%;
+              left: -100%;
+              width: 300%;
+              height: 300%;
+              background: linear-gradient(135deg, 
+                rgba(255, 215, 0, 0) 0%, 
+                rgba(255, 215, 0, 0.1) 50%, 
+                rgba(255, 215, 0, 0) 100%);
+              transition: all 0.8s ease;
+              transform: rotate(45deg);
+              z-index: 0;
+              pointer-events: none;
+            }
+            
+            &:hover {
+              transform: translateY(-3px);
+              box-shadow: 0 8px 15px rgba(89, 46, 131, 0.15), 0 0 10px rgba(255, 215, 0, 0.1);
+              border-color: rgba(255, 215, 0, 0.3);
+              
+              &::before {
+                top: -30%;
+                left: -30%;
+              }
+            }
+            
+            .comment-header {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 1rem;
+              padding-bottom: 0.5rem;
+              border-bottom: 1px solid rgba(89, 46, 131, 0.15);
+              
+              .comment-author {
+                font-weight: 600;
+                color: #592e83; // Royal violet
+              }
+              
+              .comment-date {
+                color: var(--text-secondary, #64748b);
+                font-size: 0.9rem;
+              }
+            }
+            
+            .comment-body {
+              p {
+                margin: 0;
+                line-height: 1.6;
+                color: #333333;
+                font-size: 1.05rem;
+              }
+            }
+          }
+        }
+      }
+      
+      .forum-forms {
+        flex: 4;
         display: flex;
         flex-direction: column;
-        gap: 1.5rem;
+        gap: 2rem;
         
-        .comment-card {
-          background-color: #fffcf0;
+        .guest-feedback-form {
+          background-color: rgba(89, 46, 131, 0.03);
           border-radius: 8px;
-          padding: 1.5rem;
-          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-          border: 1px solid rgba(255, 215, 0, 0.1);
-          transition: all 0.3s ease;
+          padding: 2rem;
+          border: 1px solid rgba(89, 46, 131, 0.1);
           position: relative;
-          overflow: hidden;
           
           &::before {
             content: '';
             position: absolute;
-            top: -100%;
-            left: -100%;
-            width: 300%;
-            height: 300%;
-            background: linear-gradient(135deg, 
-              rgba(255, 215, 0, 0) 0%, 
-              rgba(255, 215, 0, 0.1) 50%, 
-              rgba(255, 215, 0, 0) 100%);
-            transition: all 0.8s ease;
-            transform: rotate(45deg);
-            z-index: 0;
-            pointer-events: none;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.5), transparent);
           }
           
-          &:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 15px rgba(89, 46, 131, 0.1), 0 0 10px rgba(255, 215, 0, 0.1);
-            border-color: rgba(255, 215, 0, 0.2);
-            
-            &::before {
-              top: -30%;
-              left: -30%;
-            }
+          .form-description {
+            color: var(--text-secondary, #64748b);
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
           }
           
-          .comment-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid rgba(89, 46, 131, 0.1);
+          .form-field {
+            margin-bottom: 1.2rem;
             
-            .comment-author {
-              font-weight: 600;
-              color: #592e83; // Royal violet
+            label {
+              display: block;
+              margin-bottom: 0.5rem;
+              color: #592e83;
+              font-weight: 500;
             }
             
-            .comment-date {
-              color: var(--text-secondary, #64748b);
-              font-size: 0.9rem;
+            input, textarea {
+              width: 100%;
+              padding: 1rem;
+              border-radius: 8px;
+              border: 1px solid rgba(89, 46, 131, 0.2);
+              background-color: #fff;
+              font-family: inherit;
+              font-size: 1rem;
+              transition: all 0.3s ease;
+              
+              &:focus {
+                outline: none;
+                border-color: #592e83;
+                box-shadow: 0 0 0 2px rgba(89, 46, 131, 0.2);
+              }
+            }
+            
+            textarea {
+              resize: vertical;
+              min-height: 100px;
             }
           }
           
-          .comment-body {
-            p {
-              margin: 0;
-              line-height: 1.6;
-            }
-          }
-        }
-      }
-    }
-    
-    .comment-form {
-      background-color: rgba(89, 46, 131, 0.03);
-      border-radius: 8px;
-      padding: 2rem;
-      border: 1px solid rgba(89, 46, 131, 0.1);
-      position: relative;
-      
-      &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 2px;
-        background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.5), transparent);
-      }
-      
-      .user-info {
-        margin-bottom: 1rem;
-        
-        p {
-          color: var(--text-secondary, #64748b);
-          
-          .user-email {
+          .btn-sign-in {
+            background-color: #592e83; // Royal violet
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 6px;
             font-weight: 600;
-            color: #592e83; // Royal violet
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: inline-block; // Ensure it behaves like a button
+            
+            &::before {
+              content: '';
+              position: absolute;
+              top: -100%;
+              left: -100%;
+              width: 300%;
+              height: 300%;
+              background: linear-gradient(135deg, 
+                rgba(255, 215, 0, 0) 0%, 
+                rgba(255, 215, 0, 0.2) 50%, 
+                rgba(255, 215, 0, 0) 100%);
+              transition: all 0.5s ease;
+              transform: rotate(45deg);
+              z-index: 1;
+            }
+            
+            &:hover {
+              background-color: #452366; // Darker violet (10% darker than #592e83)
+              box-shadow: 0 0 15px rgba(89, 46, 131, 0.3), 0 0 5px rgba(255, 215, 0, 0.3);
+              
+              &::before {
+                top: -30%;
+                left: -30%;
+              }
+            }
+            
+            &:disabled {
+              background-color: #7a5497; // Lighter violet
+              cursor: not-allowed;
+              
+              &:hover {
+                box-shadow: none;
+                
+                &::before {
+                  top: -100%;
+                  left: -100%;
+                }
+              }
+            }
           }
         }
-      }
-      
-      textarea {
-        width: 100%;
-        padding: 1rem;
-        border-radius: 8px;
-        border: 1px solid rgba(89, 46, 131, 0.2);
-        background-color: #fff;
-        font-family: inherit;
-        font-size: 1rem;
-        resize: vertical;
-        transition: all 0.3s ease;
-        margin-bottom: 1rem;
         
-        &:focus {
-          outline: none;
-          border-color: #592e83;
-          box-shadow: 0 0 0 2px rgba(89, 46, 131, 0.2);
-        }
-      }
-      
-      .error-message {
-        color: #e53935;
-        margin-bottom: 1rem;
-        font-size: 0.9rem;
-      }
-      
-      .btn-submit-comment {
-        background-color: #28a745; // Royal green
-        color: white;
-        border: none;
-        padding: 0.8rem 1.5rem;
-        border-radius: 6px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-        
-        &::before {
-          content: '';
-          position: absolute;
-          top: -100%;
-          left: -100%;
-          width: 300%;
-          height: 300%;
-          background: linear-gradient(135deg, 
-            rgba(255, 215, 0, 0) 0%, 
-            rgba(255, 215, 0, 0.2) 50%, 
-            rgba(255, 215, 0, 0) 100%);
-          transition: all 0.5s ease;
-          transform: rotate(45deg);
-          z-index: 1;
-        }
-        
-        &:hover {
-          background-color: #218838; // Darker green (10% darker than #28a745)
-          box-shadow: 0 0 15px rgba(40, 167, 69, 0.3), 0 0 5px rgba(255, 215, 0, 0.3);
-          
-          &::before {
-            top: -30%;
-            left: -30%;
-          }
-        }
-      }
-      
-      .login-prompt {
-        text-align: center;
-        padding: 1.5rem;
-        
-        p {
-          margin-bottom: 1.5rem;
-          color: var(--text-secondary, #64748b);
-        }
-        
-        .btn-sign-in {
-          background-color: #592e83; // Royal violet
-          color: white;
-          border: none;
-          padding: 0.8rem 2rem;
-          border-radius: 6px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s ease;
+        .navigation-options {
+          background-color: rgba(89, 46, 131, 0.03);
+          border-radius: 8px;
+          padding: 2rem;
+          border: 1px solid rgba(89, 46, 131, 0.1);
           position: relative;
-          overflow: hidden;
+          margin-top: 2rem;
           
           &::before {
             content: '';
             position: absolute;
-            top: -100%;
-            left: -100%;
-            width: 300%;
-            height: 300%;
-            background: linear-gradient(135deg, 
-              rgba(255, 215, 0, 0) 0%, 
-              rgba(255, 215, 0, 0.2) 50%, 
-              rgba(255, 215, 0, 0) 100%);
-            transition: all 0.5s ease;
-            transform: rotate(45deg);
-            z-index: 1;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.5), transparent);
           }
           
-          &:hover {
-            background-color: #452366; // Darker violet (10% darker than #592e83)
-            box-shadow: 0 0 15px rgba(89, 46, 131, 0.3), 0 0 5px rgba(255, 215, 0, 0.3);
+          .nav-description {
+            color: var(--text-secondary, #64748b);
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+          }
+          
+          .nav-buttons-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: space-between;
+            
+            .btn {
+              flex: 1;
+              min-width: 100px;
+              text-align: center;
+            }
+            
+            @media (max-width: 480px) {
+              flex-direction: column;
+              
+              .btn {
+                width: 100%;
+              }
+            }
+          }
+        }
+        
+        .comment-form {
+          background-color: rgba(89, 46, 131, 0.03);
+          border-radius: 8px;
+          padding: 2rem;
+          border: 1px solid rgba(89, 46, 131, 0.1);
+          position: relative;
+          
+          &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.5), transparent);
+          }
+          
+          .user-info {
+            margin-bottom: 1rem;
+            
+            p {
+              color: var(--text-secondary, #64748b);
+              
+              .user-email {
+                font-weight: 600;
+                color: #592e83; // Royal violet
+              }
+            }
+          }
+          
+          textarea {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(89, 46, 131, 0.2);
+            background-color: #fff;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+            
+            &:focus {
+              outline: none;
+              border-color: #592e83;
+              box-shadow: 0 0 0 2px rgba(89, 46, 131, 0.2);
+            }
+          }
+          
+          .error-message {
+            color: #e53935;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+          }
+          
+          .btn-submit-comment {
+            background-color: #28a745; // Royal green
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
             
             &::before {
-              top: -30%;
-              left: -30%;
+              content: '';
+              position: absolute;
+              top: -100%;
+              left: -100%;
+              width: 300%;
+              height: 300%;
+              background: linear-gradient(135deg, 
+                rgba(255, 215, 0, 0) 0%, 
+                rgba(255, 215, 0, 0.2) 50%, 
+                rgba(255, 215, 0, 0) 100%);
+              transition: all 0.5s ease;
+              transform: rotate(45deg);
+              z-index: 1;
+            }
+            
+            &:hover {
+              background-color: #218838; // Darker green (10% darker than #28a745)
+              box-shadow: 0 0 15px rgba(40, 167, 69, 0.3), 0 0 5px rgba(255, 215, 0, 0.3);
+              
+              &::before {
+                top: -30%;
+                left: -30%;
+              }
+            }
+          }
+          
+          .login-prompt {
+            text-align: center;
+            padding: 1.5rem;
+            
+            p {
+              margin-bottom: 1.5rem;
+              color: var(--text-secondary, #64748b);
+            }
+            
+            .btn-sign-in {
+              background-color: #592e83; // Royal violet
+              color: white;
+              border: none;
+              padding: 0.8rem 2rem;
+              border-radius: 6px;
+              font-weight: 600;
+              cursor: pointer;
+              transition: all 0.3s ease;
+              position: relative;
+              overflow: hidden;
+              
+              &::before {
+                content: '';
+                position: absolute;
+                top: -100%;
+                left: -100%;
+                width: 300%;
+                height: 300%;
+                background: linear-gradient(135deg, 
+                  rgba(255, 215, 0, 0) 0%, 
+                  rgba(255, 215, 0, 0.2) 50%, 
+                  rgba(255, 215, 0, 0) 100%);
+                transition: all 0.5s ease;
+                transform: rotate(45deg);
+                z-index: 1;
+              }
+              
+              &:hover {
+                background-color: #452366; // Darker violet (10% darker than #592e83)
+                box-shadow: 0 0 15px rgba(89, 46, 131, 0.3), 0 0 5px rgba(255, 215, 0, 0.3);
+                
+                &::before {
+                  top: -30%;
+                  left: -30%;
+                }
+              }
             }
           }
         }
@@ -443,19 +639,17 @@
     .forum-content {
       padding: 1.5rem;
       
-      .comments-section {
-        .comment-card {
-          padding: 1rem;
-          
-          .comment-header {
-            flex-direction: column;
-            gap: 0.5rem;
-          }
+      .forum-layout {
+        flex-direction: column;
+        
+        .forum-forms {
+          order: 1; // Show forms first on mobile
+          margin-bottom: 2rem;
         }
-      }
-      
-      .comment-form {
-        padding: 1.5rem;
+        
+        .comments-section {
+          order: 2; // Show comments second on mobile
+        }
       }
     }
   }

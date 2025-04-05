@@ -1,6 +1,6 @@
-# EasySearchPatent Frontend
+# PatentsBrowser Frontend
 
-A modern React frontend for the EasySearchPatent application.
+A modern React frontend for the PatentsBrowser application.
 
 ## Tech Stack
 

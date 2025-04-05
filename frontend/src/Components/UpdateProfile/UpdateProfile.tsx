@@ -327,7 +327,7 @@ const UpdateProfile = () => {
               <PhoneInput
                 international
                 countryCallingCodeEditable={true}
-                defaultCountry="US"
+                defaultCountry="IN"
                 value={phoneValue}
                 onChange={(value) => {
                   setPhoneValue(value || '');

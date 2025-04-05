@@ -1,21 +1,72 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { feedbackApi, FeedbackSubmission } from '../../api/feedback';
+import toast from 'react-hot-toast';
 import './Forum.scss';
+
+interface Comment {
+  id: string;
+  email: string;
+  comment: string;
+  text?: string;
+  date: string;
+}
 
 const Forum = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [email, setEmail] = useState('');
-  const [comments, setComments] = useState<Array<{id: number, email: string, text: string, date: string}>>([]);
-  const [newComment, setNewComment] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [guestEmail, setGuestEmail] = useState('');
+  const [guestComment, setGuestComment] = useState('');
+  const [guestErrorMessage, setGuestErrorMessage] = useState('');
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  // Sample comments (in a real app, these would come from an API)
-  const sampleComments = [
-    { id: 1, email: 'user1@example.com', text: 'The patent search functionality is amazing!', date: '2023-04-10' },
-    { id: 2, email: 'user2@example.com', text: 'How do I save more than 10 patents in the trial version?', date: '2023-04-11' },
-    { id: 3, email: 'admin@allinonesearch.com', text: 'You need to upgrade to at least the Monthly plan to save more patents.', date: '2023-04-11' }
-  ];
+  // Fetch comments using React Query
+  const { data: commentData, isLoading: commentsLoading } = useQuery({
+    queryKey: ['feedbackComments'],
+    queryFn: async () => {
+      const response = await feedbackApi.getFeedbackComments();
+      return response;
+    }
+  });
+
+  // Process the comment data when it changes
+  useEffect(() => {
+    if (commentData?.statusCode === 200) {
+      setComments(commentData.data.map((comment: any) => ({
+        id: comment._id,
+        email: comment.email,
+        text: comment.comment,
+        comment: comment.comment,
+        date: new Date(comment.date).toISOString().split('T')[0]
+      })));
+    }
+  }, [commentData]);
+
+  // Mutation for submitting feedback
+  const submitFeedbackMutation = useMutation({
+    mutationFn: (feedback: FeedbackSubmission) => feedbackApi.submitFeedback(feedback),
+    onSuccess: (data) => {
+      if (data.statusCode === 200) {
+        toast.success('Feedback submitted successfully!');
+        
+        // Reset form
+        setGuestEmail('');
+        setGuestComment('');
+        setGuestErrorMessage('');
+        
+        // Refresh comments
+        queryClient.invalidateQueries({ queryKey: ['feedbackComments'] });
+      } else {
+        toast.error(data.message || 'Failed to submit feedback');
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to submit feedback');
+    }
+  });
 
   useEffect(() => {
     // In a real app, you would check if the user is logged in from your auth context/service
@@ -38,34 +89,40 @@ const Forum = () => {
     };
 
     checkAuth();
-    setComments(sampleComments);
   }, []);
 
-  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setNewComment(e.target.value);
+  const handleGuestEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setGuestEmail(e.target.value);
   };
 
-  const handleSubmitComment = () => {
-    if (!isLoggedIn) {
-      setErrorMessage('Please sign in to post comments.');
+  const handleGuestCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setGuestComment(e.target.value);
+  };
+
+  const handleGuestSubmitComment = () => {
+    // Validate inputs
+    if (!guestEmail.trim()) {
+      setGuestErrorMessage('Please enter your email address.');
       return;
     }
 
-    if (!newComment.trim()) {
-      setErrorMessage('Please enter a comment.');
+    // Simple email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(guestEmail)) {
+      setGuestErrorMessage('Please enter a valid email address.');
       return;
     }
 
-    const newCommentObj = {
-      id: comments.length + 1,
-      email: email,
-      text: newComment.trim(),
-      date: new Date().toISOString().split('T')[0]
-    };
+    if (!guestComment.trim()) {
+      setGuestErrorMessage('Please enter a comment.');
+      return;
+    }
 
-    setComments([...comments, newCommentObj]);
-    setNewComment('');
-    setErrorMessage('');
+    // Submit guest feedback
+    submitFeedbackMutation.mutate({
+      email: guestEmail.trim(),
+      comment: guestComment.trim()
+    });
   };
 
   const handleSignIn = () => {
@@ -76,10 +133,20 @@ const Forum = () => {
     navigate(path);
   };
 
+  // Add a function to truncate email addresses
+  const truncateEmail = (email: string) => {
+    if (!email) return '';
+    const atIndex = email.indexOf('@');
+    if (atIndex > 0) {
+      return email.substring(0, atIndex);
+    }
+    return email;
+  };
+
   return (
     <div className="forum-container">
       <div className="forum-nav">
-        <div className="logo" onClick={() => handleNavigation('/')}>AllinoneSearch</div>
+        <div className="logo" onClick={() => handleNavigation('/')}>PatentsBrowser</div>
         <div className="nav-buttons">
           <button 
             className="btn btn-home"
@@ -96,7 +163,7 @@ const Forum = () => {
                 Sign In
               </button>
               <button 
-                className="btn btn-primary"
+                className="btn btn-signup"
                 onClick={() => handleNavigation('/auth/signup')}
               >
                 Sign Up
@@ -107,66 +174,109 @@ const Forum = () => {
       </div>
 
       <div className="forum-header">
-        <h1>AllinoneSearch Forum</h1>
+        <h1>PatentsBrowser Forum</h1>
         <p>Join the discussion about patent search and our services</p>
       </div>
 
       <div className="forum-content">
-        <div className="comments-section">
-          <h2>Recent Discussions</h2>
-          
-          {comments.length > 0 ? (
-            <div className="comments-list">
-              {comments.map(comment => (
-                <div key={comment.id} className="comment-card">
-                  <div className="comment-header">
-                    <span className="comment-author">{comment.email}</span>
-                    <span className="comment-date">{comment.date}</span>
+        <div className="forum-layout">
+          {/* Left side - Comments section */}
+          <div className="comments-section">
+            <h2> Feedback</h2>
+            
+            {commentsLoading ? (
+              <div className="loading-comments">Loading comments...</div>
+            ) : comments.length > 0 ? (
+              <div className="comments-list">
+                {comments.map(comment => (
+                  <div key={comment.id} className="comment-card">
+                    <div className="comment-header">
+                      <span className="comment-author">{truncateEmail(comment.email)}</span>
+                      <span className="comment-date">{comment.date}</span>
+                    </div>
+                    <div className="comment-body">
+                      <p>{comment.text}</p>
+                    </div>
                   </div>
-                  <div className="comment-body">
-                    <p>{comment.text}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="no-comments">No comments yet. Be the first to start a discussion!</p>
-          )}
-        </div>
-
-        <div className="comment-form">
-          <h3>Add Your Comment</h3>
-          
-          {isLoggedIn ? (
-            <>
-              <div className="user-info">
-                <p>Posting as: <span className="user-email">{email}</span></p>
+                ))}
               </div>
-              <textarea 
-                value={newComment}
-                onChange={handleCommentChange}
-                placeholder="Write your comment here..."
-                rows={4}
-              />
-              {errorMessage && <p className="error-message">{errorMessage}</p>}
-              <button 
-                className="btn-submit-comment"
-                onClick={handleSubmitComment}
+            ) : (
+              <p className="no-comments">No feedback yet. Be the first to share your thoughts!</p>
+            )}
+          </div>
+
+          {/* Right side - Comment form */}
+          <div className="forum-forms">
+            {/* Feedback form for guests (no sign-in required) */}
+            <div className="guest-feedback-form">
+              <h3>Leave Your Feedback</h3>
+              <p className="form-description">
+                Share your thoughts about our services without signing in.
+              </p>
+              
+              <div className="form-field">
+                <label htmlFor="guestEmail">Email</label>
+                <input
+                  type="email"
+                  id="guestEmail"
+                  value={guestEmail}
+                  onChange={handleGuestEmailChange}
+                  placeholder="your@email.com"
+                />
+              </div>
+              
+              <div className="form-field">
+                <label htmlFor="guestComment">Comment</label>
+                <textarea
+                  id="guestComment"
+                  value={guestComment}
+                  onChange={handleGuestCommentChange}
+                  placeholder="Share your feedback or ask a question..."
+                  rows={4}
+                />
+              </div>
+              
+              {guestErrorMessage && <p className="error-message">{guestErrorMessage}</p>}
+              
+              <button
+                className="btn btn-primary"
+                onClick={handleGuestSubmitComment}
+                disabled={submitFeedbackMutation.isPending}
               >
-                Submit Comment
-              </button>
-            </>
-          ) : (
-            <div className="login-prompt">
-              <p>Please sign in to post comments on the forum.</p>
-              <button 
-                className="btn-sign-in"
-                onClick={handleSignIn}
-              >
-                Sign In
+                {submitFeedbackMutation.isPending ? 'Submitting...' : 'Submit'}
               </button>
             </div>
-          )}
+            
+            {/* Navigation options */}
+            {!isLoggedIn && (
+              <div className="navigation-options">
+                <h3>Account Options</h3>
+                <p className="nav-description">
+                  Create an account or sign in to save your search history and preferences.
+                </p>
+                <div className="nav-buttons-container">
+                  <button 
+                    className="btn btn-home"
+                    onClick={() => handleNavigation('/')}
+                  >
+                    Home
+                  </button>
+                  <button 
+                    className="btn btn-home"
+                    onClick={() => handleNavigation('/auth/login')}
+                  >
+                    Sign In
+                  </button>
+                  <button 
+                    className="btn btn-home"
+                    onClick={() => handleNavigation('/auth/signup')}
+                  >
+                    Sign Up
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

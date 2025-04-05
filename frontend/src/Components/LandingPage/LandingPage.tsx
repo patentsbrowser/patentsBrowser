@@ -37,7 +37,7 @@ const LandingPage = () => {
   return (
     <div className="landing-page">
       <header className="landing-header">
-        <div className="logo">AllinoneSearch</div>
+        <div className="logo">PatentsBrowser</div>
         <div className="auth-buttons">
           <button 
             className="btn btn-forum"
@@ -62,7 +62,7 @@ const LandingPage = () => {
 
       <section className="hero-section">
         <div className="hero-content">
-          <h1>Your All-in-One Patent Search Solution</h1>
+          <h1>Your All-in-One PatentsBrowser Search Solution</h1>
           <p>Discover, analyze, and save patents with our comprehensive search platform</p>
           <div className="trial-info">
             Try free for <span>14 days</span> - No credit card required
@@ -72,7 +72,7 @@ const LandingPage = () => {
 
       <section className="trial-section">
         <h2>Start with our 14-Day Free Trial</h2>
-        <p>Experience the power of AllinoneSearch with our comprehensive 14-day free trial. No credit card required, cancel anytime.</p>
+        <p>Experience the power of PatentsBrowser with our comprehensive 14-day free trial. No credit card required, cancel anytime.</p>
         
         <div className="trial-card">
           <h3>What's included in the free trial:</h3>
@@ -122,7 +122,7 @@ const LandingPage = () => {
       </section>
 
       <footer className="landing-footer">
-        <p>&copy; {new Date().getFullYear()} AllinoneSearch. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} PatentsBrowser. All rights reserved.</p>
       </footer>
     </div>
   );
