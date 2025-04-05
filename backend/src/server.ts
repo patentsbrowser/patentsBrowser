@@ -8,6 +8,8 @@ import { fileURLToPath } from 'url';
 import patentRoutes from './routes/patentRoutes.js';
 import savedPatentRoutes from './routes/savedPatentRoutes.js';
 import otpRoutes from './routes/otpRoutes.js';
+import subscriptionRoutes from './routes/subscriptionRoutes.js';
+import { createDefaultPlans } from './models/PricingPlan.js';
 
 // Get current directory in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -56,13 +58,22 @@ app.use('/api/auth', authRoutes);
 app.use('/api/patents', patentRoutes);
 app.use('/api/saved-patents', savedPatentRoutes);
 app.use('/api/otp', otpRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/algo-trading';
 
 mongoose.connect(MONGODB_URI)
-  .then(() => {
+  .then(async () => {
     console.log('Connected to MongoDB');
+    
+    // Initialize default pricing plans
+    try {
+      await createDefaultPlans();
+    } catch (error) {
+      console.error('Error creating default pricing plans:', error);
+    }
+    
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`API URL: http://localhost:${PORT}/api`);

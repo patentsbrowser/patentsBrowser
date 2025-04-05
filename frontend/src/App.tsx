@@ -21,6 +21,7 @@ import SavedPatentList from "./Components/SavedPatentList/savedPatentList";
 import SessionHandler from "./Components/Authentication/SessionHandler";
 import LandingPage from "./Components/LandingPage/LandingPage";
 import Forum from "./Components/Forum/Forum";
+import SubscriptionPage from "./Components/Subscription/SubscriptionPage";
 // import { store } from './Redux/store';
 
 const queryClient = new QueryClient({
@@ -57,6 +58,9 @@ const App = () => {
                 
                 {/* Forum Page - Public */}
                 <Route path="/forum" element={<Forum />} />
+                
+                {/* Subscription Page - Public with auth features */}
+                <Route path="/subscription" element={<SubscriptionPage />} />
                 
                 {/* Authentication routes */}
                 <Route 
@@ -100,6 +104,7 @@ const App = () => {
                             <Route path="patentSaver" element={<SavedPatentList />} />
                             <Route path="update-profile" element={<UpdateProfile />} />
                             <Route path="profile" element={<ProfilePage />} />
+                            <Route path="subscription" element={<SubscriptionPage />} />
                           </Routes>
                         </main>
                       </div>

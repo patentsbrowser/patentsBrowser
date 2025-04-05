@@ -16,6 +16,10 @@ const LandingPage = () => {
     navigate('/forum');
   };
 
+  const handleSubscriptionClick = () => {
+    navigate('/subscription');
+  };
+
   const subscriptionPlans = [
     { id: 1, name: 'Monthly', price: 150, period: 'month', features: ['Full search access', 'Save up to 50 patents', 'Basic support'], popular: false },
     { id: 2, name: 'Quarterly', price: 400, period: '3 months', features: ['Full search access', 'Save up to 200 patents', 'Priority support', '10% discount'], popular: true },
@@ -82,7 +86,7 @@ const LandingPage = () => {
           </div>
           <button 
             className="btn btn-primary btn-large"
-            onClick={() => handleAuthClick('signup')}
+            onClick={handleSubscriptionClick}
           >
             Start Free Trial
           </button>
@@ -108,7 +112,7 @@ const LandingPage = () => {
               </ul>
               <button 
                 className="btn btn-primary"
-                onClick={() => handleAuthClick('signup')}
+                onClick={handleSubscriptionClick}
               >
                 Subscribe Now
               </button>

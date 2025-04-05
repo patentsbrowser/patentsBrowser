@@ -1,0 +1,314 @@
+.subscription-page {
+  min-height: 100vh;
+  padding: 2rem;
+  background-color: var(--primary-bg, #ffffff);
+  color: var(--text-color, #333333);
+  
+  &.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    color: #592e83;
+  }
+
+  .subscription-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    
+    h1 {
+      font-size: 2.5rem;
+      color: #592e83; // Royal violet
+      margin-bottom: 1rem;
+      position: relative;
+      display: inline-block;
+      
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, #ffd700, transparent);
+      }
+    }
+    
+    p {
+      font-size: 1.2rem;
+      color: var(--text-secondary, #64748b);
+    }
+  }
+
+  .current-subscription {
+    max-width: 800px;
+    margin: 0 auto 3rem;
+    padding: 2rem;
+    background-color: rgba(89, 46, 131, 0.05);
+    border-radius: 10px;
+    border: 1px solid rgba(89, 46, 131, 0.1);
+    
+    h2 {
+      font-size: 1.8rem;
+      color: #592e83;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    
+    .subscription-details {
+      p {
+        margin-bottom: 0.8rem;
+        font-size: 1.1rem;
+        
+        strong {
+          color: #592e83;
+        }
+      }
+      
+      .cancel-subscription-btn {
+        margin-top: 1.5rem;
+        padding: 0.8rem 1.5rem;
+        background-color: #f44336;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        
+        &:hover {
+          background-color: #e53935;
+          box-shadow: 0 2px 10px rgba(244, 67, 54, 0.3);
+        }
+      }
+    }
+  }
+
+  .free-trial-card {
+    max-width: 800px;
+    margin: 0 auto 3rem;
+    padding: 2rem;
+    background-color: rgba(40, 167, 69, 0.05);
+    border-radius: 10px;
+    border: 1px solid rgba(40, 167, 69, 0.1);
+    text-align: center;
+    
+    h2 {
+      font-size: 1.8rem;
+      color: #28a745; // Royal green
+      margin-bottom: 1rem;
+    }
+    
+    p {
+      margin-bottom: 1.5rem;
+      font-size: 1.1rem;
+      color: var(--text-secondary, #64748b);
+    }
+    
+    .trial-features {
+      display: inline-block;
+      text-align: left;
+      margin-bottom: 1.5rem;
+      
+      li {
+        margin-bottom: 0.5rem;
+        font-size: 1.05rem;
+        position: relative;
+        padding-left: 1.5rem;
+        
+        &::before {
+          content: '✓';
+          position: absolute;
+          left: 0;
+          color: #28a745;
+          font-weight: bold;
+        }
+      }
+    }
+    
+    .start-trial-btn {
+      padding: 0.8rem 2rem;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      
+      &:hover {
+        background-color: #218838;
+        box-shadow: 0 2px 10px rgba(40, 167, 69, 0.3);
+      }
+      
+      &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  .subscription-plans {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 2rem;
+    
+    .plan-card {
+      background-color: white;
+      border-radius: 10px;
+      padding: 2rem;
+      flex: 1;
+      min-width: 250px;
+      max-width: 300px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      transition: all 0.4s ease;
+      border: 1px solid rgba(89, 46, 131, 0.1);
+      position: relative;
+      overflow: hidden;
+      
+      &:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 10px 20px rgba(89, 46, 131, 0.1);
+      }
+      
+      &.popular {
+        border-color: #ffd700;
+        transform: scale(1.05);
+        box-shadow: 0 8px 15px rgba(255, 215, 0, 0.2);
+        
+        &:hover {
+          transform: translateY(-10px) scale(1.05);
+          box-shadow: 0 15px 30px rgba(255, 215, 0, 0.3);
+        }
+        
+        .popular-badge {
+          position: absolute;
+          top: 10px;
+          right: -30px;
+          transform: rotate(45deg);
+          background-color: #ffd700;
+          color: #592e83;
+          padding: 0.2rem 2rem;
+          font-weight: 600;
+          font-size: 0.9rem;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+      }
+      
+      h3 {
+        font-size: 1.5rem;
+        color: #592e83;
+        margin-bottom: 1rem;
+        text-align: center;
+      }
+      
+      .price {
+        font-size: 2.5rem;
+        text-align: center;
+        margin-bottom: 1rem;
+        color: #333;
+        
+        .currency {
+          font-size: 1.5rem;
+          vertical-align: super;
+          margin-right: 0.1rem;
+          font-weight: 600;
+        }
+        
+        .amount {
+          font-weight: 700;
+        }
+        
+        .period {
+          font-size: 1rem;
+          color: var(--text-secondary, #64748b);
+        }
+      }
+      
+      .discount {
+        text-align: center;
+        margin-bottom: 1.5rem;
+        color: #28a745;
+        font-weight: 600;
+        font-size: 1.1rem;
+      }
+      
+      .features {
+        list-style: none;
+        padding: 0;
+        margin-bottom: 2rem;
+        
+        li {
+          margin-bottom: 0.8rem;
+          position: relative;
+          padding-left: 1.5rem;
+          color: var(--text-secondary, #64748b);
+          
+          &::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #592e83;
+          }
+        }
+      }
+      
+      .subscribe-btn {
+        width: 100%;
+        padding: 0.8rem;
+        background-color: #592e83;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        
+        &:hover {
+          background-color: #452366;
+          box-shadow: 0 2px 10px rgba(89, 46, 131, 0.3);
+        }
+        
+        &:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .subscription-page {
+    padding: 1.5rem;
+    
+    .subscription-header {
+      h1 {
+        font-size: 2rem;
+      }
+    }
+    
+    .subscription-plans {
+      flex-direction: column;
+      align-items: center;
+      
+      .plan-card {
+        width: 100%;
+        max-width: 100%;
+        
+        &.popular {
+          transform: scale(1);
+          
+          &:hover {
+            transform: translateY(-10px) scale(1);
+          }
+        }
+      }
+    }
+  }
+} 

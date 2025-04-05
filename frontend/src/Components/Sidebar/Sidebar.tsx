@@ -5,6 +5,7 @@ const Sidebar = () => {
   const menuItems = [
     { path: '/auth/dashboard', label: 'Dashboard', icon: '📊' },
     { path: '/auth/patentSaver', label: 'Saved Patents', icon: '📑' },
+    { path: '/auth/subscription', label: 'Subscription', icon: '💎' },
     { path: '/auth/settings', label: 'Settings', icon: '📝' },
     // { path: '/auth/charts', label: 'Charts', icon: '📈' },
     // { path: '/auth/trade', label: 'Trading Terminal', icon: '💹' },

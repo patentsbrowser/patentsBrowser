@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { SubscriptionStatus } from './Subscription.js';
 
 interface IUser extends mongoose.Document {
   email: string;
@@ -17,6 +18,9 @@ interface IUser extends mongoose.Document {
   isEmailVerified: boolean;
   activeToken: string;
   lastLogin: Date;
+  subscriptionStatus: SubscriptionStatus;
+  trialEndDate: Date;
+  razorpayCustomerId?: string;
 }
 
 const userSchema = new mongoose.Schema({
@@ -56,6 +60,23 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['free', 'paid'],
     default: 'free'
+  },
+  subscriptionStatus: {
+    type: String,
+    enum: Object.values(SubscriptionStatus),
+    default: SubscriptionStatus.TRIAL
+  },
+  trialEndDate: {
+    type: Date,
+    default: function() {
+      // Set trial end date to 14 days from now
+      const date = new Date();
+      date.setDate(date.getDate() + 14);
+      return date;
+    }
+  },
+  razorpayCustomerId: {
+    type: String
   },
   address:{
     type: String,
