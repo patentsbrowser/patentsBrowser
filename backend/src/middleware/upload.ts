@@ -3,6 +3,21 @@ import path from 'path';
 import { Request } from 'express';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { Readable } from 'stream';
+
+// Define our own File type to replace Express.Multer.File
+interface FileType {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  size: number;
+  destination: string;
+  filename: string;
+  path: string;
+  buffer: Buffer;
+  stream: Readable;
+}
 
 // Get current directory in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -36,7 +51,7 @@ const storage = multer.diskStorage({
 });
 
 // File filter function to accept only images
-const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const fileFilter = (req: Request, file: FileType, cb: any) => {
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);
   } else {

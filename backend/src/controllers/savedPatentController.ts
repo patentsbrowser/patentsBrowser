@@ -5,15 +5,31 @@ import fs from 'fs-extra';
 import mammoth from 'mammoth';
 import path from 'path';
 import xlsx from 'xlsx';
+import { Readable } from 'stream';
 import { standardizePatentNumber } from '../utils/patentUtils.js';
 
-interface AuthRequest extends Request {
+// Create a complete FileType that includes all properties
+interface FileType {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  size: number;
+  destination: string;
+  filename: string;
+  path: string;
+  buffer: Buffer;
+  stream: Readable;
+}
+
+// Use type instead of interface to avoid TypeScript extension issues
+type AuthRequest = Request & {
   user?: {
     userId: string;
   };
-  file?: Express.Multer.File;
+  file?: FileType;
   body: any;
-}
+};
 
 export const savePatent = async (req: AuthRequest, res: Response) => {
   try {

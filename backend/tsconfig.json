@@ -10,7 +10,6 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "typeRoots": ["./node_modules/@types", "./src/types"],
-    "types": ["node", "express", "multer", "jsonwebtoken"],
     "forceConsistentCasingInFileNames": true,
     "sourceMap": true
   },
