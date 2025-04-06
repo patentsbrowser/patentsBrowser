@@ -66,6 +66,19 @@ app.use((req, res, next) => {
 app.use(cors());
 app.use(express.json());
 
+// Health check endpoint for Render
+app.get('/api/health', (req, res) => {
+  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  
+  res.status(200).json({
+    status: 'ok',
+    message: 'PatentsBrowser API is running',
+    environment: env,
+    database: dbStatus,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Make sure uploadedImages directory is served as public
 const uploadDir = path.join(__dirname, '../uploadedImages');
 console.log('Upload directory path: ', uploadDir);
@@ -97,6 +110,11 @@ app.use('/api/feedback', feedbackRoutes);
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/patent_db';
 
+// Check if the connection string is for MongoDB Atlas
+const isAtlasConnection = MONGODB_URI.includes('mongodb+srv://');
+console.log(`Using ${isAtlasConnection ? 'MongoDB Atlas' : 'local MongoDB'} database`);
+
+// Connect to MongoDB
 mongoose.connect(MONGODB_URI)
   .then(async () => {
     console.log('Connected to MongoDB');
@@ -113,4 +131,11 @@ mongoose.connect(MONGODB_URI)
       console.log(`API URL: http://localhost:${PORT}/api`);
     });
   })
-  .catch(err => console.error('MongoDB connection error:', err)); 
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    if (isAtlasConnection && err.name === 'MongoTimeoutError') {
+      console.error('Connection to MongoDB Atlas timed out. Check your network and connection string.');
+    } else if (err.name === 'MongoParseError') {
+      console.error('Invalid MongoDB connection string. Please check the format.');
+    }
+  }); 

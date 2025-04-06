@@ -1,6 +1,79 @@
-# EasySearchPatent Backend
+# Patents Browser Backend
 
-A Node.js backend for the EasySearchPatent application with MongoDB integration.
+Backend API for the Patents Browser application.
+
+## Environment Setup
+
+### MongoDB Atlas Setup (Free Tier)
+
+1. Create a MongoDB Atlas account at [https://www.mongodb.com/cloud/atlas/register](https://www.mongodb.com/cloud/atlas/register)
+2. Create a new cluster (Free tier is sufficient)
+3. Set up database access:
+   - Create a new database user with password authentication
+   - Make note of the username and password created
+4. Set up network access:
+   - Add your IP address to the IP Access List
+   - For production deployment on Render, select "Allow Access from Anywhere" (0.0.0.0/0)
+5. Get your connection string:
+   - Click "Connect" on your cluster
+   - Choose "Connect your application"
+   - Copy the connection string
+   - Replace `<username>`, `<password>`, and `<dbname>` with your actual values
+   
+Example connection string:
+```
+mongodb+srv://patentsbrowser:<password>@cluster0.mongodb.net/patent_db?retryWrites=true&w=majority
+```
+
+### Environment Variables
+
+Set the following environment variables in your deployment platform (Render):
+
+| Variable | Description |
+|----------|-------------|
+| MONGODB_URI | MongoDB Atlas connection string |
+| JWT_SECRET | Secret key for JWT token generation |
+| EMAIL_USER | Gmail address for sending OTP emails |
+| EMAIL_APP_PASSWORD | Gmail app password for OTP emails |
+| SERP_API_KEY | API key for SERP API |
+| RAZORPAY_KEY_ID | Razorpay API key ID |
+| RAZORPAY_KEY_SECRET | Razorpay API key secret |
+| RAZORPAY_WEBHOOK_SECRET | Razorpay webhook secret |
+| FRONTEND_URL | URL of the frontend application |
+
+## Development
+
+### Prerequisites
+
+- Node.js (v14 or higher)
+- npm or yarn
+
+### Installation
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+```
+
+## Deployment on Render
+
+This project includes a `render.yaml` file for easy deployment on Render.
+
+1. Push your code to GitHub
+2. Create a new Web Service in Render
+3. Connect your GitHub repository
+4. Render will automatically detect the `render.yaml` configuration
+5. Set the required environment variables in the Render dashboard
+6. Deploy your application
 
 ## Tech Stack
 
