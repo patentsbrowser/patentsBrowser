@@ -436,35 +436,127 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
   };
 
   // Handle smart search modal selection
-  const handleSmartSearch = (selectedIds: string[]) => {
-    if (selectedIds.length === 0) return;
-    
-    // For smart search, we'll set up different loading state
-    const initialSummaries = [{
-      patentId: selectedIds.join(' OR '),
-      status: 'loading' as const,
-    }];
-    
-    setPatentSummaries(initialSummaries);
-    setIsSearching(true);
-    setIsLoading(true);
-    
-    handleSearch(selectedIds, 'smart', selectedApi)
-      .then(results => {
-        setPatentSummaries(results);
-        onSearch(selectedIds);
-      })
-      .catch(error => {
-        console.error('Smart search error:', error);
-        setPatentSummaries([{
-          patentId: selectedIds[0],
-          status: 'error' as const,
-          error: error.message || 'An unexpected error occurred during smart search'
-        }]);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
+  const handleSmartSearch = async (idsToSearch: string[]) => {
+    try {
+      setIsLoading(true);
+      setPatentSummaries([]);
+
+      // Use Unified Patents API if selected
+      if (selectedApi === 'unified') {
+        try {
+          const result = await patentApi.searchMultiplePatentsUnified(idsToSearch);
+          
+          // The response will be in hits.hits array, sorted by portfolio_score
+          const hits = result.hits?.hits || [];
+          
+          // Map the hits to our patent format
+          const patents = hits.map((hit: any) => {
+            const source = hit._source;
+            return {
+              patentId: source?.ucid_spif || '',
+              status: 'success' as const,
+              title: source?.title || '',
+              abstract: source?.abstract || '',
+              details: {
+                assignee_current: source?.assignee_current || [],
+                assignee_original: source?.assignee_original || [],
+                assignee_parent: source?.assignee_parent || [],
+                priority_date: source?.priority_date || '',
+                publication_date: source?.publication_date || '',
+                grant_date: source?.grant_date || '',
+                expiration_date: source?.expiration_date || '',
+                application_date: source?.application_date || '',
+                application_number: source?.application_number || '',
+                grant_number: source?.grant_number || '',
+                publication_number: source?.publication_number || '',
+                publication_status: source?.publication_status || '',
+                publication_type: source?.publication_type || '',
+                type: source?.type || '',
+                country: source?.country || '',
+                kind_code: source?.kind_code || '',
+                inventors: source?.inventors || [],
+                examiner: source?.examiner || [],
+                law_firm: source?.law_firm || '',
+                cpc_codes: source?.cpc_codes || [],
+                uspc_codes: source?.uspc_codes || [],
+                num_cit_pat: source?.num_cit_pat || 0,
+                num_cit_npl: source?.num_cit_npl || 0,
+                num_cit_pat_forward: source?.num_cit_pat_forward || 0,
+                citations_pat_forward: source?.citations_pat_forward || [],
+                portfolio_score: source?.portfolio_score || 0,
+                litigation_score: source?.litigation_score || 0,
+                rating_broadness: source?.rating_broadness || '',
+                rating_citation: source?.rating_citation || '',
+                rating_litigation: source?.rating_litigation || '',
+                rating_validity: source?.rating_validity || '',
+                family_id: source?.family_id || '',
+                extended_family_id: source?.extended_family_id || '',
+                hyperlink_google: source?.hyperlink_google || '',
+                is_litigated: source?.is_litigated || 'false',
+                is_challenged: source?.is_challenged || 'false',
+                num_litigated: source?.num_litigated || 0,
+                num_challenged: source?.num_challenged || 0,
+                last_litigated_at: source?.last_litigated_at || null,
+                last_challenged_at: source?.last_challenged_at || null,
+                family_annuities: source?.family_annuities || 0,
+                norm_family_annuities: source?.norm_family_annuities || 0,
+                rnix_score: source?.rnix_score || 0
+              }
+            };
+          });
+
+          setPatentSummaries(patents);
+          return;
+        } catch (error) {
+          console.error('Unified API error:', error);
+          throw error;
+        }
+      }
+
+      // For other API sources, use the existing logic
+      const results = await Promise.all(
+        idsToSearch.map(async (id) => {
+          try {
+            const result = await patentApi.searchPatents(id, selectedApi);
+            const normalizedResult = normalizePatentResponse(result, selectedApi);
+            
+            if (!normalizedResult) {
+              return {
+                patentId: id,
+                status: 'error' as const,
+                error: 'No data found for this patent ID'
+              };
+            }
+            
+            return {
+              patentId: id,
+              status: 'success' as const,
+              title: normalizedResult.title,
+              abstract: normalizedResult.abstract,
+              details: normalizedResult.details
+            };
+          } catch (error) {
+            console.error(`Error searching patent ${id}:`, error);
+            return {
+              patentId: id,
+              status: 'error' as const,
+              error: error instanceof Error ? error.message : 'Unknown error occurred'
+            };
+          }
+        })
+      );
+
+      setPatentSummaries(results);
+    } catch (error) {
+      console.error('Smart search error:', error);
+      setPatentSummaries([{
+        patentId: idsToSearch[0],
+        status: 'error' as const,
+        error: error instanceof Error ? error.message : 'An error occurred during smart search'
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Update the selected patent when Redux state changes (for family member patents)

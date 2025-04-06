@@ -2,13 +2,24 @@ import express from 'express';
 import { auth } from '../middleware/auth.js';
 import { getCustomPatentList, getSavedPatents, saveCustomPatentList, savePatent, removePatentFromFolder, extractPatentIdsFromFile } from '../controllers/savedPatentController.js';
 import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const router = express.Router();
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true, mode: 0o755 });
+} else {
+  // Update permissions on existing directory
+  fs.chmodSync(uploadsDir, 0o755);
+}
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
     // Use a unique filename to avoid collisions

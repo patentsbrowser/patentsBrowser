@@ -24,7 +24,7 @@ const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
       className={`summary-card ${summary.status}`}
     >
       <div className="summary-header">
-        <span className="patent-id">{summary.patentId}</span>
+        <span className="patent-id">{summary.patentId[0]}</span>
         <span className="status-indicator">
           {summary.status === 'loading' ? '⌛' : 
            summary.status === 'success' ? '✓' : '✗'}

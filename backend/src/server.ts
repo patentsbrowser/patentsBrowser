@@ -91,6 +91,15 @@ app.use('/uploadedImages', express.static(uploadDir, {
   }
 }));
 
+// Serve uploads directory
+const uploadsDir = path.join(process.cwd(), 'uploads');
+app.use('/uploads', express.static(uploadsDir, {
+  setHeaders: (res, path) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+  }
+}));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/patents', patentRoutes);
