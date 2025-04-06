@@ -128,7 +128,10 @@ mongoose.connect(MONGODB_URI)
     
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
-      console.log(`API URL: http://localhost:${PORT}/api`);
+      
+      // Use API_URL from environment if available, otherwise use localhost
+      const apiUrl = process.env.API_URL || `http://localhost:${PORT}/api`;
+      console.log(`API URL: ${apiUrl}`);
     });
   })
   .catch(err => {

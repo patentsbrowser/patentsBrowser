@@ -4,8 +4,10 @@
     "start": "node dist/server.js",
     "dev": "nodemon --exec tsx src/server.ts",
     "build": "tsc",
+    "build:stage": "NODE_ENV=stage tsc",
+    "build:production": "NODE_ENV=production tsc",
     "start:stage": "NODE_ENV=stage node -r dotenv/config dist/server.js dotenv_config_path=.env.stage",
-    "build:stage": "npm run build && npm run start:stage",
+    "start:production": "NODE_ENV=production node -r dotenv/config dist/server.js dotenv_config_path=.env.production",
     "dev:stage": "NODE_ENV=stage nodemon --exec tsx src/server.ts dotenv_config_path=.env.stage"
   },
   "dependencies": {
