@@ -66,17 +66,9 @@ app.use((req, res, next) => {
 app.use(cors());
 app.use(express.json());
 
-// Health check endpoint for Render
+// Health check endpoint for Render monitoring
 app.get('/api/health', (req, res) => {
-  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
-  
-  res.status(200).json({
-    status: 'ok',
-    message: 'PatentsBrowser API is running',
-    environment: env,
-    database: dbStatus,
-    timestamp: new Date().toISOString()
-  });
+  res.status(200).json({ status: 'ok', environment: env });
 });
 
 // Make sure uploadedImages directory is served as public

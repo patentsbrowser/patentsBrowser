@@ -29,4 +29,6 @@ services:
       - key: RAZORPAY_WEBHOOK_SECRET
         sync: false
       - key: FRONTEND_URL
-        value: https://patentsbrowser.com 
+        value: https://patentsbrowser.com
+      - key: SKIP_PREFLIGHT_CHECK
+        value: true 
