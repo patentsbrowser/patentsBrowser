@@ -1,17 +1,14 @@
 import { Request } from 'express';
-// import { Multer } from 'multer';
+import { Multer } from 'multer';
 
 declare global {
   namespace Express {
-    // Comment out Multer interface to avoid type errors
-    /*
     interface Multer {
       any(): any;
       single(fieldname: string): any;
       array(fieldname: string, maxCount?: number): any;
       fields(fields: Array<{ name: string; maxCount?: number }>): any;
     }
-    */
 
     interface Request {
       // Replace Multer.File with a simple type definition
@@ -57,8 +54,6 @@ declare global {
     }
   }
 
-  // Comment out the Multer namespace
-  /*
   namespace Multer {
     interface File {
       fieldname: string;
@@ -72,7 +67,6 @@ declare global {
       buffer: Buffer;
     }
   }
-  */
 
   interface AuthRequest extends Request {
     user?: {

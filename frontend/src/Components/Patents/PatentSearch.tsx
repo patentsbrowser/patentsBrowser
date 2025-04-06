@@ -177,24 +177,95 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
           if (apiType === 'unified') {
             // Use Unified Patents API
             try {
-              const result = await patentApi.searchPatentsUnified(formattedId);
-              const normalizedResult = normalizePatentResponse(result, 'unified');
-              
-              if (!normalizedResult) {
+              // If we have multiple patent IDs, use the new searchMultiplePatentsUnified method
+              if (idsToSearch.length > 1) {
+                const result = await patentApi.searchMultiplePatentsUnified(idsToSearch);
+                
+                // The response will be in hits.hits array, sorted by portfolio_score
+                const hits = result.hits?.hits || [];
+                const patentData = hits.find((hit: any) => hit._source?.ucid_spif?.includes(id));
+                
+                if (!patentData) {
+                  return {
+                    patentId: id,
+                    status: 'error' as const,
+                    error: 'No data found for this patent ID'
+                  };
+                }
+                
+                const source = patentData._source;
                 return {
                   patentId: id,
-                  status: 'error' as const,
-                  error: 'No data found for this patent ID'
+                  status: 'success' as const,
+                  title: source?.title || '',
+                  abstract: source?.abstract || '',
+                  details: {
+                    assignee_current: source?.assignee_current || [],
+                    assignee_original: source?.assignee_original || [],
+                    assignee_parent: source?.assignee_parent || [],
+                    priority_date: source?.priority_date || '',
+                    publication_date: source?.publication_date || '',
+                    grant_date: source?.grant_date || '',
+                    expiration_date: source?.expiration_date || '',
+                    application_date: source?.application_date || '',
+                    application_number: source?.application_number || '',
+                    grant_number: source?.grant_number || '',
+                    publication_number: source?.publication_number || '',
+                    publication_status: source?.publication_status || '',
+                    publication_type: source?.publication_type || '',
+                    type: source?.type || '',
+                    country: source?.country || '',
+                    kind_code: source?.kind_code || '',
+                    inventors: source?.inventors || [],
+                    examiner: source?.examiner || [],
+                    law_firm: source?.law_firm || '',
+                    cpc_codes: source?.cpc_codes || [],
+                    uspc_codes: source?.uspc_codes || [],
+                    num_cit_pat: source?.num_cit_pat || 0,
+                    num_cit_npl: source?.num_cit_npl || 0,
+                    num_cit_pat_forward: source?.num_cit_pat_forward || 0,
+                    citations_pat_forward: source?.citations_pat_forward || [],
+                    portfolio_score: source?.portfolio_score || 0,
+                    litigation_score: source?.litigation_score || 0,
+                    rating_broadness: source?.rating_broadness || '',
+                    rating_citation: source?.rating_citation || '',
+                    rating_litigation: source?.rating_litigation || '',
+                    rating_validity: source?.rating_validity || '',
+                    family_id: source?.family_id || '',
+                    extended_family_id: source?.extended_family_id || '',
+                    hyperlink_google: source?.hyperlink_google || '',
+                    is_litigated: source?.is_litigated || 'false',
+                    is_challenged: source?.is_challenged || 'false',
+                    num_litigated: source?.num_litigated || 0,
+                    num_challenged: source?.num_challenged || 0,
+                    last_litigated_at: source?.last_litigated_at || null,
+                    last_challenged_at: source?.last_challenged_at || null,
+                    family_annuities: source?.family_annuities || 0,
+                    norm_family_annuities: source?.norm_family_annuities || 0,
+                    rnix_score: source?.rnix_score || 0
+                  }
+                };
+              } else {
+                // For single patent search, use the existing method
+                const result = await patentApi.searchPatentsUnified(formattedId);
+                const normalizedResult = normalizePatentResponse(result, 'unified');
+                
+                if (!normalizedResult) {
+                  return {
+                    patentId: id,
+                    status: 'error' as const,
+                    error: 'No data found for this patent ID'
+                  };
+                }
+                
+                return {
+                  patentId: id,
+                  status: 'success' as const,
+                  title: normalizedResult.title,
+                  abstract: normalizedResult.abstract,
+                  details: normalizedResult.details
                 };
               }
-              
-              return {
-                patentId: id,
-                status: 'success' as const,
-                title: normalizedResult.title,
-                abstract: normalizedResult.abstract,
-                details: normalizedResult.details
-              };
             } catch (error) {
               console.error('Unified API error:', error);
               throw error;

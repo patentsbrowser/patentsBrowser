@@ -227,6 +227,55 @@ export const patentApi = {
     return response.data;
   },
 
+  // New method for searching multiple patents using Unified Patents API
+  searchMultiplePatentsUnified: async (patentNumbers: string[]): Promise<any> => {
+    const payload = {
+      query: {
+        bool: {
+          must: [
+            {
+              terms: {
+                ucid_spif: patentNumbers
+              }
+            },
+            {
+              wildcard: {
+                publication_type: "g*"
+              }
+            }
+          ]
+        }
+      },
+      size: 20,
+      sort: [
+        {
+          portfolio_score: "desc"
+        }
+      ],
+      track_total_hits: true,
+      _source: {
+        exclude: [
+          "created_at", "updated_at", "id", "*.created_at", "*.updated_at",
+          "*.id", "patent_id", "patent.title",
+          "*.full_text", "citations_npl", "citations_pat",
+          "family_members", "abstract_fulltext", "description", "claims",
+          "non_patent_citations"
+        ]
+      }
+    };
+
+    const response = await axios.post('https://api.unifiedpatents.com/patents/v6/_search', payload);
+    
+    // Return the entire response structure
+    return {
+      hits: response.data.hits,
+      timed_out: response.data.timed_out,
+      took: response.data.took,
+      _cached: response.data._cached,
+      _shards: response.data._shards
+    };
+  },
+
   getSavedPatents: async () => {
     const response = await axiosInstance.get(`/saved-patents/list`);
     return response.data;
