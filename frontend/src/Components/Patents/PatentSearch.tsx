@@ -171,7 +171,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     if (apiType === 'unified') {
       // Use Unified Patents API for both direct and smart search
       try {
-        const result = await patentApi.searchMultiplePatentsUnified(idsToSearch);
+        const result = await patentApi.searchMultiplePatentsUnified(idsToSearch, searchType);
         
         // The response will be in hits.hits array, sorted by portfolio_score
         const hits = result.hits?.hits || [];
@@ -318,7 +318,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
       // Use Unified Patents API if selected
       if (selectedApi === 'unified') {
         try {
-          const result = await patentApi.searchMultiplePatentsUnified(idsToSearch);
+          const result = await patentApi.searchMultiplePatentsUnified(idsToSearch, 'smart');
           
           // The response will be in hits.hits array, sorted by portfolio_score
           const hits = result.hits?.hits || [];
