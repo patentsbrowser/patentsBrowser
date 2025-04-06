@@ -12,6 +12,7 @@ interface AuthRequest extends Request {
     userId: string;
   };
   file?: Express.Multer.File;
+  body: any;
 }
 
 export const savePatent = async (req: AuthRequest, res: Response) => {

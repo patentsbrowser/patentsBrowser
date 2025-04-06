@@ -45,4 +45,22 @@ declare global {
     };
     body: any;
   }
+}
+
+// For modules that don't have type definitions
+declare module 'serpapi' {
+  export function getJson(params: Record<string, any>): Promise<any>;
+  export const google_search: (params: Record<string, any>) => Promise<any>;
+}
+
+declare module 'mammoth' {
+  export function convertToHtml(input: Buffer | { buffer: Buffer } | { path: string }): Promise<{
+    value: string;
+    messages: any[];
+  }>;
+  
+  export function extractRawText(input: Buffer | { buffer: Buffer } | { path: string }): Promise<{
+    value: string;
+    messages: any[];
+  }>;
 } 
