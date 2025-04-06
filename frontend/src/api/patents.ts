@@ -226,6 +226,15 @@ export const patentApi = {
     const response = await axios.get(`https://api.unifiedpatents.com/patents/${patentNumber}`);
     return response.data;
   },
+  
+  // Generic method to search patents with any API
+  searchPatents: async (patentId: string, apiType: ApiSource) => {
+    if (apiType === 'unified') {
+      return await patentApi.searchPatentsUnified(patentId);
+    } else {
+      return await patentApi.searchPatentsSerpApi(patentId);
+    }
+  },
 
   // New method for searching multiple patents using Unified Patents API
   searchMultiplePatentsUnified: async (patentNumbers: string[], searchType: 'direct' | 'smart' = 'direct'): Promise<any> => {
@@ -280,12 +289,8 @@ export const patentApi = {
                 terms: {
                   ucid_spif: patentNumbers
                 }
-              },
-              // {
-              //   wildcard: {
-              //     publication_type: "g*"
-              //   }
-              // }
+              }
+              // Removed wildcard as per user's changes
             ]
           }
         },
