@@ -168,236 +168,110 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     searchType: 'direct' | 'smart',
     apiType: ApiSource
   ): Promise<PatentSummary[]> => {
-    if (searchType === 'direct') {
-      // For direct search, we'll query each patent ID individually
-      const promises = idsToSearch.map(async (id) => {
-        try {
-          const formattedId = formatPatentId(id, apiType);
-          
-          if (apiType === 'unified') {
-            // Use Unified Patents API
-            try {
-              // If we have multiple patent IDs, use the new searchMultiplePatentsUnified method
-              if (idsToSearch.length > 1) {
-                const result = await patentApi.searchMultiplePatentsUnified(idsToSearch);
-                
-                // The response will be in hits.hits array, sorted by portfolio_score
-                const hits = result.hits?.hits || [];
-                const patentData = hits.find((hit: any) => hit._source?.ucid_spif?.includes(id));
-                
-                if (!patentData) {
-                  return {
-                    patentId: id,
-                    status: 'error' as const,
-                    error: 'No data found for this patent ID'
-                  };
-                }
-                
-                const source = patentData._source;
-                return {
-                  patentId: id,
-                  status: 'success' as const,
-                  title: source?.title || '',
-                  abstract: source?.abstract || '',
-                  details: {
-                    assignee_current: source?.assignee_current || [],
-                    assignee_original: source?.assignee_original || [],
-                    assignee_parent: source?.assignee_parent || [],
-                    priority_date: source?.priority_date || '',
-                    publication_date: source?.publication_date || '',
-                    grant_date: source?.grant_date || '',
-                    expiration_date: source?.expiration_date || '',
-                    application_date: source?.application_date || '',
-                    application_number: source?.application_number || '',
-                    grant_number: source?.grant_number || '',
-                    publication_number: source?.publication_number || '',
-                    publication_status: source?.publication_status || '',
-                    publication_type: source?.publication_type || '',
-                    type: source?.type || '',
-                    country: source?.country || '',
-                    kind_code: source?.kind_code || '',
-                    inventors: source?.inventors || [],
-                    examiner: source?.examiner || [],
-                    law_firm: source?.law_firm || '',
-                    cpc_codes: source?.cpc_codes || [],
-                    uspc_codes: source?.uspc_codes || [],
-                    num_cit_pat: source?.num_cit_pat || 0,
-                    num_cit_npl: source?.num_cit_npl || 0,
-                    num_cit_pat_forward: source?.num_cit_pat_forward || 0,
-                    citations_pat_forward: source?.citations_pat_forward || [],
-                    portfolio_score: source?.portfolio_score || 0,
-                    litigation_score: source?.litigation_score || 0,
-                    rating_broadness: source?.rating_broadness || '',
-                    rating_citation: source?.rating_citation || '',
-                    rating_litigation: source?.rating_litigation || '',
-                    rating_validity: source?.rating_validity || '',
-                    family_id: source?.family_id || '',
-                    extended_family_id: source?.extended_family_id || '',
-                    hyperlink_google: source?.hyperlink_google || '',
-                    is_litigated: source?.is_litigated || 'false',
-                    is_challenged: source?.is_challenged || 'false',
-                    num_litigated: source?.num_litigated || 0,
-                    num_challenged: source?.num_challenged || 0,
-                    last_litigated_at: source?.last_litigated_at || null,
-                    last_challenged_at: source?.last_challenged_at || null,
-                    family_annuities: source?.family_annuities || 0,
-                    norm_family_annuities: source?.norm_family_annuities || 0,
-                    rnix_score: source?.rnix_score || 0
-                  }
-                };
-              } else {
-                // For single patent search, use the existing method
-                const result = await patentApi.searchPatentsUnified(formattedId);
-                const normalizedResult = normalizePatentResponse(result, 'unified');
-                
-                if (!normalizedResult) {
-                  return {
-                    patentId: id,
-                    status: 'error' as const,
-                    error: 'No data found for this patent ID'
-                  };
-                }
-                
-                return {
-                  patentId: id,
-                  status: 'success' as const,
-                  title: normalizedResult.title,
-                  abstract: normalizedResult.abstract,
-                  details: normalizedResult.details
-                };
-              }
-            } catch (error) {
-              console.error('Unified API error:', error);
-              throw error;
-            }
-          } else {
-            // Use SerpAPI
-            const result = await patentApi.searchPatentsSerpApi(formattedId);
-            console.log('SerpAPI response structure:', {
-              statusCode: result.statusCode,
-              hasData: !!result.data,
-              keys: result.data ? Object.keys(result.data) : [],
-              hasOrganicResults: result.data && result.data.organic_results ? 
-                result.data.organic_results.length : 'No organic_results'
-            });
-            
-            // Try to normalize both the result and result.data to see which works
-            let normalizedResult = normalizePatentResponse(result, 'serpapi');
-            if (!normalizedResult && result.data) {
-              normalizedResult = normalizePatentResponse(result.data, 'serpapi');
-            }
-            
-            if (!normalizedResult) {
-              console.error('Failed to normalize SerpAPI response:', result);
-              return {
-                patentId: id,
-                status: 'error' as const,
-                error: 'Failed to process patent data'
-              };
-            }
-            
-            // For SerpAPI, make sure to store all the detailed info we received
-            // to avoid unnecessary API calls later
-            return {
-              patentId: id,
-              status: 'success' as const,
-              title: normalizedResult.title || `Patent ${id}`,
-              abstract: normalizedResult.abstract || 'Click View Details to see full information',
-              details: normalizedResult.details
-            };
-          }
-        } catch (error: any) {
-          const errorMessage = error.response?.data?.message || error.message || 'Patent not found or invalid ID';
+    if (apiType === 'unified') {
+      // Use Unified Patents API for both direct and smart search
+      try {
+        const result = await patentApi.searchMultiplePatentsUnified(idsToSearch);
+        
+        // The response will be in hits.hits array, sorted by portfolio_score
+        const hits = result.hits?.hits || [];
+        
+        // Map the hits to our patent format
+        const patents = hits.map((hit: any) => {
+          const source = hit._source;
           return {
-            patentId: id,
-            status: 'error' as const,
-            error: errorMessage
-          };
-        }
-      });
-
-      return await Promise.all(promises);
-    }
-    
-    // Smart search implementation
-    try {
-      const smartSearchQuery = idsToSearch.join(' OR ');
-      const result = await patentApi.searchPatentsSerpApi(smartSearchQuery);
-      console.log('Smart search response:', result);
-      
-      if (!result || result.error) {
-        return [{
-          patentId: idsToSearch[0],
-          status: 'error' as const,
-          error: result?.error || 'No results found for this search query'
-        }];
-      }
-      
-      // For smart search using SerpAPI
-      if (apiType === 'serpapi') {
-        // Get the data from the response
-        const data = result.data || result;
-        
-        // Use the normalizePatentResponse to handle different response structures
-        const normalizedResponse = normalizePatentResponse(data, 'serpapi');
-        
-        // If we got a valid normalized response for a single patent, return it
-        if (normalizedResponse && normalizedResponse.patentId) {
-          return [{
-            patentId: normalizedResponse.patentId,
-            title: normalizedResponse.title || 'Unknown Title',
-            abstract: normalizedResponse.abstract || 'No abstract available',
+            patentId: source?.ucid_spif || '',
             status: 'success' as const,
-            details: normalizedResponse.details
-          }];
-        }
-        
-        // If the normalizer didn't work, try to extract organic_results directly
-        const patents = Array.isArray(data.organic_results) ? data.organic_results : [];
-        
-        if (patents.length === 0) {
-          return [{
-            patentId: idsToSearch[0],
-            status: 'error' as const,
-            error: 'No patent results found for this search query'
-          }];
-        }
-        
-        // Map the organic results to PatentSummary objects
-        return patents.map((patent: any) => {
-          // Try to normalize each individual patent
-          const normalizedPatent = normalizePatentResponse({
-            patent_id: patent.patent_id,
-            title: patent.title,
-            snippet: patent.snippet,
-            assignee: patent.assignee,
-            publication_date: patent.publication_date,
-            priority_date: patent.priority_date
-          }, 'serpapi');
-          
-          return {
-            patentId: patent.patent_id || patent.title || 'Unknown',
-            title: patent.title || 'Unknown Title',
-            abstract: patent.snippet || 'No abstract available',
-            status: 'success' as const,
-            details: normalizedPatent?.details || {
-              assignee_current: [patent.assignee || 'Unknown'],
-              publication_date: patent.publication_date || '',
-              priority_date: patent.priority_date || '',
+            title: source?.title || '',
+            abstract: source?.abstract || '',
+            details: {
+              assignee_current: source?.assignee_current || [],
+              assignee_original: source?.assignee_original || [],
+              assignee_parent: source?.assignee_parent || [],
+              priority_date: source?.priority_date || '',
+              publication_date: source?.publication_date || '',
+              grant_date: source?.grant_date || '',
+              expiration_date: source?.expiration_date || '',
+              application_date: source?.application_date || '',
+              application_number: source?.application_number || '',
+              grant_number: source?.grant_number || '',
+              publication_number: source?.publication_number || '',
+              publication_status: source?.publication_status || '',
+              publication_type: source?.publication_type || '',
+              type: source?.type || '',
+              country: source?.country || '',
+              kind_code: source?.kind_code || '',
+              inventors: source?.inventors || [],
+              examiner: source?.examiner || [],
+              law_firm: source?.law_firm || '',
+              cpc_codes: source?.cpc_codes || [],
+              uspc_codes: source?.uspc_codes || [],
+              num_cit_pat: source?.num_cit_pat || 0,
+              num_cit_npl: source?.num_cit_npl || 0,
+              num_cit_pat_forward: source?.num_cit_pat_forward || 0,
+              citations_pat_forward: source?.citations_pat_forward || [],
+              portfolio_score: source?.portfolio_score || 0,
+              litigation_score: source?.litigation_score || 0,
+              rating_broadness: source?.rating_broadness || '',
+              rating_citation: source?.rating_citation || '',
+              rating_litigation: source?.rating_litigation || '',
+              rating_validity: source?.rating_validity || '',
+              family_id: source?.family_id || '',
+              extended_family_id: source?.extended_family_id || '',
+              hyperlink_google: source?.hyperlink_google || '',
+              is_litigated: source?.is_litigated || 'false',
+              is_challenged: source?.is_challenged || 'false',
+              num_litigated: source?.num_litigated || 0,
+              num_challenged: source?.num_challenged || 0,
+              last_litigated_at: source?.last_litigated_at || null,
+              last_challenged_at: source?.last_challenged_at || null,
+              family_annuities: source?.family_annuities || 0,
+              norm_family_annuities: source?.norm_family_annuities || 0,
+              rnix_score: source?.rnix_score || 0
             }
           };
         });
-      } else {
-        // For unified API smart search (if implemented)
-        return [{
-          patentId: idsToSearch[0],
-          status: 'error' as const,
-          error: 'Smart search not supported for Unified API'
-        }];
+
+        return patents;
+      } catch (error) {
+        console.error('Unified API error:', error);
+        throw error;
       }
-    } catch (error) {
-      throw error;
     }
+
+    // For other API sources, use the existing logic
+    const promises = idsToSearch.map(async (id) => {
+      try {
+        const formattedId = formatPatentId(id, apiType);
+        const result = await patentApi.searchPatents(formattedId, apiType);
+        const normalizedResult = normalizePatentResponse(result, apiType);
+        
+        if (!normalizedResult) {
+          return {
+            patentId: id,
+            status: 'error' as const,
+            error: 'No data found for this patent ID'
+          };
+        }
+        
+        return {
+          patentId: id,
+          status: 'success' as const,
+          title: normalizedResult.title,
+          abstract: normalizedResult.abstract,
+          details: normalizedResult.details
+        };
+      } catch (error) {
+        console.error(`Error searching patent ${id}:`, error);
+        return {
+          patentId: id,
+          status: 'error' as const,
+          error: error instanceof Error ? error.message : 'Unknown error occurred'
+        };
+      }
+    });
+
+    return await Promise.all(promises);
   };
 
   const handlePatentSelect = (patentId: string) => {
