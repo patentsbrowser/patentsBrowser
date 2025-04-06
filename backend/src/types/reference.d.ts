@@ -1,11 +1,31 @@
 /// <reference types="node" />
 
 // Basic Node.js modules
-declare module 'fs' {}
-declare module 'path' {}
-declare module 'stream' {}
-declare module 'url' {}
-declare module 'crypto' {}
+declare module 'fs' {
+  export function existsSync(path: string): boolean;
+  export function mkdirSync(path: string, options?: any): void;
+  export function chmodSync(path: string, mode: number): void;
+}
+
+declare module 'path' {
+  export function join(...paths: string[]): string;
+  export function dirname(path: string): string;
+  export function extname(path: string): string;
+}
+
+declare module 'stream' {
+  export class Readable {
+    pipe<T extends NodeJS.WritableStream>(destination: T, options?: { end?: boolean; }): T;
+  }
+}
+
+declare module 'url' {
+  export function fileURLToPath(url: string | URL): string;
+}
+
+declare module 'crypto' {
+  export function createHmac(algorithm: string, key: string): any;
+}
 
 // Common npm packages
 declare module 'express' {
@@ -53,6 +73,25 @@ declare module 'express' {
 }
 
 declare module 'mongoose' {
+  export interface Document {
+    _id: any;
+    save(): Promise<this>;
+  }
+
+  export interface Model<T extends Document> {
+    new(doc: any): T;
+    create(doc: any): Promise<T>;
+    find(conditions?: any): Promise<T[]>;
+    findOne(conditions: any): Promise<T | null>;
+    findById(id: any): Promise<T | null>;
+    updateOne(conditions: any, doc: any): Promise<any>;
+    deleteOne(conditions: any): Promise<any>;
+    findOneAndUpdate(conditions: any, update: any, options?: any): Promise<T | null>;
+    findByIdAndUpdate(id: any, update: any, options?: any): Promise<T | null>;
+    countDocuments(conditions?: any): Promise<number>;
+    insertMany(docs: any[]): Promise<T[]>;
+  }
+
   export interface Schema {
     new(definition: any, options?: any): Schema;
     add(obj: any): void;
@@ -60,18 +99,12 @@ declare module 'mongoose' {
     pre(method: string, fn: Function): Schema;
     set(key: string, value: any): Schema;
   }
-  
-  export interface Model<T> {
-    new(doc: any): T;
-    create(doc: any): Promise<T>;
-    find(conditions: any): Promise<T[]>;
-    findOne(conditions: any): Promise<T | null>;
-    findById(id: any): Promise<T | null>;
-    updateOne(conditions: any, doc: any): Promise<any>;
-    deleteOne(conditions: any): Promise<any>;
-  }
-  
-  export function model<T>(name: string, schema: Schema): Model<T>;
+
+  export const Types: {
+    ObjectId: any;
+  };
+
+  export function model<T extends Document>(name: string, schema: Schema): Model<T>;
   export function Schema(definition: any, options?: any): Schema;
   export function connect(uri: string, options?: any): Promise<any>;
 }
@@ -168,4 +201,17 @@ declare module 'razorpay' {
     };
   }
   export default Razorpay;
+}
+
+// Add global declarations
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv {
+      NODE_ENV: 'development' | 'production' | 'stage';
+      PORT: string;
+      MONGODB_URI: string;
+      JWT_SECRET: string;
+      [key: string]: string | undefined;
+    }
+  }
 } 
