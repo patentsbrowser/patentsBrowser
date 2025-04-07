@@ -1,185 +1,435 @@
+:root {
+  --bg-color: #1e1e1e;
+  --bg-secondary: #252525;
+  --text-color: #e0e0e0;
+  --text-secondary: #aaa;
+  --border-color: #333;
+  --border-color-light: rgba(255,255,255,0.05);
+  --accent-color: #c77dff;
+  --accent-color-light: rgba(201, 125, 255, 0.2);
+  --accent-color-dark: #9d4edd;
+}
+
 .smart-search-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.7);
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   z-index: 1000;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .smart-search-modal {
-  background-color: var(--background-color, #fff);
+  background-color: var(--bg-color, #1e1e1e);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   width: 90%;
-  max-width: 600px;
-  max-height: 80vh;
+  max-width: 840px;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border-color, #ccc);
-  color: var(--text-color, #333);
-  
-  .modal-header {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  animation: slideIn 0.2s ease-out;
+  border: 1px solid var(--border-color, #333);
+  color: var(--text-color, #e0e0e0);
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-color, #333);
+  background-color: var(--bg-secondary, #252525);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+
+  h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-color, #e0e0e0);
+  }
+
+  .close-button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-secondary, #aaa);
+    padding: 0;
+    width: 28px;
+    height: 28px;
+    line-height: 1;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--border-color, #eee);
-    
-    h3 {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 600;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: var(--accent-color, #c77dff);
+      background-color: rgba(255, 255, 255, 0.05);
     }
-    
-    .close-button {
-      background: none;
-      border: none;
-      font-size: 24px;
-      cursor: pointer;
-      color: var(--text-color, #333);
-      padding: 0;
+  }
+}
+
+.modal-content {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex-grow: 1;
+  background-color: var(--bg-color, #1e1e1e);
+}
+
+.filter-options {
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: var(--bg-secondary, #252525);
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #333);
+
+  h4 {
+    margin: 0 0 12px 0;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-color, #e0e0e0);
+  }
+
+  .filter-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+
+    .filter-label {
       display: flex;
       align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.95rem;
+      padding: 8px 12px;
+      border-radius: 6px;
+      transition: background-color 0.15s ease;
+      color: var(--text-color, #e0e0e0);
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+
+      input[type="radio"] {
+        margin: 0;
+        cursor: pointer;
+        accent-color: var(--accent-color, #c77dff);
+        width: 16px;
+        height: 16px;
+        background-color: #333;
+        border: 1px solid #555;
+        
+        &:checked {
+          background-color: var(--accent-color, #c77dff);
+          border-color: var(--accent-color, #c77dff);
+        }
+        
+        &:checked:after {
+          background-color: #333;
+        }
+      }
+    }
+  }
+}
+
+.patent-list {
+  .loading-text, .no-patents {
+    text-align: center;
+    padding: 30px 0;
+    color: var(--text-secondary, #aaa);
+    font-style: italic;
+  }
+
+  .filtered-patents {
+    h4 {
+      margin: 0 0 16px 0;
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-color, #e0e0e0);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      
+      &::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background-color: var(--border-color, #333);
+        margin-left: 8px;
+      }
+    }
+
+    .patents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      max-height: 420px;
+      overflow-y: auto;
+      padding-right: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-color, #555) var(--bg-color, #1e1e1e);
+
+      &::-webkit-scrollbar {
+        width: 8px;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background: var(--bg-color, #1e1e1e);
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background-color: var(--border-color, #555);
+        border-radius: 4px;
+      }
+    }
+
+    .patent-card {
+      border: 1px solid var(--border-color, #333);
+      border-radius: 8px;
+      padding: 14px;
+      background-color: var(--bg-secondary, #252525);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      height: 140px;
+      position: relative;
       
       &:hover {
-        background-color: var(--hover-color, rgba(0, 0, 0, 0.05));
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        border-color: var(--accent-color-light, #9d4edd);
       }
-    }
-  }
-  
-  .modal-content {
-    padding: 16px 24px;
-    overflow-y: auto;
-    flex: 1;
-    
-    .filter-options {
-      margin-bottom: 20px;
-      padding: 16px;
-      background-color: var(--secondary-bg, #f8f9fa);
-      border-radius: 6px;
-      border: 1px solid var(--border-color, #eee);
-      
-      h4 {
-        margin: 0 0 12px 0;
-        font-size: 16px;
-        color: var(--text-color, #333);
+
+      .patent-id {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: var(--accent-color, #c77dff);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
-      
-      .filter-controls {
+
+      .patent-title {
+        font-size: 0.9rem;
+        flex-grow: 1;
+        line-height: 1.4;
+        margin-bottom: 4px;
+        color: var(--text-color, #e0e0e0);
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .patent-meta {
         display: flex;
-        flex-direction: column;
-        gap: 12px;
-        
-        .filter-label {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          cursor: pointer;
-          font-size: 14px;
-          color: var(--text-color, #333);
-          padding: 8px;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        color: var(--text-secondary, #aaa);
+        margin-top: auto;
+
+        .patent-type {
+          padding: 2px 6px;
+          background-color: var(--accent-color-light, rgba(201, 125, 255, 0.2));
+          color: var(--accent-color, #c77dff);
           border-radius: 4px;
-          transition: background-color 0.2s;
-          
-          &:hover {
-            background-color: var(--hover-color, rgba(0, 0, 0, 0.05));
-          }
-          
-          input[type="radio"] {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-            accent-color: var(--primary-color, #4caf50);
-          }
+          font-weight: 500;
+        }
+
+        .patent-score {
+          font-weight: 500;
         }
       }
-    }
-    
-    .patent-list {
-      .loading-text {
-        color: var(--text-secondary, #666);
-        font-style: italic;
-        text-align: center;
-        padding: 20px;
-      }
-      
-      .no-patents {
-        color: var(--text-secondary, #666);
-        font-style: italic;
-        text-align: center;
-        padding: 20px;
-      }
-      
-      .filtered-patents {
-        h4 {
-          margin: 0 0 12px 0;
-          font-size: 14px;
-          color: var(--text-color, #333);
+
+      .patent-details {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        color: var(--text-secondary, #aaa);
+        
+        .patent-date {
+          font-weight: 500;
+          color: var(--text-secondary, #aaa);
         }
         
-        .patent-item {
-          padding: 8px 12px;
-          margin-bottom: 8px;
-          border-radius: 4px;
-          background-color: var(--secondary-bg, #f9f9f9);
-          border: 1px solid var(--border-color, #eee);
-          
-          .patent-id {
-            font-family: monospace;
-            font-weight: 500;
-            font-size: 14px;
-          }
+        .patent-assignee {
+          font-size: 0.8rem;
+          color: var(--text-secondary, #aaa);
+          font-style: italic;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 70%;
         }
       }
     }
   }
+}
+
+.sort-controls {
+  margin-top: 12px;
+  border-top: 1px solid var(--border-color-light, rgba(255,255,255,0.05));
+  padding-top: 12px;
   
-  .modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 16px 24px;
-    border-top: 1px solid var(--border-color, #eee);
-    
-    button {
-      padding: 8px 16px;
-      border-radius: 4px;
-      font-size: 14px;
-      cursor: pointer;
-      border: none;
-      
-      &.cancel-button {
-        background-color: var(--secondary-bg, #f5f5f5);
-        color: var(--text-color, #333);
-        border: 1px solid var(--border-color, #ccc);
-        
-        &:hover {
-          background-color: var(--hover-color, #eee);
-        }
-      }
-      
-      &.search-button {
-        background-color: var(--primary-color, #4caf50);
-        color: white;
-        
-        &:hover {
-          background-color: var(--primary-hover, #43a047);
-        }
-        
-        &:disabled {
-          background-color: var(--disabled-bg, #ccc);
-          cursor: not-allowed;
-        }
-      }
+  h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-color, #e0e0e0);
+  }
+  
+  .filter-label {
+    font-size: 0.9rem;
+  }
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color, #333);
+  background-color: var(--bg-secondary, #252525);
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+
+  button {
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
+  }
+
+  .cancel-button {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color, #444);
+    color: var(--text-color, #e0e0e0);
+
+    &:hover:not(:disabled) {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  .apply-button {
+    background-color: var(--accent-color, #c77dff);
+    border: 1px solid var(--accent-color, #c77dff);
+    color: #000;
+    font-weight: 600;
+
+    &:hover:not(:disabled) {
+      background-color: var(--accent-color-dark, #9d4edd);
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 600px) {
+  .filter-options .filter-controls {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .patent-list .filtered-patents .patents-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-footer button {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+  }
+}
+
+// Add specific styles for the filter options container from screenshot
+.filter-section {
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  
+  .section-title {
+    display: flex;
+    align-items: center;
+    color: #c77dff;
+    margin-bottom: 10px;
+    font-weight: 500;
+    
+    svg {
+      margin-right: 8px;
+    }
+  }
+  
+  .radio-option {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    color: #e0e0e0;
+    
+    input[type="radio"] {
+      accent-color: #c77dff;
+      background-color: #333;
+      margin-right: 8px;
+    }
+  }
+}
+
+// Add custom styles for radio buttons to override browser defaults
+input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  outline: none;
+  border: 1px solid #555;
+  background-color: #333;
+  position: relative;
+  
+  &:checked {
+    border: 2px solid var(--accent-color, #c77dff);
+    background-color: #333;
+    
+    &:after {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--accent-color, #c77dff);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+  }
+  
+  &:focus {
+    box-shadow: 0 0 0 2px rgba(201, 125, 255, 0.3);
   }
 } 

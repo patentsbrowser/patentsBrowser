@@ -29,6 +29,69 @@ interface PatentState {
     showApplicationPatents: boolean;
     filterByFamilyId: boolean;
   };
+  smartSearchResults: {
+    hits: {
+      hits: Array<{
+        _id: string;
+        _source: {
+          country: string;
+          assignee_original: string[];
+          family_annuities: number;
+          abstract: string | null;
+          application_date: string;
+          application_number: string;
+          assignee_current: string[];
+          assignee_parent: string[];
+          citations_pat_forward: string[];
+          cpc_codes: string[];
+          expiration_date: string;
+          extended_family_id: string;
+          family_id: string;
+          filing_date: string;
+          grant_date: string | null;
+          grant_number: string;
+          hyperlink_google: string;
+          inventors: string[];
+          is_challenged: string;
+          is_litigated: string;
+          kind_code: string;
+          last_challenged_at: string | null;
+          last_litigated_at: string | null;
+          num_challenged: number;
+          num_cit_npl: number;
+          num_cit_pat: number;
+          num_cit_pat_forward: number;
+          num_litigated: number;
+          portfolio_score: number;
+          priority_date: string;
+          publication_date: string;
+          publication_number: string;
+          publication_status: string;
+          publication_type: string;
+          rating_broadness: string;
+          rating_citation: string;
+          rating_litigation: string | null;
+          rating_validity: string;
+          rnix_score: number;
+          title: string;
+          type: string;
+          ucid_spif: string[];
+        };
+      }>;
+      total: {
+        value: number;
+        relation: string;
+      };
+    };
+    took: number;
+    timed_out: boolean;
+    _shards: {
+      total: number;
+      successful: number;
+      skipped: number;
+      failed: number;
+    };
+  } | null;
 }
 
 const initialState: PatentState = {
@@ -40,7 +103,8 @@ const initialState: PatentState = {
     showGrantPatents: true,
     showApplicationPatents: true,
     filterByFamilyId: true
-  }
+  },
+  smartSearchResults: null,
 };
 
 // Async thunk for fetching full patent details
@@ -192,6 +256,9 @@ const patentSlice = createSlice({
         ...action.payload
       };
     },
+    setSmartSearchResults: (state, action: PayloadAction<PatentState['smartSearchResults']>) => {
+      state.smartSearchResults = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -240,6 +307,7 @@ export const {
   setError,
   clearState,
   setFilters,
+  setSmartSearchResults,
 } = patentSlice.actions;
 
 export default patentSlice.reducer; 

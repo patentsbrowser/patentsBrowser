@@ -16,6 +16,8 @@ interface PatentSearchFormProps {
   setShowSmartSearchModal: (show: boolean) => void;
   onSearch: (ids: string[]) => void;
   formatPatentId: (id: string, apiType: ApiSource) => string;
+  selectedFilter?: 'grant' | 'application';
+  setSelectedFilter?: (filter: 'grant' | 'application') => void;
 }
 
 const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
@@ -30,7 +32,9 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
   setSearchType,
   setShowSmartSearchModal,
   onSearch,
-  formatPatentId
+  formatPatentId,
+  selectedFilter = 'grant',
+  setSelectedFilter
 }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const selectRef = useRef<HTMLSelectElement>(null);
@@ -108,14 +112,20 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
     // For patentIds list (multiple IDs detected) or single unified patent
     const idsToSearch = patentIds.length > 0 ? patentIds : [searchQuery];
     
-    // If smart search is selected and we have multiple patent IDs, show the modal
-    if (searchType === 'smart' && idsToSearch.length > 0) {
+    // Format the patent IDs
+    const formattedIds = idsToSearch.map(id => formatPatentId(id, selectedApi));
+    
+    // If smart search is selected, open the modal after making API call
+    if (searchType === 'smart' && selectedApi === 'unified') {
+      // First, make the API call to load the data
+      onSearch(formattedIds);
+      
+      // Then show the modal to filter the results
       setShowSmartSearchModal(true);
       return;
     }
-
-    // For direct search (not using the modal), format the patent IDs here
-    const formattedIds = idsToSearch.map(id => formatPatentId(id, selectedApi));
+    
+    // For direct search, just call onSearch
     onSearch(formattedIds);
   };
 

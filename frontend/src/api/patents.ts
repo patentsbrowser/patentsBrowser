@@ -289,6 +289,11 @@ export const patentApi = {
                 terms: {
                   ucid_spif: patentNumbers
                 }
+              },
+              {
+                wildcard: {
+                  publication_type: "g*"
+                }
               }
               // Removed wildcard as per user's changes
             ]
