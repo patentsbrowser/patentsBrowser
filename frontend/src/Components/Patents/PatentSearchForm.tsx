@@ -65,16 +65,26 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
     const value = e.target.value;
     setSearchQuery(value);
 
-    // Split input by commas, spaces, or newlines and filter valid patent IDs
-    const inputPatentIds = value
-      .split(/[\s,]+/)
-      .map(id => id.trim())
-      .filter(id => id);
+    // Process patent IDs using the same function as PatentSearch
+    const processPatentIds = (input: string): string[] => {
+      // First split by newlines
+      const lines = input.split(/\n/);
+      
+      // Process each line - split by commas or spaces if present
+      const processedIds = lines.flatMap(line => 
+        line
+          .split(/[,\s]+/)
+          .map(id => id.trim())
+          .filter(id => id)
+      );
 
+      // Remove duplicates and empty strings
+      return [...new Set(processedIds)].filter(Boolean);
+    };
+
+    const inputPatentIds = processPatentIds(value);
     if (inputPatentIds.length > 0) {
-      // Get unique patent IDs
-      const uniquePatentIds = [...new Set(inputPatentIds)];
-      setPatentIds(uniquePatentIds);
+      setPatentIds(inputPatentIds);
     } else {
       setPatentIds([]);
     }

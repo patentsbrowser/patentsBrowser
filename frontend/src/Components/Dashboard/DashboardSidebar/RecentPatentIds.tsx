@@ -36,7 +36,7 @@ const RecentPatentIds: React.FC<RecentPatentIdsProps> = ({
               className={`recent-search-item ${search.folderName ? 'from-folder' : ''}`}
               onClick={() => onPatentClick(search.patentId)}
             >
-              {/* <span className="patent-id">{search.patentId}</span> */}
+              <span className="patent-id">{search.patentId}</span>
               {search.folderName && (
                 <span className="folder-origin">
                   <span className="folder-icon">📁</span>

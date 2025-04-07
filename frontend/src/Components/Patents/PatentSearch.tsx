@@ -39,16 +39,30 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
   const dispatch = useAppDispatch();
   const patentsState = useAppSelector((state: RootState) => state.patents);
 
-  // Add this effect to update searchQuery when initialPatentId changes
+  // Add this function to standardize patent ID processing
+  const processPatentIds = (input: string): string[] => {
+    // First split by newlines
+    const lines = input.split(/\n/);
+    
+    // Process each line - split by commas or spaces if present
+    const processedIds = lines.flatMap(line => 
+      line
+        .split(/[,\s]+/)
+        .map(id => id.trim())
+        .filter(id => id)
+    );
+
+    // Remove duplicates and empty strings
+    return [...new Set(processedIds)].filter(Boolean);
+  };
+
+  // Update the useEffect for initialPatentId
   useEffect(() => {
     if (initialPatentId) {
       setSearchQuery(initialPatentId);
       
-      // Process for multiple patent IDs
-      const ids = initialPatentId
-        .split(/[\s,]+/)
-        .map(id => id.trim())
-        .filter(id => id);
+      // Process patent IDs using the new function
+      const ids = processPatentIds(initialPatentId);
       
       if (ids.length > 0) {
         setPatentIds(ids);
@@ -60,16 +74,13 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     }
   }, [initialPatentId]);
   
-  // Add this to provide the populate callback
+  // Update the populate callback
   useEffect(() => {
     window.patentSearchPopulateCallback = (patentId: string) => {
       setSearchQuery(patentId);
       
-      // Process for multiple patent IDs
-      const ids = patentId
-        .split(/[\s,]+/)
-        .map(id => id.trim())
-        .filter(id => id);
+      // Process patent IDs using the new function
+      const ids = processPatentIds(patentId);
       
       if (ids.length > 0) {
         setPatentIds(ids);
@@ -137,7 +148,26 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
   };
 
   const handlePerformSearch = async (idsToSearch: string[]) => {
-    const initialSummaries = idsToSearch.map(id => ({
+    // Format the IDs before searching
+    const formattedIds = idsToSearch.map(id => {
+      if (selectedApi === 'unified') {
+        // For unified API, ensure proper format (XX-NNNNNN-YY)
+        if (/^\d+$/.test(id)) {
+          // If just numbers, assume US patent
+          return `US-${id}-B2`;
+        } else if (/^[A-Z]{2}\d+$/.test(id)) {
+          // If country code + numbers, add B2
+          const countryCode = id.substring(0, 2);
+          const number = id.substring(2);
+          return `${countryCode}-${number}-B2`;
+        } else if (!id.includes('-')) {
+          return formatPatentId(id, 'unified');
+        }
+      }
+      return id;
+    });
+
+    const initialSummaries = formattedIds.map(id => ({
       patentId: id,
       status: 'loading' as const,
     }));
@@ -147,13 +177,13 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     setIsLoading(true);
 
     try {
-      const searchResults = await handleSearch(idsToSearch, 'direct', selectedApi);
+      const searchResults = await handleSearch(formattedIds, 'direct', selectedApi);
       setPatentSummaries(searchResults);
-      onSearch(idsToSearch);
+      onSearch(formattedIds);
     } catch (error: any) {
       console.error('Search error:', error);
       setPatentSummaries([{
-        patentId: idsToSearch[0],
+        patentId: formattedIds[0],
         status: 'error' as const,
         error: error.message || 'An unexpected error occurred during search'
       }]);
