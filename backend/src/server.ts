@@ -87,7 +87,11 @@ const corsOptions = {
   maxAge: 86400 // 24 hours
 };
 
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
+app.use(cors({
+  origin: 'https://patentsbrowser.com', // or use an array for multiple domains
+  credentials: true, // if you are using cookies or authorization headers
+}));
 app.use(express.json());
 
 // Health check endpoint for Render monitoring
