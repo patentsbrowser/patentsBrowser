@@ -63,7 +63,39 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(cors());
+// Configure CORS to allow requests from the frontend domain
+app.use(cors({
+  origin: [
+    'https://patentsbrowser.com', 
+    'https://www.patentsbrowser.com', 
+    'http://localhost:5173', 
+    'http://localhost:5174',
+    'https://patentsbrowser-backend.onrender.com'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+}));
+
+// Additional middleware to ensure CORS headers are set for all responses
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && (
+    origin === 'https://patentsbrowser.com' || 
+    origin === 'https://www.patentsbrowser.com' || 
+    origin === 'https://patentsbrowser-backend.onrender.com' || 
+    origin.startsWith('http://localhost')
+  )) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  next();
+});
+
 app.use(express.json());
 
 // Health check endpoint for Render monitoring
@@ -86,8 +118,20 @@ if (!fs.existsSync(uploadDir)) {
 
 app.use('/uploadedImages', express.static(uploadDir, {
   setHeaders: (res, path) => {
-    res.set('Access-Control-Allow-Origin', '*');
+    // Get the origin from the request, or use patentsbrowser.com as default
+    const origin = res.req.headers.origin || 'https://patentsbrowser.com';
+    
+    // Only set allow-origin for valid origins
+    if (origin === 'https://patentsbrowser.com' || 
+        origin === 'https://www.patentsbrowser.com' || 
+        origin === 'https://patentsbrowser-backend.onrender.com' || 
+        origin.startsWith('http://localhost')) {
+      res.set('Access-Control-Allow-Origin', origin);
+    }
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Allow-Methods', 'GET, HEAD');
+    res.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   }
 }));
 
@@ -95,8 +139,20 @@ app.use('/uploadedImages', express.static(uploadDir, {
 const uploadsDir = path.join(process.cwd(), 'uploads');
 app.use('/uploads', express.static(uploadsDir, {
   setHeaders: (res, path) => {
-    res.set('Access-Control-Allow-Origin', '*');
+    // Get the origin from the request, or use patentsbrowser.com as default
+    const origin = res.req.headers.origin || 'https://patentsbrowser.com';
+    
+    // Only set allow-origin for valid origins
+    if (origin === 'https://patentsbrowser.com' || 
+        origin === 'https://www.patentsbrowser.com' || 
+        origin === 'https://patentsbrowser-backend.onrender.com' || 
+        origin.startsWith('http://localhost')) {
+      res.set('Access-Control-Allow-Origin', origin);
+    }
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Allow-Methods', 'GET, HEAD');
+    res.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   }
 }));
 
