@@ -20,7 +20,7 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
   onSearch,
   selectedApi
 }) => {
-  const [selectedFilter, setSelectedFilter] = useState<'family' | 'grant' | 'application'>('family');
+  const [selectedFilter, setSelectedFilter] = useState<'grant' | 'application'>('grant');
   const [isLoading, setIsLoading] = useState(false);
   const [filteredPatentIds, setFilteredPatentIds] = useState<string[]>([...patentIds]);
   
@@ -121,17 +121,10 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
   };
 
   // Handle filter change
-  const handleFilterChange = async (filter: 'family' | 'grant' | 'application') => {
+  const handleFilterChange = async (filter: 'grant' | 'application') => {
     setSelectedFilter(filter);
     
-    if (filter === 'family') {
-      await filterByFamilyId();
-      dispatch(setFilters({
-        showGrantPatents: true,
-        showApplicationPatents: true,
-        filterByFamilyId: true
-      }));
-    } else if (filter === 'grant') {
+    if (filter === 'grant') {
       await filterByPublicationType('grant');
       dispatch(setFilters({
         showGrantPatents: true,
@@ -167,15 +160,6 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
           <div className="filter-options">
             <h4>Filter Options</h4>
             <div className="filter-controls">
-              <label className="filter-label">
-                <input
-                  type="radio"
-                  checked={selectedFilter === 'family'}
-                  onChange={() => handleFilterChange('family')}
-                  name="filter-type"
-                />
-                Filter by Family ID
-              </label>
               <label className="filter-label">
                 <input
                   type="radio"

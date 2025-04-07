@@ -1,7 +1,7 @@
 import Claims from './Claims';
 import Description from './Description';
 import Figures from './Figures';
-import FamilyMembers from './FamilyMembers';
+// import FamilyMembers from './FamilyMembers';
 import PatentHighlighter from './PatentHighlighter';
 import { useState, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../Redux/hooks';
@@ -144,13 +144,6 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
               initialDescription={patentData.description || ''} 
               patentId={patentId} 
             />
-            
-            {familyMembers && familyMembers.length > 0 && (
-              <FamilyMembers 
-                familyMembers={familyMembers} 
-                onPatentSelect={onPatentSelect}
-              />
-            )}
           </div>
         </div>
         
