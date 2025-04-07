@@ -9,7 +9,7 @@ import { generateOTP, sendOTP, storeOTP, verifyOTP, resendOTP } from '../service
 const router = express.Router();
 
 // Signup route
-router.post('/signup', async (req, res) => {
+router.post('/signup', async (req:any, res:any) => {
   try {
     const { name, email, password } = req.body;
     console.log('Signup request received for email:', email);
