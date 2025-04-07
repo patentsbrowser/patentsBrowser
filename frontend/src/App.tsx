@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Component, ReactNode } from "react";
 import { AuthProvider } from "./AuthContext";
 import Header from "./Components/Header/Header";
 import Sidebar from "./Components/Sidebar/Sidebar";
@@ -24,6 +24,46 @@ import Forum from "./Components/Forum/Forum";
 import SubscriptionPage from "./Components/Subscription/SubscriptionPage";
 // import { store } from './Redux/store';
 
+// Error boundary to catch rendering errors
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+    console.error("App crashed due to error:", error);
+    console.error("Component stack:", errorInfo.componentStack);
+  }
+
+  render(): ReactNode {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '20px', textAlign: 'center', marginTop: '50px' }}>
+          <h1>Something went wrong</h1>
+          <p>Error: {this.state.error?.message || 'Unknown error'}</p>
+          <button onClick={() => window.location.reload()}>Reload Application</button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -34,7 +74,7 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  console.log('STAGE')
+  console.log('STAGE', import.meta.env.VITE_API_URL || 'No API URL defined');
   // Get the sidebar behavior from localStorage
   const [sidebarBehavior, setSidebarBehavior] = useState<'auto' | 'manual'>(() => {
     const saved = localStorage.getItem('sidebarBehavior');
@@ -47,92 +87,94 @@ const App = () => {
   };
 
   return (
-    <Provider store={store}>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <ThemeProvider>
-            <Router>
-              <SessionHandler />
-              <Routes>
-                {/* Landing Page - Public */}
-                <Route path="/" element={<LandingPage />} />
-                
-                {/* Forum Page - Public */}
-                <Route path="/forum" element={<Forum />} />
-                
-                {/* Subscription Page - Public with auth features */}
-                <Route path="/subscription" element={<SubscriptionPage />} />
-                
-                {/* Authentication routes */}
-                <Route 
-                  path="/auth/login" 
-                  element={
-                    <NoAuthGuard>
-                      <Authentication />
-                    </NoAuthGuard>
-                  } 
-                />
-                
-                <Route 
-                  path="/auth/signup" 
-                  element={
-                    <NoAuthGuard>
-                      <Authentication />
-                    </NoAuthGuard>
-                  } 
-                />
+    <ErrorBoundary>
+      <Provider store={store}>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <ThemeProvider>
+              <Router>
+                <SessionHandler />
+                <Routes>
+                  {/* Landing Page - Public */}
+                  <Route path="/" element={<LandingPage />} />
+                  
+                  {/* Forum Page - Public */}
+                  <Route path="/forum" element={<Forum />} />
+                  
+                  {/* Subscription Page - Public with auth features */}
+                  <Route path="/subscription" element={<SubscriptionPage />} />
+                  
+                  {/* Authentication routes */}
+                  <Route 
+                    path="/auth/login" 
+                    element={
+                      <NoAuthGuard>
+                        <Authentication />
+                      </NoAuthGuard>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="/auth/signup" 
+                    element={
+                      <NoAuthGuard>
+                        <Authentication />
+                      </NoAuthGuard>
+                    } 
+                  />
 
-                {/* Protected routes */}
-                <Route 
-                  path="/auth/*" 
-                  element={
-                    <AuthGuard>
-                      <div className="app-container">
-                        <Header />
-                        <Sidebar />
-                        <main className="main-content">
-                          <Routes>
-                            <Route path="dashboard" element={<Dashboard />} />
-                            <Route 
-                              path="settings" 
-                              element={
-                                <Settings 
-                                  initialSidebarBehavior={sidebarBehavior}
-                                  onSidebarBehaviorChange={handleSidebarBehaviorChange} 
-                                />
-                              } 
-                            />
-                            <Route path="patentSaver" element={<SavedPatentList />} />
-                            <Route path="update-profile" element={<UpdateProfile />} />
-                            <Route path="profile" element={<ProfilePage />} />
-                            <Route path="subscription" element={<SubscriptionPage />} />
-                          </Routes>
-                        </main>
-                      </div>
-                    </AuthGuard>
-                  } 
-                />
+                  {/* Protected routes */}
+                  <Route 
+                    path="/auth/*" 
+                    element={
+                      <AuthGuard>
+                        <div className="app-container">
+                          <Header />
+                          <Sidebar />
+                          <main className="main-content">
+                            <Routes>
+                              <Route path="dashboard" element={<Dashboard />} />
+                              <Route 
+                                path="settings" 
+                                element={
+                                  <Settings 
+                                    initialSidebarBehavior={sidebarBehavior}
+                                    onSidebarBehaviorChange={handleSidebarBehaviorChange} 
+                                  />
+                                } 
+                              />
+                              <Route path="patentSaver" element={<SavedPatentList />} />
+                              <Route path="update-profile" element={<UpdateProfile />} />
+                              <Route path="profile" element={<ProfilePage />} />
+                              <Route path="subscription" element={<SubscriptionPage />} />
+                            </Routes>
+                          </main>
+                        </div>
+                      </AuthGuard>
+                    } 
+                  />
 
-                {/* Catch-all route - redirect to landing page */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Router>
-          </ThemeProvider>
-        </AuthProvider>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: 'var(--secondary-bg)',
-              color: 'var(--text-color)',
-              border: '1px solid var(--border-color)',
-            },
-          }}
-        />
-        <ReactQueryDevtools initialIsOpen={false} />
-      </QueryClientProvider>
-    </Provider>
+                  {/* Catch-all route - redirect to landing page */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Router>
+            </ThemeProvider>
+          </AuthProvider>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: 'var(--secondary-bg)',
+                color: 'var(--text-color)',
+                border: '1px solid var(--border-color)',
+              },
+            }}
+          />
+          <ReactQueryDevtools initialIsOpen={false} />
+        </QueryClientProvider>
+      </Provider>
+    </ErrorBoundary>
   );
 };
 

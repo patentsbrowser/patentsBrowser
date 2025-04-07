@@ -31,16 +31,33 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Initialize user from localStorage if available
   const [user, setUser] = useState<User | null>(() => {
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    try {
+      const savedUser = localStorage.getItem('user');
+      // Only parse if savedUser exists and is not "undefined"
+      return savedUser && savedUser !== "undefined" ? JSON.parse(savedUser) : null;
+    } catch (error) {
+      // Clear potentially corrupted data
+      localStorage.removeItem('user');
+      return null;
+    }
   });
 
   // Check if token exists on component mount
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    
-    if (!token || !savedUser) {
+    try {
+      const token = localStorage.getItem('token');
+      const savedUser = localStorage.getItem('user');
+      
+      if (!token || !savedUser || savedUser === "undefined") {
+        // Clean up any inconsistent state
+        if (!token) localStorage.removeItem('user');
+        if (!savedUser) localStorage.removeItem('token');
+        setUser(null);
+      }
+    } catch (error) {
+      // If there's any error, clear the auth state to be safe
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       setUser(null);
     }
   }, []);
@@ -73,8 +90,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Function to check if user is authenticated
   const checkAuth = (): boolean => {
-    const token = localStorage.getItem('token');
-    return !!token && !!user;
+    try {
+      const token = localStorage.getItem('token');
+      return !!token && !!user && token !== "undefined";
+    } catch (error) {
+      return false;
+    }
   };
 
   return (
