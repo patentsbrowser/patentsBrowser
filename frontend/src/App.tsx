@@ -34,6 +34,7 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
+  console.log('STAGE')
   // Get the sidebar behavior from localStorage
   const [sidebarBehavior, setSidebarBehavior] = useState<'auto' | 'manual'>(() => {
     const saved = localStorage.getItem('sidebarBehavior');
