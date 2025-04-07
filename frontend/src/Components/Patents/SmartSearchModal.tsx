@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from '../../Redux/hooks';
+import { RootState } from '../../Redux/store';
+import { setFilters } from '../../Redux/slices/patentSlice';
 import './SmartSearchModal.scss';
+import { patentApi } from '../../api/patents';
 
 interface SmartSearchModalProps {
   isOpen: boolean;
@@ -16,41 +20,137 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
   onSearch,
   selectedApi
 }) => {
-  const [selectedIds, setSelectedIds] = useState<string[]>([...patentIds]);
+  const [selectedFilter, setSelectedFilter] = useState<'family' | 'grant' | 'application'>('family');
+  const [isLoading, setIsLoading] = useState(false);
+  const [filteredPatentIds, setFilteredPatentIds] = useState<string[]>([...patentIds]);
+  
+  const dispatch = useAppDispatch();
+  const { patents } = useAppSelector((state: RootState) => state.patents);
 
   if (!isOpen) return null;
 
-  const handleSelectAll = () => {
-    setSelectedIds([...patentIds]);
-  };
-
-  const handleDeselectAll = () => {
-    setSelectedIds([]);
-  };
-
-  const handleCheckboxChange = (patentId: string) => {
-    if (selectedIds.includes(patentId)) {
-      setSelectedIds(selectedIds.filter(id => id !== patentId));
-    } else {
-      setSelectedIds([...selectedIds, patentId]);
-    }
-  };
-
   const formatPatentId = (patentId: string): string => {
-    // For SerpAPI, remove hyphens and any other special characters
     if (selectedApi === 'serpapi') {
       return patentId.replace(/[-]/g, '');
     }
     return patentId;
   };
 
-  const handleSearch = () => {
-    if (selectedIds.length === 0) {
-      return;
+  // Function to get country code from patent ID
+  const getCountryCode = (patentId: string): string => {
+    const match = patentId.match(/^([A-Z]{2})-/);
+    return match ? match[1] : '';
+  };
+
+  // Function to filter patents by family ID and prioritize US patents
+  const filterByFamilyId = async () => {
+    setIsLoading(true);
+    try {
+      // Get family information for all patents
+      const familyData = await Promise.all(
+        patentIds.map(async (id) => {
+          try {
+            const result = await patentApi.searchPatents(id, selectedApi);
+            return {
+              patentId: id,
+              familyId: result._source?.family_id || '',
+              countryCode: getCountryCode(id),
+              publicationType: result._source?.type || ''
+            };
+          } catch (error) {
+            console.error(`Error fetching family data for ${id}:`, error);
+            return null;
+          }
+        })
+      );
+
+      // Group patents by family ID
+      const familyGroups = familyData.reduce((groups: any, patent) => {
+        if (!patent) return groups;
+        const { familyId, patentId, countryCode, publicationType } = patent;
+        if (!groups[familyId]) {
+          groups[familyId] = [];
+        }
+        groups[familyId].push({ patentId, countryCode, publicationType });
+        return groups;
+      }, {});
+
+      // For each family, prioritize US patents or take the first one
+      const selectedPatents = Object.values(familyGroups).map((group: any) => {
+        const patents = group as Array<{ patentId: string; countryCode: string }>;
+        const usPatent = patents.find(p => p.countryCode === 'US');
+        return usPatent ? usPatent.patentId : patents[0].patentId;
+      });
+
+      setFilteredPatentIds(selectedPatents);
+    } catch (error) {
+      console.error('Error filtering by family ID:', error);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  // Function to filter patents by publication type
+  const filterByPublicationType = async (type: 'grant' | 'application') => {
+    setIsLoading(true);
+    try {
+      const filteredIds = await Promise.all(
+        patentIds.map(async (id) => {
+          try {
+            const result = await patentApi.searchPatents(id, selectedApi);
+            const publicationType = result._source?.type?.toLowerCase() || '';
+            return {
+              patentId: id,
+              isMatch: type === 'grant' ? 
+                publicationType.includes('grant') : 
+                publicationType.includes('application')
+            };
+          } catch (error) {
+            console.error(`Error fetching publication type for ${id}:`, error);
+            return { patentId: id, isMatch: false };
+          }
+        })
+      );
+
+      setFilteredPatentIds(filteredIds.filter(p => p.isMatch).map(p => p.patentId));
+    } catch (error) {
+      console.error('Error filtering by publication type:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle filter change
+  const handleFilterChange = async (filter: 'family' | 'grant' | 'application') => {
+    setSelectedFilter(filter);
     
-    // Format patent IDs according to the selected API before sending
-    const formattedIds = selectedIds.map(id => formatPatentId(id));
+    if (filter === 'family') {
+      await filterByFamilyId();
+      dispatch(setFilters({
+        showGrantPatents: true,
+        showApplicationPatents: true,
+        filterByFamilyId: true
+      }));
+    } else if (filter === 'grant') {
+      await filterByPublicationType('grant');
+      dispatch(setFilters({
+        showGrantPatents: true,
+        showApplicationPatents: false,
+        filterByFamilyId: false
+      }));
+    } else {
+      await filterByPublicationType('application');
+      dispatch(setFilters({
+        showGrantPatents: false,
+        showApplicationPatents: true,
+        filterByFamilyId: false
+      }));
+    }
+  };
+
+  const handleSearch = () => {
+    if (filteredPatentIds.length === 0) return;
+    const formattedIds = filteredPatentIds.map(id => formatPatentId(id));
     onSearch(formattedIds);
     onClose();
   };
@@ -62,47 +162,67 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
           <h3>Smart Patent Search</h3>
           <button className="close-button" onClick={onClose}>×</button>
         </div>
+        
         <div className="modal-content">
-          <div className="selection-controls">
-            <p>Select the patent IDs you want to search:</p>
-            <div className="selection-buttons">
-              <button type="button" onClick={handleSelectAll}>Select All</button>
-              <button type="button" onClick={handleDeselectAll}>Deselect All</button>
+          <div className="filter-options">
+            <h4>Filter Options</h4>
+            <div className="filter-controls">
+              <label className="filter-label">
+                <input
+                  type="radio"
+                  checked={selectedFilter === 'family'}
+                  onChange={() => handleFilterChange('family')}
+                  name="filter-type"
+                />
+                Filter by Family ID
+              </label>
+              <label className="filter-label">
+                <input
+                  type="radio"
+                  checked={selectedFilter === 'grant'}
+                  onChange={() => handleFilterChange('grant')}
+                  name="filter-type"
+                />
+                Show Grant Patents
+              </label>
+              <label className="filter-label">
+                <input
+                  type="radio"
+                  checked={selectedFilter === 'application'}
+                  onChange={() => handleFilterChange('application')}
+                  name="filter-type"
+                />
+                Show Application Patents
+              </label>
             </div>
           </div>
           
           <div className="patent-list">
-            {patentIds.length === 0 ? (
-              <p className="no-patents">No patent IDs found. Please enter valid patent IDs.</p>
+            {isLoading ? (
+              <p className="loading-text">Filtering patents...</p>
+            ) : filteredPatentIds.length === 0 ? (
+              <p className="no-patents">No matching patents found.</p>
             ) : (
-              patentIds.map((patentId) => (
-                <div key={patentId} className="patent-item">
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(patentId)}
-                      onChange={() => handleCheckboxChange(patentId)}
-                    />
+              <div className="filtered-patents">
+                <h4>Selected Patents:</h4>
+                {filteredPatentIds.map((patentId) => (
+                  <div key={patentId} className="patent-item">
                     <span className="patent-id">{patentId}</span>
-                    {selectedApi === 'serpapi' && patentId.includes('-') && (
-                      <span className="formatted-id">
-                        → {formatPatentId(patentId)}
-                      </span>
-                    )}
-                  </label>
-                </div>
-              ))
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
+        
         <div className="modal-footer">
           <button className="cancel-button" onClick={onClose}>Cancel</button>
           <button 
             className="search-button" 
             onClick={handleSearch}
-            disabled={selectedIds.length === 0}
+            disabled={filteredPatentIds.length === 0 || isLoading}
           >
-            Search Patents ({selectedIds.length})
+            {isLoading ? 'Filtering...' : `Search Patents (${filteredPatentIds.length})`}
           </button>
         </div>
       </div>

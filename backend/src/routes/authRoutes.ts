@@ -169,15 +169,29 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Always generate and send OTP for login verification
-    const otp = generateOTP();
-    await sendOTP(email, otp);
-    storeOTP(email, otp);
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
+    );
+
+    // Update the user's activeToken and lastLogin
+    user.activeToken = token;
+    user.lastLogin = new Date();
+    await user.save();
 
     return res.status(200).json({
       statusCode: 200,
-      message: 'Please verify your email with OTP',
-      data: null
+      message: 'Successfully logged in!',
+      data: {
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email
+        }
+      }
     });
 
   } catch (error) {

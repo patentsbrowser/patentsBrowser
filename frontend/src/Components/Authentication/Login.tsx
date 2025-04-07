@@ -4,15 +4,13 @@ import { useAuth } from "../../AuthContext";
 import { useNavigate } from "react-router-dom";
 import "./Authentication.scss";
 import toast from "react-hot-toast";
-import OTPModal from "./OTPModal/OTPModal";
-import { authApi } from "../../api/auth";
 import Loader from "../Loader/Loader";
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { authApi } from "../../api/auth";
 
 const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showOTPModal, setShowOTPModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { setUser } = useAuth();
   const navigate = useNavigate();
@@ -22,28 +20,10 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
       console.log("Attempting login with:", { email, password });
       return authApi.login({ email, password });
     },
-    onSuccess: (data) => {
-      console.log("Login response:", data);
-
-
-      if (data.statusCode === 200) {
-        toast.success("Please verify your email with OTP");
-        setShowOTPModal(true);
-      }
-    },
-    onError: (error: any) => {
-      console.error("Login error:", error);
-      // Display error message from API response
-      const errorMessage = error.response?.data?.message || error.message || "Login failed. Please check your credentials.";
-      toast.error(errorMessage);
-    },
-  });
-
-  const verifyOTPMutation = useMutation({
-    mutationFn: (otp: string) => authApi.verifyOTP(email, otp),
-    onSuccess: (response: any) => {
+    onSuccess: (response) => {
+      console.log("Login response:", response);
       if (response.statusCode === 200) {
-        toast.success(response.message);
+        toast.success("Login successful!");
         // Store token and user data from the response
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("user", JSON.stringify(response.data.user));
@@ -51,22 +31,12 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
         setUser(response.data.user);
         navigate("/auth/dashboard");
       } else {
-        toast.error(response.message);
+        toast.error(response.message || "Login failed. Please check your credentials.");
       }
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || error.message || "Invalid OTP";
-      toast.error(errorMessage);
-    },
-  });
-
-  const resendOTPMutation = useMutation({
-    mutationFn: () => authApi.resendOTP(email),
-    onSuccess: (response: any) => {
-      toast.success(response.message || "OTP resent successfully!");
-    },
-    onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || error.message || "Failed to resend OTP";
+      console.error("Login error:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Login failed. Please check your credentials.";
       toast.error(errorMessage);
     },
   });
@@ -76,27 +46,13 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
     loginMutation.mutate();
   };
 
-  const handleVerifyOTP = async (otp: string) => {
-    await verifyOTPMutation.mutateAsync(otp);
-  };
-
-  const handleResendOTP = async () => {
-    await resendOTPMutation.mutateAsync();
-  };
-
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
   return (
     <>
-      <Loader
-        isLoading={
-          loginMutation.isPending ||
-          verifyOTPMutation.isPending ||
-          resendOTPMutation.isPending
-        }
-      />
+      <Loader isLoading={loginMutation.isPending} />
       <div className="auth-box">
         <h2>Sign In</h2>
         <form onSubmit={handleSubmit}>
@@ -155,16 +111,6 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
           </button>
         </p>
       </div>
-
-      <OTPModal
-        isOpen={showOTPModal}
-        onClose={() => setShowOTPModal(false)}
-        onVerify={handleVerifyOTP}
-        onResend={handleResendOTP}
-        email={email}
-        isResendDisabled={resendOTPMutation.isPending}
-        mode="signin"
-      />
     </>
   );
 };

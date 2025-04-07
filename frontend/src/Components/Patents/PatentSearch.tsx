@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../Redux/hooks';
 import { RootState } from '../../Redux/store';
-import { fetchFullPatentDetails } from '../../Redux/slices/patentSlice';
+import { fetchFullPatentDetails, setFilters } from '../../Redux/slices/patentSlice';
 import './PatentSearch.scss';
 // import PatentDetails from './PatentDetails';
 import Loader from '../Common/Loader';
@@ -15,6 +15,7 @@ import FamilySearchModal from './FamilySearchModal';
 import toast from 'react-hot-toast';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faProjectDiagram } from '@fortawesome/free-solid-svg-icons';
+import { filterPatentsByFamilyId } from '../../utils/patentUtils';
 // import PatentSummaryList from './PatentSummaryList';
 // import { PatentSummary, ApiSource } from './types';
 // import { formatDate, detectApiType } from './utils';
@@ -37,7 +38,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
   const [showFamilySearchModal, setShowFamilySearchModal] = useState(false);
   
   const dispatch = useAppDispatch();
-  const patentsState = useAppSelector((state: RootState) => state.patents);
+  const { filters } = useAppSelector((state: RootState) => state.patents);
 
   // Add this function to standardize patent ID processing
   const processPatentIds = (input: string): string[] => {
@@ -192,22 +193,38 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     }
   };
 
-  // This will be moved to a service file in a complete refactoring
+  // Add filter function
+  const filterSearchResults = (results: PatentSummary[]) => {
+    return results.filter(patent => {
+      // Filter by publication type
+      const isGrant = patent.details?.type?.toLowerCase().includes('grant');
+      const isApplication = patent.details?.type?.toLowerCase().includes('application');
+      
+      if (!filters.showGrantPatents && isGrant) return false;
+      if (!filters.showApplicationPatents && isApplication) return false;
+      
+      return true;
+    });
+  };
+
+  // Modify handleSearch to include filtering
   const handleSearch = async (
     idsToSearch: string[],
     searchType: 'direct' | 'smart',
     apiType: ApiSource
   ): Promise<PatentSummary[]> => {
     if (apiType === 'unified') {
-      // Use Unified Patents API for both direct and smart search
       try {
         const result = await patentApi.searchMultiplePatentsUnified(idsToSearch, searchType);
-        
-        // The response will be in hits.hits array, sorted by portfolio_score
         const hits = result.hits?.hits || [];
         
+        // Filter patents by family_id if enabled
+        const filteredHits = filters.filterByFamilyId 
+          ? filterPatentsByFamilyId(hits, true, true)
+          : hits;
+        
         // Map the hits to our patent format
-        const patents = hits.map((hit: any) => {
+        const patents = filteredHits.map((hit: any) => {
           const source = hit._source;
           return {
             patentId: source?.ucid_spif || '',
@@ -215,37 +232,11 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
             title: source?.title || '',
             abstract: source?.abstract || '',
             details: {
-              assignee_current: source?.assignee_current || [],
-              assignee_original: source?.assignee_original || [],
-              assignee_parent: source?.assignee_parent || [],
-              priority_date: source?.priority_date || '',
-              publication_date: source?.publication_date || '',
-              grant_date: source?.grant_date || '',
-              expiration_date: source?.expiration_date || '',
-              application_date: source?.application_date || '',
-              application_number: source?.application_number || '',
               grant_number: source?.grant_number || '',
-              publication_number: source?.publication_number || '',
-              publication_status: source?.publication_status || '',
-              publication_type: source?.publication_type || '',
+              expiration_date: source?.expiration_date || '',
+              assignee_current: source?.assignee_current || [],
               type: source?.type || '',
-              country: source?.country || '',
-              kind_code: source?.kind_code || '',
-              inventors: source?.inventors || [],
-              examiner: source?.examiner || [],
-              law_firm: source?.law_firm || '',
-              cpc_codes: source?.cpc_codes || [],
-              uspc_codes: source?.uspc_codes || [],
               num_cit_pat: source?.num_cit_pat || 0,
-              num_cit_npl: source?.num_cit_npl || 0,
-              num_cit_pat_forward: source?.num_cit_pat_forward || 0,
-              citations_pat_forward: source?.citations_pat_forward || [],
-              portfolio_score: source?.portfolio_score || 0,
-              litigation_score: source?.litigation_score || 0,
-              rating_broadness: source?.rating_broadness || '',
-              rating_citation: source?.rating_citation || '',
-              rating_litigation: source?.rating_litigation || '',
-              rating_validity: source?.rating_validity || '',
               family_id: source?.family_id || '',
               extended_family_id: source?.extended_family_id || '',
               hyperlink_google: source?.hyperlink_google || '',
@@ -262,7 +253,8 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
           };
         });
 
-        return patents;
+        // Apply publication type filters
+        return filterSearchResults(patents);
       } catch (error) {
         console.error('Unified API error:', error);
         throw error;
@@ -330,65 +322,30 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
   };
 
   const handleViewDetails = async (summary: PatentSummary) => {
-    // Flag to track if we're initiating a fetch
-    let isFetchInitiated = false;
-    
-    // Set the selected patent immediately to show the modal
     setSelectedPatent(summary);
     
-    // For Unified API smart search, we need to format the patent ID correctly
     if (selectedApi === 'unified') {
-      // Get the base patent number from the grant_number or patentId
       const basePatentNumber = summary.details?.grant_number || summary.patentId;
       
-      // Only fetch if we don't have the full details yet
       if (!summary.details?.description || !summary.details?.claims || !summary.details?.figures) {
-        isFetchInitiated = true;
-        
-        // Extract components and format properly for Unified API
         let formattedId = basePatentNumber;
         
-        // If the ID is just numbers (like "8125463"), add US and B2
         if (/^\d+$/.test(basePatentNumber)) {
           formattedId = `US-${basePatentNumber}-B2`;
-        } 
-        // If it has country code but no kind code (like "US8125463"), add B2
-        else if (/^[A-Z]{2}\d+$/.test(basePatentNumber)) {
+        } else if (/^[A-Z]{2}\d+$/.test(basePatentNumber)) {
           const countryCode = basePatentNumber.substring(0, 2);
           const number = basePatentNumber.substring(2);
           formattedId = `${countryCode}-${number}-B2`;
-        }
-        // If it's not in correct format with hyphens, format it
-        else if (!basePatentNumber.includes('-')) {
+        } else if (!basePatentNumber.includes('-')) {
           formattedId = formatPatentId(basePatentNumber, 'unified');
         }
 
-        console.log('Initiating fetch from handleViewDetails for Unified API patent:', formattedId);
-        
-        // Dispatch the action with the properly formatted ID
         dispatch(fetchFullPatentDetails({ 
           patentId: formattedId, 
           apiType: selectedApi 
         }));
-      } else {
-        console.log('Using existing details for Unified API patent, no fetch needed:', basePatentNumber);
-      }
-    } else {
-      // For other APIs, keep existing behavior
-      if (!summary.details?.description || !summary.details?.claims || !summary.details?.figures) {
-        isFetchInitiated = true;
-        console.log('Initiating fetch from handleViewDetails for patent:', summary.patentId);
-        dispatch(fetchFullPatentDetails({ patentId: summary.patentId, apiType: selectedApi }));
-      } else {
-        console.log('Using existing details for patent, no fetch needed:', summary.patentId);
       }
     }
-    
-    // Store the fetch status with the selected patent
-    setSelectedPatent({
-      ...summary,
-      initialFetch: isFetchInitiated
-    });
   };
 
   // Handle smart search modal selection
@@ -405,8 +362,11 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
           // The response will be in hits.hits array, sorted by portfolio_score
           const hits = result.hits?.hits || [];
           
+          // Filter patents by family_id
+          const filteredHits = filterPatentsByFamilyId(hits, true, true);
+          
           // Map the hits to our patent format
-          const patents = hits.map((hit: any) => {
+          const patents = filteredHits.map((hit: any) => {
             const source = hit._source;
             return {
               patentId: source?.ucid_spif || '',
@@ -515,27 +475,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     }
   };
 
-  // Update the selected patent when Redux state changes (for family member patents)
-  useEffect(() => {
-    if (selectedPatent && 
-        selectedPatent.status === 'loading' && 
-        !patentsState.isLoading &&
-        patentsState.selectedPatent &&
-        patentsState.selectedPatent.patentId === selectedPatent.patentId) {
-      
-      // Update the selected patent with the loaded data
-      const updatedPatent: PatentSummary = {
-        ...selectedPatent,
-        status: 'success',
-        details: patentsState.selectedPatent,
-        title: patentsState.selectedPatent.title || selectedPatent.title,
-        abstract: patentsState.selectedPatent.abstract || selectedPatent.abstract
-      };
-      
-      setSelectedPatent(updatedPatent);
-    }
-  }, [patentsState.isLoading, patentsState.selectedPatent, selectedPatent]);
-
   // Add effect to handle body scroll when modal is open
   useEffect(() => {
     if (selectedPatent) {
@@ -608,7 +547,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
           setSelectedPatent={setSelectedPatent}
           onViewDetails={handleViewDetails}
           onPatentSelect={handlePatentSelect}
-          patentsState={patentsState}
           formatDate={formatDate}
           apiSource={selectedApi}
         />

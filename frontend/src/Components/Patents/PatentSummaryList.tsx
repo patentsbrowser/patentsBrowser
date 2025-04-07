@@ -4,6 +4,7 @@ import PatentDetails from './PatentDetails';
 import Loader from '../Common/Loader';
 import PatentSummaryCard from './PatentSummaryCard';
 import { ApiSource } from '../../api/patents';
+import { useAppSelector } from '../../Redux/hooks';
 
 interface PatentSummaryListProps {
   patentSummaries: PatentSummary[];
@@ -11,7 +12,6 @@ interface PatentSummaryListProps {
   setSelectedPatent: (patent: PatentSummary | null) => void;
   onViewDetails: (patent: PatentSummary) => void;
   onPatentSelect: (patentId: string) => void;
-  patentsState: any; // Type from Redux state
   formatDate: (date: string | undefined) => string;
   apiSource: ApiSource;
 }
@@ -22,10 +22,11 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
   setSelectedPatent,
   onViewDetails,
   onPatentSelect,
-  patentsState,
   formatDate,
   apiSource
 }) => {
+  const { isLoading } = useAppSelector((state) => state.patents);
+
   if (patentSummaries.length === 0) return null;
 
   return (
@@ -34,7 +35,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
       <div className="summaries-grid">
         {patentSummaries.map((summary) => (
           <PatentSummaryCard
-            key={summary.patentId[0]}
+            key={summary.patentId}
             summary={summary}
             onViewDetails={onViewDetails}
             formatDate={formatDate}
@@ -47,7 +48,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
       {selectedPatent && (
         <div className="full-details-section">
           <div className="section-header">
-            <h3>Full Patent Details - {selectedPatent.patentId[0]}</h3>
+            <h3>Full Patent Details - {selectedPatent.patentId}</h3>
             <button 
               className="close-details"
               onClick={() => setSelectedPatent(null)}
@@ -57,9 +58,9 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
             </button>
           </div>
           <div className="patent-card">
-            {patentsState.isLoading || selectedPatent.status === 'loading' ? (
+            {isLoading || selectedPatent.status === 'loading' ? (
               <div className="loading-container">
-                <Loader text={`Loading patent data for ${selectedPatent.patentId[0]}...`} />
+                <Loader text={`Loading patent data for ${selectedPatent.patentId}...`} />
               </div>
             ) : (
               <PatentDetails
@@ -69,7 +70,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
                 description={selectedPatent.details?.description || 'No description available'}
                 figures={selectedPatent.details?.figures || []}
                 familyMembers={selectedPatent.details?.family_members || []}
-                patentId={selectedPatent.patentId[0]}
+                patentId={selectedPatent.patentId}
                 onPatentSelect={onPatentSelect}
                 apiSource={apiSource}
                 initialFetch={selectedPatent.initialFetch || false}

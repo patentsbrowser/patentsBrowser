@@ -24,6 +24,11 @@ interface PatentState {
   searchResults: Patent[];
   isLoading: boolean;
   error: string | null;
+  filters: {
+    showGrantPatents: boolean;
+    showApplicationPatents: boolean;
+    filterByFamilyId: boolean;
+  };
 }
 
 const initialState: PatentState = {
@@ -31,6 +36,11 @@ const initialState: PatentState = {
   searchResults: [],
   isLoading: false,
   error: null,
+  filters: {
+    showGrantPatents: true,
+    showApplicationPatents: true,
+    filterByFamilyId: true
+  }
 };
 
 // Async thunk for fetching full patent details
@@ -172,6 +182,16 @@ const patentSlice = createSlice({
       state.isLoading = false;
       state.error = null;
     },
+    setFilters: (state, action: PayloadAction<{
+      showGrantPatents?: boolean;
+      showApplicationPatents?: boolean;
+      filterByFamilyId?: boolean;
+    }>) => {
+      state.filters = {
+        ...state.filters,
+        ...action.payload
+      };
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -219,6 +239,7 @@ export const {
   setLoading,
   setError,
   clearState,
+  setFilters,
 } = patentSlice.actions;
 
 export default patentSlice.reducer; 

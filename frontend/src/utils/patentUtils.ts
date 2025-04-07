@@ -82,4 +82,23 @@ export const filterUSFamilyMembers = (familyMembers: any[]): any[] => {
         if (!member.publication_number) return false;
         return isUSPatent(member.publication_number);
     });
-} 
+}
+
+export const filterPatentsByFamilyId = (patents: any[], isUnifiedSearch: boolean, isSmartSearch: boolean) => {
+  if (!isUnifiedSearch || !isSmartSearch) {
+    return patents;
+  }
+
+  const familyIds = new Set();
+  const filteredPatents = [];
+
+  for (const patent of patents) {
+    const familyId = patent._source?.family_id;
+    if (!familyId || !familyIds.has(familyId)) {
+      familyIds.add(familyId);
+      filteredPatents.push(patent);
+    }
+  }
+
+  return filteredPatents;
+}; 

@@ -15,7 +15,7 @@ interface FileType {
   encoding: string;
   mimetype: string;
   size: number;
-  destination: string;
+  destination: string;r
   filename: string;
   path: string;
   buffer: Buffer;
