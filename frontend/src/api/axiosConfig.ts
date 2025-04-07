@@ -7,7 +7,11 @@ const API_URL = import.meta.env.VITE_API_URL;
 let isHandlingSessionExpiration = false;
 
 const axiosInstance = axios.create({
-  baseURL: API_URL
+  baseURL: API_URL,
+  withCredentials: true, // Enable sending credentials (cookies) with requests
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
 
 // Add a request interceptor to add auth token to all requests
@@ -17,6 +21,10 @@ axiosInstance.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Ensure credentials are sent with every request
+    config.withCredentials = true;
+    
     return config;
   },
   (error) => {
