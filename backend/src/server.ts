@@ -59,40 +59,70 @@ const app = express();
 // Request logging middleware
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  console.log('Request body:', req.body);
+  
+  // Log origin for debugging CORS issues
+  if (req.headers.origin) {
+    console.log(`Request origin: ${req.headers.origin}`);
+  }
+  
+  // Log request headers for OPTIONS requests to debug preflight
+  if (req.method === 'OPTIONS') {
+    console.log('OPTIONS request headers:', req.headers);
+  } else {
+    console.log('Request body:', req.body);
+  }
+  
+  // Add response logging
+  const originalSend = res.send;
+  res.send = function(body) {
+    console.log(`Response status: ${res.statusCode}`);
+    if (res.statusCode >= 400) {
+      console.log('Error response:', body);
+    }
+    return originalSend.call(this, body);
+  };
+  
   next();
 });
 
 // Configure CORS to allow only requests from the frontend URL
 const corsOptions = {
-  origin: (origin, callback) => {
+  origin: function(origin, callback) {
     const allowedOrigins = [
-      process.env.FRONTEND_URL || 'https://patentsbrowser.com',
       'https://patentsbrowser.com',
-      'http://localhost:5173',
-      'http://localhost:3000'
+      'http://patentsbrowser.com',
+      'https://www.patentsbrowser.com',
+      'http://www.patentsbrowser.com',
+      'http://localhost:3000',
+      'http://localhost:5173'
     ];
-    // Allow requests with no origin (like mobile apps, curl requests)
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    
+    // Allow requests with no origin (like mobile apps, curl, postman)
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log(`CORS blocked request from origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error(`Not allowed by CORS: ${origin}`));
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Access-Control-Allow-Origin'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Access-Control-Allow-Origin', 'Access-Control-Allow-Methods', 'Access-Control-Allow-Headers'],
   credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
   maxAge: 86400 // 24 hours
 };
 
-// app.use(cors(corsOptions));
-app.use(cors({
-  origin: 'https://patentsbrowser.com', // or use an array for multiple domains
-  credentials: true, // if you are using cookies or authorization headers
-}));
+app.use(cors(corsOptions));
+// app.use(cors({
+//   origin: 'https://patentsbrowser.com', // or use an array for multiple domains
+//   credentials: true, // if you are using cookies or authorization headers
+// }));
 app.use(express.json());
+
+// Add preflight OPTIONS handler for all routes
+app.options('*', cors(corsOptions));
 
 // Health check endpoint for Render monitoring
 app.get('/api/health', (req, res) => {
