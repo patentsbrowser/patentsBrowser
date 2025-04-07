@@ -68,17 +68,21 @@ const corsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = [
       process.env.FRONTEND_URL || 'https://patentsbrowser.com',
-      'http://localhost:5173'
+      'https://patentsbrowser.com',
+      'http://localhost:5173',
+      'http://localhost:3000'
     ];
     // Allow requests with no origin (like mobile apps, curl requests)
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
+      console.log(`CORS blocked request from origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Access-Control-Allow-Origin'],
   credentials: true,
   maxAge: 86400 // 24 hours
 };
