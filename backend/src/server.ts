@@ -27,7 +27,7 @@ if (env === 'production') {
 } else {
   dotenv.config();
 }
-
+console.log('first')
 // Verify required environment variables
 const requiredEnvVars = ['JWT_SECRET', 'MONGODB_URI'];
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
