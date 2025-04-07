@@ -6,6 +6,7 @@ export interface PatentSummary {
   abstract?: string;
   status: 'loading' | 'success' | 'error';
   error?: string;
+  initialFetch?: boolean;
   details?: {
     assignee_current?: string[];
     priority_date?: string;

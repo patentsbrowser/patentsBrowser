@@ -290,7 +290,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
       setSelectedPatent(tempPatent);
       
       // Fetch the full details of the new patent
-      dispatch(fetchFullPatentDetails(patentId));
+      dispatch(fetchFullPatentDetails({ patentId, apiType: selectedApi }));
     } else {
       // Standard behavior when not in the modal
       setSearchQuery(patentId);
@@ -300,13 +300,65 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
   };
 
   const handleViewDetails = async (summary: PatentSummary) => {
+    // Flag to track if we're initiating a fetch
+    let isFetchInitiated = false;
+    
     // Set the selected patent immediately to show the modal
     setSelectedPatent(summary);
     
-    // Only fetch if we don't have the full details yet
-    if (!summary.details?.description || !summary.details?.claims || !summary.details?.figures) {
-      dispatch(fetchFullPatentDetails(summary.patentId));
+    // For Unified API smart search, we need to format the patent ID correctly
+    if (selectedApi === 'unified') {
+      // Get the base patent number from the grant_number or patentId
+      const basePatentNumber = summary.details?.grant_number || summary.patentId;
+      
+      // Only fetch if we don't have the full details yet
+      if (!summary.details?.description || !summary.details?.claims || !summary.details?.figures) {
+        isFetchInitiated = true;
+        
+        // Extract components and format properly for Unified API
+        let formattedId = basePatentNumber;
+        
+        // If the ID is just numbers (like "8125463"), add US and B2
+        if (/^\d+$/.test(basePatentNumber)) {
+          formattedId = `US-${basePatentNumber}-B2`;
+        } 
+        // If it has country code but no kind code (like "US8125463"), add B2
+        else if (/^[A-Z]{2}\d+$/.test(basePatentNumber)) {
+          const countryCode = basePatentNumber.substring(0, 2);
+          const number = basePatentNumber.substring(2);
+          formattedId = `${countryCode}-${number}-B2`;
+        }
+        // If it's not in correct format with hyphens, format it
+        else if (!basePatentNumber.includes('-')) {
+          formattedId = formatPatentId(basePatentNumber, 'unified');
+        }
+
+        console.log('Initiating fetch from handleViewDetails for Unified API patent:', formattedId);
+        
+        // Dispatch the action with the properly formatted ID
+        dispatch(fetchFullPatentDetails({ 
+          patentId: formattedId, 
+          apiType: selectedApi 
+        }));
+      } else {
+        console.log('Using existing details for Unified API patent, no fetch needed:', basePatentNumber);
+      }
+    } else {
+      // For other APIs, keep existing behavior
+      if (!summary.details?.description || !summary.details?.claims || !summary.details?.figures) {
+        isFetchInitiated = true;
+        console.log('Initiating fetch from handleViewDetails for patent:', summary.patentId);
+        dispatch(fetchFullPatentDetails({ patentId: summary.patentId, apiType: selectedApi }));
+      } else {
+        console.log('Using existing details for patent, no fetch needed:', summary.patentId);
+      }
     }
+    
+    // Store the fetch status with the selected patent
+    setSelectedPatent({
+      ...summary,
+      initialFetch: isFetchInitiated
+    });
   };
 
   // Handle smart search modal selection

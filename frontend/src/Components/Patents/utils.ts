@@ -2,7 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { ApiSource } from './types';
 
 // Detect which API to use based on the patent ID format
-export const detectApiType = (patentId: string, defaultApi: ApiSource = 'serpapi'): ApiSource => {
+export const detectApiType = (patentId: string | undefined | null, defaultApi: ApiSource = 'serpapi'): ApiSource => {
+  // Return default API if patentId is not a string
+  if (!patentId || typeof patentId !== 'string') {
+    return defaultApi;
+  }
+
+  // Clean the patent ID
+  const cleanPatentId = patentId.trim();
+  if (!cleanPatentId) {
+    return defaultApi;
+  }
+
   // Pattern for Unified Patents API format that handles various international formats
   // Modified to support Korean patents (KR-1020120094549-A) with longer numeric sections
   const unifiedPattern = /^[A-Z]{2}-\d+-[A-Z]\d?$/i;
@@ -11,12 +22,12 @@ export const detectApiType = (patentId: string, defaultApi: ApiSource = 'serpapi
   const serpapiPattern = /^[A-Z]{2}\d+[A-Z]\d$/i;
   
   // If it matches unified format, use unified API
-  if (unifiedPattern.test(patentId.trim())) {
+  if (unifiedPattern.test(cleanPatentId)) {
     return 'unified';
   }
   
   // If it matches serpapi format, use serpapi API
-  if (serpapiPattern.test(patentId.trim())) {
+  if (serpapiPattern.test(cleanPatentId)) {
     return 'serpapi';
   }
   

@@ -36,11 +36,8 @@ const initialState: PatentState = {
 // Async thunk for fetching full patent details
 export const fetchFullPatentDetails = createAsyncThunk(
   'patents/fetchFullDetails',
-  async (patentId: string, { rejectWithValue, getState }) => {
+  async ({ patentId, apiType }: { patentId: string; apiType: ApiSource }, { rejectWithValue, getState }) => {
     try {
-      // Detect API type based on patent ID format
-      const apiType = detectApiType(patentId);
-      
       // If it's a SerpAPI patent ID, check if we already have it in the state
       if (apiType === 'serpapi') {
         const state = getState() as any;

@@ -3,11 +3,12 @@ import Description from './Description';
 import Figures from './Figures';
 import FamilyMembers from './FamilyMembers';
 import PatentHighlighter from './PatentHighlighter';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../Redux/hooks';
 import { fetchFullPatentDetails } from '../../Redux/slices/patentSlice';
 import './PatentDetails.scss';
 import { ApiSource } from '../../api/patents';
+// import { formatPatentId } from '../Patents/utils';
 
 interface PatentDetailsProps {
   title: string;
@@ -19,6 +20,7 @@ interface PatentDetailsProps {
   patentId: string;
   onPatentSelect: (patentId: string) => void;
   apiSource?: ApiSource;
+  initialFetch?: boolean; // Flag to indicate if the parent already triggered a fetch
 }
 
 const PatentDetails: React.FC<PatentDetailsProps> = ({
@@ -30,30 +32,60 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
   familyMembers,
   patentId,
   onPatentSelect,
-  apiSource = 'unified'
+  apiSource = 'unified',
+  initialFetch = false
 }) => {
   const dispatch = useAppDispatch();
   const { selectedPatent, isLoading, error } = useAppSelector((state) => state.patents);
+  const hasFetchedRef = useRef(initialFetch);
+  const [localFetchStatus, setLocalFetchStatus] = useState<'idle' | 'fetching' | 'done'>('idle');
 
   useEffect(() => {
-    // Only fetch additional data if we're using Unified API and don't have all the required data
-    // For SerpAPI, we'll use the data that was passed in via props
-    if (apiSource === 'unified' && 
-        patentId && 
-        (!selectedPatent || 
-        selectedPatent.patentId !== patentId || 
-        !selectedPatent.description || 
-        !selectedPatent.claims || 
-        !selectedPatent.figures)) {
-      
-      console.log('Fetching additional patent details for Unified API patent:', patentId);
-      dispatch(fetchFullPatentDetails(patentId));
-    } else {
-      console.log('Using existing data for patent details, skipping API calls');
+    // Reset local fetch status when patent ID changes
+    if (patentId) {
+      setLocalFetchStatus('idle');
+      hasFetchedRef.current = initialFetch;
     }
-  }, [patentId, selectedPatent, dispatch, apiSource]);
+  }, [patentId, initialFetch]);
 
-  if (isLoading && !selectedPatent && apiSource === 'unified') {
+  useEffect(() => {
+    const shouldFetch = 
+      apiSource === 'unified' && 
+      patentId && 
+      localFetchStatus === 'idle' &&
+      !hasFetchedRef.current &&
+      (!selectedPatent?.description || 
+       !selectedPatent?.claims || 
+       !selectedPatent?.figures);
+
+    if (shouldFetch) {
+      console.log('Fetching additional patent details for Unified API patent:', patentId);
+      setLocalFetchStatus('fetching');
+      hasFetchedRef.current = true;
+      
+      // For Unified API, ensure the patent ID is in the correct format (XX-NNNNNN-YY)
+      // If it's not already in the correct format with hyphens, assume it's already formatted correctly
+      // since it should be formatted by the parent component
+      dispatch(fetchFullPatentDetails({ patentId, apiType: apiSource }));
+    }
+  }, [patentId, selectedPatent, dispatch, apiSource, localFetchStatus]);
+
+  // Update local fetch status when data is received
+  useEffect(() => {
+    if (selectedPatent?.description && selectedPatent?.claims && selectedPatent?.figures) {
+      setLocalFetchStatus('done');
+    }
+  }, [selectedPatent]);
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      setLocalFetchStatus('idle');
+      hasFetchedRef.current = false;
+    };
+  }, []);
+
+  if (isLoading && localFetchStatus === 'fetching' && apiSource === 'unified') {
     return <div className="loading">Loading patent details...</div>;
   }
 

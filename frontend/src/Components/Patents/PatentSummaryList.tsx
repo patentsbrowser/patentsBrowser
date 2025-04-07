@@ -34,7 +34,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
       <div className="summaries-grid">
         {patentSummaries.map((summary) => (
           <PatentSummaryCard
-            key={summary.patentId}
+            key={summary.patentId[0]}
             summary={summary}
             onViewDetails={onViewDetails}
             formatDate={formatDate}
@@ -47,7 +47,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
       {selectedPatent && (
         <div className="full-details-section">
           <div className="section-header">
-            <h3>Full Patent Details - {selectedPatent.patentId}</h3>
+            <h3>Full Patent Details - {selectedPatent.patentId[0]}</h3>
             <button 
               className="close-details"
               onClick={() => setSelectedPatent(null)}
@@ -59,7 +59,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
           <div className="patent-card">
             {patentsState.isLoading || selectedPatent.status === 'loading' ? (
               <div className="loading-container">
-                <Loader text={`Loading patent data for ${selectedPatent.patentId}...`} />
+                <Loader text={`Loading patent data for ${selectedPatent.patentId[0]}...`} />
               </div>
             ) : (
               <PatentDetails
@@ -69,9 +69,10 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
                 description={selectedPatent.details?.description || 'No description available'}
                 figures={selectedPatent.details?.figures || []}
                 familyMembers={selectedPatent.details?.family_members || []}
-                patentId={selectedPatent.patentId}
+                patentId={selectedPatent.patentId[0]}
                 onPatentSelect={onPatentSelect}
                 apiSource={apiSource}
+                initialFetch={selectedPatent.initialFetch || false}
               />
             )}
           </div>
