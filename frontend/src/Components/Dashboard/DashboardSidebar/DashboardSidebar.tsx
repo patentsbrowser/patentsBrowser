@@ -54,6 +54,7 @@ const DashboardSidebar = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const [customPatentLists, setCustomPatentLists] = useState<CustomPatentList[]>([]);
+  const [importedLists, setImportedLists] = useState<CustomPatentList[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoadedLists, setHasLoadedLists] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -143,25 +144,42 @@ const DashboardSidebar = ({
       if (isLoading) return; // Prevent duplicate calls
       setIsLoading(true);
       console.log("Fetching custom patent lists...");
-      const response = await authApi.getCustomPatentList();
-      console.log("Custom patent lists fetched:", response.data);
       
-      // Transform the data to match the CustomPatentList interface used in this component
-      const transformedLists = (response.data || []).map((list: any) => ({
+      // Fetch both custom lists and imported lists
+      const [customListsResponse, importedListsResponse] = await Promise.all([
+        authApi.getCustomPatentList(),
+        authApi.getImportedLists()
+      ]);
+      
+      console.log("Custom patent lists fetched:", customListsResponse.data);
+      console.log("Imported lists fetched:", importedListsResponse.data);
+      
+      // Transform the data to match the CustomPatentList interface
+      const transformedCustomLists = (customListsResponse.data || []).map((list: any) => ({
         id: list._id,
         name: list.name,
         patentIds: list.patentIds,
         timestamp: list.timestamp,
         isSubfolder: list.isSubfolder || false,
         parentFolderId: list.parentFolderId || null,
-        // Add source information if available in the API response
-        source: list.source || 'unknown'
+        source: list.source || 'folderName'
+      }));
+
+      const transformedImportedLists = (importedListsResponse.data || []).map((list: any) => ({
+        id: list._id,
+        name: list.name,
+        patentIds: list.patentIds,
+        timestamp: list.timestamp,
+        isSubfolder: list.isSubfolder || false,
+        parentFolderId: list.parentFolderId || null,
+        source: list.source || 'importedList'
       }));
       
-      setCustomPatentLists(transformedLists);
+      setCustomPatentLists(transformedCustomLists);
+      setImportedLists(transformedImportedLists);
       setHasLoadedLists(true);
     } catch (error) {
-      console.error('Failed to fetch custom patent lists:', error);
+      console.error('Failed to fetch patent lists:', error);
     } finally {
       setIsLoading(false);
     }
@@ -278,7 +296,7 @@ const DashboardSidebar = ({
         <ImportedFolders 
           onPatentClick={onPatentClick}
           onPatentWithFolderClick={handlePatentClickWithFolder}
-          customPatentLists={customPatentLists.filter(list => list.source === 'folderName')}
+          customPatentLists={importedLists}
           isLoading={isLoading}
           onModalStateChange={handleModalStateChange}
         />
@@ -286,7 +304,7 @@ const DashboardSidebar = ({
         <CustomSearch
           recentSearches={recentSearches}
           customPatentLists={customPatentLists
-            .filter(list => list.source !== 'folderName')
+            .filter(list => list.source === 'folderName')
             .map(list => ({
               _id: list.id,
               name: list.name,

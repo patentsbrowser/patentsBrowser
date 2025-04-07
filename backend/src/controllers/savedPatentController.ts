@@ -60,7 +60,6 @@ export const savePatent = async (req: AuthRequest, res: Response) => {
     console.log('Standardized patent IDs:', standardizedPatentIds);
 
     const savedPatents: any[] = [];
-    const duplicates: string[] = [];
 
     // Process each patent ID in the array
     for (const patentId of standardizedPatentIds) {
@@ -69,58 +68,41 @@ export const savePatent = async (req: AuthRequest, res: Response) => {
 
       // Check if patent is already saved by this user
       const existingPatent = await SavedPatent.findOne({ userId, patentId });
-      if (existingPatent) {
-        duplicates.push(patentId);
-        continue;
-      }
-
-      // Create and save the patent
-      const savedPatent = new SavedPatent({
-        userId,
-        patentId
-      });
-
-      await savedPatent.save();
-      savedPatents.push(savedPatent);
-    }
-
-    // Prepare response message
-    let message = 'Patents saved successfully';
-    if (duplicates.length > 0) {
-      if (savedPatents.length === 0) {
-        message = 'All patents were already saved by user';
+      
+      if (!existingPatent) {
+        // Create and save the patent if it doesn't exist
+        const savedPatent = new SavedPatent({
+          userId,
+          patentId
+        });
+        await savedPatent.save();
+        savedPatents.push(savedPatent);
       } else {
-        message = `Some patents saved successfully. ${duplicates.length} patent(s) were already saved.`;
+        // If it exists, just add it to the savedPatents array
+        savedPatents.push(existingPatent);
       }
     }
 
-    // Create a custom patent list if a folder name was provided and at least one patent was saved
+    // Create a custom patent list if a folder name was provided
     let customList = null;
     if (folderName && patentIds.length > 0) {
-      // Use the saved patent IDs that weren't duplicates
-      const nonDuplicateIds = standardizedPatentIds.filter(id => !duplicates.includes(id));
-      
-      if (nonDuplicateIds.length > 0) {
-        console.log(`Creating custom list "${folderName}" with ${nonDuplicateIds.length} patents`);
-        customList = new CustomPatentList({
-          userId,
-          name: folderName,
-          patentIds: nonDuplicateIds,
-          timestamp: Date.now(),
-          source: 'folderName'
-        });
+      console.log(`Creating custom list "${folderName}" with ${standardizedPatentIds.length} patents`);
+      customList = new CustomPatentList({
+        userId,
+        name: folderName,
+        patentIds: standardizedPatentIds,
+        timestamp: Date.now(),
+        source: 'importedList'
+      });
 
-        await customList.save();
-        message += ` and saved to folder "${folderName}"`;
-      }
+      await customList.save();
     }
 
     res.status(201).json({
       statusCode: 201,
-      message,
+      message: 'Patents saved successfully',
       data: {
         savedPatents,
-        duplicates,
         customList
       }
     });
@@ -661,6 +643,90 @@ export const extractPatentIdsFromFile = async (req: AuthRequest, res: Response) 
     return res.status(500).json({
       statusCode: 500,
       message: 'Failed to process file',
+      data: null
+    });
+  }
+};
+
+export const deleteFolder = async (req: AuthRequest, res: Response) => {
+  try {
+    const { folderId } = req.body;
+    const userId = req.user?.userId;
+
+    // Validate required fields
+    if (!folderId) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Folder ID is required',
+        data: null
+      });
+    }
+
+    if (!userId) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'User not authenticated',
+        data: null
+      });
+    }
+
+    // Find and delete the custom list
+    const result = await CustomPatentList.findOneAndDelete({ 
+      _id: folderId,
+      userId 
+    });
+
+    if (!result) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'Custom folder not found',
+        data: null
+      });
+    }
+
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Folder deleted successfully',
+      data: null
+    });
+  } catch (error) {
+    console.error('Error deleting folder:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to delete folder',
+      data: null
+    });
+  }
+};
+
+export const getImportedLists = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'User not authenticated',
+        data: null
+      });
+    }
+
+    // Find all custom patent lists with source 'importedList'
+    const importedLists = await CustomPatentList.find({ 
+      userId,
+      source: 'importedList'
+    }).sort({ timestamp: -1 }); // Most recent first
+
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Imported lists retrieved successfully',
+      data: importedLists
+    });
+  } catch (error) {
+    console.error('Error fetching imported lists:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to fetch imported lists',
       data: null
     });
   }

@@ -1,6 +1,6 @@
 import express from 'express';
 import { auth } from '../middleware/auth.js';
-import { getCustomPatentList, getSavedPatents, saveCustomPatentList, savePatent, removePatentFromFolder, extractPatentIdsFromFile } from '../controllers/savedPatentController.js';
+import { getCustomPatentList, getSavedPatents, saveCustomPatentList, savePatent, removePatentFromFolder, extractPatentIdsFromFile, deleteFolder, getImportedLists } from '../controllers/savedPatentController.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -55,6 +55,9 @@ router.get('/list', auth, getSavedPatents as any);
 router.post('/save-custom-list', auth, saveCustomPatentList as any);
 router.get('/custom-list', auth, getCustomPatentList as any);
 router.post('/remove-from-folder', auth, removePatentFromFolder as any);
+router.post('/delete-folder', auth, deleteFolder as any);
+router.get('/get-custom-patent-list', auth, getCustomPatentList as any);
+router.get('/get-imported-lists', auth, getImportedLists as any);
 
 // New route for extracting patent IDs from files
 router.post(

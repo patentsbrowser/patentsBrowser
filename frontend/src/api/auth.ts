@@ -253,5 +253,19 @@ export const authApi = {
       console.error('Error uploading patent file:', error);
       throw error;
     }
+  },
+
+  getImportedLists: async () => {
+    try {
+      const response = await axiosInstance.get(`${API_URL}/saved-patents/get-imported-lists`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching imported lists:', error);
+      throw error;
+    }
   }
 }; 
