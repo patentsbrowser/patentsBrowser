@@ -54,9 +54,7 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
       patentId && 
       localFetchStatus === 'idle' &&
       !hasFetchedRef.current &&
-      (!selectedPatent?.description || 
-       !selectedPatent?.claims || 
-       !selectedPatent?.figures);
+      (!claims?.length || !description || !figures?.length);
 
     if (shouldFetch) {
       console.log('Fetching additional patent details for Unified API patent:', patentId);
@@ -68,7 +66,7 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
       // since it should be formatted by the parent component
       dispatch(fetchFullPatentDetails({ patentId, apiType: apiSource }));
     }
-  }, [patentId, selectedPatent, dispatch, apiSource, localFetchStatus]);
+  }, [patentId, dispatch, apiSource, localFetchStatus, claims, description, figures]);
 
   // Update local fetch status when data is received
   useEffect(() => {
@@ -132,18 +130,28 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
           <div className="patent-details-content-scroll">
             <div className="details-section">
               <h4>Abstract</h4>
-              <p className="highlightable">{abstract}</p>
+              <p className="highlightable">{abstract || 'No abstract data found'}</p>
             </div>
 
-            <Claims 
-              initialClaims={patentData.claims || []} 
-              patentId={patentId} 
-            />
+            {localFetchStatus === 'fetching' ? (
+              <div className="section-loading">Loading claims data...</div>
+            ) : (
+              <Claims 
+                initialClaims={patentData.claims || []} 
+                patentId={patentId} 
+                noDataMessage="No claims data found for this patent"
+              />
+            )}
 
-            <Description 
-              initialDescription={patentData.description || ''} 
-              patentId={patentId} 
-            />
+            {localFetchStatus === 'fetching' ? (
+              <div className="section-loading">Loading description data...</div>
+            ) : (
+              <Description 
+                initialDescription={patentData.description || ''} 
+                patentId={patentId}
+                noDataMessage="No description data found for this patent" 
+              />
+            )}
           </div>
         </div>
         
@@ -152,9 +160,14 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
             <h4>Figures ({figuresCount})</h4>
           </div>
           
-          <Figures 
-            initialFigures={patentData.figures || []} 
-          />
+          {localFetchStatus === 'fetching' ? (
+            <div className="section-loading">Loading figures data...</div>
+          ) : (
+            <Figures 
+              initialFigures={patentData.figures || []}
+              noDataMessage="No figures data found for this patent"
+            />
+          )}
         </div>
       </div>
     </div>

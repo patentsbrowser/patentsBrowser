@@ -7,11 +7,20 @@ interface ClaimsProps {
     ucid: string;
   }>;
   patentId: string;
+  noDataMessage?: string;
 }
 
-const Claims = ({ initialClaims }: ClaimsProps) => {
+const Claims = ({ initialClaims, noDataMessage = "No claims available for this patent" }: ClaimsProps) => {
   // Always render the full claims without toggle functionality
   const renderClaimsList = () => {
+    if (!initialClaims || initialClaims.length === 0) {
+      return (
+        <div className="no-data-message">
+          <p>{noDataMessage}</p>
+        </div>
+      );
+    }
+
     return initialClaims.map((claim, index) => (
       <div key={index} className="claim-item">
         <div className="claim-content">

@@ -271,4 +271,24 @@
       }
     }
   }
+}
+
+.section-loading {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
+  background-color: var(--primary-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 1.5rem;
+}
+
+.no-data-message {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
+  background-color: rgba(0, 0, 0, 0.03);
+  border-radius: 4px;
 } 

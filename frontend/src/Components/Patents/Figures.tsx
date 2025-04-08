@@ -9,9 +9,10 @@ interface Figure {
 
 interface FiguresProps {
   initialFigures: { figures?: Figure[] } | Figure[];
+  noDataMessage?: string;
 }
 
-const Figures = ({ initialFigures }: FiguresProps) => {
+const Figures = ({ initialFigures, noDataMessage = "No figures available for this patent" }: FiguresProps) => {
   const [selectedImage, setSelectedImage] = useState<Figure | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [rotation, setRotation] = useState(0);
@@ -112,7 +113,7 @@ const Figures = ({ initialFigures }: FiguresProps) => {
     return (
       <div className="section-content figures-content">
         <div className="no-data-message">
-          <p>No figures available for this patent</p>
+          <p>{noDataMessage}</p>
         </div>
       </div>
     );

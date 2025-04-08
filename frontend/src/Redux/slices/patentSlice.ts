@@ -7,6 +7,7 @@ interface Patent {
   status: 'success' | 'error' | 'loading';
   title?: string;
   abstract?: string;
+  initialFetch?: boolean;
   details?: {
     grant_number?: string;
     expiration_date?: string;
@@ -149,72 +150,96 @@ export const fetchFullPatentDetails = createAsyncThunk(
   'patents/fetchFullDetails',
   async ({ patentId, apiType }: { patentId: string; apiType: ApiSource }, { rejectWithValue, getState }) => {
     try {
-      // If it's a SerpAPI patent ID, check if we already have it in the state
+      // Check if we already have the complete data in the state
+      const state = getState() as any;
+      const existingSelectedPatent = state.patents.selectedPatent;
+      
+      // If we already have this patent selected with all needed details, return it
+      if (existingSelectedPatent && 
+          existingSelectedPatent.patentId === patentId &&
+          existingSelectedPatent.details && 
+          existingSelectedPatent.details.description && 
+          existingSelectedPatent.details.claims && 
+          existingSelectedPatent.details.claims.length &&
+          existingSelectedPatent.details.figures) {
+        
+        console.log('Using existing selected patent details from state, skipping API call:', patentId);
+        return existingSelectedPatent;
+      }
+      
+      // Check in searchResults array
+      const existingPatent = state.patents.searchResults.find(
+        (p: any) => p.patentId === patentId
+      );
+      
+      // If we already have this patent with all needed details, return it
+      if (existingPatent && 
+          existingPatent.details && 
+          existingPatent.details.description && 
+          existingPatent.details.claims && 
+          existingPatent.details.claims.length &&
+          existingPatent.details.figures) {
+        
+        console.log('Using existing patent details from state, skipping API call:', patentId);
+        return existingPatent;
+      }
+      
+      // If it's a SerpAPI patent ID, check for existing data
       if (apiType === 'serpapi') {
-        const state = getState() as any;
-        const existingPatent = state.patents.searchResults.find(
-          (p: any) => p.patentId === patentId
-        );
-        
-        // If we already have this patent with all needed details, return it
-        if (existingPatent && 
-            existingPatent.details && 
-            (existingPatent.details.description || 
-             existingPatent.details.claims || 
-             existingPatent.details.figures)) {
+        // If we already have basic patent info but no details, fetch those
+        if (existingPatent) {
+          console.log('Fetching SerpAPI patent details:', patentId);
+          const result = await patentApi.searchPatentsSerpApi(patentId);
+          const normalizedResult = normalizePatentResponse(result, 'serpapi');
           
-          console.log('Using existing patent details from state, skipping API call:', patentId);
-          return existingPatent;
+          if (!normalizedResult) {
+            throw new Error('No data found for the provided patent ID');
+          }
+          
+          return normalizedResult;
         }
+      }
         
-        // Otherwise, fetch it from the API
-        console.log('Fetching SerpAPI patent details:', patentId);
-        const result = await patentApi.searchPatentsSerpApi(patentId);
-        const normalizedResult = normalizePatentResponse(result, 'serpapi');
-        
-        if (!normalizedResult) {
-          throw new Error('No data found for the provided patent ID');
-        }
-        
-        return normalizedResult;
-      } else {
-        // For Unified Patents API, fetch all required data in parallel
-        console.log('Fetching Unified API patent details:', patentId);
-        const [fullLanguageData, figuresData, patentData] = await Promise.all([
-          patentApi.getFullLanguage(patentId),
-          patentApi.getFigures(patentId),
-          patentApi.searchPatentsUnified(patentId)
-        ]);
+      // For Unified Patents API, fetch all required data in parallel
+      console.log('Fetching Unified API patent details:', patentId);
+      const [fullLanguageData, figuresData, patentData] = await Promise.all([
+        patentApi.getFullLanguage(patentId),
+        patentApi.getFigures(patentId),
+        patentApi.searchPatentsUnified(patentId)
+      ]);
 
-        if (!patentData || !patentData._source) {
-          throw new Error('Failed to fetch patent data');
-        }
+      if (!patentData || !patentData._source) {
+        throw new Error('Failed to fetch patent data');
+      }
 
-        // Transform claims data to match the expected format
-        const formattedClaims = (fullLanguageData?.claims || []).map((claim: any) => ({
-          description: claim.text || '',
-          text: claim.text || '',
-          ucid: claim.index || '',
-          children: claim.children || []
-        }));
+      // Transform claims data to match the expected format
+      const formattedClaims = (fullLanguageData?.claims || []).map((claim: any) => ({
+        description: claim.text || '',
+        text: claim.text || '',
+        ucid: claim.index || '',
+        children: claim.children || []
+      }));
 
-        return {
-          patentId,
-          title: patentData._source.title,
-          abstract: patentData._source.abstract,
+      return {
+        patentId,
+        title: patentData._source.title,
+        abstract: patentData._source.abstract,
+        description: fullLanguageData?.description || '',
+        claims: formattedClaims,
+        figures: figuresData || [],
+        familyMembers: patentData._source.family_members || [],
+        details: {
+          grant_number: patentData._source.grant_number,
+          expiration_date: patentData._source.expiration_date,
+          assignee_current: patentData._source.assignee_current,
+          type: patentData._source.type,
+          num_cit_pat: patentData._source.num_cit_pat,
           description: fullLanguageData?.description || '',
           claims: formattedClaims,
           figures: figuresData || [],
-          familyMembers: patentData._source.family_members || [],
-          details: {
-            grant_number: patentData._source.grant_number,
-            expiration_date: patentData._source.expiration_date,
-            assignee_current: patentData._source.assignee_current,
-            type: patentData._source.type,
-            num_cit_pat: patentData._source.num_cit_pat
-          }
-        };
-      }
+          family_members: patentData._source.family_members || []
+        }
+      };
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch patent details');
     }
@@ -308,7 +333,56 @@ const patentSlice = createSlice({
       // Handle fetch patent details fulfilled
       .addCase(fetchFullPatentDetails.fulfilled, (state, action: PayloadAction<Patent>) => {
         state.isLoading = false;
-        state.selectedPatent = action.payload;
+        
+        // If we have a selectedPatent, merge the new details with the existing ones
+        if (state.selectedPatent && state.selectedPatent.patentId === action.payload.patentId) {
+          state.selectedPatent = {
+            ...state.selectedPatent,
+            ...action.payload,
+            details: {
+              ...state.selectedPatent.details,
+              ...action.payload.details
+            },
+            // Mark that this patent has been fully fetched
+            initialFetch: true
+          };
+        } else {
+          // Otherwise set the new patent as selected
+          state.selectedPatent = {
+            ...action.payload,
+            initialFetch: true
+          };
+        }
+        
+        // Also update in the searchResults array if present
+        const index = state.searchResults.findIndex(p => p.patentId === action.payload.patentId);
+        if (index !== -1) {
+          state.searchResults[index] = {
+            ...state.searchResults[index],
+            ...action.payload,
+            details: {
+              ...state.searchResults[index].details,
+              ...action.payload.details
+            },
+            initialFetch: true
+          };
+        }
+        
+        // Also update in the filteredPatents array if present
+        if (state.filters.filteredPatents) {
+          const filteredIndex = state.filters.filteredPatents.findIndex(p => p.patentId === action.payload.patentId);
+          if (filteredIndex !== -1) {
+            state.filters.filteredPatents[filteredIndex] = {
+              ...state.filters.filteredPatents[filteredIndex],
+              ...action.payload,
+              details: {
+                ...state.filters.filteredPatents[filteredIndex].details,
+                ...action.payload.details
+              },
+              initialFetch: true
+            };
+          }
+        }
       })
       // Handle fetch patent details rejected
       .addCase(fetchFullPatentDetails.rejected, (state, action) => {

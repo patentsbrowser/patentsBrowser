@@ -4,9 +4,10 @@ import './Description.scss';
 interface DescriptionProps {
   initialDescription: string;
   patentId: string;
+  noDataMessage?: string;
 }
 
-const Description = ({ initialDescription, patentId }: DescriptionProps) => {
+const Description = ({ initialDescription, patentId, noDataMessage = "No description available for this patent" }: DescriptionProps) => {
   return (
     <div className="description-section">
       <div className="description-header">
@@ -17,7 +18,13 @@ const Description = ({ initialDescription, patentId }: DescriptionProps) => {
         </h4>
       </div>
       <div className="description-content">
-        <p className="highlightable">{initialDescription}</p>
+        {initialDescription ? (
+          <p className="highlightable">{initialDescription}</p>
+        ) : (
+          <div className="no-data-message">
+            <p>{noDataMessage}</p>
+          </div>
+        )}
       </div>
     </div>
   );

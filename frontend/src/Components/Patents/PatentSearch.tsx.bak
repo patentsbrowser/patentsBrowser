@@ -443,32 +443,23 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     if (selectedApi === 'unified') {
       const basePatentNumber = summary.details?.grant_number || summary.patentId;
       
-      // Check if we need to fetch full details and if we haven't already fetched them
-      // Add a flag to prevent repeat API calls
       if (!summary.details?.description || !summary.details?.claims || !summary.details?.figures) {
-        // Add initialFetch flag to prevent repeat API calls
-        if (!summary.initialFetch) {
-          let formattedId = basePatentNumber;
-          
-          if (/^\d+$/.test(basePatentNumber)) {
-            formattedId = `US-${basePatentNumber}-B2`;
-          } else if (/^[A-Z]{2}\d+$/.test(basePatentNumber)) {
-            const countryCode = basePatentNumber.substring(0, 2);
-            const number = basePatentNumber.substring(2);
-            formattedId = `${countryCode}-${number}-B2`;
-          } else if (!basePatentNumber.includes('-')) {
-            formattedId = formatPatentId(basePatentNumber, 'unified');
-          }
-
-          // Set a marker that we've started fetching
-          const updatedSummary = { ...summary, initialFetch: true };
-          setSelectedPatent(updatedSummary);
-
-          dispatch(fetchFullPatentDetails({ 
-            patentId: formattedId, 
-            apiType: selectedApi 
-          }));
+        let formattedId = basePatentNumber;
+        
+        if (/^\d+$/.test(basePatentNumber)) {
+          formattedId = `US-${basePatentNumber}-B2`;
+        } else if (/^[A-Z]{2}\d+$/.test(basePatentNumber)) {
+          const countryCode = basePatentNumber.substring(0, 2);
+          const number = basePatentNumber.substring(2);
+          formattedId = `${countryCode}-${number}-B2`;
+        } else if (!basePatentNumber.includes('-')) {
+          formattedId = formatPatentId(basePatentNumber, 'unified');
         }
+
+        dispatch(fetchFullPatentDetails({ 
+          patentId: formattedId, 
+          apiType: selectedApi 
+        }));
       }
     }
   };
