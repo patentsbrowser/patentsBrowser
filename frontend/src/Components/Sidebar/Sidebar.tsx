@@ -4,6 +4,7 @@ import './Sidebar.scss';
 const Sidebar = () => {
   const menuItems = [
     { path: '/auth/dashboard', label: 'Dashboard', icon: '📊' },
+    { path: '/auth/patent-history', label: 'Patent History', icon: '🕒' },
     { path: '/auth/patentSaver', label: 'Saved Patents', icon: '📑' },
     { path: '/auth/subscription', label: 'Subscription', icon: '💎' },
     { path: '/auth/settings', label: 'Settings', icon: '📝' },

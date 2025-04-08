@@ -7,6 +7,7 @@ import path from 'path';
 import xlsx from 'xlsx';
 import { Readable } from 'stream';
 import { standardizePatentNumber } from '../utils/patentUtils.js';
+import { SearchHistory } from '../models/SearchHistory.js';
 
 // Create a complete FileType that includes all properties
 interface FileType {
@@ -727,6 +728,113 @@ export const getImportedLists = async (req: AuthRequest, res: Response) => {
     res.status(500).json({
       statusCode: 500,
       message: 'Failed to fetch imported lists',
+      data: null
+    });
+  }
+};
+
+export const getSearchHistory = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'User not authenticated',
+        data: null
+      });
+    }
+
+    // Find all search history entries for this user
+    const searchHistory = await SearchHistory.find({ userId })
+      .sort({ timestamp: -1 }); // Most recent first
+
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Search history retrieved successfully',
+      data: searchHistory
+    });
+  } catch (error) {
+    console.error('Error fetching search history:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to fetch search history',
+      data: null
+    });
+  }
+};
+
+export const clearSearchHistory = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'User not authenticated',
+        data: null
+      });
+    }
+
+    // Delete all search history entries for this user
+    await SearchHistory.deleteMany({ userId });
+
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Search history cleared successfully',
+      data: null
+    });
+  } catch (error) {
+    console.error('Error clearing search history:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to clear search history',
+      data: null
+    });
+  }
+};
+
+export const addToSearchHistory = async (req: AuthRequest, res: Response) => {
+  try {
+    const { patentId, source } = req.body;
+    const userId = req.user?.userId;
+
+    if (!patentId) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Patent ID is required',
+        data: null
+      });
+    }
+
+    if (!userId) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'User not authenticated',
+        data: null
+      });
+    }
+
+    // Create and save new search history entry
+    const searchHistoryEntry = new SearchHistory({
+      userId,
+      patentId,
+      source,
+      timestamp: Date.now()
+    });
+
+    await searchHistoryEntry.save();
+
+    res.status(201).json({
+      statusCode: 201,
+      message: 'Added to search history successfully',
+      data: searchHistoryEntry
+    });
+  } catch (error) {
+    console.error('Error adding to search history:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to add to search history',
       data: null
     });
   }

@@ -141,8 +141,8 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
     onClose();
   };
 
-  // Check if any filter options are selected
-  const isAnyFilterSelected = selectedTypes.grant || selectedTypes.application;
+  // Check if any filter options are selected and if there are any filtered patents
+  const isFilterValid = (selectedTypes.grant || selectedTypes.application) && filteredPatents.length > 0;
 
   return (
     <div className="smart-search-modal-overlay">
@@ -213,7 +213,7 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
           <button 
             className="apply-button" 
             onClick={handleApplyFilter}
-            disabled={!isAnyFilterSelected}
+            disabled={!isFilterValid}
           >
             Apply Filter
           </button>

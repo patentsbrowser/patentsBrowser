@@ -3,8 +3,8 @@ import { authApi } from "../../../api/auth";
 import "./DashboardSidebar.scss";
 import RecentPatentIds from "./RecentPatentIds";
 import CustomSearch from "./CustomSearch";
-import PatentFolders from "./PatentFolders";
 import ImportedFolders from "./ImportedFolders";
+import { Link } from "react-router-dom";
 
 interface PatentFolder {
   id: string;
@@ -326,12 +326,12 @@ const DashboardSidebar = ({
           onAddPatentToSubfolder={handleAddPatentToSubfolder}
         />
 
-        <PatentFolders
-          patentFolders={patentFolders}
-          onManageFolders={onManageFolders}
-          onPatentClick={onPatentClick}
-          onPatentWithFolderClick={handlePatentClickWithFolder}
-        />
+        <div className="patent-history-link-section">
+          <Link to="/auth/patent-history" className="patent-history-link">
+            <span className="history-icon">🕒</span>
+            <span className="link-text">View Complete Patent History</span>
+          </Link>
+        </div>
       </div>
     </div>
   );

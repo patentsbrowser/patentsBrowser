@@ -1,6 +1,18 @@
 import express from 'express';
 import { auth } from '../middleware/auth.js';
-import { getCustomPatentList, getSavedPatents, saveCustomPatentList, savePatent, removePatentFromFolder, extractPatentIdsFromFile, deleteFolder, getImportedLists } from '../controllers/savedPatentController.js';
+import { 
+  getCustomPatentList, 
+  getSavedPatents, 
+  saveCustomPatentList, 
+  savePatent, 
+  removePatentFromFolder, 
+  extractPatentIdsFromFile, 
+  deleteFolder, 
+  getImportedLists,
+  getSearchHistory,
+  clearSearchHistory,
+  addToSearchHistory
+} from '../controllers/savedPatentController.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -58,6 +70,11 @@ router.post('/remove-from-folder', auth, removePatentFromFolder as any);
 router.post('/delete-folder', auth, deleteFolder as any);
 router.get('/get-custom-patent-list', auth, getCustomPatentList as any);
 router.get('/get-imported-lists', auth, getImportedLists as any);
+
+// Search history routes
+router.get('/search-history', auth, getSearchHistory as any);
+router.delete('/search-history', auth, clearSearchHistory as any);
+router.post('/search-history', auth, addToSearchHistory as any);
 
 // New route for extracting patent IDs from files
 router.post(

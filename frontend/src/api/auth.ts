@@ -267,5 +267,39 @@ export const authApi = {
       console.error('Error fetching imported lists:', error);
       throw error;
     }
+  },
+
+  // Patent search history methods
+  getSearchHistory: async () => {
+    try {
+      const response = await axiosInstance.get(`/saved-patents/search-history`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching search history:', error);
+      throw error;
+    }
+  },
+
+  clearSearchHistory: async () => {
+    try {
+      const response = await axiosInstance.delete(`/saved-patents/search-history`);
+      return response.data;
+    } catch (error) {
+      console.error('Error clearing search history:', error);
+      throw error;
+    }
+  },
+
+  addToSearchHistory: async (patentId: string, source?: string) => {
+    try {
+      const response = await axiosInstance.post(`/saved-patents/search-history`, { 
+        patentId, 
+        source 
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error adding to search history:', error);
+      throw error;
+    }
   }
 }; 

@@ -22,6 +22,7 @@ import SessionHandler from "./Components/Authentication/SessionHandler";
 import LandingPage from "./Components/LandingPage/LandingPage";
 import Forum from "./Components/Forum/Forum";
 import SubscriptionPage from "./Components/Subscription/SubscriptionPage";
+import PatentHistory from "./Components/PatentHistory";
 // import { store } from './Redux/store';
 
 // Error boundary to catch rendering errors
@@ -147,6 +148,7 @@ const App = () => {
                               <Route path="update-profile" element={<UpdateProfile />} />
                               <Route path="profile" element={<ProfilePage />} />
                               <Route path="subscription" element={<SubscriptionPage />} />
+                              <Route path="patent-history" element={<PatentHistory />} />
                             </Routes>
                           </main>
                         </div>
