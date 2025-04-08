@@ -35,6 +35,8 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
   const [patentSummaries, setPatentSummaries] = useState<PatentSummary[]>([]);
   const [selectedPatent, setSelectedPatent] = useState<PatentSummary | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<'grant' | 'application'>('grant');
+  const [selectedTypes, setSelectedTypes] = useState({ grant: true, application: true });
+  const [filterByFamily, setFilterByFamily] = useState(true);
   
   const dispatch = useAppDispatch();
   const { filters, smartSearchResults } = useAppSelector((state: RootState) => state.patents);
@@ -148,6 +150,10 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
   };
 
   const handlePerformSearch = async (idsToSearch: string[]) => {
+    // Clear previous results when starting a new search
+    setPatentSummaries([]);
+    setIsLoading(true);
+    
     // Format the IDs before searching
     const formattedIds = idsToSearch.map(id => {
       if (selectedApi === 'unified') {
@@ -167,22 +173,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
       return id;
     });
 
-    // Only initialize loading UI for full search or non-unified API
-    // For smart search with unified API, we'll wait for the modal result
-    if (!(searchType === 'smart' && selectedApi === 'unified')) {
-      const initialSummaries = formattedIds.map(id => ({
-        patentId: id,
-        status: 'loading' as const,
-      }));
-      
-      setPatentSummaries(initialSummaries);
-      setIsSearching(true);
-    }
-    
-    // Always set loading state
-    setIsLoading(true);
-
-    // Handle differently based on search type
     try {
       if (searchType === 'smart' && selectedApi === 'unified') {
         // For smart search - use special flow with modal
@@ -570,24 +560,63 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
 
   // Add applyFilter function to update UI based on filtered results
   const handleApplyFilter = () => {
-    console.log("Applying filter from modal. Selected filter:", selectedFilter);
     if (smartSearchResults && smartSearchResults.hits && smartSearchResults.hits.hits) {
       const hits = smartSearchResults.hits.hits;
+      console.log("Total hits before filtering:", hits.length);
       
-      // Filter based on selectedFilter
-      const filteredHits = hits.filter((hit: any) => {
+      // First filter by grant/application type
+      const typeFilteredHits = hits.filter((hit: any) => {
         const source = hit._source;
         const kindCode = source.kind_code;
         const publicationType = source.publication_type;
 
-        if (selectedFilter === 'grant') {
-          return kindCode?.startsWith('B') || publicationType === 'B';
-        } else {
-          return kindCode?.startsWith('A') || publicationType === 'A';
+        const isGrant = kindCode?.startsWith('B') || publicationType === 'B';
+        const isApplication = kindCode?.startsWith('A') || publicationType === 'A';
+
+        if (selectedTypes.grant && !selectedTypes.application) {
+          return isGrant;
+        } else if (!selectedTypes.grant && selectedTypes.application) {
+          return isApplication;
+        } else if (selectedTypes.grant && selectedTypes.application) {
+          return true; // Show all if both are selected
         }
+        return false;
       });
+
+      // Then filter by family if needed
+      let filteredHits = typeFilteredHits;
+      if (filterByFamily) {
+        // Group patents by family_id
+        const familyGroups = new Map<string, any[]>();
+        
+        typeFilteredHits.forEach((hit: any) => {
+          const familyId = hit._source.family_id;
+          if (familyId) {
+            if (!familyGroups.has(familyId)) {
+              familyGroups.set(familyId, []);
+            }
+            familyGroups.get(familyId)?.push(hit);
+          }
+        });
+
+        // For each family, select the preferred patent (US if available)
+        const selectedPatents: any[] = [];
+        
+        familyGroups.forEach((patents) => {
+          // Try to find a US patent first
+          const usPatent = patents.find(p => p._source.country === 'US');
+          if (usPatent) {
+            selectedPatents.push(usPatent);
+          } else {
+            // If no US patent, just take the first one
+            selectedPatents.push(patents[0]);
+          }
+        });
+
+        filteredHits = selectedPatents;
+      }
       
-      console.log(`Found ${filteredHits.length} patents matching the '${selectedFilter}' filter`);
+      console.log(`Found ${filteredHits.length} patents matching the filter criteria`);
       
       // Map the filtered hits to patent summaries
       const patents = filteredHits.map((hit: any) => {
@@ -645,27 +674,36 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         };
       });
 
-      // Update the UI with the filtered patents
+      // Update Redux with the filtered patents
+      dispatch(setFilters({
+        showGrantPatents: selectedTypes.grant,
+        showApplicationPatents: selectedTypes.application,
+        filteredPatents: patents
+      }));
+      
+      // Update local state with the filtered patents
       setPatentSummaries(patents);
       setIsLoading(false);
       
-      // Update Redux with the selected filter
-      dispatch(setFilters({
-        showGrantPatents: selectedFilter === 'grant',
-        showApplicationPatents: selectedFilter === 'application'
-      }));
-      
-      // Also close the smart search modal after applying the filter
+      // Close the smart search modal
       setShowSmartSearchModal(false);
       
-      // Show success message with more details
+      // Show success message
       toast.success(
-        `Applied ${selectedFilter === 'grant' ? 'Grant' : 'Application'} Patents filter: 
-        Showing ${patents.length} results`, 
+        `Applied filter: Showing ${patents.length} results`, 
         { duration: 4000 }
       );
+    } else {
+      console.error("No smart search results available to filter");
     }
   };
+
+  // Add useEffect to sync with Redux state
+  useEffect(() => {
+    if (filters.filteredPatents) {
+      setPatentSummaries(filters.filteredPatents);
+    }
+  }, [filters.filteredPatents]);
 
   // Add a handler for when the SmartSearchModal is closed without applying a filter
   const handleSmartSearchModalClose = () => {
@@ -688,6 +726,20 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
       setShowSmartSearchModal(false);
     };
   }, []); // Empty dependency array means this runs only on mount/unmount
+
+  const handleSearchTypeChange = (type: 'full' | 'smart') => {
+    setSearchType(type);
+    // Clear all relevant state when switching search types
+    setPatentSummaries([]);
+    setSelectedPatent(null);
+    setShowSmartSearchModal(false);
+    dispatch(setSmartSearchResults(null));
+    dispatch(setFilters({
+      showGrantPatents: true,
+      showApplicationPatents: true,
+      filteredPatents: null
+    }));
+  };
 
   return (
     <div className="patent-search">
@@ -715,6 +767,19 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
 
       {isLoading && <Loader fullScreen text="Searching patents..." />}
 
+      {/* Debug logging */}
+      {(() => {
+        console.log("Debug - PatentSearch render state:", {
+          patentSummariesLength: patentSummaries.length,
+          isLoading,
+          selectedPatent: !!selectedPatent,
+          showSmartSearchModal,
+          smartSearchResults: !!smartSearchResults,
+          filteredPatentsInRedux: filters.filteredPatents?.length
+        });
+        return null;
+      })()}
+      
       {patentSummaries.length > 0 && !isLoading && (
         <PatentSummaryList
           patentSummaries={patentSummaries}
@@ -731,9 +796,11 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
       <SmartSearchModal
         isOpen={showSmartSearchModal}
         onClose={handleSmartSearchModalClose}
-        selectedFilter={selectedFilter}
-        setSelectedFilter={setSelectedFilter}
         onApplyFilter={handleApplyFilter}
+        selectedTypes={selectedTypes}
+        setSelectedTypes={setSelectedTypes}
+        filterByFamily={filterByFamily}
+        setFilterByFamily={setFilterByFamily}
       />
     </div>
   );

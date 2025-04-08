@@ -245,13 +245,13 @@ export const patentApi = {
       payload = {
         query: {
           bool: {
-            must: [
-              {
-                wildcard: {
-                  publication_type: "g*"
-                }
-              }
-            ],
+            // must: [
+            //   {
+            //     wildcard: {
+            //       publication_type: "g*"
+            //     }
+            //   }
+            // ],
             should: [
               {
                 terms: {
@@ -290,11 +290,11 @@ export const patentApi = {
                   ucid_spif: patentNumbers
                 }
               },
-              {
-                wildcard: {
-                  publication_type: "g*"
-                }
-              }
+              // {
+              //   wildcard: {
+              //     publication_type: "g*"
+              //   }
+              // }
               // Removed wildcard as per user's changes
             ]
           }

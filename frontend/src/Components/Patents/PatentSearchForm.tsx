@@ -96,6 +96,9 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
 
   const handleSearchTypeChange = (type: 'full' | 'smart') => {
     setSearchType(type);
+    // Clear the search query and patent IDs when switching search types
+    setSearchQuery('');
+    setPatentIds([]);
   };
 
   const handleApiChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

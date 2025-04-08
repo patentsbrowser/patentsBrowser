@@ -113,6 +113,10 @@
     display: flex;
     flex-wrap: wrap;
     gap: 16px;
+    background-color: var(--bg-color, #1e1e1e);
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color-light, rgba(255,255,255,0.05));
 
     .filter-label {
       display: flex;
@@ -123,14 +127,16 @@
       font-size: 0.95rem;
       padding: 8px 12px;
       border-radius: 6px;
-      transition: background-color 0.15s ease;
+      transition: all 0.15s ease;
       color: var(--text-color, #e0e0e0);
+      background-color: rgba(255, 255, 255, 0.03);
 
       &:hover {
         background-color: rgba(255, 255, 255, 0.05);
       }
 
-      input[type="radio"] {
+      input[type="radio"],
+      input[type="checkbox"] {
         margin: 0;
         cursor: pointer;
         accent-color: var(--accent-color, #c77dff);

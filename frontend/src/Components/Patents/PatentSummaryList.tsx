@@ -48,7 +48,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
       {selectedPatent && (
         <div className="full-details-section">
           <div className="section-header">
-            <h3>Full Patent Details - {selectedPatent.patentId}</h3>
+            <h3>Full Patent Details - {selectedPatent.patentId[0]}</h3>
             <button 
               className="close-details"
               onClick={() => setSelectedPatent(null)}

@@ -4,18 +4,53 @@ import { detectApiType } from '../../Components/Patents/utils';
 
 interface Patent {
   patentId: string;
+  status: 'success' | 'error' | 'loading';
   title?: string;
   abstract?: string;
-  description?: string;
-  claims?: any[];
-  figures?: any[];
-  familyMembers?: any[];
   details?: {
     grant_number?: string;
     expiration_date?: string;
     assignee_current?: string[];
     type?: string;
     num_cit_pat?: number;
+    assignee_original?: string[];
+    assignee_parent?: string[];
+    priority_date?: string;
+    publication_date?: string;
+    grant_date?: string;
+    application_date?: string;
+    application_number?: string;
+    publication_number?: string;
+    publication_status?: string;
+    publication_type?: string;
+    country?: string;
+    kind_code?: string;
+    inventors?: string[];
+    examiner?: string[];
+    law_firm?: string;
+    cpc_codes?: string[];
+    uspc_codes?: string[];
+    num_cit_npl?: number;
+    num_cit_pat_forward?: number;
+    citations_pat_forward?: string[];
+    portfolio_score?: number;
+    litigation_score?: number;
+    rating_broadness?: string;
+    rating_citation?: string;
+    rating_litigation?: string;
+    rating_validity?: string;
+    family_id?: string;
+    extended_family_id?: string;
+    hyperlink_google?: string;
+    is_litigated?: string;
+    is_challenged?: string;
+    num_litigated?: number;
+    num_challenged?: number;
+    last_litigated_at?: string | null;
+    last_challenged_at?: string | null;
+    family_annuities?: number;
+    norm_family_annuities?: number;
+    rnix_score?: number;
   };
 }
 
@@ -28,6 +63,7 @@ interface PatentState {
     showGrantPatents: boolean;
     showApplicationPatents: boolean;
     filterByFamilyId: boolean;
+    filteredPatents: Patent[] | null;
   };
   smartSearchResults: {
     hits: {
@@ -102,7 +138,8 @@ const initialState: PatentState = {
   filters: {
     showGrantPatents: true,
     showApplicationPatents: true,
-    filterByFamilyId: true
+    filterByFamilyId: true,
+    filteredPatents: null
   },
   smartSearchResults: null,
 };
@@ -250,6 +287,7 @@ const patentSlice = createSlice({
       showGrantPatents?: boolean;
       showApplicationPatents?: boolean;
       filterByFamilyId?: boolean;
+      filteredPatents?: Patent[] | null;
     }>) => {
       state.filters = {
         ...state.filters,

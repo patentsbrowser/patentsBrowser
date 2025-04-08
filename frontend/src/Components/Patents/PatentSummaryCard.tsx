@@ -14,17 +14,14 @@ interface PatentSummaryCardProps {
 const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
   summary,
   onViewDetails,
-  formatDate,
-  onPatentSelect,
-  apiSource = 'unified'
-}) => {
+  formatDate}) => {
   return (
     <div 
-      key={summary.patentId} 
+      key={summary.patentId[0]} 
       className={`summary-card ${summary.status}`}
     >
       <div className="summary-header">
-        <span className="patent-id">{summary.patentId[0]}</span>
+        <span className="patent-id">{summary.patentId}</span>
         <span className="status-indicator">
           {summary.status === 'loading' ? '⌛' : 
            summary.status === 'success' ? '✓' : '✗'}
@@ -59,11 +56,7 @@ const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
             <div className="abstract-section">
               <h5 className="abstract-title">Abstract</h5>
               <div className="abstract">
-                {summary.abstract 
-                  ? summary.abstract.length > 200 
-                    ? `${summary.abstract.substring(0, 200)}...`
-                    : summary.abstract
-                  : 'No abstract available'}
+                {summary.abstract || 'No abstract available'}
               </div>
             </div>
             <div className="action-buttons">

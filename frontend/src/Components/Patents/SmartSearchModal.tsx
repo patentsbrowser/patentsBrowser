@@ -1,46 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { useAppDispatch, useAppSelector } from '../../Redux/hooks';
+import { useAppSelector } from '../../Redux/hooks';
 import { RootState } from '../../Redux/store';
 import './SmartSearchModal.scss';
-import { toast } from 'react-hot-toast';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faFilter, 
-  faSearch, 
-  faSortAmountDown, 
-  faTimesCircle, 
-  faStar, 
-  faCalendarAlt,
-  faInfoCircle
-} from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
 
 interface SmartSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedFilter: 'grant' | 'application';
-  setSelectedFilter: (filter: 'grant' | 'application') => void;
   onApplyFilter: () => void;
+  selectedTypes: { grant: boolean; application: boolean };
+  setSelectedTypes: (types: { grant: boolean; application: boolean }) => void;
+  filterByFamily: boolean;
+  setFilterByFamily: (value: boolean) => void;
 }
 
-const SmartSearchModal: React.FC<SmartSearchModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  selectedFilter,
-  setSelectedFilter,
-  onApplyFilter
+const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
+  isOpen,
+  onClose,
+  onApplyFilter,
+  selectedTypes,
+  setSelectedTypes,
+  filterByFamily,
+  setFilterByFamily
 }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [filteredPatents, setFilteredPatents] = useState<any[]>([]);
-  const [sortCriteria, setSortCriteria] = useState<'score' | 'date'>('score');
-  
-  const dispatch = useAppDispatch();
+  const [filteredPatents, setFilteredPatents] = useState<string[]>([]);
+
   const { smartSearchResults } = useAppSelector((state: RootState) => state.patents);
 
+  // Initialize with all patent IDs when modal opens
+  useEffect(() => {
+    if (isOpen && smartSearchResults?.hits?.hits) {
+      const allPatents = smartSearchResults.hits.hits.map((hit: any) => 
+        hit._source.publication_number || hit._id
+      );
+      setFilteredPatents(allPatents);
+    }
+  }, [isOpen, smartSearchResults]);
+
+  // Update filtered patents when filters change
   useEffect(() => {
     if (smartSearchResults && smartSearchResults.hits && smartSearchResults.hits.hits) {
-      filterPatents(selectedFilter);
+      filterPatents();
     }
-  }, [selectedFilter, smartSearchResults, sortCriteria]);
+  }, [selectedTypes, smartSearchResults, filterByFamily]);
 
   useEffect(() => {
     const handleEscKey = (event: KeyboardEvent) => {
@@ -60,227 +63,159 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Function to filter patents by publication type
-  const filterPatents = (type: 'grant' | 'application') => {
+  // Function to filter patents by publication type and family_id
+  const filterPatents = () => {
     if (!smartSearchResults || !smartSearchResults.hits || !smartSearchResults.hits.hits) {
       setFilteredPatents([]);
       return;
     }
 
-    setIsLoading(true);
+    const hits = smartSearchResults.hits.hits;
+    
+    // First filter by grant/application type
+    const typeFilteredHits = hits.filter((hit: any) => {
+      const source = hit._source;
+      const kindCode = source.kind_code;
+      const publicationType = source.publication_type;
 
-    try {
-      // Get the hits array from the results
-      const hits = smartSearchResults.hits.hits;
-      console.log(`Filtering ${hits.length} patents by type: ${type}`);
+      const isGrant = kindCode?.startsWith('B') || publicationType === 'B';
+      const isApplication = kindCode?.startsWith('A') || publicationType === 'A';
 
-      const filteredHits = hits.filter((hit: any) => {
-        const source = hit._source;
-        const kindCode = source.kind_code;
-        const publicationType = source.publication_type;
+      if (selectedTypes.grant && selectedTypes.application) {
+        return isGrant || isApplication;
+      } else if (selectedTypes.grant) {
+        return isGrant;
+      } else if (selectedTypes.application) {
+        return isApplication;
+      }
+      return false;
+    });
 
-        if (type === 'grant') {
-          // Filter for granted patents (B, B1, B2)
-          return kindCode?.startsWith('B') || publicationType === 'B';
-        } else {
-          // Filter for applications (A, A1, A2)
-          return kindCode?.startsWith('A') || publicationType === 'A';
-        }
-      });
-
-      // Sort the filtered hits
-      const sortedHits = [...filteredHits].sort((a, b) => {
-        if (sortCriteria === 'score') {
-          return (b._source.portfolio_score || 0) - (a._source.portfolio_score || 0);
-        } else {
-          // Sort by publication date (newest first)
-          const dateA = new Date(a._source.publication_date || 0).getTime();
-          const dateB = new Date(b._source.publication_date || 0).getTime();
-          return dateB - dateA;
-        }
-      });
-
-      console.log(`Found ${sortedHits.length} ${type} patents`);
-      setFilteredPatents(sortedHits);
-    } catch (error) {
-      console.error('Error filtering patents:', error);
-      toast.error('Error filtering patents');
-    } finally {
-      setIsLoading(false);
+    if (!filterByFamily) {
+      // If not filtering by family, show all patent IDs
+      const patentIds = typeFilteredHits.map((hit: any) => hit._source.publication_number || hit._id);
+      setFilteredPatents(patentIds);
+      return;
     }
+
+    // Group patents by family_id
+    const familyGroups = new Map<string, any[]>();
+    
+    typeFilteredHits.forEach((hit: any) => {
+      const familyId = hit._source.family_id;
+      if (familyId) {
+        if (!familyGroups.has(familyId)) {
+          familyGroups.set(familyId, []);
+        }
+        familyGroups.get(familyId)?.push(hit);
+      }
+    });
+
+    // For each family, select the preferred patent (US if available)
+    const selectedPatents: string[] = [];
+    
+    familyGroups.forEach((patents) => {
+      // Try to find a US patent first
+      const usPatent = patents.find(p => p._source.country === 'US');
+      if (usPatent) {
+        selectedPatents.push(usPatent._source.publication_number || usPatent._id);
+      } else {
+        // If no US patent, just take the first one
+        selectedPatents.push(patents[0]._source.publication_number || patents[0]._id);
+      }
+    });
+
+    setFilteredPatents(selectedPatents);
   };
 
-  // Handle filter change
-  const handleFilterChange = (filter: 'grant' | 'application') => {
-    setSelectedFilter(filter);
+  // Handle filter type change
+  const handleTypeChange = (type: 'grant' | 'application') => {
+    setSelectedTypes({
+      ...selectedTypes,
+      [type]: !selectedTypes[type]
+    });
   };
 
   const handleApplyFilter = () => {
-    // Apply the filter and close the modal
-    console.log(`Applying filter for ${filteredPatents.length} patents with type: ${selectedFilter}`);
     onApplyFilter();
     onClose();
   };
 
-  // Function to truncate text
-  const truncateText = (text: string, maxLength: number) => {
-    if (!text) return '';
-    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-  };
-
-  // Function to format date
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-  };
-
-  // Handle cancel button click
-  const handleCancel = () => {
-    console.log("Cancelling smart search modal");
-    onClose();
-  };
+  // Check if any filter options are selected
+  const isAnyFilterSelected = selectedTypes.grant || selectedTypes.application;
 
   return (
     <div className="smart-search-modal-overlay">
-      <div className="smart-search-modal" style={{ backgroundColor: '#1e1e1e' }}>
-        <div className="modal-header" style={{ backgroundColor: '#252525', borderBottom: '1px solid #333' }}>
+      <div className="smart-search-modal">
+        <div className="modal-header">
           <h3>
             <FontAwesomeIcon icon={faSearch} style={{ marginRight: '8px', color: '#c77dff' }} />
-            Smart Patent Search Results
+            Patent IDs ({filteredPatents.length})
           </h3>
-          <button className="close-button" onClick={handleCancel}>×</button>
+          <button className="close-button" onClick={onClose}>×</button>
         </div>
         
-        <div className="modal-content" style={{ backgroundColor: '#1e1e1e' }}>
+        <div className="modal-content">
           <div className="filter-options">
-            <h4>
-              <FontAwesomeIcon icon={faFilter} style={{ marginRight: '6px', color: '#c77dff' }} />
-              Filter Options
-            </h4>
-            <div className="filter-controls" style={{ backgroundColor: '#1e1e1e', padding: '10px', borderRadius: '6px' }}>
+            <h4>Filter Options</h4>
+            <div className="filter-controls">
               <label className="filter-label">
                 <input
-                  type="radio"
-                  checked={selectedFilter === 'grant'}
-                  onChange={() => handleFilterChange('grant')}
-                  name="filter-type"
-                  style={{ backgroundColor: '#333', borderColor: '#555' }}
+                  type="checkbox"
+                  checked={selectedTypes.grant}
+                  onChange={() => handleTypeChange('grant')}
                 />
-                Show Grant Patents (B, B1, B2)
+                Grant Patents
               </label>
               <label className="filter-label">
                 <input
-                  type="radio"
-                  checked={selectedFilter === 'application'}
-                  onChange={() => handleFilterChange('application')}
-                  name="filter-type"
-                  style={{ backgroundColor: '#333', borderColor: '#555' }}
+                  type="checkbox"
+                  checked={selectedTypes.application}
+                  onChange={() => handleTypeChange('application')}
                 />
-                Show Application Patents (A, A1, A2)
+                Application Patents
               </label>
             </div>
-            
-            <div className="sort-controls">
-              <h4>
-                <FontAwesomeIcon icon={faSortAmountDown} style={{ marginRight: '6px', color: '#c77dff' }} />
-                Sort By
-              </h4>
-              <div style={{ display: 'flex', gap: '12px', backgroundColor: '#1e1e1e', padding: '10px', borderRadius: '6px' }}>
-                <label className="filter-label">
-                  <input
-                    type="radio"
-                    checked={sortCriteria === 'score'}
-                    onChange={() => setSortCriteria('score')}
-                    name="sort-criteria"
-                    style={{ backgroundColor: '#333', borderColor: '#555' }}
-                  />
-                  <FontAwesomeIcon icon={faStar} style={{ marginRight: '4px', color: '#c77dff' }} />
-                  Portfolio Score
-                </label>
-                <label className="filter-label">
-                  <input
-                    type="radio"
-                    checked={sortCriteria === 'date'}
-                    onChange={() => setSortCriteria('date')}
-                    name="sort-criteria"
-                    style={{ backgroundColor: '#333', borderColor: '#555' }}
-                  />
-                  <FontAwesomeIcon icon={faCalendarAlt} style={{ marginRight: '4px', color: '#c77dff' }} />
-                  Publication Date
-                </label>
-              </div>
+            <div className="filter-controls" style={{ marginTop: '16px' }}>
+              <label className="filter-label">
+                <input
+                  type="checkbox"
+                  checked={filterByFamily}
+                  onChange={(e) => setFilterByFamily(e.target.checked)}
+                />
+                Show one patent per family (prefer US)
+              </label>
             </div>
           </div>
           
           <div className="patent-list">
-            {isLoading ? (
-              <p className="loading-text">Filtering patents...</p>
-            ) : filteredPatents.length === 0 ? (
+            {filteredPatents.length === 0 ? (
               <div className="no-results">
                 <p>No patents found matching the selected filter criteria.</p>
-                <p>Try selecting a different filter option.</p>
               </div>
             ) : (
-              <>
-                <div className="filter-message" style={{ 
-                  margin: '0 0 20px 0', 
-                  padding: '12px', 
-                  backgroundColor: 'rgba(199, 125, 255, 0.1)', 
-                  borderRadius: '8px',
-                  border: '1px solid #c77dff',
-                  color: '#e0e0e0',
-                  textAlign: 'center'
-                }}>
-                  <FontAwesomeIcon icon={faInfoCircle} style={{ marginRight: '8px', color: '#c77dff' }} />
-                  <span>Found {filteredPatents.length} patents matching your filter. <strong>Click "Apply Filter & Show Patents" below to view the results.</strong></span>
-                </div>
-                
-                <div className="patent-grid">
-                  <h4>Patents ({filteredPatents.length}):</h4>
-                  <div className="patents-grid">
-                    {filteredPatents.map((patent) => (
-                      <div key={patent._id} className="patent-card">
-                        <div className="patent-id">{patent._id}</div>
-                        <div className="patent-title">{truncateText(patent._source.title, 60)}</div>
-                        <div className="patent-meta">
-                          <span className="patent-type">{patent._source.kind_code || patent._source.publication_type}</span>
-                          <span className="patent-score">
-                            <FontAwesomeIcon icon={faStar} style={{ marginRight: '3px', fontSize: '0.8em' }} />
-                            {patent._source.portfolio_score}
-                          </span>
-                        </div>
-                        <div className="patent-details">
-                          <span className="patent-date">
-                            <FontAwesomeIcon icon={faCalendarAlt} style={{ marginRight: '3px', fontSize: '0.8em' }} />
-                            {formatDate(patent._source.publication_date)}
-                          </span>
-                          <span className="patent-assignee">
-                            {truncateText(patent._source.assignee_current?.[0] || patent._source.assignee_original?.[0] || '', 30)}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+              <div className="patents-grid">
+                {filteredPatents.map((patentId) => (
+                  <div key={patentId} className="patent-card">
+                    <div className="patent-id">{patentId}</div>
                   </div>
-                </div>
-              </>
+                ))}
+              </div>
             )}
           </div>
         </div>
         
-        <div className="modal-footer" style={{ backgroundColor: '#252525', borderTop: '1px solid #333' }}>
-          <button className="cancel-button" onClick={handleCancel} style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', color: '#e0e0e0', border: '1px solid #444' }}>
+        <div className="modal-footer">
+          <button className="cancel-button" onClick={onClose}>
             <FontAwesomeIcon icon={faTimesCircle} style={{ marginRight: '6px' }} />
             Cancel
           </button>
           <button 
             className="apply-button" 
             onClick={handleApplyFilter}
-            disabled={filteredPatents.length === 0 || isLoading}
-            style={{ backgroundColor: '#c77dff', color: '#000', border: '1px solid #c77dff' }}
+            disabled={!isAnyFilterSelected}
           >
-            <FontAwesomeIcon icon={faFilter} style={{ marginRight: '6px' }} />
-            {isLoading ? 'Filtering...' : `Apply Filter & Show ${filteredPatents.length} Patents`}
+            Apply Filter
           </button>
         </div>
       </div>
