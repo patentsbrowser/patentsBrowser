@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes, faChevronDown, faChevronUp, faLayerGroup, faListAlt } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faChevronDown, faChevronUp, faLayerGroup, faListAlt, faPlus, faSlidersH } from '@fortawesome/free-solid-svg-icons';
 import './PatentHighlighter.scss';
 
 interface TermColor {
@@ -8,12 +8,28 @@ interface TermColor {
   color: string;
 }
 
+interface ProximityTerm {
+  terms: string[];
+  distance: number;
+  color: string;
+}
+
 interface PatentHighlighterProps {
   targetSelector: string; // CSS selector for elements to highlight within
 }
 
+interface PredefinedSet {
+  name: string;
+  color: string;
+  terms: string[];
+}
+
+interface PredefinedSets {
+  [key: string]: PredefinedSet;
+}
+
 // Predefined term sets (similar to Excel table ranges)
-const PREDEFINED_SETS = {
+const PREDEFINED_SETS: PredefinedSets = {
   technical: {
     name: 'Technical Terms',
     color: '#3357FF', // Blue
@@ -41,11 +57,18 @@ const PREDEFINED_SETS = {
  */
 const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector }) => {
   const [searchTerms, setSearchTerms] = useState<TermColor[]>([]);
+  const [proximitySearches, setProximitySearches] = useState<ProximityTerm[]>([]);
   const [inputTerm, setInputTerm] = useState('');
   const [showPredefinedSets, setShowPredefinedSets] = useState(false);
+  const [showProximitySearch, setShowProximitySearch] = useState(false);
   const [foundMatches, setFoundMatches] = useState<{term: string, count: number, color: string}[]>([]);
   const [customTermSet, setCustomTermSet] = useState('');
   const [highlightId, setHighlightId] = useState(0); // For tracking highlight operations
+  
+  // Proximity search state
+  const [proximityFirstTerm, setProximityFirstTerm] = useState('');
+  const [proximityDistance, setProximityDistance] = useState(5);
+  const [proximityTerms, setProximityTerms] = useState<string[]>([]);
   
   const colorOptions = [
     '#FF5733', // Red-Orange
@@ -59,6 +82,7 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
   ];
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const proximityFirstTermRef = useRef<HTMLInputElement>(null);
 
   // Add a new term to search
   const addSearchTerm = () => {
@@ -79,15 +103,59 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
     }
   };
 
+  // Add a term to the proximity search list
+  const addTermToProximitySearch = () => {
+    if (!proximityFirstTerm.trim()) return;
+    
+    setProximityTerms(prev => [...prev, proximityFirstTerm.trim()]);
+    setProximityFirstTerm('');
+    
+    // Focus the input again for next term
+    if (proximityFirstTermRef.current) {
+      proximityFirstTermRef.current.focus();
+    }
+  };
+
+  // Create and add a proximity search
+  const createProximitySearch = () => {
+    if (proximityTerms.length < 2) return;
+    
+    const newProximitySearch: ProximityTerm = {
+      terms: [...proximityTerms],
+      distance: proximityDistance,
+      color: colorOptions[proximitySearches.length % colorOptions.length]
+    };
+    
+    setProximitySearches(prev => [...prev, newProximitySearch]);
+    
+    // Clear the state for the next proximity search
+    setProximityTerms([]);
+    setProximityDistance(5);
+  };
+
   // Remove a search term
   const removeSearchTerm = (index: number) => {
     const updatedTerms = [...searchTerms];
     updatedTerms.splice(index, 1);
     setSearchTerms(updatedTerms);
   };
+
+  // Remove a proximity search
+  const removeProximitySearch = (index: number) => {
+    const updatedSearches = [...proximitySearches];
+    updatedSearches.splice(index, 1);
+    setProximitySearches(updatedSearches);
+  };
+
+  // Remove a term from proximity search list
+  const removeProximityTerm = (index: number) => {
+    const updatedTerms = [...proximityTerms];
+    updatedTerms.splice(index, 1);
+    setProximityTerms(updatedTerms);
+  };
   
   // Add a predefined set of terms to the search
-  const addPredefinedSet = (setKey: keyof typeof PREDEFINED_SETS) => {
+  const addPredefinedSet = (setKey: string) => {
     const setData = PREDEFINED_SETS[setKey];
     
     // Add each term from the set with the set's color
@@ -132,8 +200,8 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
     );
   };
 
-  // Function to clear all highlights safely
-  const clearHighlights = () => {
+  // Wrap clearHighlights in useCallback
+  const clearHighlights = useCallback(() => {
     try {
       const elements = document.querySelectorAll(targetSelector);
       
@@ -167,21 +235,126 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
     } catch (err) {
       console.error('Error clearing highlights:', err);
     }
+  }, [targetSelector]);
+
+  // Helper function to find proximity matches in text
+  const findProximityMatches = (text: string, proximitySearch: ProximityTerm): {start: number, end: number}[] => {
+    const matches: {start: number, end: number}[] = [];
+    
+    // Split the text into words
+    const words = text.split(/\s+/);
+    
+    // For debugging
+    console.log('Proximity search terms:', proximitySearch.terms);
+    console.log('Text to search in:', text);
+    console.log('Words array:', words);
+    
+    // Create arrays of positions for each term
+    const termPositions: number[][] = [];
+    
+    // Find all occurrences of each term in the text
+    proximitySearch.terms.forEach(term => {
+      const termLower = term.toLowerCase();
+      const positions: number[] = [];
+      
+      words.forEach((word, index) => {
+        if (word.toLowerCase().includes(termLower)) {
+          positions.push(index);
+        }
+      });
+      
+      console.log(`Positions for term "${term}":`, positions);
+      termPositions.push(positions);
+    });
+    
+    // If any term has no occurrences, return empty matches
+    if (termPositions.some(positions => positions.length === 0)) {
+      console.log('Some terms not found in text');
+      return matches;
+    }
+    
+    // Find all combinations of positions that are within the distance
+    const findValidCombinations = (currentIndex: number, currentCombination: number[]): void => {
+      // If we've processed all terms, check if the combination is valid
+      if (currentIndex >= termPositions.length) {
+        // Check if all positions are within the distance
+        const min = Math.min(...currentCombination);
+        const max = Math.max(...currentCombination);
+        
+        if (max - min <= proximitySearch.distance) {
+          // This is a valid combination - find the exact text span
+          let startWordIndex = min;
+          let endWordIndex = max;
+          
+          // Determine the start position (character index) in the original text
+          let startCharIndex = 0;
+          let endCharIndex = text.length;
+          
+          // Find the start character index
+          if (startWordIndex > 0) {
+            let wordStartIndex = 0;
+            for (let i = 0; i < startWordIndex; i++) {
+              const wordLength = words[i].length;
+              wordStartIndex = text.indexOf(words[i], wordStartIndex) + wordLength;
+              if (wordStartIndex === -1 + wordLength) break;
+            }
+            startCharIndex = text.indexOf(words[startWordIndex], wordStartIndex);
+          } else {
+            startCharIndex = text.indexOf(words[0]);
+          }
+          
+          // Find the end character index
+          let wordEndIndex = 0;
+          for (let i = 0; i <= endWordIndex; i++) {
+            const nextIndex = text.indexOf(words[i], wordEndIndex);
+            if (nextIndex === -1) break;
+            wordEndIndex = nextIndex + words[i].length;
+            if (i === endWordIndex) {
+              endCharIndex = wordEndIndex;
+            }
+          }
+          
+          console.log('Found valid match span:', startCharIndex, endCharIndex);
+          console.log('Match text:', text.substring(startCharIndex, endCharIndex));
+          
+          matches.push({ start: startCharIndex, end: endCharIndex });
+        }
+        return;
+      }
+      
+      // Try each position for the current term
+      for (const position of termPositions[currentIndex]) {
+        // Skip this position if it's already in the combination
+        if (currentCombination.includes(position)) continue;
+        
+        // Add this position to the combination and recurse
+        findValidCombinations(currentIndex + 1, [...currentCombination, position]);
+      }
+    };
+    
+    // Start with the first term
+    for (const position of termPositions[0]) {
+      findValidCombinations(1, [position]);
+    }
+    
+    console.log('Final matches:', matches);
+    return matches;
   };
 
-  // Function to highlight text in the DOM with safety checks
-  const applyHighlights = () => {
+  // Wrap applyHighlights in useCallback
+  const applyHighlights = useCallback(() => {
     // First clear any existing highlights
     clearHighlights();
     
-    // Don't proceed if there are no search terms
-    if (searchTerms.length === 0) {
+    // Don't proceed if there are no search terms and no proximity searches
+    if (searchTerms.length === 0 && proximitySearches.length === 0) {
       return;
     }
     
     try {
       // Get all elements matching the selector
       const elements = document.querySelectorAll(targetSelector);
+      console.log('Elements to highlight:', elements.length);
       
       // Counter for matches
       const matchCounts: {term: string, count: number, color: string}[] = [];
@@ -190,20 +363,24 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
       elements.forEach(element => {
         // Skip elements that are not safe to modify
         if (!isSafeToModify(element)) {
+          console.log('Skipping unsafe element');
           return;
         }
         
-        // Clone the element to work with its content safely
+        // Get the element's text content
         const originalText = element.textContent || '';
         if (!originalText.trim()) {
+          console.log('Skipping empty element');
           return; // Skip empty elements
         }
+        
+        console.log('Processing element text:', originalText.substring(0, 50) + '...');
         
         // Create a document fragment to build the highlighted content
         const fragment = document.createDocumentFragment();
         
-        // Track all matches
-        type Match = { term: string; index: number; length: number; color: string };
+        // Track all matches (either simple term or proximity matches)
+        type Match = { term: string; index: number; length: number; color: string; isProximity?: boolean; proximityGroupId?: number };
         const allMatches: Match[] = [];
         
         // Find all matches for all terms
@@ -235,52 +412,153 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
           }
         });
         
+        // Process proximity searches
+        proximitySearches.forEach((proximitySearch, searchIndex) => {
+          // Create a display term for the proximity search
+          const displayTerm = proximitySearch.terms.join(' + ') + 
+                             ` (within ${proximitySearch.distance} words)`;
+          
+          try {
+            console.log('Processing proximity search:', displayTerm);
+            
+            // Find all proximity matches for this search
+            const proximityMatches = findProximityMatches(originalText, proximitySearch);
+            console.log('Found proximity matches:', proximityMatches.length);
+            
+            let proximityMatchCount = 0;
+            
+            // For each proximity match, find the individual terms within it
+            proximityMatches.forEach(({ start, end }, matchIndex) => {
+              const matchText = originalText.substring(start, end);
+              proximityMatchCount++;
+              
+              // Find each term within this match
+              proximitySearch.terms.forEach((term, termIndex) => {
+                // Assign a color from the colorOptions array based on the term index
+                const termColor = colorOptions[(searchIndex + termIndex) % colorOptions.length];
+                
+                // Find all occurrences of this term within the match text
+                const termRegex = new RegExp(`\\b${term}\\b`, 'gi');
+                let termMatch;
+                let foundTermInMatch = false;
+                
+                while ((termMatch = termRegex.exec(matchText)) !== null) {
+                  foundTermInMatch = true;
+                  allMatches.push({
+                    term,
+                    index: start + termMatch.index,
+                    length: termMatch[0].length,
+                    color: termColor,
+                    isProximity: true,
+                    proximityGroupId: searchIndex * 1000 + matchIndex // Unique ID for this proximity match group
+                  });
+                }
+                
+                // If we didn't find an exact match, try a more lenient search without word boundaries
+                if (!foundTermInMatch) {
+                  const lenientRegex = new RegExp(term, 'gi');
+                  while ((termMatch = lenientRegex.exec(matchText)) !== null) {
+                    allMatches.push({
+                      term,
+                      index: start + termMatch.index,
+                      length: termMatch[0].length,
+                      color: termColor,
+                      isProximity: true,
+                      proximityGroupId: searchIndex * 1000 + matchIndex
+                    });
+                  }
+                }
+              });
+              
+              // Also add the entire match span as a counter for the proximity search
+              const existingCount = matchCounts.find(m => m.term === displayTerm);
+              if (existingCount) {
+                existingCount.count++;
+              } else {
+                matchCounts.push({ term: displayTerm, count: proximityMatchCount, color: proximitySearch.color });
+              }
+            });
+          } catch (err) {
+            console.error(`Error processing proximity search '${displayTerm}':`, err);
+          }
+        });
+        
         // If no matches found, leave the element as is
         if (allMatches.length === 0) {
+          console.log('No matches found in this element');
           return;
         }
         
         // Sort matches by their position in the text
         allMatches.sort((a, b) => a.index - b.index);
+        console.log('All matches:', allMatches);
         
-        // Process non-overlapping matches
+        // Process matches, being careful with overlaps
         let currentPosition = 0;
+        const processedPositions = new Set<number>();
         
-        for (const match of allMatches) {
-          // Skip this match if it overlaps with already processed text
-          if (match.index < currentPosition) {
-            continue;
+        // First pass: create a map of all character positions to their matches
+        const positionMatchMap: Map<number, Match[]> = new Map();
+        
+        allMatches.forEach(match => {
+          for (let i = match.index; i < match.index + match.length; i++) {
+            if (!positionMatchMap.has(i)) {
+              positionMatchMap.set(i, []);
+            }
+            positionMatchMap.get(i)?.push(match);
           }
+        });
+        
+        // Process the text character by character
+        while (currentPosition < originalText.length) {
+          const matchesAtPosition = positionMatchMap.get(currentPosition) || [];
           
-          // Add text before the match
-          if (match.index > currentPosition) {
+          if (matchesAtPosition.length === 0) {
+            // No match at this position, find the next match
+            let nextMatchPos = currentPosition + 1;
+            while (nextMatchPos < originalText.length && !positionMatchMap.has(nextMatchPos)) {
+              nextMatchPos++;
+            }
+            
+            // Add text up to the next match or the end
             const textNode = document.createTextNode(
-              originalText.slice(currentPosition, match.index)
+              originalText.slice(currentPosition, nextMatchPos)
             );
             fragment.appendChild(textNode);
+            currentPosition = nextMatchPos;
+          } else {
+            // Find the shortest match that starts at this position
+            const matchesStartingHere = matchesAtPosition.filter(m => m.index === currentPosition);
+            
+            if (matchesStartingHere.length > 0) {
+              // Sort by length (shortest first) and then by proximity group
+              matchesStartingHere.sort((a, b) => {
+                if (a.length !== b.length) return a.length - b.length;
+                return (a.proximityGroupId || 0) - (b.proximityGroupId || 0);
+              });
+              
+              const match = matchesStartingHere[0];
+              
+              // Create highlighted span for the match
+              const span = document.createElement('span');
+              span.className = 'highlight-term';
+              span.style.backgroundColor = match.color;
+              if (match.isProximity) {
+                span.dataset.proximityGroup = String(match.proximityGroupId);
+              }
+              span.textContent = originalText.slice(match.index, match.index + match.length);
+              fragment.appendChild(span);
+              
+              // Update current position
+              currentPosition = match.index + match.length;
+            } else {
+              // This is an overlapping match, skip to the next position
+              currentPosition++;
+            }
           }
-          
-          // Create highlighted span for the match
-          const span = document.createElement('span');
-          span.className = 'highlight-term';
-          span.style.backgroundColor = match.color;
-          span.textContent = originalText.slice(match.index, match.index + match.length);
-          fragment.appendChild(span);
-          
-          // Update current position
-          currentPosition = match.index + match.length;
-        }
-        
-        // Add any remaining text
-        if (currentPosition < originalText.length) {
-          const textNode = document.createTextNode(
-            originalText.slice(currentPosition)
-          );
-          fragment.appendChild(textNode);
         }
         
         // Clear the element and append the new content
-        // This needs to be done carefully to not conflict with React
         try {
           while (element.firstChild) {
             element.removeChild(element.firstChild);
@@ -288,7 +566,6 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
           element.appendChild(fragment);
         } catch (err) {
           console.error('Error modifying DOM:', err);
-          // If we can't modify the DOM, just reset to original
           element.textContent = originalText;
         }
       });
@@ -298,17 +575,19 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
     } catch (err) {
       console.error('Error applying highlights:', err);
     }
-  };
+  }, [searchTerms, proximitySearches, targetSelector, clearHighlights, colorOptions]);
   
   // Clear all search terms
   const clearAllTerms = () => {
     clearHighlights();
     setSearchTerms([]);
+    setProximitySearches([]);
+    setProximityTerms([]);
   };
 
-  // Apply highlighting when search terms change
+  // Update useLayoutEffect to use the callback functions
   useLayoutEffect(() => {
-    if (searchTerms.length > 0) {
+    if (searchTerms.length > 0 || proximitySearches.length > 0) {
       // Use a small timeout to let React finish its rendering cycle
       const timeoutId = setTimeout(() => {
         applyHighlights();
@@ -324,12 +603,12 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
     return () => {
       clearHighlights();
     };
-  }, [searchTerms, targetSelector, highlightId]);
+  }, [searchTerms, proximitySearches, targetSelector, highlightId, applyHighlights, clearHighlights]);
 
   // Reapply highlights when DOM changes (expansion/collapse)
   useEffect(() => {
     const handleDomChanges = () => {
-      if (searchTerms.length > 0) {
+      if (searchTerms.length > 0 || proximitySearches.length > 0) {
         // Increment the highlight ID to trigger a refresh
         setHighlightId(prev => prev + 1);
       }
@@ -354,7 +633,7 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
     return () => {
       observer.disconnect();
     };
-  }, [searchTerms]);
+  }, [searchTerms, proximitySearches]);
 
   return (
     <div className="patent-highlighter">
@@ -382,6 +661,13 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
           >
             <FontAwesomeIcon icon={faLayerGroup} />
           </button>
+          <button 
+            className="proximity-btn"
+            onClick={() => setShowProximitySearch(!showProximitySearch)}
+            title="Create proximity search"
+          >
+            <FontAwesomeIcon icon={faSlidersH} />
+          </button>
           <button onClick={clearAllTerms} className="clear-btn">Clear All</button>
         </div>
         
@@ -393,7 +679,7 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
                 <button 
                   key={key} 
                   className="set-button"
-                  onClick={() => addPredefinedSet(key as keyof typeof PREDEFINED_SETS)}
+                  onClick={() => addPredefinedSet(key)}
                   style={{ borderColor: set.color }}
                 >
                   <span className="set-name">{set.name}</span>
@@ -414,6 +700,90 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
                 ref={textareaRef}
               ></textarea>
               <button onClick={addCustomTermSet}>Add Custom Set</button>
+            </div>
+          </div>
+        )}
+        
+        {/* Proximity Search UI */}
+        {showProximitySearch && (
+          <div className="proximity-search">
+            <h5>
+              <FontAwesomeIcon icon={faSlidersH} /> Proximity Search:
+            </h5>
+            <p className="proximity-description">
+              Find and highlight text where multiple terms appear within a specified word range of each other.
+            </p>
+            
+            <div className="proximity-terms">
+              <h6>Add terms to search for:</h6>
+              <div className="proximity-input-row">
+                <input
+                  type="text"
+                  value={proximityFirstTerm}
+                  onChange={(e) => setProximityFirstTerm(e.target.value)}
+                  placeholder="Enter a term..."
+                  ref={proximityFirstTermRef}
+                  onKeyDown={(e) => e.key === 'Enter' && addTermToProximitySearch()}
+                />
+                <button onClick={addTermToProximitySearch}>
+                  <FontAwesomeIcon icon={faPlus} />
+                </button>
+              </div>
+              
+              {proximityTerms.length > 0 && (
+                <div className="proximity-terms-list">
+                  {proximityTerms.map((term, index) => (
+                    <div key={index} className="proximity-term-item">
+                      <span>{term}</span>
+                      <button onClick={() => removeProximityTerm(index)}>
+                        <FontAwesomeIcon icon={faTimes} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div className="proximity-distance">
+                <label>Maximum distance between terms (in words):</label>
+                <div className="distance-input">
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={proximityDistance}
+                    onChange={(e) => setProximityDistance(parseInt(e.target.value) || 5)}
+                  />
+                </div>
+              </div>
+              
+              <button 
+                className="create-proximity-btn"
+                onClick={createProximitySearch}
+                disabled={proximityTerms.length < 2}
+              >
+                Create Proximity Search
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Display active proximity searches */}
+        {proximitySearches.length > 0 && (
+          <div className="proximity-searches-list">
+            <h5>Proximity Searches: ({proximitySearches.length})</h5>
+            <div className="searches-container">
+              {proximitySearches.map((search, index) => (
+                <div 
+                  key={index} 
+                  className="proximity-search-badge"
+                  style={{ backgroundColor: search.color }}
+                >
+                  <span>{search.terms.join(' + ')} (within {search.distance} words)</span>
+                  <button onClick={() => removeProximitySearch(index)}>
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         )}

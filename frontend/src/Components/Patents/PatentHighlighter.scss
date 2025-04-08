@@ -74,6 +74,15 @@
           }
         }
         
+        &.proximity-btn {
+          padding: 0.5rem 0.75rem;
+          background-color: #33FFF5; // Cyan
+          
+          &:hover {
+            background-color: color.adjust(#33FFF5, $lightness: -10%);
+          }
+        }
+        
         &.clear-btn {
           background-color: #e74c3c;
           
@@ -186,6 +195,223 @@
       }
     }
     
+    // Proximity search styles
+    .proximity-search {
+      background-color: var(--secondary-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      
+      h5 {
+        margin: 0 0 0.5rem 0;
+        font-size: 0.9rem;
+        color: var(--text-color);
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        
+        svg {
+          margin-right: 0.5rem;
+          color: #33FFF5; // Cyan
+        }
+      }
+      
+      h6 {
+        margin: 0.75rem 0 0.5rem 0;
+        font-size: 0.85rem;
+        color: var(--text-color);
+      }
+      
+      .proximity-description {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.75rem;
+      }
+      
+      .proximity-terms {
+        .proximity-input-row {
+          display: flex;
+          gap: 0.5rem;
+          margin-bottom: 0.75rem;
+          
+          input {
+            flex-grow: 1;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: var(--text-color);
+            background-color: var(--input-bg);
+            
+            &:focus {
+              outline: none;
+              border-color: var(--accent-color);
+              box-shadow: 0 0 0 2px rgba(74, 109, 167, 0.2);
+            }
+          }
+          
+          button {
+            padding: 0.5rem;
+            min-width: 36px;
+            height: 36px;
+            background-color: #33FFF5; // Cyan
+            color: black;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+            
+            &:hover {
+              background-color: color.adjust(#33FFF5, $lightness: -10%);
+            }
+          }
+        }
+        
+        .proximity-terms-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+          margin-bottom: 1rem;
+          
+          .proximity-term-item {
+            display: flex;
+            align-items: center;
+            padding: 0.25rem 0.5rem;
+            background-color: var(--primary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: var(--text-color);
+            
+            span {
+              margin-right: 0.5rem;
+            }
+            
+            button {
+              background: none;
+              border: none;
+              color: var(--text-secondary);
+              cursor: pointer;
+              padding: 0;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 18px;
+              height: 18px;
+              border-radius: 50%;
+              
+              &:hover {
+                background-color: rgba(0, 0, 0, 0.1);
+                color: var(--text-color);
+              }
+            }
+          }
+        }
+        
+        .proximity-distance {
+          margin-bottom: 1rem;
+          
+          label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
+          }
+          
+          .distance-input {
+            input {
+              width: 100%;
+              max-width: 100px;
+              padding: 0.5rem;
+              border: 1px solid var(--border-color);
+              border-radius: 4px;
+              font-size: 0.9rem;
+              color: var(--text-color);
+              background-color: var(--input-bg);
+              
+              &:focus {
+                outline: none;
+                border-color: var(--accent-color);
+                box-shadow: 0 0 0 2px rgba(74, 109, 167, 0.2);
+              }
+            }
+          }
+        }
+        
+        .create-proximity-btn {
+          width: 100%;
+          padding: 0.5rem 1rem;
+          background-color: #33FFF5; // Cyan
+          color: black;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-weight: 500;
+          transition: background-color 0.2s;
+          
+          &:hover {
+            background-color: color.adjust(#33FFF5, $lightness: -10%);
+          }
+          
+          &:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+          }
+        }
+      }
+    }
+    
+    // Proximity searches list
+    .proximity-searches-list {
+      margin-bottom: 1rem;
+      
+      h5 {
+        margin: 0 0 0.5rem 0;
+        font-size: 0.9rem;
+        color: var(--text-color);
+        font-weight: 500;
+      }
+      
+      .searches-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        
+        .proximity-search-badge {
+          display: flex;
+          align-items: center;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.85rem;
+          color: black;
+          
+          button {
+            background: none;
+            border: none;
+            color: rgba(0, 0, 0, 0.7);
+            margin-left: 0.5rem;
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            
+            &:hover {
+              background-color: rgba(0, 0, 0, 0.1);
+              color: black;
+            }
+          }
+        }
+      }
+    }
+    
     .search-terms-list, .matches-summary {
       margin-bottom: 1rem;
       
@@ -280,6 +506,16 @@
       .predefined-sets {
         .sets-container {
           grid-template-columns: 1fr;
+        }
+      }
+      
+      .proximity-search {
+        .proximity-input-row {
+          flex-direction: column;
+          
+          button {
+            width: 100%;
+          }
         }
       }
     }

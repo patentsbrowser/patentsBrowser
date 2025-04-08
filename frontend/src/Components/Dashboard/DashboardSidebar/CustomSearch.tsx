@@ -404,7 +404,7 @@ const CustomSearch: React.FC<CustomSearchProps> = ({
   return (
     <div className="custom-search-section">
       <div className="section-header">
-        <h3>Custom Search Folders</h3>
+        <h3>Customized folder</h3>
         <button
           className="add-folder-btn"
           onClick={handleAddCustomFolder}
