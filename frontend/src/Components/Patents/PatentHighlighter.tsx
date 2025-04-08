@@ -380,7 +380,7 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
         const fragment = document.createDocumentFragment();
         
         // Track all matches (either simple term or proximity matches)
-        type Match = { term: string; index: number; length: number; color: string; isProximity?: boolean; proximityGroupId?: number };
+        type Match = { term: string; index: number; length: number; color: string };
         const allMatches: Match[] = [];
         
         // Find all matches for all terms
@@ -413,7 +413,7 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
         });
         
         // Process proximity searches
-        proximitySearches.forEach((proximitySearch, searchIndex) => {
+        proximitySearches.forEach(proximitySearch => {
           // Create a display term for the proximity search
           const displayTerm = proximitySearch.terms.join(' + ') + 
                              ` (within ${proximitySearch.distance} words)`;
@@ -422,60 +422,24 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
             console.log('Processing proximity search:', displayTerm);
             
             // Find all proximity matches for this search
-            const proximityMatches = findProximityMatches(originalText, proximitySearch);
-            console.log('Found proximity matches:', proximityMatches.length);
+            const matches = findProximityMatches(originalText, proximitySearch);
+            console.log('Found proximity matches:', matches.length);
             
-            let proximityMatchCount = 0;
-            
-            // For each proximity match, find the individual terms within it
-            proximityMatches.forEach(({ start, end }, matchIndex) => {
-              const matchText = originalText.substring(start, end);
-              proximityMatchCount++;
-              
-              // Find each term within this match
-              proximitySearch.terms.forEach((term, termIndex) => {
-                // Assign a color from the colorOptions array based on the term index
-                const termColor = colorOptions[(searchIndex + termIndex) % colorOptions.length];
-                
-                // Find all occurrences of this term within the match text
-                const termRegex = new RegExp(`\\b${term}\\b`, 'gi');
-                let termMatch;
-                let foundTermInMatch = false;
-                
-                while ((termMatch = termRegex.exec(matchText)) !== null) {
-                  foundTermInMatch = true;
-                  allMatches.push({
-                    term,
-                    index: start + termMatch.index,
-                    length: termMatch[0].length,
-                    color: termColor,
-                    isProximity: true,
-                    proximityGroupId: searchIndex * 1000 + matchIndex // Unique ID for this proximity match group
-                  });
-                }
-                
-                // If we didn't find an exact match, try a more lenient search without word boundaries
-                if (!foundTermInMatch) {
-                  const lenientRegex = new RegExp(term, 'gi');
-                  while ((termMatch = lenientRegex.exec(matchText)) !== null) {
-                    allMatches.push({
-                      term,
-                      index: start + termMatch.index,
-                      length: termMatch[0].length,
-                      color: termColor,
-                      isProximity: true,
-                      proximityGroupId: searchIndex * 1000 + matchIndex
-                    });
-                  }
-                }
+            // Add each match to the allMatches array
+            matches.forEach(({ start, end }) => {
+              allMatches.push({
+                term: displayTerm,
+                index: start,
+                length: end - start,
+                color: proximitySearch.color
               });
               
-              // Also add the entire match span as a counter for the proximity search
+              // Update match counts
               const existingCount = matchCounts.find(m => m.term === displayTerm);
               if (existingCount) {
                 existingCount.count++;
               } else {
-                matchCounts.push({ term: displayTerm, count: proximityMatchCount, color: proximitySearch.color });
+                matchCounts.push({ term: displayTerm, count: 1, color: proximitySearch.color });
               }
             });
           } catch (err) {
@@ -493,72 +457,44 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
         allMatches.sort((a, b) => a.index - b.index);
         console.log('All matches:', allMatches);
         
-        // Process matches, being careful with overlaps
+        // Process non-overlapping matches
         let currentPosition = 0;
-        const processedPositions = new Set<number>();
         
-        // First pass: create a map of all character positions to their matches
-        const positionMatchMap: Map<number, Match[]> = new Map();
-        
-        allMatches.forEach(match => {
-          for (let i = match.index; i < match.index + match.length; i++) {
-            if (!positionMatchMap.has(i)) {
-              positionMatchMap.set(i, []);
-            }
-            positionMatchMap.get(i)?.push(match);
+        for (const match of allMatches) {
+          // Skip this match if it overlaps with already processed text
+          if (match.index < currentPosition) {
+            continue;
           }
-        });
-        
-        // Process the text character by character
-        while (currentPosition < originalText.length) {
-          const matchesAtPosition = positionMatchMap.get(currentPosition) || [];
           
-          if (matchesAtPosition.length === 0) {
-            // No match at this position, find the next match
-            let nextMatchPos = currentPosition + 1;
-            while (nextMatchPos < originalText.length && !positionMatchMap.has(nextMatchPos)) {
-              nextMatchPos++;
-            }
-            
-            // Add text up to the next match or the end
+          // Add text before the match
+          if (match.index > currentPosition) {
             const textNode = document.createTextNode(
-              originalText.slice(currentPosition, nextMatchPos)
+              originalText.slice(currentPosition, match.index)
             );
             fragment.appendChild(textNode);
-            currentPosition = nextMatchPos;
-          } else {
-            // Find the shortest match that starts at this position
-            const matchesStartingHere = matchesAtPosition.filter(m => m.index === currentPosition);
-            
-            if (matchesStartingHere.length > 0) {
-              // Sort by length (shortest first) and then by proximity group
-              matchesStartingHere.sort((a, b) => {
-                if (a.length !== b.length) return a.length - b.length;
-                return (a.proximityGroupId || 0) - (b.proximityGroupId || 0);
-              });
-              
-              const match = matchesStartingHere[0];
-              
-              // Create highlighted span for the match
-              const span = document.createElement('span');
-              span.className = 'highlight-term';
-              span.style.backgroundColor = match.color;
-              if (match.isProximity) {
-                span.dataset.proximityGroup = String(match.proximityGroupId);
-              }
-              span.textContent = originalText.slice(match.index, match.index + match.length);
-              fragment.appendChild(span);
-              
-              // Update current position
-              currentPosition = match.index + match.length;
-            } else {
-              // This is an overlapping match, skip to the next position
-              currentPosition++;
-            }
           }
+          
+          // Create highlighted span for the match
+          const span = document.createElement('span');
+          span.className = 'highlight-term';
+          span.style.backgroundColor = match.color;
+          span.textContent = originalText.slice(match.index, match.index + match.length);
+          fragment.appendChild(span);
+          
+          // Update current position
+          currentPosition = match.index + match.length;
+        }
+        
+        // Add any remaining text
+        if (currentPosition < originalText.length) {
+          const textNode = document.createTextNode(
+            originalText.slice(currentPosition)
+          );
+          fragment.appendChild(textNode);
         }
         
         // Clear the element and append the new content
+        // This needs to be done carefully to not conflict with React
         try {
           while (element.firstChild) {
             element.removeChild(element.firstChild);
@@ -566,6 +502,7 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
           element.appendChild(fragment);
         } catch (err) {
           console.error('Error modifying DOM:', err);
+          // If we can't modify the DOM, just reset to original
           element.textContent = originalText;
         }
       });
@@ -575,7 +512,7 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({ targetSelector })
     } catch (err) {
       console.error('Error applying highlights:', err);
     }
-  }, [searchTerms, proximitySearches, targetSelector, clearHighlights, colorOptions]);
+  }, [searchTerms, proximitySearches, targetSelector, clearHighlights]);
   
   // Clear all search terms
   const clearAllTerms = () => {
