@@ -25,6 +25,62 @@ interface PatentSearchProps {
   initialPatentId?: string;
 }
 
+// Update interface for hit type with optional fields
+interface PatentHit {
+  _id: string;
+  _source: {
+    country: string;
+    assignee_original: string[];
+    family_annuities: number;
+    abstract: string | null;
+    application_date: string;
+    application_number: string;
+    assignee_current: string[];
+    assignee_parent: string[];
+    cpc_codes: string[];
+    description: string | null;
+    examiner: string[];
+    expiration_date: string;
+    extended_family_id: string;
+    family_id: string;
+    figures: any[];
+    grant_date: string;
+    grant_number: string;
+    hyperlink_google: string;
+    inventors: string[];
+    is_challenged: string;
+    is_litigated: string;
+    kind_code: string;
+    last_challenged_at: string | null;
+    last_litigated_at: string | null;
+    law_firm: string;
+    litigation_score: number;
+    norm_family_annuities: number;
+    num_challenged: number;
+    num_cit_npl: number;
+    num_cit_pat: number;
+    num_cit_pat_forward: number;
+    num_litigated: number;
+    portfolio_score: number;
+    priority_date: string;
+    publication_date: string;
+    publication_number: string;
+    publication_status: string;
+    publication_type: string;
+    rating_broadness: string;
+    rating_citation: string;
+    rating_litigation: string;
+    rating_validity: string;
+    rnix_score: number;
+    title: string;
+    type: string;
+    ucid_spif: string[];
+    uspc_codes: string[];
+    citations_pat_forward?: string[]; // Make optional
+    filing_date?: string; // Make optional
+  };
+}
+
 const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId = '' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [patentIds, setPatentIds] = useState<string[]>([]);
@@ -803,6 +859,106 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
       showApplicationPatents: true,
       filteredPatents: null
     }));
+    // Preserve filterByFamily state
+    setFilterByFamily(true);
+  };
+
+  // Add this function to handle corrected patent searches from modal
+  const handleCorrectedPatentSearch = async (correctedIds: string[]) => {
+    // Format the IDs before searching
+    const formattedIds = correctedIds.map(id => {
+      if (selectedApi === 'unified') {
+        if (/^\d+$/.test(id)) {
+          return `US-${id}-B2`;
+        } else if (/^[A-Z]{2}\d+$/.test(id)) {
+          const countryCode = id.substring(0, 2);
+          const number = id.substring(2);
+          return `${countryCode}-${number}-B2`;
+        } else if (!id.includes('-')) {
+          return formatPatentId(id, 'unified');
+        }
+      }
+      return id;
+    });
+
+    try {
+      console.log("Making API call for corrected patents:", formattedIds);
+      const result = await patentApi.searchMultiplePatentsUnified(formattedIds, 'smart');
+      console.log("Corrected patents search result:", result);
+      
+      if (result?.hits?.hits) {
+        // Get existing results from Redux
+        const existingResults = smartSearchResults || { hits: { hits: [] } };
+        const existingHits = existingResults.hits.hits || [];
+        const newHits = result.hits.hits;
+        
+        // Combine results, avoiding duplicates
+        const combinedHits = [...existingHits];
+        const foundPatentIds = new Set<string>();
+        
+        newHits.forEach((newHit: any) => {
+          const exists = combinedHits.some(existingHit => existingHit._id === newHit._id);
+          if (!exists) {
+            combinedHits.push(newHit);
+          }
+          foundPatentIds.add(newHit._id);
+        });
+
+        // Update Redux with combined results
+        const updatedResults = {
+          ...result,
+          hits: {
+            ...result.hits,
+            hits: combinedHits,
+            total: {
+              value: combinedHits.length,
+              relation: "eq"
+            }
+          }
+        };
+        dispatch(setSmartSearchResults(updatedResults));
+
+        // Update filters in Redux to include new patents
+        const currentFilters = filters || {
+          showGrantPatents: true,
+          showApplicationPatents: true,
+          filteredPatentIds: []
+        };
+
+        const updatedFilteredPatentIds = [
+          ...(currentFilters.filteredPatentIds || []),
+          ...Array.from(foundPatentIds)
+        ];
+
+        dispatch(setFilters({
+          ...currentFilters,
+          filteredPatentIds: [...new Set(updatedFilteredPatentIds)] // Remove duplicates
+        }));
+
+        // Show success/error messages
+        const foundCount = foundPatentIds.size;
+        const notFoundCount = formattedIds.length - foundCount;
+
+        if (foundCount > 0) {
+          toast.success(
+            `Found ${foundCount} patent${foundCount > 1 ? 's' : ''} and added to results`
+          );
+        }
+        if (notFoundCount > 0) {
+          toast.error(
+            `${notFoundCount} patent${notFoundCount > 1 ? 's' : ''} still not found`
+          );
+        }
+
+        // Return the found patent IDs
+        return { success: true, foundPatentIds };
+      }
+      return { success: false };
+    } catch (error: any) {
+      console.error('Error searching corrected patents:', error);
+      toast.error(error.message || 'Error searching patents');
+      return { success: false };
+    }
   };
 
   return (
@@ -866,6 +1022,8 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         filterByFamily={filterByFamily}
         setFilterByFamily={setFilterByFamily}
         notFoundPatents={notFoundPatents}
+        onPatentSearch={handleCorrectedPatentSearch}
+        setNotFoundPatents={setNotFoundPatents}
       />
     </div>
   );

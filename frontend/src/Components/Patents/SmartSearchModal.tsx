@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '../../Redux/hooks';
 import { RootState } from '../../Redux/store';
-import { setFilters } from '../../Redux/slices/patentSlice';
+import { setFilters, setSmartSearchResults } from '../../Redux/slices/patentSlice';
 import './SmartSearchModal.scss';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimesCircle, faEdit, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { patentApi } from '../../api/patents';
+import toast from 'react-hot-toast';
 
 interface SmartSearchModalProps {
   isOpen: boolean;
@@ -15,6 +17,8 @@ interface SmartSearchModalProps {
   filterByFamily: boolean;
   setFilterByFamily: (value: boolean) => void;
   notFoundPatents: string[];
+  onPatentSearch: (patentIds: string[]) => Promise<{ success: boolean; foundPatentIds?: Set<string> }>;
+  setNotFoundPatents: (patents: string[]) => void;
 }
 
 const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
@@ -25,13 +29,18 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
   setSelectedTypes,
   filterByFamily,
   setFilterByFamily,
-  notFoundPatents
+  notFoundPatents,
+  onPatentSearch,
+  setNotFoundPatents
 }) => {
   const [filteredPatents, setFilteredPatents] = useState<string[]>([]);
+  const [editingPatents, setEditingPatents] = useState<{ [key: string]: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [correctedPatents, setCorrectedPatents] = useState<Set<string>>(new Set());
   const [preferredPatentAuthorities, setPreferredPatentAuthorities] = useState<string[]>([]);
   
   const dispatch = useAppDispatch();
-  const { smartSearchResults } = useAppSelector((state: RootState) => state.patents);
+  const { smartSearchResults, filters } = useAppSelector((state: RootState) => state.patents);
 
   // Helper function to get the priority of a patent based on authority
   const getPatentPriority = (country: string): number => {
@@ -125,6 +134,8 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
         hit._source.publication_number || hit._id
       );
       setFilteredPatents(allPatents);
+      // Set filterByFamily to true by default when modal opens
+      setFilterByFamily(true);
     }
   }, [isOpen, smartSearchResults]);
 
@@ -173,6 +184,71 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
 
   // Check if any filter options are selected and if there are any filtered patents
   const isFilterValid = (selectedTypes.grant || selectedTypes.application) && filteredPatents.length > 0;
+
+  const handleEditPatent = (patentId: string) => {
+    setEditingPatents(prev => ({
+      ...prev,
+      [patentId]: patentId
+    }));
+  };
+
+  const handleUpdatePatent = (originalId: string, newValue: string) => {
+    setEditingPatents(prev => ({
+      ...prev,
+      [originalId]: newValue
+    }));
+  };
+
+  const handleSubmitCorrections = async () => {
+    const correctedIds = Object.values(editingPatents).filter(id => id.trim() !== '');
+    
+    if (correctedIds.length === 0) {
+      toast.error('No patent IDs to search');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Search for the corrected patent IDs
+      const result = await onPatentSearch(correctedIds);
+      
+      // Immediately remove patents that were found
+      if (result.success && result.foundPatentIds && result.foundPatentIds.size > 0) {
+        const updatedNotFoundPatents = notFoundPatents.filter(id => {
+          const correctedId = editingPatents[id];
+          // If this patent was edited and found, remove it
+          if (correctedId && result.foundPatentIds?.has(correctedId)) {
+            return false;
+          }
+          // If this patent wasn't edited or not found, keep it
+          return true;
+        });
+        
+        setNotFoundPatents(updatedNotFoundPatents);
+      }
+      
+      // Clear editing state
+      setEditingPatents({});
+      
+      // Force an immediate update of filtered patents
+      if (smartSearchResults?.hits?.hits) {
+        const allPatents = smartSearchResults.hits.hits.map((hit: any) => 
+          hit._source.publication_number || hit._id
+        );
+        setFilteredPatents(allPatents);
+        // Trigger filter update
+        filterPatents();
+      }
+    } catch (error) {
+      toast.error('Failed to search patents');
+      console.error('Error searching patents:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Filter out corrected patents from the not found list
+  const remainingNotFoundPatents = notFoundPatents.filter(id => !correctedPatents.has(id));
 
   return (
     <div className="smart-search-modal-overlay">
@@ -242,19 +318,49 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
               </div>
             </div>
 
-            {notFoundPatents.length > 0 && (
+            {remainingNotFoundPatents.length > 0 && (
               <div className="not-found-container">
                 <div className="not-found-header">
                   <h4>Not Found</h4>
-                  <span className="not-found-count">({notFoundPatents.length})</span>
+                  <span className="not-found-count">({remainingNotFoundPatents.length})</span>
                 </div>
                 <div className="not-found-list">
-                  {notFoundPatents.map((patentId) => (
+                  {remainingNotFoundPatents.map((patentId) => (
                     <div key={patentId} className="not-found-item">
-                      {patentId}
+                      {editingPatents.hasOwnProperty(patentId) ? (
+                        <input
+                          type="text"
+                          value={editingPatents[patentId]}
+                          onChange={(e) => handleUpdatePatent(patentId, e.target.value)}
+                          className="edit-patent-input"
+                          placeholder="Enter correct patent ID"
+                        />
+                      ) : (
+                        <>
+                          <span className="patent-id">{patentId}</span>
+                          <button 
+                            className="edit-button"
+                            onClick={() => handleEditPatent(patentId)}
+                          >
+                            <FontAwesomeIcon icon={faEdit} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
+                {Object.keys(editingPatents).length > 0 && (
+                  <div className="not-found-actions">
+                    <button 
+                      className="submit-corrections-button"
+                      onClick={handleSubmitCorrections}
+                      disabled={isSubmitting}
+                    >
+                      <FontAwesomeIcon icon={faCheck} />
+                      {isSubmitting ? 'Searching...' : 'Submit Corrections'}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
