@@ -34,6 +34,7 @@ const PatentHistory: React.FC = () => {
     }
   };
 
+
   const clearSearchHistory = async () => {
     try {
       await authApi.clearSearchHistory();

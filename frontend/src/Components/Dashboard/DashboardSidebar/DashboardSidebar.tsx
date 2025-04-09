@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { authApi } from "../../../api/auth";
 import "./DashboardSidebar.scss";
-import RecentPatentIds from "./RecentPatentIds";
+// import RecentPatentIds from "./RecentPatentIds";
 import CustomSearch from "./CustomSearch";
 import ImportedFolders from "./ImportedFolders";
 import { Link } from "react-router-dom";
@@ -287,11 +287,11 @@ const DashboardSidebar = ({
       </div>
 
       <div className="sidebar-content">
-        <RecentPatentIds
+        {/* <RecentPatentIds
           recentSearches={recentSearches}
           onClearHistory={onClearHistory}
           onPatentClick={onPatentClick}
-        />
+        /> */}
 
         <ImportedFolders 
           onPatentClick={onPatentClick}
