@@ -1,3 +1,8 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
 # Logs
 logs
 *.log
@@ -7,9 +12,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules/
-dist/
-dist-ssr/
+# Build output
+/dist
+/dist-ssr
 *.local
 
 # Editor directories and files
@@ -23,6 +28,7 @@ dist-ssr/
 *.sln
 *.sw?
 
+# TypeScript
 ttsconfig.tsbuildinfo
 
 # Environment variables
@@ -30,3 +36,10 @@ ttsconfig.tsbuildinfo
 !.env.example
 !.env.production
 !.env.stage
+
+# Cache
+.cache/
+.npm/
+.yarn/
+.pnp/
+.yarn-integrity

@@ -1,6 +1,10 @@
 # Dependencies
-node_modules/
-dist/
+/node_modules
+/.pnp
+.pnp.js
+
+# Build output
+/dist
 
 # Environment variables
 .env
@@ -20,6 +24,23 @@ yarn-error.log*
 *.swp
 *.swo
 .DS_Store
+
+# TypeScript
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+
+# Temporary files
+tmp/
+temp/
+
+# Cache
+.cache/
+.npm/
+.yarn/
+.pnp/
+.yarn-integrity
 
 # TypeScript cache
 *.tsbuildinfo
