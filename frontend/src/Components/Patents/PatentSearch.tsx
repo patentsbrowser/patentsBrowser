@@ -645,62 +645,16 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
   // Add applyFilter function to update UI based on filtered results
   const handleApplyFilter = async () => {
     if (smartSearchResults && smartSearchResults.hits && smartSearchResults.hits.hits) {
-      const hits = smartSearchResults.hits.hits;
-      console.log("Total hits before filtering:", hits.length);
+      // Get the filtered patent IDs directly from Redux
+      const filteredPatentIds = filters.filteredPatentIds || [];
       
-      // First filter by grant/application type
-      const typeFilteredHits = hits.filter((hit: any) => {
-        const source = hit._source;
-        const kindCode = source.kind_code;
-        const publicationType = source.publication_type;
-
-        const isGrant = kindCode?.startsWith('B') || publicationType === 'B';
-        const isApplication = kindCode?.startsWith('A') || publicationType === 'A';
-
-        if (selectedTypes.grant && !selectedTypes.application) {
-          return isGrant;
-        } else if (!selectedTypes.grant && selectedTypes.application) {
-          return isApplication;
-        } else if (selectedTypes.grant && selectedTypes.application) {
-          return true; // Show all if both are selected
-        }
-        return false;
+      console.log(`Found ${filteredPatentIds.length} patents matching the filter criteria`);
+      
+      // Find the full patent data from the IDs
+      const filteredHits = smartSearchResults.hits.hits.filter((hit: any) => {
+        const hitId = hit._source.publication_number || hit._id;
+        return filteredPatentIds.includes(hitId);
       });
-
-      // Then filter by family if needed
-      let filteredHits = typeFilteredHits;
-      if (filterByFamily) {
-        // Group patents by family_id
-        const familyGroups = new Map<string, any[]>();
-        
-        typeFilteredHits.forEach((hit: any) => {
-          const familyId = hit._source.family_id;
-          if (familyId) {
-            if (!familyGroups.has(familyId)) {
-              familyGroups.set(familyId, []);
-            }
-            familyGroups.get(familyId)?.push(hit);
-          }
-        });
-
-        // For each family, select the preferred patent (US if available)
-        const selectedPatents: any[] = [];
-        
-        familyGroups.forEach((patents) => {
-          // Try to find a US patent first
-          const usPatent = patents.find(p => p._source.country === 'US');
-          if (usPatent) {
-            selectedPatents.push(usPatent);
-          } else {
-            // If no US patent, just take the first one
-            selectedPatents.push(patents[0]);
-          }
-        });
-
-        filteredHits = selectedPatents;
-      }
-      
-      console.log(`Found ${filteredHits.length} patents matching the filter criteria`);
       
       // Map the filtered hits to patent summaries
       const patents = filteredHits.map((hit: any) => {

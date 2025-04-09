@@ -1,5 +1,7 @@
 import './Settings.scss';
 import { useState, useEffect } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEdit, faCheck, faUndo, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
 
 interface SettingsProps {
   onSidebarBehaviorChange?: (behavior: 'auto' | 'manual') => void;
@@ -12,7 +14,7 @@ const Settings: React.FC<SettingsProps> = ({
 }) => {
   const [sidebarBehavior, setSidebarBehavior] = useState<'auto' | 'manual'>(initialSidebarBehavior);
   const [preferredPatentAuthority, setPreferredPatentAuthority] = useState<string>(
-    localStorage.getItem('preferredPatentAuthority') || 'US EP WO GB FR DE CH JP RU SU'
+    localStorage.getItem('preferredPatentAuthority') || 'US WO EP GB FR DE CH JP RU SU'
   );
   const [preferredPublicationStage, setPreferredPublicationStage] = useState<string>(
     localStorage.getItem('preferredPublicationStage') || 'grant'
@@ -32,42 +34,17 @@ const Settings: React.FC<SettingsProps> = ({
   const [fieldFormatHitlist, setFieldFormatHitlist] = useState<string>(
     localStorage.getItem('fieldFormatHitlist') || 'Detailed (spelled out)'
   );
+  const [isResultsEditMode, setIsResultsEditMode] = useState(false);
+  const [isRecordEditMode, setIsRecordEditMode] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
-  // Save settings to localStorage when changed
+  // Save setting to localStorage when changed
   useEffect(() => {
     localStorage.setItem('sidebarBehavior', sidebarBehavior);
     if (onSidebarBehaviorChange) {
       onSidebarBehaviorChange(sidebarBehavior);
     }
   }, [sidebarBehavior, onSidebarBehaviorChange]);
-
-  useEffect(() => {
-    localStorage.setItem('preferredPatentAuthority', preferredPatentAuthority);
-  }, [preferredPatentAuthority]);
-
-  useEffect(() => {
-    localStorage.setItem('preferredPublicationStage', preferredPublicationStage);
-  }, [preferredPublicationStage]);
-
-  useEffect(() => {
-    localStorage.setItem('publicationListOrder', publicationListOrder);
-  }, [publicationListOrder]);
-
-  useEffect(() => {
-    localStorage.setItem('preferredLanguage', preferredLanguage);
-  }, [preferredLanguage]);
-
-  useEffect(() => {
-    localStorage.setItem('resultsPerPage', resultsPerPage);
-  }, [resultsPerPage]);
-
-  useEffect(() => {
-    localStorage.setItem('fieldFormatDoc', fieldFormatDoc);
-  }, [fieldFormatDoc]);
-
-  useEffect(() => {
-    localStorage.setItem('fieldFormatHitlist', fieldFormatHitlist);
-  }, [fieldFormatHitlist]);
 
   const handleBehaviorChange = (newBehavior: 'auto' | 'manual') => {
     setSidebarBehavior(newBehavior);
@@ -84,7 +61,7 @@ const Settings: React.FC<SettingsProps> = ({
   const handleSetToDefault = (setting: string) => {
     switch (setting) {
       case 'patentAuthority':
-        setPreferredPatentAuthority('US EP WO GB FR DE CH JP RU SU');
+        setPreferredPatentAuthority('US WO EP GB FR DE CH JP RU SU');
         break;
       case 'language':
         setPreferredLanguage('EN EM');
@@ -94,18 +71,76 @@ const Settings: React.FC<SettingsProps> = ({
     }
   };
 
-  const handleRestoreDefaults = () => {
-    setPreferredPatentAuthority('US EP WO GB FR DE CH JP RU SU');
-    setPreferredPublicationStage('grant');
-    setPublicationListOrder('ascending');
-    setPreferredLanguage('EN EM');
+  const handleResultsConfirm = () => {
+    localStorage.setItem('resultsPerPage', resultsPerPage);
+    localStorage.setItem('fieldFormatDoc', fieldFormatDoc);
+    localStorage.setItem('fieldFormatHitlist', fieldFormatHitlist);
+    
+    setShowSuccessMessage(true);
+    setIsResultsEditMode(false);
+    setTimeout(() => {
+      setShowSuccessMessage(false);
+    }, 1500);
+  };
+
+  const handleResultsCancel = () => {
+    setResultsPerPage(localStorage.getItem('resultsPerPage') || '50');
+    setFieldFormatDoc(localStorage.getItem('fieldFormatDoc') || 'Detailed (spelled out)');
+    setFieldFormatHitlist(localStorage.getItem('fieldFormatHitlist') || 'Detailed (spelled out)');
+    setIsResultsEditMode(false);
+  };
+
+  const handleResultsEditClick = () => {
+    setIsResultsEditMode(true);
+  };
+
+  const handleRestoreResultsDefaults = () => {
     setResultsPerPage('50');
     setFieldFormatDoc('Detailed (spelled out)');
     setFieldFormatHitlist('Detailed (spelled out)');
   };
 
+  const handleRecordConfirm = () => {
+    localStorage.setItem('preferredPatentAuthority', preferredPatentAuthority);
+    localStorage.setItem('preferredPublicationStage', preferredPublicationStage);
+    localStorage.setItem('publicationListOrder', publicationListOrder);
+    localStorage.setItem('preferredLanguage', preferredLanguage);
+    
+    setShowSuccessMessage(true);
+    setIsRecordEditMode(false);
+    setTimeout(() => {
+      setShowSuccessMessage(false);
+    }, 1500);
+  };
+
+  const handleRecordCancel = () => {
+    setPreferredPatentAuthority(localStorage.getItem('preferredPatentAuthority') || 'US WO EP GB FR DE CH JP RU SU');
+    setPreferredPublicationStage(localStorage.getItem('preferredPublicationStage') || 'grant');
+    setPublicationListOrder(localStorage.getItem('publicationListOrder') || 'ascending');
+    setPreferredLanguage(localStorage.getItem('preferredLanguage') || 'EN EM');
+    setIsRecordEditMode(false);
+  };
+
+  const handleRecordEditClick = () => {
+    setIsRecordEditMode(true);
+  };
+
+  const handleRestoreRecordDefaults = () => {
+    setPreferredPatentAuthority('US WO EP GB FR DE CH JP RU SU');
+    setPreferredPublicationStage('grant');
+    setPublicationListOrder('ascending');
+    setPreferredLanguage('EN EM');
+  };
+
   return (
     <div className="settings-container">
+      {showSuccessMessage && (
+        <div className="success-message">
+          <FontAwesomeIcon icon={faCheck} />
+          Settings saved successfully!
+        </div>
+      )}
+
       <h2>Settings</h2>
       
       <div className="settings-section">
@@ -135,14 +170,23 @@ const Settings: React.FC<SettingsProps> = ({
       </div>
 
       <div className="settings-section">
-        <h3 className="section-header">Results</h3>
+        <div className="section-header">
+          <h3>Results</h3>
+          {!isResultsEditMode && (
+            <button className="edit-button" onClick={handleResultsEditClick}>
+              <FontAwesomeIcon icon={faEdit} style={{ marginRight: '6px' }} />
+              Edit
+            </button>
+          )}
+        </div>
         <div className="setting-option">
           <div className="setting-label">Results per page:</div>
           <div className="setting-input-control">
             <select 
               value={resultsPerPage}
-              onChange={(e) => setResultsPerPage(e.target.value)}
+              onChange={(e) => isResultsEditMode && setResultsPerPage(e.target.value)}
               className="settings-dropdown"
+              disabled={!isResultsEditMode}
             >
               <option value="10">10</option>
               <option value="25">25</option>
@@ -156,8 +200,9 @@ const Settings: React.FC<SettingsProps> = ({
           <div className="setting-input-control">
             <select 
               value={fieldFormatDoc}
-              onChange={(e) => setFieldFormatDoc(e.target.value)}
+              onChange={(e) => isResultsEditMode && setFieldFormatDoc(e.target.value)}
               className="settings-dropdown"
+              disabled={!isResultsEditMode}
             >
               <option value="Detailed (spelled out)">Detailed (spelled out)</option>
               <option value="Abbreviated">Abbreviated</option>
@@ -169,33 +214,63 @@ const Settings: React.FC<SettingsProps> = ({
           <div className="setting-input-control">
             <select 
               value={fieldFormatHitlist}
-              onChange={(e) => setFieldFormatHitlist(e.target.value)}
+              onChange={(e) => isResultsEditMode && setFieldFormatHitlist(e.target.value)}
               className="settings-dropdown"
+              disabled={!isResultsEditMode}
             >
               <option value="Detailed (spelled out)">Detailed (spelled out)</option>
               <option value="Abbreviated">Abbreviated</option>
             </select>
           </div>
         </div>
+        {isResultsEditMode && (
+          <div className="settings-action-buttons">
+            <button className="restore-button" onClick={handleRestoreResultsDefaults}>
+              <FontAwesomeIcon icon={faUndo} style={{ marginRight: '6px' }} />
+              Restore defaults
+            </button>
+            <div className="action-right-buttons">
+              <button className="confirm-button" onClick={handleResultsConfirm}>
+                <FontAwesomeIcon icon={faCheck} style={{ marginRight: '6px' }} />
+                Confirm
+              </button>
+              <button className="cancel-button" onClick={handleResultsCancel}>
+                <FontAwesomeIcon icon={faTimesCircle} style={{ marginRight: '6px' }} />
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-      
+
       <div className="settings-section">
-        <h3 className="section-header">Record display settings</h3>
+        <div className="section-header">
+          <h3>Record display settings</h3>
+          {!isRecordEditMode && (
+            <button className="edit-button" onClick={handleRecordEditClick}>
+              <FontAwesomeIcon icon={faEdit} style={{ marginRight: '6px' }} />
+              Edit
+            </button>
+          )}
+        </div>
         <div className="setting-option">
           <div className="setting-label">Preferred patent authority:</div>
           <div className="setting-input-with-action">
             <input 
               type="text" 
               value={preferredPatentAuthority}
-              onChange={handlePatentAuthorityChange}
+              onChange={(e) => setPreferredPatentAuthority(e.target.value)}
               className="settings-text-input"
+              disabled={!isRecordEditMode}
             />
-            <button 
-              className="default-button" 
-              onClick={() => handleSetToDefault('patentAuthority')}
-            >
-              Set to default
-            </button>
+            {isRecordEditMode && (
+              <button 
+                className="default-button" 
+                onClick={() => handleSetToDefault('patentAuthority')}
+              >
+                Set to default
+              </button>
+            )}
           </div>
         </div>
         <div className="setting-option">
@@ -207,7 +282,8 @@ const Settings: React.FC<SettingsProps> = ({
                 name="publicationStage"
                 value="application"
                 checked={preferredPublicationStage === 'application'}
-                onChange={() => setPreferredPublicationStage('application')}
+                onChange={() => isRecordEditMode && setPreferredPublicationStage('application')}
+                disabled={!isRecordEditMode}
               />
               application
             </label>
@@ -217,7 +293,8 @@ const Settings: React.FC<SettingsProps> = ({
                 name="publicationStage"
                 value="grant"
                 checked={preferredPublicationStage === 'grant'}
-                onChange={() => setPreferredPublicationStage('grant')}
+                onChange={() => isRecordEditMode && setPreferredPublicationStage('grant')}
+                disabled={!isRecordEditMode}
               />
               grant
             </label>
@@ -232,7 +309,8 @@ const Settings: React.FC<SettingsProps> = ({
                 name="listOrder"
                 value="ascending"
                 checked={publicationListOrder === 'ascending'}
-                onChange={() => setPublicationListOrder('ascending')}
+                onChange={() => isRecordEditMode && setPublicationListOrder('ascending')}
+                disabled={!isRecordEditMode}
               />
               ascending
             </label>
@@ -242,7 +320,8 @@ const Settings: React.FC<SettingsProps> = ({
                 name="listOrder"
                 value="descending"
                 checked={publicationListOrder === 'descending'}
-                onChange={() => setPublicationListOrder('descending')}
+                onChange={() => isRecordEditMode && setPublicationListOrder('descending')}
+                disabled={!isRecordEditMode}
               />
               descending
             </label>
@@ -254,31 +333,38 @@ const Settings: React.FC<SettingsProps> = ({
             <input 
               type="text" 
               value={preferredLanguage}
-              onChange={handleLanguageChange}
+              onChange={(e) => setPreferredLanguage(e.target.value)}
               className="settings-text-input"
+              disabled={!isRecordEditMode}
             />
-            <button 
-              className="default-button" 
-              onClick={() => handleSetToDefault('language')}
-            >
-              Set to default
-            </button>
+            {isRecordEditMode && (
+              <button 
+                className="default-button" 
+                onClick={() => handleSetToDefault('language')}
+              >
+                Set to default
+              </button>
+            )}
           </div>
         </div>
-      </div>
-
-      <div className="settings-action-buttons">
-        <button className="restore-button" onClick={handleRestoreDefaults}>
-          Restore defaults
-        </button>
-        <div className="action-right-buttons">
-          <button className="confirm-button">
-            Confirm
-          </button>
-          <button className="cancel-button">
-            Cancel
-          </button>
-        </div>
+        {isRecordEditMode && (
+          <div className="settings-action-buttons">
+            <button className="restore-button" onClick={handleRestoreRecordDefaults}>
+              <FontAwesomeIcon icon={faUndo} style={{ marginRight: '6px' }} />
+              Restore defaults
+            </button>
+            <div className="action-right-buttons">
+              <button className="confirm-button" onClick={handleRecordConfirm}>
+                <FontAwesomeIcon icon={faCheck} style={{ marginRight: '6px' }} />
+                Confirm
+              </button>
+              <button className="cancel-button" onClick={handleRecordCancel}>
+                <FontAwesomeIcon icon={faTimesCircle} style={{ marginRight: '6px' }} />
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

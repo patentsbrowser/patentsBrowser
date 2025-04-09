@@ -4,12 +4,33 @@
   padding: 25px;
   max-width: 900px;
   margin: 0 auto;
+  position: relative;
 
   h2 {
     color: var(--text-color, #333);
     margin-bottom: 25px;
     border-bottom: 1px solid var(--border-color, #eee);
     padding-bottom: 15px;
+  }
+
+  .success-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    background-color: rgba(76, 175, 80, 0.95);
+    border-radius: 4px;
+    color: white;
+    font-weight: 500;
+    animation: slideIn 0.3s ease;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    
+    svg {
+      margin-right: 8px;
+    }
   }
 
   .settings-section {
@@ -22,10 +43,44 @@
     }
 
     .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       border-bottom: 1px solid var(--border-color, #eee);
       padding-bottom: 10px;
       margin-bottom: 15px;
-      font-weight: 500;
+
+      h3 {
+        margin: 0;
+        border: none;
+        padding: 0;
+      }
+
+      .edit-button {
+        background-color: var(--accent-color-light, rgba(201, 125, 255, 0.2));
+        color: var(--accent-color, #c77dff);
+        border: 1px solid var(--accent-color, #c77dff);
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+        &:hover {
+          background-color: var(--accent-color, #c77dff);
+          color: #000;
+          transform: scale(1.02);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        &:active {
+          transform: scale(0.98);
+        }
+      }
     }
 
     .setting-option {
@@ -197,6 +252,8 @@
       color: var(--text-color, #333);
       cursor: pointer;
       font-size: 0.9rem;
+      display: flex;
+      align-items: center;
       
       &:hover {
         background-color: rgba(0, 0, 0, 0.03);
@@ -213,6 +270,8 @@
         cursor: pointer;
         font-size: 0.9rem;
         font-weight: 500;
+        display: flex;
+        align-items: center;
       }
       
       .confirm-button {
@@ -236,63 +295,30 @@
       }
     }
   }
-
-  .orders-list {
-    list-style: none;
-    padding: 0;
-
-    .order-item {
-      background-color: var(--secondary-bg, #2a2a2a);
-      padding: 15px;
-      margin-bottom: 10px;
-      border-radius: 4px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      
-      &:hover {
-        background-color: var(--hover-bg, #333);
-      }
-
-      .order-pair {
-        font-weight: 500;
-        flex: 1;
-      }
-
-      .order-type {
-        padding: 5px 10px;
-        border-radius: 4px;
-        font-weight: 500;
-        text-align: center;
-        min-width: 70px;
-        margin: 0 15px;
-
-        &.buy {
-          background-color: rgba(76, 175, 80, 0.2);
-          color: #4caf50;
-        }
-
-        &.sell {
-          background-color: rgba(244, 67, 54, 0.2);
-          color: #f44336;
-        }
-      }
-
-      .order-amount {
-        font-family: monospace;
-        font-weight: 500;
-        background-color: rgba(0, 0, 0, 0.1);
-        padding: 5px 10px;
-        border-radius: 4px;
-      }
-    }
-  }
 }
 
 /* Dark theme adjustments */
 [data-theme="dark"] {
   .settings-container {
+    .settings-header {
+      border-bottom-color: rgba(255, 255, 255, 0.1);
+      
+      h2 {
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      .edit-button {
+        background-color: rgba(201, 125, 255, 0.1);
+        color: var(--accent-color, #c77dff);
+        border-color: var(--accent-color, #c77dff);
+        
+        &:hover {
+          background-color: var(--accent-color, #c77dff);
+          color: #000;
+        }
+      }
+    }
+
     .setting-option {
       background-color: rgba(255, 255, 255, 0.05);
       
@@ -372,4 +398,15 @@
       }
     }
   }
-} 
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

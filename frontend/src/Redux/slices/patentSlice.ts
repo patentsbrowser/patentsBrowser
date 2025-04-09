@@ -65,6 +65,7 @@ interface PatentState {
     showApplicationPatents: boolean;
     filterByFamilyId: boolean;
     filteredPatents: Patent[] | null;
+    filteredPatentIds: string[];
   };
   smartSearchResults: {
     hits: {
@@ -140,7 +141,8 @@ const initialState: PatentState = {
     showGrantPatents: true,
     showApplicationPatents: true,
     filterByFamilyId: true,
-    filteredPatents: null
+    filteredPatents: null,
+    filteredPatentIds: []
   },
   smartSearchResults: null,
 };
@@ -313,6 +315,7 @@ const patentSlice = createSlice({
       showApplicationPatents?: boolean;
       filterByFamilyId?: boolean;
       filteredPatents?: Patent[] | null;
+      filteredPatentIds?: string[];
     }>) => {
       state.filters = {
         ...state.filters,

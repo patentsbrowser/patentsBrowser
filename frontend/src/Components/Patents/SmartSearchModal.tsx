@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useAppSelector } from '../../Redux/hooks';
+import { useAppSelector, useAppDispatch } from '../../Redux/hooks';
 import { RootState } from '../../Redux/store';
+import { setFilters } from '../../Redux/slices/patentSlice';
 import './SmartSearchModal.scss';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
@@ -25,43 +26,16 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
   setFilterByFamily
 }) => {
   const [filteredPatents, setFilteredPatents] = useState<string[]>([]);
-
+  const [preferredPatentAuthorities, setPreferredPatentAuthorities] = useState<string[]>([]);
+  
+  const dispatch = useAppDispatch();
   const { smartSearchResults } = useAppSelector((state: RootState) => state.patents);
 
-  // Initialize with all patent IDs when modal opens
-  useEffect(() => {
-    if (isOpen && smartSearchResults?.hits?.hits) {
-      const allPatents = smartSearchResults.hits.hits.map((hit: any) => 
-        hit._source.publication_number || hit._id
-      );
-      setFilteredPatents(allPatents);
-    }
-  }, [isOpen, smartSearchResults]);
-
-  // Update filtered patents when filters change
-  useEffect(() => {
-    if (smartSearchResults && smartSearchResults.hits && smartSearchResults.hits.hits) {
-      filterPatents();
-    }
-  }, [selectedTypes, smartSearchResults, filterByFamily]);
-
-  useEffect(() => {
-    const handleEscKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscKey);
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscKey);
-    };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
+  // Helper function to get the priority of a patent based on authority
+  const getPatentPriority = (country: string): number => {
+    const index = preferredPatentAuthorities.indexOf(country);
+    return index === -1 ? preferredPatentAuthorities.length : index;
+  };
 
   // Function to filter patents by publication type and family_id
   const filterPatents = () => {
@@ -111,16 +85,76 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
       }
     });
 
-    // For each family, select the preferred patent (US if available)
+    // For each family, select the preferred patent based on user's authority preference
     const selectedPatents: string[] = [];
     
     familyGroups.forEach((patents) => {
-      // Select the first patent in the family
-      selectedPatents.push(patents[0]._source.publication_number || patents[0]._id);
+      // Sort patents based on the user's preferred authorities
+      const sortedPatents = [...patents].sort((a, b) => {
+        const countryA = a._source.country || '';
+        const countryB = b._source.country || '';
+        
+        // Get priority based on the preferred authorities array order
+        const priorityA = getPatentPriority(countryA);
+        const priorityB = getPatentPriority(countryB);
+        
+        return priorityA - priorityB;
+      });
+      
+      // Select the highest priority patent (first after sorting)
+      selectedPatents.push(sortedPatents[0]._source.publication_number || sortedPatents[0]._id);
     });
 
     setFilteredPatents(selectedPatents);
   };
+
+  // Get user's preferred patent authority from localStorage
+  useEffect(() => {
+    const preferredAuthority = localStorage.getItem('preferredPatentAuthority') || 'US WO EP GB FR DE CH JP RU SU';
+    // Split the string by spaces and filter out empty strings
+    const authorities = preferredAuthority.split(' ').filter(auth => auth.trim() !== '');
+    setPreferredPatentAuthorities(authorities);
+  }, []);
+
+  // Initialize with all patent IDs when modal opens
+  useEffect(() => {
+    if (isOpen && smartSearchResults?.hits?.hits) {
+      const allPatents = smartSearchResults.hits.hits.map((hit: any) => 
+        hit._source.publication_number || hit._id
+      );
+      setFilteredPatents(allPatents);
+    }
+  }, [isOpen, smartSearchResults]);
+
+  // Update filtered patents when filters change
+  useEffect(() => {
+    if (smartSearchResults && smartSearchResults.hits && smartSearchResults.hits.hits) {
+      filterPatents();
+    }
+  }, [selectedTypes, smartSearchResults, filterByFamily, preferredPatentAuthorities]);
+
+  // Save filtered patent IDs to Redux whenever they change
+  useEffect(() => {
+    dispatch(setFilters({ filteredPatentIds: filteredPatents }));
+  }, [filteredPatents, dispatch]);
+
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscKey);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
 
   // Handle filter type change
   const handleTypeChange = (type: 'grant' | 'application') => {
@@ -178,6 +212,11 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
                   onChange={(e) => setFilterByFamily(e.target.checked)}
                 />
                 Show one patent per family
+                {filterByFamily && (
+                  <span className="family-filter-note">
+                    (uses preferred patent authority from settings)
+                  </span>
+                )}
               </label>
             </div>
           </div>
