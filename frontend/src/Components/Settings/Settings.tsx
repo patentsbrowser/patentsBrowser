@@ -50,13 +50,6 @@ const Settings: React.FC<SettingsProps> = ({
     setSidebarBehavior(newBehavior);
   };
 
-  const handlePatentAuthorityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPreferredPatentAuthority(e.target.value);
-  };
-
-  const handleLanguageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPreferredLanguage(e.target.value);
-  };
 
   const handleSetToDefault = (setting: string) => {
     switch (setting) {

@@ -189,7 +189,8 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         setShowSmartSearchModal(true);
         onSearch(formattedIds);
         
-        // Don't set isLoading to false here, it will be handled when modal is closed or filter is applied
+        // Set loading to false after receiving results
+        setIsLoading(false);
       } else if (searchType === 'full' && selectedApi === 'unified') {
         // For full search with unified API - use direct search
         console.log("Making unified API full search call with", formattedIds);
@@ -516,31 +517,19 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     setSelectedPatent(summary);
     
     if (selectedApi === 'unified') {
-      const basePatentNumber = summary.details?.grant_number || summary.patentId;
+      // Use the original patentId directly without any formatting
+      const patentId = summary.patentId;
       
       // Check if we need to fetch full details and if we haven't already fetched them
-      // Add a flag to prevent repeat API calls
       if (!summary.details?.description || !summary.details?.claims || !summary.details?.figures) {
         // Add initialFetch flag to prevent repeat API calls
         if (!summary.initialFetch) {
-          let formattedId = basePatentNumber;
-          
-          if (/^\d+$/.test(basePatentNumber)) {
-            formattedId = `US-${basePatentNumber}-B2`;
-          } else if (/^[A-Z]{2}\d+$/.test(basePatentNumber)) {
-            const countryCode = basePatentNumber.substring(0, 2);
-            const number = basePatentNumber.substring(2);
-            formattedId = `${countryCode}-${number}-B2`;
-          } else if (!basePatentNumber.includes('-')) {
-            formattedId = formatPatentId(basePatentNumber, 'unified');
-          }
-
           // Set a marker that we've started fetching
           const updatedSummary = { ...summary, initialFetch: true };
           setSelectedPatent(updatedSummary);
 
           dispatch(fetchFullPatentDetails({ 
-            patentId: formattedId, 
+            patentId: patentId, 
             apiType: selectedApi 
           }));
         }
@@ -565,10 +554,111 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
       // For full search (not smart search), we can immediately process and display results
       if (!showSmartSearchModal && searchType === 'full') {
         console.log("Processing results for full search");
-        // Process the results and update UI
-        const hitsArray = smartSearchResults.hits.hits;
+        try {
+          // Process the results and update UI
+          const hitsArray = smartSearchResults.hits.hits;
+          
+          const patents = hitsArray.map((hit: any) => {
+            const source = hit._source;
+            return {
+              patentId: source?.ucid_spif?.[0] || source?.publication_number || hit._id || '',
+              status: 'success' as const,
+              title: source?.title || '',
+              abstract: source?.abstract || '',
+              details: {
+                assignee_current: source?.assignee_current || [],
+                assignee_original: source?.assignee_original || [],
+                assignee_parent: source?.assignee_parent || [],
+                priority_date: source?.priority_date || '',
+                publication_date: source?.publication_date || '',
+                grant_date: source?.grant_date || '',
+                expiration_date: source?.expiration_date || '',
+                application_date: source?.application_date || '',
+                application_number: source?.application_number || '',
+                grant_number: source?.grant_number || '',
+                publication_number: source?.publication_number || '',
+                publication_status: source?.publication_status || '',
+                publication_type: source?.publication_type || '',
+                type: source?.type || '',
+                country: source?.country || '',
+                kind_code: source?.kind_code || '',
+                inventors: source?.inventors || [],
+                examiner: source?.examiner || [],
+                law_firm: source?.law_firm || '',
+                cpc_codes: source?.cpc_codes || [],
+                uspc_codes: source?.uspc_codes || [],
+                num_cit_pat: source?.num_cit_pat || 0,
+                num_cit_npl: source?.num_cit_npl || 0,
+                num_cit_pat_forward: source?.num_cit_pat_forward || 0,
+                citations_pat_forward: source?.citations_pat_forward || [],
+                portfolio_score: source?.portfolio_score || 0,
+                litigation_score: source?.litigation_score || 0,
+                rating_broadness: source?.rating_broadness || '',
+                rating_citation: source?.rating_citation || '',
+                rating_litigation: source?.rating_litigation || '',
+                rating_validity: source?.rating_validity || '',
+                family_id: source?.family_id || '',
+                extended_family_id: source?.extended_family_id || '',
+                hyperlink_google: source?.hyperlink_google || '',
+                is_litigated: source?.is_litigated || 'false',
+                is_challenged: source?.is_challenged || 'false',
+                num_litigated: source?.num_litigated || 0,
+                num_challenged: source?.num_challenged || 0,
+                last_litigated_at: source?.last_litigated_at || null,
+                last_challenged_at: source?.last_challenged_at || null,
+                family_annuities: source?.family_annuities || 0,
+                norm_family_annuities: source?.norm_family_annuities || 0,
+                rnix_score: source?.rnix_score || 0
+              }
+            };
+          });
+          
+          setPatentSummaries(patents);
+        } catch (error) {
+          console.error('Error processing full search results:', error);
+          toast.error('Error processing search results');
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
+  }, [smartSearchResults, searchType, showSmartSearchModal]);
+
+  // Add effect to handle body scroll when modal is open
+  useEffect(() => {
+    if (selectedPatent) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [selectedPatent]);
+
+  // Add applyFilter function to update UI based on filtered results
+  const handleApplyFilter = async () => {
+    try {
+      if (smartSearchResults && smartSearchResults.hits && smartSearchResults.hits.hits) {
+        // Get the filtered patent IDs directly from Redux
+        const filteredPatentIds = filters.filteredPatentIds || [];
         
-        const patents = hitsArray.map((hit: any) => {
+        console.log(`Found ${filteredPatentIds.length} patents matching the filter criteria`);
+        
+        // Find the full patent data from the IDs
+        const filteredHits = smartSearchResults.hits.hits.filter((hit: any) => {
+          const hitId = hit._source.publication_number || hit._id;
+          return filteredPatentIds.includes(hitId);
+        });
+        
+        if (filteredHits.length === 0) {
+          toast.error('No patents match the selected filter criteria');
+          return;
+        }
+        
+        // Map the filtered hits to patent summaries
+        const patents = filteredHits.map((hit: any) => {
           const source = hit._source;
           return {
             patentId: source?.ucid_spif?.[0] || source?.publication_number || hit._id || '',
@@ -622,152 +712,45 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
             }
           };
         });
+
+        // Update Redux with the filtered patents
+        dispatch(setFilters({
+          showGrantPatents: selectedTypes.grant,
+          showApplicationPatents: selectedTypes.application,
+          filteredPatents: patents
+        }));
         
+        // Update local state with the filtered patents
         setPatentSummaries(patents);
-        setIsLoading(false);
-      }
-    }
-  }, [smartSearchResults, searchType, showSmartSearchModal]);
-
-  // Add effect to handle body scroll when modal is open
-  useEffect(() => {
-    if (selectedPatent) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [selectedPatent]);
-
-  // Add applyFilter function to update UI based on filtered results
-  const handleApplyFilter = async () => {
-    if (smartSearchResults && smartSearchResults.hits && smartSearchResults.hits.hits) {
-      // Get the filtered patent IDs directly from Redux
-      const filteredPatentIds = filters.filteredPatentIds || [];
-      
-      console.log(`Found ${filteredPatentIds.length} patents matching the filter criteria`);
-      
-      // Find the full patent data from the IDs
-      const filteredHits = smartSearchResults.hits.hits.filter((hit: any) => {
-        const hitId = hit._source.publication_number || hit._id;
-        return filteredPatentIds.includes(hitId);
-      });
-      
-      // Map the filtered hits to patent summaries
-      const patents = filteredHits.map((hit: any) => {
-        const source = hit._source;
-        return {
-          patentId: source?.ucid_spif?.[0] || source?.publication_number || hit._id || '',
-          status: 'success' as const,
-          title: source?.title || '',
-          abstract: source?.abstract || '',
-          details: {
-            assignee_current: source?.assignee_current || [],
-            assignee_original: source?.assignee_original || [],
-            assignee_parent: source?.assignee_parent || [],
-            priority_date: source?.priority_date || '',
-            publication_date: source?.publication_date || '',
-            grant_date: source?.grant_date || '',
-            expiration_date: source?.expiration_date || '',
-            application_date: source?.application_date || '',
-            application_number: source?.application_number || '',
-            grant_number: source?.grant_number || '',
-            publication_number: source?.publication_number || '',
-            publication_status: source?.publication_status || '',
-            publication_type: source?.publication_type || '',
-            type: source?.type || '',
-            country: source?.country || '',
-            kind_code: source?.kind_code || '',
-            inventors: source?.inventors || [],
-            examiner: source?.examiner || [],
-            law_firm: source?.law_firm || '',
-            cpc_codes: source?.cpc_codes || [],
-            uspc_codes: source?.uspc_codes || [],
-            num_cit_pat: source?.num_cit_pat || 0,
-            num_cit_npl: source?.num_cit_npl || 0,
-            num_cit_pat_forward: source?.num_cit_pat_forward || 0,
-            citations_pat_forward: source?.citations_pat_forward || [],
-            portfolio_score: source?.portfolio_score || 0,
-            litigation_score: source?.litigation_score || 0,
-            rating_broadness: source?.rating_broadness || '',
-            rating_citation: source?.rating_citation || '',
-            rating_litigation: source?.rating_litigation || '',
-            rating_validity: source?.rating_validity || '',
-            family_id: source?.family_id || '',
-            extended_family_id: source?.extended_family_id || '',
-            hyperlink_google: source?.hyperlink_google || '',
-            is_litigated: source?.is_litigated || 'false',
-            is_challenged: source?.is_challenged || 'false',
-            num_litigated: source?.num_litigated || 0,
-            num_challenged: source?.num_challenged || 0,
-            last_litigated_at: source?.last_litigated_at || null,
-            last_challenged_at: source?.last_challenged_at || null,
-            family_annuities: source?.family_annuities || 0,
-            norm_family_annuities: source?.norm_family_annuities || 0,
-            rnix_score: source?.rnix_score || 0
-          }
-        };
-      });
-
-      // Update Redux with the filtered patents
-      dispatch(setFilters({
-        showGrantPatents: selectedTypes.grant,
-        showApplicationPatents: selectedTypes.application,
-        filteredPatents: patents
-      }));
-      
-      // Update local state with the filtered patents
-      setPatentSummaries(patents);
-      setIsLoading(false);
-      
-      // Close the smart search modal
-      setShowSmartSearchModal(false);
-      
-      // Add patents to search history and create folder if needed
-      try {
-        const patentIds = patents.map((patent: PatentSummary) => patent.patentId);
         
-        // If there's only one patent, add it to search history directly
-        if (patentIds.length === 1) {
-          await authApi.addToSearchHistory(patentIds[0], 'search');
-          console.log(`Added single patent ${patentIds[0]} to search history`);
-        } 
-        // If there are multiple patents, create a folder to contain them
-        else if (patentIds.length > 1) {
-          // Generate a folder name with date and time
-          const folderName = `Patent Search ${new Date().toLocaleString()}`;
+        // Close the smart search modal
+        setShowSmartSearchModal(false);
+        
+        // Add patents to search history and create folder if needed
+        try {
+          const patentIds = patents.map((patent: PatentSummary) => patent.patentId);
           
-          // Create a custom patent list for multiple patents
-          await authApi.saveCustomPatentList(folderName, patentIds, 'search');
-          
-          // Also add individual patents to search history for tracking
-          for (const patentId of patentIds) {
-            await authApi.addToSearchHistory(patentId, 'search');
+          if (patentIds.length === 1) {
+            await authApi.addToSearchHistory(patentIds[0], 'search');
+          } else if (patentIds.length > 1) {
+            const folderName = `Patent Search ${new Date().toLocaleString()}`;
+            await authApi.saveCustomPatentList(folderName, patentIds, 'search');
+            for (const patentId of patentIds) {
+              await authApi.addToSearchHistory(patentId, 'search');
+            }
+            toast.success(`Created folder "${folderName}" with ${patentIds.length} patents`, { duration: 4000 });
           }
-          
-          console.log(`Created folder "${folderName}" with ${patentIds.length} patents`);
-          
-          // Show success message about folder creation
-          toast.success(
-            `Created folder "${folderName}" with ${patentIds.length} patents`, 
-            { duration: 4000 }
-          );
+        } catch (error) {
+          console.error("Error saving patents to history:", error);
         }
-      } catch (error) {
-        console.error("Error saving patents to history:", error);
-        toast.error("Failed to save search history");
+      } else {
+        toast.error('No search results available to filter');
       }
-      
-      // Show success message about filter
-      toast.success(
-        `Applied filter: Showing ${patents.length} results`, 
-        { duration: 4000 }
-      );
-    } else {
-      console.error("No smart search results available to filter");
+    } catch (error: any) {
+      console.error('Error applying filters:', error);
+      toast.error(`Error applying filters: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 

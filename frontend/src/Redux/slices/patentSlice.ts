@@ -162,8 +162,7 @@ export const fetchFullPatentDetails = createAsyncThunk(
           existingSelectedPatent.details && 
           existingSelectedPatent.details.description && 
           existingSelectedPatent.details.claims && 
-          existingSelectedPatent.details.claims.length &&
-          existingSelectedPatent.details.figures) {
+          existingSelectedPatent.details.claims.length) {
         
         console.log('Using existing selected patent details from state, skipping API call:', patentId);
         return existingSelectedPatent;
@@ -179,71 +178,76 @@ export const fetchFullPatentDetails = createAsyncThunk(
           existingPatent.details && 
           existingPatent.details.description && 
           existingPatent.details.claims && 
-          existingPatent.details.claims.length &&
-          existingPatent.details.figures) {
+          existingPatent.details.claims.length) {
         
         console.log('Using existing patent details from state, skipping API call:', patentId);
         return existingPatent;
       }
-      
-      // If it's a SerpAPI patent ID, check for existing data
-      if (apiType === 'serpapi') {
-        // If we already have basic patent info but no details, fetch those
-        if (existingPatent) {
-          console.log('Fetching SerpAPI patent details:', patentId);
-          const result = await patentApi.searchPatentsSerpApi(patentId);
-          const normalizedResult = normalizePatentResponse(result, 'serpapi');
-          
-          if (!normalizedResult) {
-            throw new Error('No data found for the provided patent ID');
-          }
-          
-          return normalizedResult;
-        }
-      }
-        
+
       // For Unified Patents API, fetch all required data in parallel
       console.log('Fetching Unified API patent details:', patentId);
-      const [fullLanguageData, figuresData, patentData] = await Promise.all([
-        patentApi.getFullLanguage(patentId),
-        patentApi.getFigures(patentId),
-        patentApi.searchPatentsUnified(patentId)
-      ]);
+      try {
+        // First get the basic patent data
+        const patentData = await patentApi.searchPatentsUnified(patentId);
+        
+        if (!patentData || !patentData._source) {
+          throw new Error('Failed to fetch patent data');
+        }
 
-      if (!patentData || !patentData._source) {
-        throw new Error('Failed to fetch patent data');
-      }
+        // Then get the full language data
+        const fullLanguageData = await patentApi.getFullLanguage(patentId);
+        
+        // Try to get figures data, but don't fail if it errors
+        let figuresData = [];
+        try {
+          figuresData = await patentApi.getFigures(patentId);
+        } catch (figuresError) {
+          console.warn('Failed to fetch figures data:', figuresError);
+          // Continue with empty figures array
+        }
 
-      // Transform claims data to match the expected format
-      const formattedClaims = (fullLanguageData?.claims || []).map((claim: any) => ({
-        description: claim.text || '',
-        text: claim.text || '',
-        ucid: claim.index || '',
-        children: claim.children || []
-      }));
+        // Transform claims data to match the expected format
+        const formattedClaims = (fullLanguageData?.claims || []).map((claim: any) => ({
+          description: claim.text || '',
+          text: claim.text || '',
+          ucid: claim.index || '',
+          children: claim.children || []
+        }));
 
-      return {
-        patentId,
-        title: patentData._source.title,
-        abstract: patentData._source.abstract,
-        description: fullLanguageData?.description || '',
-        claims: formattedClaims,
-        figures: figuresData || [],
-        familyMembers: patentData._source.family_members || [],
-        details: {
-          grant_number: patentData._source.grant_number,
-          expiration_date: patentData._source.expiration_date,
-          assignee_current: patentData._source.assignee_current,
-          type: patentData._source.type,
-          num_cit_pat: patentData._source.num_cit_pat,
+        return {
+          patentId, // Keep the original patentId in the response
+          title: patentData._source.title,
+          abstract: patentData._source.abstract,
           description: fullLanguageData?.description || '',
           claims: formattedClaims,
           figures: figuresData || [],
-          family_members: patentData._source.family_members || []
+          familyMembers: patentData._source.family_members || [],
+          details: {
+            grant_number: patentData._source.grant_number,
+            expiration_date: patentData._source.expiration_date,
+            assignee_current: patentData._source.assignee_current,
+            type: patentData._source.type,
+            num_cit_pat: patentData._source.num_cit_pat,
+            description: fullLanguageData?.description || '',
+            claims: formattedClaims,
+            figures: figuresData || [],
+            family_members: patentData._source.family_members || []
+          }
+        };
+      } catch (apiError: any) {
+        // Handle specific API errors
+        if (apiError.response?.status === 500) {
+          throw new Error(`Server error while fetching patent details. Please try again later.`);
+        } else if (apiError.response?.status === 404) {
+          throw new Error(`Patent details not found for ID: ${patentId}`);
+        } else if (apiError.response?.data?.message) {
+          throw new Error(apiError.response.data.message);
+        } else {
+          throw new Error(`Error fetching patent details: ${apiError.message}`);
         }
-      };
+      }
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch patent details');
+      return rejectWithValue(error.message || 'Failed to fetch patent details');
     }
   }
 );
