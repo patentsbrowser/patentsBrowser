@@ -115,14 +115,8 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
     const selectedPatents: string[] = [];
     
     familyGroups.forEach((patents) => {
-      // Try to find a US patent first
-      const usPatent = patents.find(p => p._source.country === 'US');
-      if (usPatent) {
-        selectedPatents.push(usPatent._source.publication_number || usPatent._id);
-      } else {
-        // If no US patent, just take the first one
-        selectedPatents.push(patents[0]._source.publication_number || patents[0]._id);
-      }
+      // Select the first patent in the family
+      selectedPatents.push(patents[0]._source.publication_number || patents[0]._id);
     });
 
     setFilteredPatents(selectedPatents);
@@ -183,7 +177,7 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
                   checked={filterByFamily}
                   onChange={(e) => setFilterByFamily(e.target.checked)}
                 />
-                Show one patent per family (prefer US)
+                Show one patent per family
               </label>
             </div>
           </div>

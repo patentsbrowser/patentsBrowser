@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 .settings-container {
   padding: 25px;
   max-width: 900px;
@@ -17,6 +19,13 @@
       color: var(--text-color, #333);
       margin-bottom: 20px;
       font-size: 1.3rem;
+    }
+
+    .section-header {
+      border-bottom: 1px solid var(--border-color, #eee);
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+      font-weight: 500;
     }
 
     .setting-option {
@@ -91,6 +100,140 @@
         margin-top: 10px;
         font-style: italic;
       }
+
+      .setting-input-control {
+        width: 100%;
+        max-width: 300px;
+        
+        .settings-dropdown {
+          width: 100%;
+          padding: 10px;
+          border-radius: 5px;
+          border: 1px solid var(--border-color, #ddd);
+          background-color: var(--primary-bg, #fff);
+          color: var(--text-color, #333);
+          font-size: 0.95rem;
+          
+          &:focus {
+            outline: none;
+            border-color: var(--accent-color, #4caf50);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+          }
+        }
+      }
+
+      .setting-input-with-action {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        
+        .settings-text-input {
+          flex: 1;
+          max-width: 300px;
+          padding: 10px;
+          border-radius: 5px;
+          border: 1px solid var(--border-color, #ddd);
+          background-color: var(--primary-bg, #fff);
+          color: var(--text-color, #333);
+          font-size: 0.95rem;
+          
+          &:focus {
+            outline: none;
+            border-color: var(--accent-color, #4caf50);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+          }
+        }
+        
+        .default-button {
+          padding: 8px 12px;
+          background-color: transparent;
+          border: 1px solid var(--border-color, #ddd);
+          border-radius: 5px;
+          color: var(--text-color, #333);
+          cursor: pointer;
+          font-size: 0.85rem;
+          white-space: nowrap;
+          
+          &:hover {
+            background-color: rgba(0, 0, 0, 0.03);
+          }
+        }
+      }
+
+      .radio-group {
+        display: flex;
+        gap: 25px;
+        margin-top: 5px;
+        
+        .radio-label {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          
+          input[type="radio"] {
+            margin: 0;
+            cursor: pointer;
+            accent-color: var(--accent-color, #4caf50);
+          }
+        }
+      }
+    }
+  }
+
+  .settings-action-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color, #eee);
+    
+    .restore-button {
+      padding: 10px 15px;
+      background-color: transparent;
+      border: 1px solid var(--border-color, #ddd);
+      border-radius: 5px;
+      color: var(--text-color, #333);
+      cursor: pointer;
+      font-size: 0.9rem;
+      
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.03);
+      }
+    }
+    
+    .action-right-buttons {
+      display: flex;
+      gap: 15px;
+      
+      button {
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+      
+      .confirm-button {
+        background-color: var(--accent-color, #4caf50);
+        border: 1px solid var(--accent-color, #4caf50);
+        color: white;
+        
+        &:hover {
+          background-color: color.adjust(#4caf50, $lightness: -5%);
+        }
+      }
+      
+      .cancel-button {
+        background-color: transparent;
+        border: 1px solid var(--border-color, #ddd);
+        color: var(--text-color, #333);
+        
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.03);
+        }
+      }
     }
   }
 
@@ -164,6 +307,66 @@
           
           &:hover:not(.active) {
             background-color: rgba(255, 255, 255, 0.05);
+          }
+        }
+      }
+
+      .setting-input-control {
+        .settings-dropdown {
+          background-color: rgba(0, 0, 0, 0.2);
+          border-color: rgba(255, 255, 255, 0.1);
+          color: rgba(255, 255, 255, 0.9);
+          
+          &:focus {
+            border-color: var(--accent-color, #4caf50);
+          }
+        }
+      }
+
+      .setting-input-with-action {
+        .settings-text-input {
+          background-color: rgba(0, 0, 0, 0.2);
+          border-color: rgba(255, 255, 255, 0.1);
+          color: rgba(255, 255, 255, 0.9);
+          
+          &:focus {
+            border-color: var(--accent-color, #4caf50);
+          }
+        }
+        
+        .default-button {
+          background-color: rgba(255, 255, 255, 0.05);
+          border-color: rgba(255, 255, 255, 0.1);
+          color: rgba(255, 255, 255, 0.8);
+          
+          &:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+          }
+        }
+      }
+    }
+
+    .settings-action-buttons {
+      border-top-color: rgba(255, 255, 255, 0.1);
+      
+      .restore-button {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.8);
+        
+        &:hover {
+          background-color: rgba(255, 255, 255, 0.1);
+        }
+      }
+      
+      .action-right-buttons {
+        .cancel-button {
+          background-color: rgba(255, 255, 255, 0.05);
+          border-color: rgba(255, 255, 255, 0.1);
+          color: rgba(255, 255, 255, 0.8);
+          
+          &:hover {
+            background-color: rgba(255, 255, 255, 0.1);
           }
         }
       }
