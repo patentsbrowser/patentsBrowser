@@ -14,6 +14,7 @@ interface SmartSearchModalProps {
   setSelectedTypes: (types: { grant: boolean; application: boolean }) => void;
   filterByFamily: boolean;
   setFilterByFamily: (value: boolean) => void;
+  notFoundPatents: string[];
 }
 
 const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
@@ -23,7 +24,8 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
   selectedTypes,
   setSelectedTypes,
   filterByFamily,
-  setFilterByFamily
+  setFilterByFamily,
+  notFoundPatents
 }) => {
   const [filteredPatents, setFilteredPatents] = useState<string[]>([]);
   const [preferredPatentAuthorities, setPreferredPatentAuthorities] = useState<string[]>([]);
@@ -183,56 +185,76 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
           <button className="close-button" onClick={onClose}>×</button>
         </div>
         
-        <div className="modal-content">
-          <div className="filter-options">
-            <h4>Filter Options</h4>
-            <div className="filter-controls">
-              <label className="filter-label">
-                <input
-                  type="checkbox"
-                  checked={selectedTypes.grant}
-                  onChange={() => handleTypeChange('grant')}
-                />
-                Grant Patents
-              </label>
-              <label className="filter-label">
-                <input
-                  type="checkbox"
-                  checked={selectedTypes.application}
-                  onChange={() => handleTypeChange('application')}
-                />
-                Application Patents
-              </label>
-            </div>
-            <div className="filter-controls" style={{ marginTop: '16px' }}>
-              <label className="filter-label">
-                <input
-                  type="checkbox"
-                  checked={filterByFamily}
-                  onChange={(e) => setFilterByFamily(e.target.checked)}
-                />
-                Show one patent per family
-                {filterByFamily && (
-                  <span className="family-filter-note">
-                    (uses preferred patent authority from settings)
-                  </span>
-                )}
-              </label>
-            </div>
-          </div>
-          
-          <div className="patent-list">
-            {filteredPatents.length === 0 ? (
-              <div className="no-results">
-                <p>No patents found matching the selected filter criteria.</p>
+        <div className="modal-body">
+          <div className="modal-main">
+            <div className="modal-content">
+              <div className="filter-options">
+                <h4>Filter Options</h4>
+                <div className="filter-controls">
+                  <label className="filter-label">
+                    <input
+                      type="checkbox"
+                      checked={selectedTypes.grant}
+                      onChange={() => handleTypeChange('grant')}
+                    />
+                    Grant Patents
+                  </label>
+                  <label className="filter-label">
+                    <input
+                      type="checkbox"
+                      checked={selectedTypes.application}
+                      onChange={() => handleTypeChange('application')}
+                    />
+                    Application Patents
+                  </label>
+                </div>
+                <div className="filter-controls" style={{ marginTop: '16px' }}>
+                  <label className="filter-label">
+                    <input
+                      type="checkbox"
+                      checked={filterByFamily}
+                      onChange={(e) => setFilterByFamily(e.target.checked)}
+                    />
+                    Show one patent per family
+                    {filterByFamily && (
+                      <span className="family-filter-note">
+                        (uses preferred patent authority from settings)
+                      </span>
+                    )}
+                  </label>
+                </div>
               </div>
-            ) : (
-              <div className="patents-grid">
-                {filteredPatents.map((patentId) => (
-                  <div key={patentId} className="patent-card">
-                    <div className="patent-id">{patentId}</div>
+              
+              <div className="patents-section">
+                {filteredPatents.length === 0 ? (
+                  <div className="no-results">
+                    <p>No patents found matching the selected filter criteria.</p>
                   </div>
-                ))}
+                ) : (
+                  <div className="patents-grid">
+                    {filteredPatents.map((patentId) => (
+                      <div key={patentId} className="patent-card">
+                        <div className="patent-id">{patentId}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {notFoundPatents.length > 0 && (
+              <div className="not-found-container">
+                <div className="not-found-header">
+                  <h4>Not Found</h4>
+                  <span className="not-found-count">({notFoundPatents.length})</span>
+                </div>
+                <div className="not-found-list">
+                  {notFoundPatents.map((patentId) => (
+                    <div key={patentId} className="not-found-item">
+                      {patentId}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

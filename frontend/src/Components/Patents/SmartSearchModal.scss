@@ -33,7 +33,7 @@
   background-color: var(--bg-color, #1e1e1e);
   border-radius: 8px;
   width: 90%;
-  max-width: 840px;
+  max-width: 1100px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -46,6 +46,18 @@
 @keyframes slideIn {
   from { transform: translateY(-20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.modal-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
 }
 
 .modal-header {
@@ -91,8 +103,143 @@
 .modal-content {
   padding: 20px 24px;
   overflow-y: auto;
-  flex-grow: 1;
+  flex: 1;
   background-color: var(--bg-color, #1e1e1e);
+  border-right: 1px solid var(--border-color, #333);
+}
+
+.patents-section {
+  margin-top: 20px;
+}
+
+.patents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  padding-right: 8px;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: var(--bg-color, #1e1e1e);
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--border-color, #555);
+    border-radius: 4px;
+  }
+}
+
+.patent-card {
+  border: 1px solid var(--border-color, #333);
+  border-radius: 6px;
+  padding: 12px;
+  background-color: var(--bg-secondary, #252525);
+  transition: all 0.15s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent-color, #c77dff);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .patent-id {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--accent-color, #c77dff);
+  }
+}
+
+.not-found-container {
+  width: 280px;
+  flex-shrink: 0;
+  background-color: var(--bg-secondary, #252525);
+  padding: 16px;
+  overflow-y: auto;
+
+  .not-found-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 107, 107, 0.2);
+
+    h4 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #ff6b6b;
+    }
+
+    .not-found-count {
+      color: rgba(255, 107, 107, 0.7);
+      font-size: 0.9rem;
+    }
+  }
+}
+
+.not-found-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.not-found-item {
+  padding: 8px 12px;
+  background-color: rgba(255, 107, 107, 0.05);
+  border: 1px solid rgba(255, 107, 107, 0.2);
+  border-radius: 4px;
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background-color: rgba(255, 107, 107, 0.1);
+  }
+}
+
+.results-container {
+  display: flex;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.found-patents-section {
+  flex: 1;
+  min-width: 0; // Prevent flex item from overflowing
+}
+
+.not-found-section {
+  width: 280px;
+  flex-shrink: 0;
+  background-color: rgba(255, 107, 107, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 107, 107, 0.2);
+  padding: 16px;
+  align-self: flex-start;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.section-title {
+  margin: 0 0 16px 0;
+  font-size: 1rem;
+  font-weight: 500;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color, #333);
+}
+
+.found-patents-section .section-title {
+  color: var(--text-color, #e0e0e0);
+}
+
+.not-found-section .section-title {
+  color: #ff6b6b;
+  border-bottom-color: rgba(255, 107, 107, 0.2);
 }
 
 .filter-options {
@@ -378,6 +525,22 @@
   .modal-footer button {
     padding: 8px 16px;
     font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-main {
+    flex-direction: column;
+  }
+
+  .modal-content {
+    border-right: none;
+    border-bottom: 1px solid var(--border-color, #333);
+  }
+
+  .not-found-container {
+    width: 100%;
+    max-height: 200px;
   }
 }
 

@@ -38,6 +38,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
   const [selectedFilter, setSelectedFilter] = useState<'grant' | 'application'>('grant');
   const [selectedTypes, setSelectedTypes] = useState({ grant: true, application: true });
   const [filterByFamily, setFilterByFamily] = useState(true);
+  const [notFoundPatents, setNotFoundPatents] = useState<string[]>([]);
   
   const dispatch = useAppDispatch();
   const { filters, smartSearchResults } = useAppSelector((state: RootState) => state.patents);
@@ -153,6 +154,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
   const handlePerformSearch = async (idsToSearch: string[]) => {
     // Clear previous results when starting a new search
     setPatentSummaries([]);
+    setNotFoundPatents([]); // Clear previous not found patents
     setIsLoading(true);
     
     // Format the IDs before searching
@@ -184,8 +186,14 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         // Store in Redux
         dispatch(setSmartSearchResults(result));
         
+        // Track not found patents
+        if (result?.hits?.hits) {
+          const foundPatents = new Set(result.hits.hits.map((hit: any) => hit._id));
+          const notFound = formattedIds.filter(id => !foundPatents.has(id));
+          setNotFoundPatents(notFound);
+        }
+        
         // For smart search, open modal and wait for user to select filters
-        // Important: Don't set patentSummaries yet, they will be set when user applies filter
         setShowSmartSearchModal(true);
         onSearch(formattedIds);
         
@@ -857,6 +865,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         setSelectedTypes={setSelectedTypes}
         filterByFamily={filterByFamily}
         setFilterByFamily={setFilterByFamily}
+        notFoundPatents={notFoundPatents}
       />
     </div>
   );
