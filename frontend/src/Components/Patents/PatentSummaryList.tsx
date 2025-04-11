@@ -5,6 +5,8 @@ import Loader from '../Common/Loader';
 import PatentSummaryCard from './PatentSummaryCard';
 import { ApiSource } from '../../api/patents';
 import { useAppSelector } from '../../Redux/hooks';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTimes } from '@fortawesome/free-solid-svg-icons';
 
 interface PatentSummaryListProps {
   patentSummaries: PatentSummary[];
@@ -14,6 +16,7 @@ interface PatentSummaryListProps {
   onPatentSelect: (patentId: string) => void;
   formatDate: (date: string | undefined) => string;
   apiSource: ApiSource;
+  onClearResults: () => void;
 }
 
 const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
@@ -23,7 +26,8 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
   onViewDetails,
   onPatentSelect,
   formatDate,
-  apiSource
+  apiSource,
+  onClearResults
 }) => {
   const { isLoading } = useAppSelector((state) => state.patents);
 
@@ -31,7 +35,16 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
 
   return (
     <div className="patent-summaries">
-      <h3>Patent Search Results</h3>
+      <div className="summaries-header">
+        <h3>Patent Search Results</h3>
+        <button 
+          className="clear-results-button"
+          onClick={onClearResults}
+          aria-label="Clear results"
+        >
+          <FontAwesomeIcon icon={faTimes} />
+        </button>
+      </div>
       <div className="summaries-grid">
         {patentSummaries?.map((summary) => (
           <PatentSummaryCard

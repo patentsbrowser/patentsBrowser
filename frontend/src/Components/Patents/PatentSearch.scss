@@ -338,9 +338,38 @@
 .patent-summaries {
   margin-top: 2rem;
 
-  h3 {
-    color: var(--text-color);
+  .summaries-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 1rem;
+
+    h3 {
+      color: var(--text-color);
+      margin: 0;
+    }
+
+    .clear-results-button {
+      background: none;
+      border: none;
+      color: var(--text-color);
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: var(--border-color);
+        color: var(--error-color);
+      }
+
+      svg {
+        font-size: 1.2rem;
+      }
+    }
   }
 
   .summaries-grid {

@@ -961,9 +961,16 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     }
   };
 
+  const handleClearResults = () => {
+    setPatentSummaries([]);
+    setSelectedPatent(null);
+    setSearchQuery('');
+    setPatentIds([]);
+  };
+
   return (
     <div className="patent-search">
-      {!selectedPatent && (
+      {!selectedPatent && patentSummaries.length === 0 && (
         <>
           <h2>Patent Search</h2>
           <PatentSearchForm
@@ -1009,6 +1016,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
           onPatentSelect={handlePatentSelect}
           formatDate={formatDate}
           apiSource={selectedApi}
+          onClearResults={handleClearResults}
         />
       )}
 
