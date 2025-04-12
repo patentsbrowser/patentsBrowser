@@ -837,9 +837,9 @@ export const clearSearchHistory = async (req: AuthRequest, res: Response) => {
 
 export const addToSearchHistory = async (req: AuthRequest, res: Response) => {
   try {
-    const { patentId, patentIds, source } = req.body;
+    const { patentId, source } = req.body;
     
-    console.log('Adding to search history:', { patentId, patentIds, source });
+    console.log('Adding to search history:', { patentId, source });
     
     // Check if userId is present
     const userId = req.user?.userId;
@@ -853,83 +853,47 @@ export const addToSearchHistory = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Determine which patents to process
-    let idsToProcess: string[] = [];
-    
-    // Handle both single patentId and array of patentIds
-    if (patentId) {
-      if (typeof patentId === 'string') {
-        idsToProcess.push(patentId);
-      } else {
-        return res.status(400).json({
-          statusCode: 400,
-          message: 'patentId must be a string',
-          data: null,
-          code: 'INVALID_REQUEST'
-        });
-      }
-    } else if (patentIds) {
-      if (Array.isArray(patentIds)) {
-        if (patentIds.length === 0) {
-          return res.status(400).json({
-            statusCode: 400,
-            message: 'patentIds array must not be empty',
-            data: null,
-            code: 'INVALID_REQUEST'
-          });
-        }
-        idsToProcess = patentIds;
-      } else {
-        return res.status(400).json({
-          statusCode: 400,
-          message: 'patentIds must be an array',
-          data: null,
-          code: 'INVALID_REQUEST'
-        });
-      }
-    } else {
+    // Validate patentId
+    if (!patentId) {
       return res.status(400).json({
         statusCode: 400,
-        message: 'Either patentId or patentIds is required',
+        message: 'patentId is required',
+        data: null,
+        code: 'INVALID_REQUEST'
+      });
+    }
+    
+    if (typeof patentId !== 'string') {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'patentId must be a string',
         data: null,
         code: 'INVALID_REQUEST'
       });
     }
 
-    // Standardize patent IDs (remove hyphens)
-    const standardizedPatentIds = idsToProcess.map(id => id.replace(/-/g, ''));
-    console.log('Standardized patent IDs:', standardizedPatentIds);
+    // Standardize patent ID (remove hyphens)
+    const standardizedPatentId = patentId.replace(/-/g, '');
+    console.log('Standardized patent ID:', standardizedPatentId);
 
-    // Use bulkWrite with upsert to handle duplicates
-    const bulkOperations = standardizedPatentIds.map(patentId => ({
-      updateOne: {
-        filter: { userId, patentId },
-        update: { 
-          $set: { 
-            source: source || 'manual',
-            timestamp: new Date()
-          }
-        },
-        upsert: true
-      }
-    }));
+    // Use findOneAndUpdate with upsert to handle duplicates
+    const result = await SearchHistory.findOneAndUpdate(
+      { userId, patentId: standardizedPatentId },
+      { 
+        $set: { 
+          source: source || 'manual',
+          timestamp: new Date()
+        }
+      },
+      { upsert: true, new: true }
+    );
 
-    const result = await SearchHistory.bulkWrite(bulkOperations);
-    console.log('Search history entries saved:', {
-      insertedCount: result.insertedCount,
-      modifiedCount: result.modifiedCount,
-      upsertedCount: result.upsertedCount
-    });
+    console.log('Search history entry saved:', result);
 
     res.status(201).json({
       statusCode: 201,
-      message: 'Search history entries added successfully',
-      data: {
-        insertedCount: result.insertedCount,
-        modifiedCount: result.modifiedCount,
-        upsertedCount: result.upsertedCount,
-        totalProcessed: standardizedPatentIds.length
-      },
+      message: 'Search history entry added successfully',
+      data: result,
       code: 'SUCCESS'
     });
   } catch (error: any) {

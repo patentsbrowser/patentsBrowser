@@ -319,7 +319,7 @@ export const authApi = {
     }
   },
 
-  addToSearchHistory: async (patentId: string | string[], source?: string) => {
+  addToSearchHistory: async (patentId: string, source?: string) => {
     try {
       console.log('Adding to search history:', {
         patentId,
@@ -327,26 +327,13 @@ export const authApi = {
         token: localStorage.getItem('token')
       });
       
-      // Determine if we're sending a single ID or an array
-      if (Array.isArray(patentId)) {
-        // Send as patentIds array
-        const response = await axiosInstance.post(`/saved-patents/search-history`, { 
-          patentIds: patentId, 
-          source 
-        });
-        
-        console.log('Search history response (array):', response.data);
-        return response.data;
-      } else {
-        // Send as single patentId
-        const response = await axiosInstance.post(`/saved-patents/search-history`, { 
-          patentId, 
-          source 
-        });
-        
-        console.log('Search history response (single):', response.data);
-        return response.data;
-      }
+      const response = await axiosInstance.post(`/saved-patents/search-history`, { 
+        patentId, 
+        source 
+      });
+      
+      console.log('Search history response:', response.data);
+      return response.data;
     } catch (error: any) {
       console.error('Error adding to search history:', {
         message: error.message,

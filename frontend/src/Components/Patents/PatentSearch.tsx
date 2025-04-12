@@ -323,12 +323,15 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
             
             setPatentSummaries(patents);
             
-            // Add patents to search history as a batch
+            // Add patents to search history and create folder if needed
             try {
               const patentIds = patents.map((patent: PatentSummary) => patent.patentId);
               
               if (patentIds.length > 0) {
-                await authApi.addToSearchHistory(patentIds, 'direct_search');
+                // Add each patent to search history individually
+                for (const patentId of patentIds) {
+                  await authApi.addToSearchHistory(patentId, 'direct_search');
+                }
                 console.log(`Added ${patentIds.length} patents to search history`);
                 
                 // If there are multiple patents, create a folder to contain them
@@ -375,14 +378,17 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         setPatentSummaries(searchResults);
         onSearch(formattedIds);
         
-        // Add patents to search history as a batch
+        // Add patents to search history and create folder if needed
         try {
           // Filter out error results
           const successfulPatents = searchResults.filter(result => result.status === 'success');
           const patentIds = successfulPatents.map(patent => patent.patentId);
           
           if (patentIds.length > 0) {
-            await authApi.addToSearchHistory(patentIds, 'other_api');
+            // Add each patent to search history individually
+            for (const patentId of patentIds) {
+              await authApi.addToSearchHistory(patentId, 'other_api');
+            }
             console.log(`Added ${patentIds.length} patents to search history`);
             
             // If there are multiple patents, create a folder to contain them
@@ -778,12 +784,15 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         // Close the smart search modal
         setShowSmartSearchModal(false);
         
-        // Add patents to search history as a batch
+        // Add patents to search history and create folder if needed
         try {
           const patentIds = patents.map((patent: PatentSummary) => patent.patentId);
           
           if (patentIds.length > 0) {
-            await authApi.addToSearchHistory(patentIds, 'search');
+            // Add each patent to search history individually
+            for (const patentId of patentIds) {
+              await authApi.addToSearchHistory(patentId, 'search');
+            }
             console.log(`Added ${patentIds.length} patents to search history`);
             
             // If there are multiple patents, create a folder to contain them
