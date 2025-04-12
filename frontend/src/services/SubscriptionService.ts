@@ -154,8 +154,17 @@ export const verifyUpiPayment = async (transactionId: string) => {
     
     debugLog('Payment verification response:', response.data);
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error verifying UPI payment:', error);
+    
+    // Properly propagate the backend error message
+    if (error.response?.data) {
+      throw {
+        ...error,
+        message: error.response.data.message || 'Payment verification failed'
+      };
+    }
+    
     throw error;
   }
 };

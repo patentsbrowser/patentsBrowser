@@ -180,6 +180,18 @@ export const verifyUpiPayment = async (req: Request, res: Response) => {
       });
     }
     
+    // Check if transaction ID has already been used in any subscription
+    const existingTransaction = await Subscription.findOne({ 
+      upiTransactionRef: transactionId 
+    });
+    
+    if (existingTransaction) {
+      return res.status(400).json({
+        success: false,
+        message: 'This transaction ID has already been used'
+      });
+    }
+    
     // Find user's pending subscription
     const subscription = await Subscription.findOne({ 
       userId, 
@@ -194,30 +206,67 @@ export const verifyUpiPayment = async (req: Request, res: Response) => {
     }
     
     // In a real-world scenario, you would verify the transaction with your bank or UPI provider here
-    // For now, we'll just accept any transaction ID
+    // For demonstration, we'll implement a simple verification
     
-    // Update subscription status
-    subscription.status = SubscriptionStatus.ACTIVE;
-    subscription.upiTransactionRef = transactionId;
-    await subscription.save();
+    // Optional: Validate transaction ID format (assuming UPI transaction IDs have a specific format)
+    const transactionIdRegex = /^[A-Za-z0-9]{10,25}$/;
+    if (!transactionIdRegex.test(transactionId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid transaction ID format'
+      });
+    }
     
-    // Update user's subscription status
-    await User.findByIdAndUpdate(userId, { 
-      subscriptionStatus: 'paid',
-      subscriptionEnd: subscription.endDate
-    });
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Subscription activated successfully',
-      data: {
-        subscriptionId: subscription._id,
-        plan: subscription.plan,
-        status: subscription.status,
-        startDate: subscription.startDate,
-        endDate: subscription.endDate
+    // Make an API call to your payment gateway to verify the transaction
+    // This is a placeholder - you need to replace with actual payment gateway API call
+    try {
+      // In production, you would call your payment gateway API here:
+      // const verificationResult = await paymentGateway.verifyTransaction(transactionId, subscription.upiOrderId);
+      
+      // For now, we'll simulate a successful verification
+      const verificationResult = {
+        success: true,
+        verified: true,
+        amount: 0, // In production, you would verify this matches the plan price
+        // Add other verification fields as needed
+      };
+      
+      if (!verificationResult.verified) {
+        return res.status(400).json({
+          success: false,
+          message: 'Payment verification failed. Transaction ID is invalid.'
+        });
       }
-    });
+      
+      // Update subscription status
+      subscription.status = SubscriptionStatus.ACTIVE;
+      subscription.upiTransactionRef = transactionId;
+      await subscription.save();
+      
+      // Update user's subscription status
+      await User.findByIdAndUpdate(userId, { 
+        subscriptionStatus: 'paid',
+        subscriptionEnd: subscription.endDate
+      });
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Subscription activated successfully',
+        data: {
+          subscriptionId: subscription._id,
+          plan: subscription.plan,
+          status: subscription.status,
+          startDate: subscription.startDate,
+          endDate: subscription.endDate
+        }
+      });
+    } catch (verificationError) {
+      console.error('Error verifying payment with gateway:', verificationError);
+      return res.status(400).json({
+        success: false,
+        message: 'Failed to verify payment with payment gateway'
+      });
+    }
   } catch (error) {
     console.error('Error verifying UPI payment:', error);
     return res.status(500).json({

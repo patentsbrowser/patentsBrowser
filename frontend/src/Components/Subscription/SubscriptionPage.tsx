@@ -104,6 +104,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
       toast.error('Please enter your UPI Transaction ID');
       return;
     }
+
+    // Basic validation for transaction ID format
+    const transactionIdRegex = /^[A-Za-z0-9]{10,25}$/;
+    if (!transactionIdRegex.test(transactionId.trim())) {
+      toast.error('Please enter a valid UPI transaction reference ID (10-25 alphanumeric characters)');
+      return;
+    }
     
     setIsSubmitting(true);
     setPaymentStep('verifying');
@@ -123,9 +130,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
         setIsSubmitting(false);
         setPaymentStep('ready');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error verifying payment:', error);
-      toast.error('Failed to verify payment. Please try again or contact support.');
+      
+      // Display the specific error message from the backend if available
+      const errorMessage = error.response?.data?.message || 
+                           'Failed to verify payment. Please try again or contact support.';
+      
+      toast.error(errorMessage);
       setIsSubmitting(false);
       setPaymentStep('ready');
     }
