@@ -290,10 +290,13 @@ export const authApi = {
     }
   },
 
-  addToSearchHistory: async (patentId: string, source?: string) => {
+  addToSearchHistory: async (patentIds: string | string[], source?: string) => {
     try {
+      // Convert single patentId to array if needed
+      const idsArray = Array.isArray(patentIds) ? patentIds : [patentIds];
+      
       const response = await axiosInstance.post(`/saved-patents/search-history`, { 
-        patentId, 
+        patentIds: idsArray, 
         source 
       });
       return response.data;

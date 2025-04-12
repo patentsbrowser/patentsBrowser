@@ -1,8 +1,13 @@
 import express from 'express';
-import { searchPatents } from '../controllers/patentController.js';
+import { searchPatents, searchMultiplePatents } from '../controllers/patentController.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.get('/search', searchPatents);
+// Search patents with pagination
+router.get('/search', authenticateToken, searchPatents);
+
+// Search multiple patents with pagination
+router.post('/search-multiple', authenticateToken, searchMultiplePatents);
 
 export default router; 

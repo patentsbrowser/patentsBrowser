@@ -327,31 +327,27 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
             try {
               const patentIds = patents.map((patent: PatentSummary) => patent.patentId);
               
-              // If there's only one patent, add it to search history directly
-              if (patentIds.length === 1) {
-                await authApi.addToSearchHistory(patentIds[0], 'direct_search');
-                console.log(`Added single patent ${patentIds[0]} to search history`);
-              } 
-              // If there are multiple patents, create a folder to contain them
-              else if (patentIds.length > 1) {
-                // Generate a folder name with date and time
-                const folderName = `Direct Search ${new Date().toLocaleString()}`;
+              if (patentIds.length > 0) {
+                // Add all patents to search history in one batch
+                await authApi.addToSearchHistory(patentIds, 'direct_search');
+                console.log(`Added ${patentIds.length} patents to search history`);
                 
-                // Create a custom patent list for multiple patents
-                await authApi.saveCustomPatentList(folderName, patentIds, 'direct_search');
-                
-                // Also add individual patents to search history for tracking
-                for (const patentId of patentIds) {
-                  await authApi.addToSearchHistory(patentId, 'direct_search');
+                // If there are multiple patents, create a folder to contain them
+                if (patentIds.length > 1) {
+                  // Generate a folder name with date and time
+                  const folderName = `Direct Search ${new Date().toLocaleString()}`;
+                  
+                  // Create a custom patent list for multiple patents
+                  await authApi.saveCustomPatentList(folderName, patentIds, 'direct_search');
+                  
+                  console.log(`Created folder "${folderName}" with ${patentIds.length} patents`);
+                  
+                  // Show success message about folder creation
+                  toast.success(
+                    `Created folder "${folderName}" with ${patentIds.length} patents`, 
+                    { duration: 4000 }
+                  );
                 }
-                
-                console.log(`Created folder "${folderName}" with ${patentIds.length} patents`);
-                
-                // Show success message about folder creation
-                toast.success(
-                  `Created folder "${folderName}" with ${patentIds.length} patents`, 
-                  { duration: 4000 }
-                );
               }
             } catch (error) {
               console.error("Error saving patents to history:", error);
@@ -387,23 +383,17 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
           const patentIds = successfulPatents.map(patent => patent.patentId);
           
           if (patentIds.length > 0) {
-            // If there's only one patent, add it to search history directly
-            if (patentIds.length === 1) {
-              await authApi.addToSearchHistory(patentIds[0], 'other_api');
-              console.log(`Added single patent ${patentIds[0]} to search history`);
-            } 
+            // Add all patents to search history in one batch
+            await authApi.addToSearchHistory(patentIds, 'other_api');
+            console.log(`Added ${patentIds.length} patents to search history`);
+            
             // If there are multiple patents, create a folder to contain them
-            else if (patentIds.length > 1) {
+            if (patentIds.length > 1) {
               // Generate a folder name with date and time
               const folderName = `Search Results ${new Date().toLocaleString()}`;
               
               // Create a custom patent list for multiple patents
               await authApi.saveCustomPatentList(folderName, patentIds, 'other_api');
-              
-              // Also add individual patents to search history for tracking
-              for (const patentId of patentIds) {
-                await authApi.addToSearchHistory(patentId, 'other_api');
-              }
               
               console.log(`Created folder "${folderName}" with ${patentIds.length} patents`);
               
@@ -794,15 +784,27 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         try {
           const patentIds = patents.map((patent: PatentSummary) => patent.patentId);
           
-          if (patentIds.length === 1) {
-            await authApi.addToSearchHistory(patentIds[0], 'search');
-          } else if (patentIds.length > 1) {
-            const folderName = `Patent Search ${new Date().toLocaleString()}`;
-            await authApi.saveCustomPatentList(folderName, patentIds, 'search');
-            for (const patentId of patentIds) {
-              await authApi.addToSearchHistory(patentId, 'search');
+          if (patentIds.length > 0) {
+            // Add all patents to search history in one batch
+            await authApi.addToSearchHistory(patentIds, 'search');
+            console.log(`Added ${patentIds.length} patents to search history`);
+            
+            // If there are multiple patents, create a folder to contain them
+            if (patentIds.length > 1) {
+              // Generate a folder name with date and time
+              const folderName = `Patent Search ${new Date().toLocaleString()}`;
+              
+              // Create a custom patent list for multiple patents
+              await authApi.saveCustomPatentList(folderName, patentIds, 'search');
+              
+              console.log(`Created folder "${folderName}" with ${patentIds.length} patents`);
+              
+              // Show success message about folder creation
+              toast.success(
+                `Created folder "${folderName}" with ${patentIds.length} patents`, 
+                { duration: 4000 }
+              );
             }
-            toast.success(`Created folder "${folderName}" with ${patentIds.length} patents`, { duration: 4000 });
           }
         } catch (error) {
           console.error("Error saving patents to history:", error);

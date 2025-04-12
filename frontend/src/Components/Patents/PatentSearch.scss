@@ -372,6 +372,63 @@
     }
   }
 
+  .pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding: 1rem;
+    background-color: var(--secondary-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+
+    .pagination-button {
+      background: none;
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+
+      &:hover:not(:disabled) {
+        background-color: var(--accent-color);
+        color: white;
+        border-color: var(--accent-color);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      svg {
+        font-size: 1rem;
+      }
+    }
+
+    .page-info {
+      color: var(--text-color);
+      font-size: 0.9rem;
+      min-width: 100px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+
+      .total-results {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        font-style: italic;
+      }
+    }
+  }
+
   .summaries-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));

@@ -39,6 +39,7 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
   const { selectedPatent, isLoading, error } = useAppSelector((state) => state.patents);
   const hasFetchedRef = useRef(initialFetch);
   const [localFetchStatus, setLocalFetchStatus] = useState<'idle' | 'fetching' | 'done'>('idle');
+  const [isHighlighterOpen, setIsHighlighterOpen] = useState(false);
 
   useEffect(() => {
     // Reset local fetch status when patent ID changes
@@ -121,12 +122,17 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
 
   return (
     <div className="patent-details">
-      <h3>{title}</h3>
+      <div className="patent-header">
+        <h3>{title}</h3>
+        <PatentHighlighter 
+          targetSelector=".highlightable" 
+          isOpen={isHighlighterOpen}
+          onClose={() => setIsHighlighterOpen(!isHighlighterOpen)}
+        />
+      </div>
       
       <div className="patent-details-layout">
         <div className="patent-details-main">
-          <PatentHighlighter targetSelector=".highlightable" />
-
           <div className="patent-details-content-scroll">
             <div className="details-section">
               <h4>Abstract</h4>

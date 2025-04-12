@@ -796,13 +796,13 @@ export const clearSearchHistory = async (req: AuthRequest, res: Response) => {
 
 export const addToSearchHistory = async (req: AuthRequest, res: Response) => {
   try {
-    const { patentId, source } = req.body;
+    const { patentIds, source } = req.body;
     const userId = req.user?.userId;
 
-    if (!patentId) {
+    if (!patentIds || !Array.isArray(patentIds) || patentIds.length === 0) {
       return res.status(400).json({
         statusCode: 400,
-        message: 'Patent ID is required',
+        message: 'At least one Patent ID is required',
         data: null
       });
     }
@@ -815,20 +815,20 @@ export const addToSearchHistory = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Create and save new search history entry
-    const searchHistoryEntry = new SearchHistory({
+    // Create and save multiple search history entries in one operation
+    const searchHistoryEntries = patentIds.map(patentId => ({
       userId,
       patentId,
       source,
       timestamp: Date.now()
-    });
+    }));
 
-    await searchHistoryEntry.save();
+    const savedEntries = await SearchHistory.insertMany(searchHistoryEntries);
 
     res.status(201).json({
       statusCode: 201,
       message: 'Added to search history successfully',
-      data: searchHistoryEntry
+      data: savedEntries
     });
   } catch (error) {
     console.error('Error adding to search history:', error);
