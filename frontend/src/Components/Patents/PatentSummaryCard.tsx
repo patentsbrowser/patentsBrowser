@@ -13,7 +13,7 @@ interface PatentSummaryCardProps {
   onPatentSelect?: (patentId: string) => void;
   apiSource?: ApiSource;
 }
-console.log('first')
+
 const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
   summary,
   onViewDetails,
