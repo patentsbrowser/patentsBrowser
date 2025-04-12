@@ -57,7 +57,7 @@ export const createDefaultPlans = async () => {
       {
         name: 'Monthly',
         type: SubscriptionPlan.MONTHLY,
-        price: 150,
+        price: 999,  // ₹999 for monthly plan
         discountPercentage: 0,
         features: ['Full search access', 'Save up to 50 patents', 'Basic support'],
         popular: false
@@ -65,7 +65,7 @@ export const createDefaultPlans = async () => {
       {
         name: 'Quarterly',
         type: SubscriptionPlan.QUARTERLY,
-        price: 400,
+        price: 2499, // ₹2,499 for quarterly plan
         discountPercentage: 10,
         features: ['Full search access', 'Save up to 200 patents', 'Priority support', '10% discount'],
         popular: true
@@ -73,7 +73,7 @@ export const createDefaultPlans = async () => {
       {
         name: 'Half-Yearly',
         type: SubscriptionPlan.HALF_YEARLY,
-        price: 750,
+        price: 4499, // ₹4,499 for half-yearly plan
         discountPercentage: 15,
         features: ['Full search access', 'Unlimited patent saves', 'Premium support', '15% discount'],
         popular: false
@@ -81,7 +81,7 @@ export const createDefaultPlans = async () => {
       {
         name: 'Yearly',
         type: SubscriptionPlan.YEARLY,
-        price: 1200,
+        price: 7999, // ₹7,999 for yearly plan
         discountPercentage: 20,
         features: ['Full search access', 'Unlimited patent saves', 'Premium support', 'API access', '20% discount'],
         popular: false

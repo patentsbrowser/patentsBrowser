@@ -13,13 +13,20 @@ const axiosInstance = axios.create({
 // Add auth token to requests
 axiosInstance.interceptors.request.use(
   (config) => {
-    // const token = getAuthToken();c.e
-    const token = localStorage.getItem('token');
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    try {
+      const token = localStorage.getItem('token');
+      
+      if (token && token !== "undefined") {
+        config.headers['Authorization'] = `Bearer ${token}`;
+        console.log('Setting auth token:', `Bearer ${token.substring(0, 10)}...`);
+      } else {
+        console.warn('No valid auth token found for subscription request');
+      }
+      return config;
+    } catch (error) {
+      console.error('Error setting auth token:', error);
+      return config;
     }
-    return config;
   },
   (error) => {
     return Promise.reject(error);
@@ -40,61 +47,47 @@ export const getSubscriptionPlans = async () => {
 };
 
 /**
- * Create a subscription order with Google Pay
+ * Create a subscription order with UPI payment information
  * @param planId - ID of the selected plan
  */
 export const createSubscriptionOrder = async (planId: string) => {
   try {
+    // Check if user is authenticated
+    const token = localStorage.getItem('token');
+    if (!token || token === "undefined") {
+      return {
+        success: false,
+        message: 'You must be logged in to create a subscription'
+      };
+    }
+
     const response = await axiosInstance.post('/subscriptions/order', { planId });
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating subscription order:', error);
-    throw error;
+    // Extract and return error message from the response if available
+    const errorMessage = error.response?.data?.message || 'Failed to create subscription order';
+    return {
+      success: false,
+      message: errorMessage
+    };
   }
 };
 
 /**
- * Generate payment URL or open Google Pay with the created deep link
- * @param deepLink - Google Pay deep link
- * @returns Promise that resolves with the deep link URL (for desktop) or a boolean (for mobile)
+ * Verify and activate subscription after UPI payment
+ * @param verifyData - Payment verification data
  */
-export const handleGooglePayLink = async (deepLink: string): Promise<string | boolean> => {
-  try {
-    // Check if running on mobile device
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent
-    );
-    
-    if (isMobile) {
-      // Open deep link in mobile device
-      window.location.href = deepLink;
-      return true;
-    } else {
-      // For desktop, return the link to be displayed as QR code or direct link
-      return deepLink;
-    }
-  } catch (error) {
-    console.error('Error handling Google Pay payment link:', error);
-    return false;
-  }
-};
-
-/**
- * Activate a subscription after successful payment
- * @param paymentData - Payment data from Google Pay
- */
-export const activateSubscription = async (paymentData: {
-  paymentId: string;
+export const verifyAndActivateSubscription = async (verifyData: {
+  transactionRef: string;
   orderId: string;
-  transactionId: string;
-  signature: string;
   planId: string;
 }) => {
   try {
-    const response = await axiosInstance.post('/subscriptions/activate', paymentData);
+    const response = await axiosInstance.post('/subscriptions/verify', verifyData);
     return response.data;
   } catch (error) {
-    console.error('Error activating subscription:', error);
+    console.error('Error verifying subscription payment:', error);
     throw error;
   }
 };
@@ -141,8 +134,7 @@ export const cancelSubscription = async () => {
 export default {
   getSubscriptionPlans,
   createSubscriptionOrder,
-  handleGooglePayLink,
-  activateSubscription,
+  verifyAndActivateSubscription,
   startFreeTrial,
   getUserSubscription,
   cancelSubscription

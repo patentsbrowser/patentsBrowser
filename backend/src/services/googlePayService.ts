@@ -12,124 +12,92 @@ if (env === 'production') {
   dotenv.config();
 }
 
-// Google Pay configuration
-const MERCHANT_ID = process.env.GOOGLE_PAY_MERCHANT_ID;
+// UPI configuration
+const UPI_ID = process.env.UPI_ID || 'test@upi';
 const MERCHANT_NAME = process.env.GOOGLE_PAY_MERCHANT_NAME || 'PatentsBrowser';
-const GOOGLE_PAY_API_KEY = process.env.GOOGLE_PAY_API_KEY;
 
 /**
  * Generates a unique order ID
  * @returns A unique order ID string
  */
 export const generateOrderId = (): string => {
-  return `order_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
+  return `order_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
 };
 
 /**
- * Creates a Google Pay deep link
+ * Creates a UPI payment link
  * @param amount - Amount in INR
  * @param orderInfo - Order information
- * @returns Google Pay deep link URL
+ * @returns UPI payment information
  */
-export const createGooglePayDeepLink = async (
+export const createUpiPaymentLink = (
   amount: number,
   orderInfo: {
     orderId: string;
     planId: string;
     planType: string;
+    planName: string;
     userId: string;
-    description?: string;
   }
-) => {
+): {
+  upiLink: string;
+  orderId: string;
+  amount: number;
+} => {
   try {
-    // The transaction ID must be unique for each payment request
-    const transactionId = `txn_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    // Format amount to 2 decimal places
+    const formattedAmount = amount.toFixed(2);
     
-    // Create a Google Pay deep link URL
-    // Reference: https://developers.google.com/pay/api/web/guides/deep-linking
-    const baseUrl = 'https://pay.google.com/gp/v/pay';
+    // Create transaction note with order ID for reference
+    const transactionNote = `${orderInfo.planName} Plan - ${orderInfo.orderId}`;
     
-    // Create payload for the deep link
-    const deepLinkPayload = {
-      apiVersion: 2,
-      apiVersionMinor: 0,
-      merchantInfo: {
-        merchantId: MERCHANT_ID,
-        merchantName: MERCHANT_NAME
-      },
-      transactionInfo: {
-        totalPrice: amount.toFixed(2),
-        totalPriceStatus: 'FINAL',
-        currencyCode: 'INR',
-        countryCode: 'IN',
-        transactionId: transactionId,
-        transactionNote: orderInfo.description || `Subscription: ${orderInfo.planType}`
-      },
-      callbackUrl: `${process.env.FRONTEND_URL}/subscription/callback`,
-      allowedPaymentMethods: [{
-        type: 'CARD',
-        parameters: {
-          allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
-          allowedCardNetworks: ['VISA', 'MASTERCARD']
-        },
-        tokenizationSpecification: {
-          type: 'PAYMENT_GATEWAY',
-          parameters: {
-            gateway: 'example',
-            gatewayMerchantId: MERCHANT_ID || 'exampleGatewayMerchantId'
-          }
-        }
-      }],
-      // Add order details in the payment data
-      paymentDataRequest: {
-        orderInfo: orderInfo
-      }
-    };
-
-    // Encode the payload
-    const encodedPayload = encodeURIComponent(JSON.stringify(deepLinkPayload));
+    // Create UPI link
+    // pa: UPI ID (payee address)
+    // pn: Payee name
+    // am: Amount
+    // cu: Currency
+    // tn: Transaction note
+    // tr: Transaction reference ID
+    const upiLink = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(MERCHANT_NAME)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent(transactionNote)}&tr=${orderInfo.orderId}`;
     
     return {
-      deepLink: `${baseUrl}?pa=${encodedPayload}`,
+      upiLink,
       orderId: orderInfo.orderId,
-      transactionId: transactionId,
-      amount: amount
+      amount
     };
   } catch (error) {
-    console.error('Error creating Google Pay deep link:', error);
+    console.error('Error creating UPI payment link:', error);
     throw error;
   }
 };
 
 /**
- * Verifies the payment status from Google Pay
- * @param paymentData - Payment data from Google Pay
- * @returns Boolean indicating if payment is valid
+ * Verify UPI transaction reference
+ * @param transactionRef - Transaction reference ID provided by user
+ * @param orderId - Order ID to match against
+ * @returns Boolean indicating if transaction reference is valid
  */
-export const verifyPayment = (
-  paymentData: {
-    orderId: string;
-    transactionId: string;
-    paymentId: string;
-    signature: string;
-  }
-) => {
+export const verifyUpiTransaction = (
+  transactionRef: string,
+  orderId: string
+): boolean => {
   try {
-    // In a real implementation, you would verify the signature with Google Pay
-    // This is a simplified version for demonstration purposes
+    // In a real implementation, you would:
+    // 1. Check your bank/UPI dashboard for this transaction
+    // 2. Verify the amount, order ID, and other details
+    // 3. Return true if verified, false otherwise
     
-    // If API key not available in development, always return true for testing
-    if (!GOOGLE_PAY_API_KEY && process.env.NODE_ENV !== 'production') {
-      console.warn('Using mock signature verification in development');
-      return true;
+    // For development environment, accept any non-empty transaction reference
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('Using mock UPI transaction verification in development');
+      return !!transactionRef && transactionRef.length >= 6;
     }
     
-    // In production, implement actual verification logic
-    // This would typically involve calling Google Pay API to verify the payment
-    
-    return true;
+    // This is where you'd implement actual verification logic in production
+    // For now, we'll accept any transaction reference that's at least 6 characters
+    return !!transactionRef && transactionRef.length >= 6;
   } catch (error) {
-    console.error('Error verifying payment:', error);
+    console.error('Error verifying UPI transaction:', error);
     return false;
   }
 };
@@ -174,22 +142,22 @@ export const calculateSubscriptionEndDate = (
 export const getSubscriptionAmount = (plan: SubscriptionPlan): number => {
   switch (plan) {
     case SubscriptionPlan.MONTHLY:
-      return 150;
+      return 999;  // ₹999 for monthly plan
     case SubscriptionPlan.QUARTERLY:
-      return 400;
+      return 2499; // ₹2,499 for quarterly plan
     case SubscriptionPlan.HALF_YEARLY:
-      return 750;
+      return 4499; // ₹4,499 for half-yearly plan
     case SubscriptionPlan.YEARLY:
-      return 1200;
+      return 7999; // ₹7,999 for yearly plan
     default:
-      return 150; // Default to monthly plan
+      return 999; // Default to monthly plan price
   }
 };
 
 export default {
   generateOrderId,
-  createGooglePayDeepLink,
-  verifyPayment,
+  createUpiPaymentLink,
+  verifyUpiTransaction,
   calculateSubscriptionEndDate,
   getSubscriptionAmount
 }; 

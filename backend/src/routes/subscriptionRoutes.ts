@@ -10,7 +10,7 @@ router.get('/plans', subscriptionController.getPricingPlans);
 
 // Protected routes (require authentication)
 router.post('/order', authMiddleware, subscriptionController.createSubscriptionOrder);
-router.post('/activate', authMiddleware, subscriptionController.activateSubscription);
+router.post('/verify', authMiddleware, subscriptionController.verifyAndActivateSubscription);
 router.post('/trial', authMiddleware, subscriptionController.startFreeTrial);
 router.get('/user', authMiddleware, subscriptionController.getUserSubscription);
 router.post('/cancel', authMiddleware, subscriptionController.cancelSubscription);

@@ -23,7 +23,7 @@ export const getPricingPlans = async (req: Request, res: Response) => {
   }
 };
 
-// Create a Google Pay deep link for subscription
+// Create a UPI payment link for subscription
 export const createSubscriptionOrder = async (req: Request, res: Response) => {
   try {
     const { planId } = req.body;
@@ -57,17 +57,34 @@ export const createSubscriptionOrder = async (req: Request, res: Response) => {
     // Generate a unique order ID
     const orderId = googlePayService.generateOrderId();
 
-    // Create a Google Pay deep link
-    const paymentInfo = await googlePayService.createGooglePayDeepLink(
-      plan.price,
+    // Get the fixed amount for this plan type
+    const planAmount = googlePayService.getSubscriptionAmount(plan.type as SubscriptionPlan);
+
+    // Create a UPI payment link
+    const paymentInfo = googlePayService.createUpiPaymentLink(
+      planAmount,
       {
         orderId,
         planId: planId,
         planType: plan.type,
-        userId: userId,
-        description: `${plan.name} Subscription`
+        planName: plan.name,
+        userId: userId
       }
     );
+
+    // Store pending order in database (optional but recommended)
+    // This allows for easier verification later
+    const pendingOrder = {
+      orderId: orderId,
+      planId: planId,
+      userId: userId,
+      amount: planAmount,
+      status: 'pending',
+      createdAt: new Date()
+    };
+
+    // You could store this in a database collection
+    // await PendingOrder.create(pendingOrder);
 
     return res.status(200).json({
       success: true,
@@ -77,7 +94,13 @@ export const createSubscriptionOrder = async (req: Request, res: Response) => {
           name: user.name,
           email: user.email,
           contact: user.number
-        }
+        },
+        plan: {
+          name: plan.name,
+          type: plan.type,
+          amount: planAmount
+        },
+        orderId: orderId
       }
     });
   } catch (error) {
@@ -89,14 +112,12 @@ export const createSubscriptionOrder = async (req: Request, res: Response) => {
   }
 };
 
-// Create or activate a subscription after payment
-export const activateSubscription = async (req: Request, res: Response) => {
+// Verify and activate subscription after UPI payment
+export const verifyAndActivateSubscription = async (req: Request, res: Response) => {
   try {
     const {
-      paymentId,
+      transactionRef,
       orderId,
-      transactionId,
-      signature,
       planId
     } = req.body;
     
@@ -109,18 +130,16 @@ export const activateSubscription = async (req: Request, res: Response) => {
       });
     }
 
-    // Verify the payment
-    const isValidPayment = googlePayService.verifyPayment({
-      orderId,
-      transactionId,
-      paymentId,
-      signature
-    });
+    // Verify the transaction reference
+    const isValidTransaction = googlePayService.verifyUpiTransaction(
+      transactionRef,
+      orderId
+    );
 
-    if (!isValidPayment) {
+    if (!isValidTransaction) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid payment'
+        message: 'Invalid transaction reference. Please check and try again.'
       });
     }
 
@@ -144,8 +163,8 @@ export const activateSubscription = async (req: Request, res: Response) => {
         startDate,
         endDate,
         status: SubscriptionStatus.ACTIVE,
-        googlePayPaymentId: paymentId,
-        googlePayTransactionId: transactionId
+        upiTransactionRef: transactionRef,
+        upiOrderId: orderId
       },
       { upsert: true, new: true }
     );
@@ -164,10 +183,10 @@ export const activateSubscription = async (req: Request, res: Response) => {
       data: subscription
     });
   } catch (error) {
-    console.error('Error activating subscription:', error);
+    console.error('Error verifying and activating subscription:', error);
     return res.status(500).json({
       success: false,
-      message: 'Error activating subscription'
+      message: 'Error verifying and activating subscription'
     });
   }
 };
@@ -339,7 +358,7 @@ export const handleWebhook = async (req: Request, res: Response) => {
 export default {
   getPricingPlans,
   createSubscriptionOrder,
-  activateSubscription,
+  verifyAndActivateSubscription,
   startFreeTrial,
   getUserSubscription,
   cancelSubscription,

@@ -21,9 +21,8 @@ export interface ISubscription extends Document {
   startDate: Date;
   endDate: Date;
   status: SubscriptionStatus;
-  googlePayOrderId?: string;
-  googlePayPaymentId?: string;
-  googlePayTransactionId?: string;
+  upiOrderId?: string;
+  upiTransactionRef?: string;
   trialEndsAt?: Date;
   cancelledAt?: Date;
   createdAt: Date;
@@ -56,13 +55,10 @@ const subscriptionSchema = new Schema<ISubscription>(
       enum: Object.values(SubscriptionStatus),
       default: SubscriptionStatus.TRIAL
     },
-    googlePayOrderId: {
+    upiOrderId: {
       type: String
     },
-    googlePayPaymentId: {
-      type: String
-    },
-    googlePayTransactionId: {
+    upiTransactionRef: {
       type: String
     },
     trialEndsAt: {

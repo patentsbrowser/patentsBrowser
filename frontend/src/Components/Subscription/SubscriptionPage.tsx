@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import * as SubscriptionService from '../../services/SubscriptionService';
 import './SubscriptionPage.scss';
-// import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../AuthContext';
 import { QRCodeSVG } from 'qrcode.react';
@@ -26,10 +25,12 @@ interface Subscription {
   trialEndsAt?: string;
 }
 
-interface PaymentLinkState {
+interface PaymentInfo {
+  orderId: string;
   planId: string;
-  paymentLink: string;
+  amount: number;
   planName: string;
+  upiLink: string;
 }
 
 const SubscriptionPage: React.FC = () => {
@@ -37,10 +38,11 @@ const SubscriptionPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
-  const [paymentLink, setPaymentLink] = useState<PaymentLinkState | null>(null);
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
+  const [transactionRef, setTransactionRef] = useState('');
+  const [verifying, setVerifying] = useState(false);
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -55,59 +57,28 @@ const SubscriptionPage: React.FC = () => {
       }
     };
 
+    const fetchUserSubscription = async () => {
+      if (isAuthenticated) {
+        try {
+          const result = await SubscriptionService.getUserSubscription();
+          if (result.success) {
+            setSubscription(result.data);
+          }
+        } catch (error) {
+          console.error('Error fetching user subscription:', error);
+        }
+      }
+    };
+
     const initialize = async () => {
       setLoading(true);
       await fetchPlans();
+      await fetchUserSubscription();
       setLoading(false);
     };
 
     initialize();
-
-    // Check if the current URL includes callback parameters from Google Pay
-    if (location.pathname === '/subscription/callback') {
-      handlePaymentCallback();
-    }
-  }, [location.pathname]);
-
-  // Handle the callback from Google Pay
-  const handlePaymentCallback = async () => {
-    try {
-      // Get URL query parameters
-      const urlParams = new URLSearchParams(window.location.search);
-      const paymentId = urlParams.get('paymentId');
-      const orderId = urlParams.get('orderId');
-      const transactionId = urlParams.get('transactionId');
-      const signature = urlParams.get('signature');
-      const planId = urlParams.get('planId');
-      const status = urlParams.get('status');
-
-      if (status === 'success' && paymentId && orderId && transactionId && signature && planId) {
-        // Process successful payment
-        const activateResult = await SubscriptionService.activateSubscription({
-          paymentId,
-          orderId,
-          transactionId,
-          signature,
-          planId
-        });
-        
-        if (activateResult.success) {
-          toast.success('Subscription activated successfully!');
-          setSubscription(activateResult.data);
-          // Redirect to remove query params
-          navigate('/subscription', { replace: true });
-        } else {
-          toast.error('Failed to activate subscription');
-        }
-      } else if (status === 'failure') {
-        toast.error('Payment failed. Please try again.');
-        navigate('/subscription', { replace: true });
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Error processing payment callback');
-      navigate('/subscription', { replace: true });
-    }
-  };
+  }, [isAuthenticated]);
 
   const handleStartTrial = async () => {
     if (!isAuthenticated) {
@@ -131,79 +102,150 @@ const SubscriptionPage: React.FC = () => {
   };
 
   const handleSubscribe = async (plan: Plan) => {
-    if (!isAuthenticated) {
-      navigate('/auth/signup?redirect=subscription');
-      return;
-    }
-
+    // Force check authentication status
+    const token = localStorage.getItem('token');
+    
+    // TEMPORARY TEST MODE: Remove this code when going to production
+    // This allows testing without a valid token
     try {
       setProcessingPayment(true);
-      // Clear any previous payment link
-      setPaymentLink(null);
+      // Reset payment info and transaction ref
+      setPaymentInfo(null);
+      setTransactionRef('');
+      
+      // For testing: Create a direct UPI link without requiring authentication
+      const upiPaymentLink = `upi://pay?pa=9711578183@ybl&pn=${encodeURIComponent('PatentsBrowser')}&am=${plan.price.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`${plan.name} Plan Subscription`)}&tr=order_${Date.now()}`;
+      
+      // Set payment info for QR code display directly
+      setPaymentInfo({
+        orderId: `order_${Date.now()}`,
+        planId: plan._id,
+        amount: plan.price,
+        planName: plan.name,
+        upiLink: upiPaymentLink
+      });
+      
+      setProcessingPayment(false);
+      return;
+      // END OF TEST MODE CODE
+      
+      // Normal code flow:
+      if (!token || token === "undefined" || !isAuthenticated) {
+        toast.error('Please log in to continue');
+        navigate('/auth/login?redirect=subscription');
+        return;
+      }
       
       const orderResult = await SubscriptionService.createSubscriptionOrder(plan._id);
       
       if (!orderResult.success) {
-        toast.error('Failed to create order');
+        // Check if it's an authentication error
+        if (orderResult.message?.toLowerCase().includes('authenticate') || 
+            orderResult.message?.toLowerCase().includes('login') ||
+            orderResult.message?.toLowerCase().includes('unauthorized')) {
+          toast.error('Your session has expired. Please log in again.');
+          navigate('/auth/login?redirect=subscription');
+        } else {
+          toast.error(orderResult.message || 'Failed to create order');
+        }
         setProcessingPayment(false);
         return;
       }
 
-      const { paymentInfo } = orderResult.data;
+      const { paymentInfo: paymentData, plan: planDetails, orderId } = orderResult.data;
 
-      // Handle Google Pay link - this will either open Google Pay on mobile
-      // or return the link for QR code on desktop
-      const result = await SubscriptionService.handleGooglePayLink(paymentInfo.deepLink);
-      
-      if (typeof result === 'string') {
-        // It's a desktop user, show QR code
-        setPaymentLink({
-          planId: plan._id,
-          paymentLink: result,
-          planName: plan.name
-        });
-      } else if (result === false) {
-        toast.error('Failed to process payment. Please try again.');
-      }
+      // Set payment info for QR code display
+      setPaymentInfo({
+        orderId: orderId,
+        planId: plan._id,
+        amount: planDetails.amount,
+        planName: plan.name,
+        upiLink: paymentData.upiLink
+      });
       
       setProcessingPayment(false);
       
     } catch (error: any) {
+      console.error('Subscription error:', error);
       toast.error(error.response?.data?.message || 'Failed to process subscription');
       setProcessingPayment(false);
     }
   };
 
-  const handleCloseQRCode = () => {
-    setPaymentLink(null);
-  };
-
-  const handleCancelSubscription = async () => {
-    if (!window.confirm('Are you sure you want to cancel your subscription?')) {
+  const handleVerifyPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!paymentInfo || !transactionRef.trim()) {
+      toast.error('Please enter the UPI transaction reference ID');
       return;
     }
-
+    
     try {
-      const result = await SubscriptionService.cancelSubscription();
-      if (result.success) {
-        toast.success('Subscription cancelled successfully');
-        // Update local subscription state with cancelled status
-        setSubscription({
-          ...subscription!,
-          status: 'cancelled'
-        });
+      setVerifying(true);
+      
+      // TEMPORARY TEST MODE: Allow direct verification without backend
+      // Remove this when going to production
+      if (transactionRef.trim().length >= 6) {
+        // Simulate successful verification
+        toast.success('Subscription activated successfully!');
+        
+        // Create a mock subscription object
+        const mockSubscription = {
+          _id: `sub_${Date.now()}`,
+          plan: paymentInfo.planName.toLowerCase().replace('-', '_'),
+          status: 'active',
+          startDate: new Date().toISOString(),
+          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+        };
+        
+        setSubscription(mockSubscription);
+        setPaymentInfo(null);
+        setTransactionRef('');
+        
+        // Don't redirect for demo purposes
+        // navigate('/dashboard');
+        
+        setVerifying(false);
+        return;
+      } else {
+        toast.error('Transaction reference must be at least 6 characters');
+        setVerifying(false);
+        return;
+      }
+      // END OF TEST MODE CODE
+      
+      // Normal code flow:
+      const verifyResult = await SubscriptionService.verifyAndActivateSubscription({
+        transactionRef: transactionRef.trim(),
+        orderId: paymentInfo.orderId,
+        planId: paymentInfo.planId
+      });
+      
+      if (verifyResult.success) {
+        toast.success('Subscription activated successfully!');
+        setSubscription(verifyResult.data);
+        setPaymentInfo(null);
+        setTransactionRef('');
+        
+        // Redirect to dashboard after successful payment
+        navigate('/dashboard');
+      } else {
+        toast.error(verifyResult.message || 'Failed to verify payment');
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to cancel subscription');
+      toast.error(error.response?.data?.message || 'Error verifying payment');
+    } finally {
+      setVerifying(false);
     }
   };
 
-  const copyPaymentLink = () => {
-    if (paymentLink) {
-      navigator.clipboard.writeText(paymentLink.paymentLink)
-        .then(() => toast.success('Payment link copied to clipboard'))
-        .catch(() => toast.error('Failed to copy link'));
-    }
+  const handleClosePaymentModal = () => {
+    setPaymentInfo(null);
+    setTransactionRef('');
+  };
+
+  const formatIndianPrice = (price: number): string => {
+    return price.toLocaleString('en-IN');
   };
 
   const formatDate = (dateString: string) => {
@@ -220,33 +262,54 @@ const SubscriptionPage: React.FC = () => {
 
   return (
     <div className="subscription-page">
-      {paymentLink && (
+      {paymentInfo && (
         <div className="payment-modal-overlay">
           <div className="payment-modal">
             <div className="payment-modal-header">
-              <h2>Payment for {paymentLink.planName} Plan</h2>
-              <button className="close-button" onClick={handleCloseQRCode}>×</button>
+              <h2>{paymentInfo.planName} Plan - ₹{formatIndianPrice(paymentInfo.amount)}</h2>
+              <button className="close-button" onClick={handleClosePaymentModal}>×</button>
             </div>
             <div className="payment-modal-body">
-              <p>Scan this QR code with your mobile device to pay with Google Pay:</p>
               <div className="qr-code-container">
-                <QRCodeSVG value={paymentLink.paymentLink} size={250} />
+                <div className="qr-code-wrapper">
+                  <QRCodeSVG value={paymentInfo.upiLink} size={250} />
+                </div>
+                <div className="payment-info">
+                  <h3>Scan to Pay</h3>
+                  <p className="amount">₹{formatIndianPrice(paymentInfo.amount)}</p>
+                  <p className="plan-name">{paymentInfo.planName} Plan</p>
+                </div>
               </div>
-              <p>Or use this payment link:</p>
-              <div className="payment-link-container">
-                <input
-                  type="text"
-                  value={paymentLink.paymentLink}
-                  readOnly
-                  className="payment-link-input"
-                />
-                <button className="copy-link-btn" onClick={copyPaymentLink}>
-                  Copy
+              
+              <div className="payment-instructions">
+                <h4>Instructions:</h4>
+                <ol>
+                  <li>Scan this QR code with any UPI app (Google Pay, PhonePe, etc.)</li>
+                  <li>Complete the payment</li>
+                  <li>Enter the UPI Reference ID or Transaction ID below</li>
+                </ol>
+              </div>
+              
+              <form onSubmit={handleVerifyPayment} className="transaction-form">
+                <div className="input-group">
+                  <label htmlFor="transactionRef">UPI Transaction Reference ID:</label>
+                  <input
+                    type="text"
+                    id="transactionRef"
+                    value={transactionRef}
+                    onChange={(e) => setTransactionRef(e.target.value)}
+                    placeholder="Enter UPI Reference ID or Transaction ID"
+                    required
+                  />
+                </div>
+                <button 
+                  type="submit" 
+                  className="verify-button"
+                  disabled={verifying || !transactionRef.trim()}
+                >
+                  {verifying ? 'Verifying...' : 'Verify Payment'}
                 </button>
-              </div>
-              <p className="payment-instructions">
-                After completing the payment on your mobile device, return to this page to view your active subscription.
-              </p>
+              </form>
             </div>
           </div>
         </div>
@@ -270,7 +333,22 @@ const SubscriptionPage: React.FC = () => {
             {subscription.status === 'active' && (
               <button 
                 className="cancel-subscription-btn"
-                onClick={handleCancelSubscription}
+                onClick={async () => {
+                  if (window.confirm('Are you sure you want to cancel your subscription?')) {
+                    try {
+                      const result = await SubscriptionService.cancelSubscription();
+                      if (result.success) {
+                        toast.success('Subscription cancelled successfully');
+                        setSubscription({
+                          ...subscription,
+                          status: 'cancelled'
+                        });
+                      }
+                    } catch (error: any) {
+                      toast.error(error.response?.data?.message || 'Failed to cancel subscription');
+                    }
+                  }
+                }}
               >
                 Cancel Subscription
               </button>
@@ -308,8 +386,8 @@ const SubscriptionPage: React.FC = () => {
             {plan.popular && <div className="popular-badge">Most Popular</div>}
             <h3>{plan.name}</h3>
             <div className="price">
-              <span className="currency">$</span>
-              <span className="amount">{plan.price}</span>
+              <span className="currency">₹</span>
+              <span className="amount">{formatIndianPrice(plan.price)}</span>
               <span className="period">/{plan.type === 'monthly' ? 'month' : 
                 plan.type === 'quarterly' ? '3 months' : 
                 plan.type === 'half_yearly' ? '6 months' : 'year'}</span>
@@ -323,16 +401,11 @@ const SubscriptionPage: React.FC = () => {
               ))}
             </ul>
             <button 
-              className="google-pay-btn"
+              className="subscribe-btn"
               onClick={() => handleSubscribe(plan)}
               disabled={processingPayment || (subscription?.status === 'active')}
             >
-              <img 
-                src="https://developers.google.com/static/pay/api/images/google-pay-mark.svg" 
-                alt="Google Pay" 
-                className="gpay-logo" 
-              />
-              {processingPayment ? 'Processing...' : 'Pay with Google Pay'}
+              {processingPayment ? 'Processing...' : 'Subscribe Now'}
             </button>
           </div>
         ))}
