@@ -118,8 +118,68 @@ export const getSubscriptionPlans = async () => {
   }
 };
 
-// All other subscription service functions have been removed
+/**
+ * Create a pending subscription with UPI order ID
+ * @param planId - The ID of the plan to subscribe to
+ * @param upiOrderId - A unique identifier for this order
+ */
+export const createPendingSubscription = async (planId: string, upiOrderId: string) => {
+  try {
+    debugLog('Creating pending subscription', { planId, upiOrderId });
+    
+    const response = await axiosInstance.post('/subscriptions/create-pending', {
+      planId,
+      upiOrderId
+    });
+    
+    debugLog('Pending subscription created successfully', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating pending subscription:', error);
+    throw error;
+  }
+};
+
+/**
+ * Verify UPI payment using transaction reference ID
+ * @param transactionId - UPI transaction reference ID
+ */
+export const verifyUpiPayment = async (transactionId: string) => {
+  try {
+    debugLog('Verifying UPI payment', { transactionId });
+    
+    const response = await axiosInstance.post('/subscriptions/verify-payment', {
+      transactionId
+    });
+    
+    debugLog('Payment verification response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error verifying UPI payment:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get the current user's subscription information
+ */
+export const getUserSubscription = async () => {
+  try {
+    debugLog('Getting user subscription', {});
+    
+    const response = await axiosInstance.get('/subscriptions/user-subscription');
+    
+    debugLog('User subscription response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error getting user subscription:', error);
+    throw error;
+  }
+};
 
 export default {
-  getSubscriptionPlans
+  getSubscriptionPlans,
+  createPendingSubscription,
+  verifyUpiPayment,
+  getUserSubscription
 }; 

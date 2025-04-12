@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
 import PricingPlan from '../models/PricingPlan.js';
+import Subscription, { SubscriptionPlan, SubscriptionStatus } from '../models/Subscription.js';
+import { User } from '../models/User.js';
+import mongoose from 'mongoose';
 
 // Simple in-memory cache to minimize database queries
 let plansCache = {
@@ -51,7 +54,234 @@ export const getPricingPlans = async (req: Request, res: Response) => {
   }
 };
 
-// Export only the getPricingPlans method
+// Calculate subscription end date based on plan
+const calculateEndDate = (plan: SubscriptionPlan): Date => {
+  const endDate = new Date();
+  
+  switch(plan) {
+    case SubscriptionPlan.MONTHLY:
+      endDate.setMonth(endDate.getMonth() + 1);
+      break;
+    case SubscriptionPlan.QUARTERLY:
+      endDate.setMonth(endDate.getMonth() + 3);
+      break;
+    case SubscriptionPlan.HALF_YEARLY:
+      endDate.setMonth(endDate.getMonth() + 6);
+      break;
+    case SubscriptionPlan.YEARLY:
+      endDate.setFullYear(endDate.getFullYear() + 1);
+      break;
+    default:
+      endDate.setMonth(endDate.getMonth() + 1);
+  }
+  
+  return endDate;
+};
+
+// Create or update a pending subscription with UPI order ID
+export const createPendingSubscription = async (req: Request, res: Response) => {
+  try {
+    const { planId, upiOrderId } = req.body;
+    
+    if (!planId || !upiOrderId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Plan ID and UPI Order ID are required'
+      });
+    }
+    
+    // @ts-ignore - User ID is added by auth middleware
+    const userId = req.user._id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+    
+    // Get plan details
+    const plan = await PricingPlan.findById(planId);
+    
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Plan not found'
+      });
+    }
+    
+    // Calculate end date based on plan type
+    const endDate = calculateEndDate(plan.type as SubscriptionPlan);
+    
+    // Check if user already has a subscription
+    let subscription = await Subscription.findOne({ userId });
+    
+    if (subscription) {
+      // Update existing subscription
+      subscription.plan = plan.type as SubscriptionPlan;
+      subscription.startDate = new Date();
+      subscription.endDate = endDate;
+      subscription.status = SubscriptionStatus.PAYMENT_PENDING;
+      subscription.upiOrderId = upiOrderId;
+      subscription.upiTransactionRef = undefined;
+    } else {
+      // Create new subscription
+      subscription = new Subscription({
+        userId,
+        plan: plan.type,
+        startDate: new Date(),
+        endDate,
+        status: SubscriptionStatus.PAYMENT_PENDING,
+        upiOrderId
+      });
+    }
+    
+    await subscription.save();
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Pending subscription created',
+      data: {
+        subscriptionId: subscription._id,
+        plan: plan.name,
+        status: subscription.status,
+        startDate: subscription.startDate,
+        endDate: subscription.endDate
+      }
+    });
+  } catch (error) {
+    console.error('Error creating pending subscription:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error creating pending subscription'
+    });
+  }
+};
+
+// Verify UPI payment and activate subscription
+export const verifyUpiPayment = async (req: Request, res: Response) => {
+  try {
+    const { transactionId } = req.body;
+    
+    if (!transactionId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Transaction ID is required'
+      });
+    }
+    
+    // @ts-ignore - User ID is added by auth middleware
+    const userId = req.user._id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+    
+    // Find user's pending subscription
+    const subscription = await Subscription.findOne({ 
+      userId, 
+      status: SubscriptionStatus.PAYMENT_PENDING 
+    });
+    
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: 'No pending subscription found'
+      });
+    }
+    
+    // In a real-world scenario, you would verify the transaction with your bank or UPI provider here
+    // For now, we'll just accept any transaction ID
+    
+    // Update subscription status
+    subscription.status = SubscriptionStatus.ACTIVE;
+    subscription.upiTransactionRef = transactionId;
+    await subscription.save();
+    
+    // Update user's subscription status
+    await User.findByIdAndUpdate(userId, { 
+      subscriptionStatus: 'paid',
+      subscriptionEnd: subscription.endDate
+    });
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Subscription activated successfully',
+      data: {
+        subscriptionId: subscription._id,
+        plan: subscription.plan,
+        status: subscription.status,
+        startDate: subscription.startDate,
+        endDate: subscription.endDate
+      }
+    });
+  } catch (error) {
+    console.error('Error verifying UPI payment:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error verifying payment'
+    });
+  }
+};
+
+// Get user's current subscription
+export const getUserSubscription = async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - User ID is added by auth middleware
+    const userId = req.user._id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+    
+    const subscription = await Subscription.findOne({ 
+      userId,
+      status: { $in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] }
+    }).sort({ createdAt: -1 });
+    
+    if (!subscription) {
+      return res.status(200).json({
+        success: true,
+        data: null
+      });
+    }
+    
+    // Get plan details
+    const plan = await PricingPlan.findOne({ type: subscription.plan });
+    
+    return res.status(200).json({
+      success: true,
+      data: {
+        subscriptionId: subscription._id,
+        plan: subscription.plan,
+        planName: plan ? plan.name : subscription.plan,
+        status: subscription.status,
+        startDate: subscription.startDate,
+        endDate: subscription.endDate,
+        isActive: new Date() <= subscription.endDate && 
+                  (subscription.status === SubscriptionStatus.ACTIVE || 
+                   subscription.status === SubscriptionStatus.TRIAL)
+      }
+    });
+  } catch (error) {
+    console.error('Error getting user subscription:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching subscription details'
+    });
+  }
+};
+
+// Export all controller methods
 export default {
-  getPricingPlans
+  getPricingPlans,
+  createPendingSubscription,
+  verifyUpiPayment,
+  getUserSubscription
 }; 

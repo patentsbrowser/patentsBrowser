@@ -1,6 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
+import mongoose from 'mongoose';
+
+// Declare module to extend Express Request
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        _id: mongoose.Types.ObjectId;
+        userId: string;
+        email: string;
+      };
+    }
+  }
+}
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -54,7 +68,12 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
       */
       
       // Set user data on the request
-      req.user = decoded;
+      req.user = {
+        _id: user._id,  // Ensure we're setting the MongoDB ID object directly
+        userId: decoded.userId,
+        email: user.email
+      };
+      
       console.log('Auth middleware - user set on request:', req.user);
       next();
     } catch (jwtError: any) {

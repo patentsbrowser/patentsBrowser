@@ -24,20 +24,68 @@ interface PaymentModalProps {
 const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan }) => {
   const [transactionId, setTransactionId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [upiOrderId, setUpiOrderId] = useState('');
+  const [paymentStep, setPaymentStep] = useState<'creating' | 'ready' | 'verifying' | 'complete'>('creating');
+  const requestInProgressRef = useRef(false);
+  const hasInitializedRef = useRef(false);
+
+  // Generate a unique order ID only once when the modal opens
+  useEffect(() => {
+    if (isOpen && !hasInitializedRef.current) {
+      const orderId = `ORD_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      setUpiOrderId(orderId);
+      hasInitializedRef.current = true;
+    }
+    
+    // Cleanup when modal closes
+    if (!isOpen) {
+      hasInitializedRef.current = false;
+    }
+  }, [isOpen]);
+  
+  // Create pending subscription in backend after we have an order ID
+  useEffect(() => {
+    if (!upiOrderId || requestInProgressRef.current) return;
+    
+    const createPendingSubscription = async () => {
+      // Set flag to prevent duplicate requests
+      requestInProgressRef.current = true;
+      
+      try {
+        setPaymentStep('creating');
+        console.log('Creating pending subscription with order ID:', upiOrderId);
+        await SubscriptionService.createPendingSubscription(plan._id, upiOrderId);
+        setPaymentStep('ready');
+      } catch (error) {
+        console.error('Error creating pending subscription:', error);
+        toast.error('Failed to initialize payment. Please try again.');
+        onClose();
+      } finally {
+        requestInProgressRef.current = false;
+      }
+    };
+    
+    createPendingSubscription();
+    
+    // Cleanup function
+    return () => {
+      requestInProgressRef.current = false;
+    };
+  }, [upiOrderId, plan._id, onClose]);
   
   if (!isOpen) return null;
   
   // Generate UPI link for the plan
-  const generateUpiLink = (amount: number, planName: string) => {
-    // Replace with your actual UPI ID
-    const upiId = "patentsbrowser@ybl";
+  const generateUpiLink = (amount: number, planName: string, orderId: string) => {
+    // Get UPI ID from environment variables, with fallback
+    const upiId = import.meta.env.VITE_UPI_ID || "patentsbrowser@ybl";
     const merchantName = "PatentsBrowser";
-    const planLabel = `${planName} Plan`;
+    const planLabel = `${planName}_${orderId}`;
     
     return `upi://pay?pa=${upiId}&pn=${encodeURIComponent(merchantName)}&tn=${encodeURIComponent(planLabel)}&am=${amount}&cu=INR`;
   };
   
-  const upiLink = generateUpiLink(plan.price, plan.name);
+  const upiLink = generateUpiLink(plan.price, plan.name, upiOrderId);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,69 +96,114 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan }) =>
     }
     
     setIsSubmitting(true);
+    setPaymentStep('verifying');
     
-    // Here you would normally send this to your backend
-    // For now we'll just simulate success
-    setTimeout(() => {
-      toast.success('Payment verification initiated! We will update your subscription shortly.');
+    try {
+      const result = await SubscriptionService.verifyUpiPayment(transactionId);
+      
+      if (result.success) {
+        setPaymentStep('complete');
+        toast.success('Payment verified! Your subscription is now active.');
+        setTimeout(() => {
+          onClose();
+        }, 2000);
+      } else {
+        toast.error(result.message || 'Payment verification failed. Please try again.');
+        setIsSubmitting(false);
+        setPaymentStep('ready');
+      }
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      toast.error('Failed to verify payment. Please try again or contact support.');
       setIsSubmitting(false);
-      onClose();
-    }, 1500);
+      setPaymentStep('ready');
+    }
+  };
+
+  const renderContent = () => {
+    if (paymentStep === 'creating') {
+      return (
+        <div className="creating-payment">
+          <div className="spinner"></div>
+          <p>Initializing payment...</p>
+        </div>
+      );
+    }
+    
+    if (paymentStep === 'complete') {
+      return (
+        <div className="payment-success">
+          <div className="success-icon">✓</div>
+          <h3>Payment Successful!</h3>
+          <p>Your subscription is now active.</p>
+        </div>
+      );
+    }
+    
+    return (
+      <>
+        <div className="qr-code-container">
+          <div className="qr-code-wrapper">
+            <QRCodeSVG value={upiLink} size={180} />
+          </div>
+          <div className="payment-info">
+            <h3>{plan.name} Plan</h3>
+            <div className="amount">₹{plan.price.toLocaleString('en-IN')}</div>
+            <div className="plan-name">
+              {plan.type === 'monthly' ? 'Monthly' : 
+                plan.type === 'quarterly' ? 'Quarterly' : 
+                plan.type === 'half_yearly' ? 'Half Yearly' : 'Yearly'} Plan
+            </div>
+            <div className="order-id">Order ID: {upiOrderId}</div>
+          </div>
+        </div>
+        
+        <div className="payment-instructions">
+          <h4>How to pay:</h4>
+          <ol>
+            <li>Open your UPI app (Google Pay, PhonePe, etc.)</li>
+            <li>Scan the QR code above</li>
+            <li>Complete the payment</li>
+            <li>Enter the UPI Reference ID below</li>
+          </ol>
+        </div>
+        
+        <form className="transaction-form" onSubmit={handleSubmit}>
+          <div className="input-group">
+            <label htmlFor="transaction-id">UPI Transaction Reference ID</label>
+            <input 
+              id="transaction-id"
+              type="text" 
+              value={transactionId}
+              onChange={(e) => setTransactionId(e.target.value)}
+              placeholder="e.g. 123456789012"
+              required
+              disabled={paymentStep === 'verifying'}
+            />
+          </div>
+          <button 
+            type="submit" 
+            className="verify-button"
+            disabled={isSubmitting || paymentStep === 'verifying'}
+          >
+            {paymentStep === 'verifying' ? 'Verifying...' : 'Verify Payment'}
+          </button>
+        </form>
+      </>
+    );
   };
   
   return (
-    <div className="payment-modal-overlay" onClick={onClose}>
+    <div className="payment-modal-overlay" onClick={paymentStep !== 'verifying' ? onClose : undefined}>
       <div className="payment-modal" onClick={(e) => e.stopPropagation()}>
         <div className="payment-modal-header">
           <h2>Pay with UPI</h2>
-          <button className="close-button" onClick={onClose}>&times;</button>
+          {paymentStep !== 'verifying' && (
+            <button className="close-button" onClick={onClose}>&times;</button>
+          )}
         </div>
         <div className="payment-modal-body">
-          <div className="qr-code-container">
-            <div className="qr-code-wrapper">
-              <QRCodeSVG value={upiLink} size={180} />
-            </div>
-            <div className="payment-info">
-              <h3>{plan.name} Plan</h3>
-              <div className="amount">₹{plan.price.toLocaleString('en-IN')}</div>
-              <div className="plan-name">
-                {plan.type === 'monthly' ? 'Monthly' : 
-                  plan.type === 'quarterly' ? 'Quarterly' : 
-                  plan.type === 'half_yearly' ? 'Half Yearly' : 'Yearly'} Plan
-              </div>
-            </div>
-          </div>
-          
-          <div className="payment-instructions">
-            <h4>How to pay:</h4>
-            <ol>
-              <li>Open your UPI app (Google Pay, PhonePe, etc.)</li>
-              <li>Scan the QR code above</li>
-              <li>Complete the payment</li>
-              <li>Enter the UPI Reference ID below</li>
-            </ol>
-          </div>
-          
-          <form className="transaction-form" onSubmit={handleSubmit}>
-            <div className="input-group">
-              <label htmlFor="transaction-id">UPI Transaction Reference ID</label>
-              <input 
-                id="transaction-id"
-                type="text" 
-                value={transactionId}
-                onChange={(e) => setTransactionId(e.target.value)}
-                placeholder="e.g. 123456789012"
-                required
-              />
-            </div>
-            <button 
-              type="submit" 
-              className="verify-button"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Verifying...' : 'Verify Payment'}
-            </button>
-          </form>
+          {renderContent()}
         </div>
       </div>
     </div>
