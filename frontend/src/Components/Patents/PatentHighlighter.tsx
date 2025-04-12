@@ -52,6 +52,14 @@ interface Offset {
   start: number;
 }
 
+// Track all matches (either simple term or proximity matches)
+type Match = {
+  term: string;
+  index: number;
+  length: number;
+  color: string;
+};
+
 // Predefined term sets (similar to Excel table ranges)
 const PREDEFINED_SETS: PredefinedSets = {
   technical: {
@@ -339,14 +347,43 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     // Skip modifying elements that are interactive or controlled by React handlers
     return !(
       element.closest(".clickable") ||
+      // Only check headers, not the content sections
       element.closest(".claims-header") ||
       element.closest(".description-header")
     );
   };
 
+  // Improved function to handle text content in elements with nested children
+  const getTextWithOffsets = (element: Element): { text: string; nodes: Array<Node | Text> } => {
+    // Get all text nodes recursively
+    const nodes: Array<Node | Text> = [];
+    const walker = document.createTreeWalker(
+      element,
+      NodeFilter.SHOW_TEXT,
+      null
+    );
+
+    let node;
+    while (node = walker.nextNode()) {
+      nodes.push(node);
+    }
+
+    // Combine text from all nodes
+    const text = nodes.map(node => node.textContent).join('');
+    
+    return { text, nodes };
+  };
+
   // Wrap clearHighlights in useCallback
   const clearHighlights = useCallback(() => {
+    // Don't clear if there's nothing to clear
+    if (foundMatches.length === 0) {
+      return;
+    }
+    
     try {
+      // Keep track if we actually cleared anything
+      let anyCleared = false;
       const elements = document.querySelectorAll(targetSelector);
 
       elements.forEach((element) => {
@@ -363,23 +400,63 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
           return;
         }
 
-        // Collect the original text content
-        let originalText = "";
-        element.childNodes.forEach((node) => {
-          originalText += node.textContent || "";
-        });
+        // If we get here, we have spans to clear
+        anyCleared = true;
 
-        // Safely reset the element content
-        if (originalText) {
-          element.textContent = originalText;
-        }
+        // Instead of replacing content, unwrap each highlighted span
+        // This preserves the original DOM structure better
+        highlightSpans.forEach(span => {
+          try {
+            // Create a text node with the span's content
+            const textNode = document.createTextNode(span.textContent || "");
+            // Replace the span with its text content
+            span.parentNode?.replaceChild(textNode, span);
+          } catch (spanErr) {
+            console.error(`Error unwrapping highlight span: ${spanErr.message}`);
+          }
+        });
       });
 
-      setFoundMatches([]);
+      // Only reset state if we actually cleared something
+      if (anyCleared) {
+        setFoundMatches([]);
+      }
     } catch (err) {
-      console.error("Error clearing highlights:", err);
+      console.error(`Error clearing highlights: ${err instanceof Error ? err.message : String(err)}`);
+      console.error(`Target selector: ${targetSelector}`);
     }
-  }, [targetSelector]);
+  }, [targetSelector, foundMatches]);
+
+  // Add a custom function to check if highlights need to be reapplied
+  const needsHighlighting = useCallback((): boolean => {
+    // If we have search terms but no highlights, we need to highlight
+    if ((searchTerms.length > 0 || proximitySearches.length > 0 || formulaSearches.length > 0) && 
+        foundMatches.length === 0) {
+      return true;
+    }
+    
+    // Check if any highlights are missing from the DOM
+    const elements = document.querySelectorAll(targetSelector);
+    for (let i = 0; i < elements.length; i++) {
+      const element = elements[i];
+      if (!isSafeToModify(element)) continue;
+      
+      const text = element.textContent || "";
+      if (!text.trim()) continue;
+      
+      // Check for any search term in the text
+      for (const { term } of searchTerms) {
+        if (new RegExp(`\\b${term}\\b`, 'i').test(text)) {
+          // If we found a term but no highlight spans, we need to rehighlight
+          if (element.querySelectorAll('.highlight-term').length === 0) {
+            return true;
+          }
+        }
+      }
+    }
+    
+    return false;
+  }, [searchTerms, proximitySearches, formulaSearches, foundMatches, targetSelector]);
 
   // Helper function to find proximity matches in text
   const findProximityMatches = (
@@ -504,7 +581,11 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
   // Wrap applyHighlights in useCallback
   const applyHighlights = useCallback(() => {
     // First clear any existing highlights
-    clearHighlights();
+    try {
+      clearHighlights();
+    } catch (clearErr) {
+      console.error(`Error while clearing highlights before applying new ones: ${clearErr instanceof Error ? clearErr.message : String(clearErr)}`);
+    }
 
     // Don't proceed if there are no search terms and no proximity searches
     if (searchTerms.length === 0 && proximitySearches.length === 0) {
@@ -516,333 +597,380 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
       const elements = document.querySelectorAll(targetSelector);
       console.log("Elements to highlight:", elements.length);
 
-      // Counter for matches
+      // Counter for matches - collect all matches before updating state
       const matchCounts: { term: string; count: number; color: string }[] = [];
 
       // Process each element
       elements.forEach((element) => {
-        // Skip elements that are not safe to modify
-        if (!isSafeToModify(element)) {
-          console.log("Skipping unsafe element");
-          return;
-        }
+        try {
+          // Skip elements that are not safe to modify
+          if (!isSafeToModify(element)) {
+            console.log("Skipping unsafe element");
+            return;
+          }
 
-        // Get the element's text content
-        const originalText = element.textContent || "";
-        if (!originalText.trim()) {
-          console.log("Skipping empty element");
-          return; // Skip empty elements
-        }
+          // Get the element's text and nodes using our improved function
+          const { text: elementText, nodes } = getTextWithOffsets(element);
+          if (!elementText.trim()) {
+            console.log("Skipping empty element");
+            return; // Skip empty elements
+          }
 
-        console.log(
-          "Processing element text:",
-          originalText.substring(0, 50) + "..."
-        );
+          console.log(
+            "Processing element text:",
+            elementText.substring(0, 50) + "..."
+          );
 
-        // Create a document fragment to build the highlighted content
-        const fragment = document.createDocumentFragment();
+          // Process each search term
+          let matches: Match[] = [];
 
-        // Track all matches (either simple term or proximity matches)
-        type Match = {
-          term: string;
-          index: number;
-          length: number;
-          color: string;
-        };
-        const allMatches: Match[] = [];
-
-        // Find all matches for all terms
-        searchTerms.forEach(({ term, color }) => {
-          if (!term.trim()) return;
-
-          try {
-            const regex = new RegExp(term, "gi");
+          // Add simple term matches
+          searchTerms.forEach(({ term, color }) => {
+            // Use a proper regex for word boundaries
+            const regex = new RegExp(`\\b${term}\\b`, 'gi');
             let match;
-
-            while ((match = regex.exec(originalText)) !== null) {
-              allMatches.push({
+            
+            // Find all matches
+            while ((match = regex.exec(elementText)) !== null) {
+              matches.push({
                 term,
                 index: match.index,
                 length: match[0].length,
                 color,
               });
-
-              // Update match counts
-              const existingCount = matchCounts.find((m) => m.term === term);
-              if (existingCount) {
-                existingCount.count++;
+              
+              // Add to match counts
+              const existingMatch = matchCounts.find((m) => m.term === term);
+              if (existingMatch) {
+                existingMatch.count++;
               } else {
                 matchCounts.push({ term, count: 1, color });
               }
             }
-          } catch (err) {
-            console.error(`Error processing regex for term '${term}':`, err);
-          }
-        });
+          });
 
-        // Process proximity searches
-        proximitySearches.forEach((proximitySearch) => {
-          // Create a display term for the proximity search
-          const displayTerm =
-            proximitySearch.terms.join(" + ") +
-            ` (within ${proximitySearch.distance} words)`;
-
-          try {
-            console.log("Processing proximity search:", displayTerm);
-
-            // Find all proximity matches for this search
-            const matches = findProximityMatches(originalText, proximitySearch);
-            console.log("Found proximity matches:", matches.length);
-
-            // Add each match to the allMatches array
-            matches.forEach(({ start, end }) => {
-              allMatches.push({
-                term: displayTerm,
+          // Add proximity matches
+          proximitySearches.forEach((proxSearch) => {
+            const proxMatches = findProximityMatches(elementText, proxSearch);
+            proxMatches.forEach(({ start, end }) => {
+              const matchText = elementText.substring(start, end);
+              matches.push({
+                term: proxSearch.terms.join(" near "),
                 index: start,
                 length: end - start,
-                color: proximitySearch.color,
+                color: proxSearch.color,
               });
-
-              // Update match counts
-              const existingCount = matchCounts.find(
-                (m) => m.term === displayTerm
-              );
-              if (existingCount) {
-                existingCount.count++;
+              
+              // Add to match counts
+              const termKey = proxSearch.terms.join(" near ");
+              const existingMatch = matchCounts.find((m) => m.term === termKey);
+              if (existingMatch) {
+                existingMatch.count++;
               } else {
                 matchCounts.push({
-                  term: displayTerm,
+                  term: termKey,
                   count: 1,
-                  color: proximitySearch.color,
+                  color: proxSearch.color,
                 });
               }
             });
-          } catch (err) {
-            console.error(
-              `Error processing proximity search '${displayTerm}':`,
-              err
-            );
+          });
+
+          // Sort matches by index (ascending)
+          matches.sort((a, b) => a.index - b.index);
+
+          // Apply highlights
+          if (matches.length > 0) {
+            // Create a document fragment to build the highlighted content
+            const tempDiv = document.createElement('div');
+            let currentIndex = 0;
+
+            // Build the highlighted content
+            matches.forEach((match) => {
+              // Add text before this match
+              if (match.index > currentIndex) {
+                tempDiv.appendChild(
+                  document.createTextNode(
+                    elementText.substring(currentIndex, match.index)
+                  )
+                );
+              }
+
+              // Add the highlighted span
+              const span = document.createElement('span');
+              span.className = 'highlight-term';
+              span.style.backgroundColor = match.color;
+              span.textContent = elementText.substring(
+                match.index,
+                match.index + match.length
+              );
+              tempDiv.appendChild(span);
+
+              // Update current index
+              currentIndex = match.index + match.length;
+            });
+
+            // Add any remaining text
+            if (currentIndex < elementText.length) {
+              tempDiv.appendChild(
+                document.createTextNode(elementText.substring(currentIndex))
+              );
+            }
+
+            // Replace the element's content with the highlighted version
+            element.innerHTML = '';
+            Array.from(tempDiv.childNodes).forEach(node => {
+              element.appendChild(node.cloneNode(true));
+            });
           }
-        });
-
-        // If no matches found, leave the element as is
-        if (allMatches.length === 0) {
-          console.log("No matches found in this element");
-          return;
-        }
-
-        // Sort matches by their position in the text
-        allMatches.sort((a, b) => a.index - b.index);
-        console.log("All matches:", allMatches);
-
-        // Process non-overlapping matches
-        let currentPosition = 0;
-
-        for (const match of allMatches) {
-          // Skip this match if it overlaps with already processed text
-          if (match.index < currentPosition) {
-            continue;
-          }
-
-          // Add text before the match
-          if (match.index > currentPosition) {
-            const textNode = document.createTextNode(
-              originalText.slice(currentPosition, match.index)
-            );
-            fragment.appendChild(textNode);
-          }
-
-          // Create highlighted span for the match
-          const span = document.createElement("span");
-          span.className = "highlight-term";
-          span.style.backgroundColor = match.color;
-          span.textContent = originalText.slice(
-            match.index,
-            match.index + match.length
-          );
-          fragment.appendChild(span);
-
-          // Update current position
-          currentPosition = match.index + match.length;
-        }
-
-        // Add any remaining text
-        if (currentPosition < originalText.length) {
-          const textNode = document.createTextNode(
-            originalText.slice(currentPosition)
-          );
-          fragment.appendChild(textNode);
-        }
-
-        // Clear the element and append the new content
-        // This needs to be done carefully to not conflict with React
-        try {
-          while (element.firstChild) {
-            element.removeChild(element.firstChild);
-          }
-          element.appendChild(fragment);
-        } catch (err) {
-          console.error("Error modifying DOM:", err);
-          // If we can't modify the DOM, just reset to original
-          element.textContent = originalText;
+        } catch (elementErr) {
+          console.error(`Error processing element for highlighting: ${elementErr instanceof Error ? elementErr.message : String(elementErr)}`, element);
         }
       });
 
-      // Update match counts in state
-      setFoundMatches(matchCounts);
+      // Update state once with all matches after processing all elements
+      if (matchCounts.length > 0) {
+        setFoundMatches(matchCounts);
+      }
     } catch (err) {
-      console.error("Error applying highlights:", err);
+      console.error(`Error applying highlights: ${err instanceof Error ? err.message : String(err)}`);
+      console.error(`Target selector: ${targetSelector}, Search terms: ${searchTerms.length}, Proximity searches: ${proximitySearches.length}`);
     }
-  }, [searchTerms, proximitySearches, targetSelector, clearHighlights]);
+  }, [searchTerms, proximitySearches, targetSelector, clearHighlights, findProximityMatches]);
 
   // Apply formula highlights
   const applyFormulaHighlights = useCallback(() => {
-    if (formulaSearches.length === 0) {
-      console.log("No formula searches to apply");
-      return;
-    }
-
-    console.log("Applying formula highlights:", formulaSearches);
+    if (formulaSearches.length === 0) return;
 
     try {
+      // Get all elements matching the selector
       const elements = document.querySelectorAll(targetSelector);
       const matchCounts: { term: string; count: number; color: string }[] = [];
 
+      // Process each element
       elements.forEach((element) => {
-        if (!isSafeToModify(element)) return;
+        try {
+          if (!isSafeToModify(element)) return;
 
-        const originalText = element.textContent || "";
-        if (!originalText.trim()) return;
+          // Get the element text using our improved function
+          const { text: elementText } = getTextWithOffsets(element);
+          if (!elementText.trim()) return;
 
-        console.log(
-          "Processing element for formula highlights:",
-          originalText.substring(0, 50) + "..."
-        );
+          // Create array to track all matches
+          const formulaMatches: Match[] = [];
 
-        const words = originalText.split(/\s+/);
-        const cleaned = words.map((w) => w.toLowerCase().replace(/[^\w]/g, ""));
-        const offsets: Offset[] = [];
+          // Process each formula
+          formulaSearches.forEach(({ formula, color }) => {
+            try {
+              const parsedFormula = parseFormula(formula);
+              if (!parsedFormula) return;
 
-        let cursor = 0;
-        for (let word of words) {
-          offsets.push({ word, start: cursor });
-          cursor += word.length + 1;
-        }
+              // Handle different formula types
+              if (parsedFormula.type === "single") {
+                // Handle single term matches (e.g., "(term1 OR term2)")
+                const words = elementText.split(/\s+/);
+                const matchesGroup = (word: string, group: RegExp[]) =>
+                  group.some((regex) => regex.test(word));
 
-        formulaSearches.forEach(({ formula, color }) => {
-          const config = parseFormula(formula);
-          if (!config) {
-            console.log("Invalid formula config:", formula);
-            return;
-          }
-
-          console.log("Processing formula:", formula, "with config:", config);
-
-          const matchesGroup = (word: string, group: RegExp[]) =>
-            group.some((regex) => regex.test(word));
-
-          let matchedIndexes: number[] = [];
-
-          if (
-            config.type === "proximity" &&
-            config.group1 &&
-            config.group2 &&
-            config.distance
-          ) {
-            console.log("Processing proximity search");
-            for (let i = 0; i < cleaned.length; i++) {
-              const w1 = cleaned[i];
-              const isA = matchesGroup(w1, config.group1);
-              const isB = matchesGroup(w1, config.group2);
-
-              if (isA) {
-                for (
-                  let j = i + 1;
-                  j <= i + config.distance + 1 && j < cleaned.length;
-                  j++
-                ) {
-                  if (matchesGroup(cleaned[j], config.group2)) {
-                    matchedIndexes.push(i, j);
+                // Find all matches for this group
+                words.forEach((word, index) => {
+                  if (matchesGroup(word, parsedFormula.group)) {
+                    // Find position of this word in the original text
+                    let position = 0;
+                    for (let i = 0; i < index; i++) {
+                      position = elementText.indexOf(words[i], position) + words[i].length;
+                      if (position === -1 + words[i].length) break;
+                    }
+                    
+                    const wordPosition = elementText.indexOf(word, position);
+                    if (wordPosition !== -1) {
+                      formulaMatches.push({
+                        term: formula,
+                        index: wordPosition,
+                        length: word.length,
+                        color
+                      });
+                      
+                      // Update match counts
+                      const existingCount = matchCounts.find((m) => m.term === formula);
+                      if (existingCount) {
+                        existingCount.count++;
+                      } else {
+                        matchCounts.push({ term: formula, count: 1, color });
+                      }
+                    }
                   }
-                }
-              } else if (isB) {
-                for (
-                  let j = i + 1;
-                  j <= i + config.distance + 1 && j < cleaned.length;
-                  j++
-                ) {
-                  if (matchesGroup(cleaned[j], config.group1)) {
-                    matchedIndexes.push(i, j);
+                });
+              } else if (parsedFormula.type === "proximity") {
+                // Handle proximity matches (e.g., "((term1) 5D (term2))")
+                const words = elementText.split(/\s+/);
+                
+                // Find positions where group1 and group2 terms appear
+                const group1Positions: number[] = [];
+                const group2Positions: number[] = [];
+                
+                words.forEach((word, index) => {
+                  if (parsedFormula.group1.some(regex => regex.test(word))) {
+                    group1Positions.push(index);
                   }
+                  if (parsedFormula.group2.some(regex => regex.test(word))) {
+                    group2Positions.push(index);
+                  }
+                });
+                
+                // Find valid matches within distance
+                group1Positions.forEach(pos1 => {
+                  group2Positions.forEach(pos2 => {
+                    if (Math.abs(pos1 - pos2) <= parsedFormula.distance) {
+                      // Define match range
+                      const startPos = Math.min(pos1, pos2);
+                      const endPos = Math.max(pos1, pos2);
+                      
+                      // Calculate character positions
+                      let startCharPos = 0;
+                      for (let i = 0; i < startPos; i++) {
+                        startCharPos = elementText.indexOf(words[i], startCharPos) + words[i].length;
+                        if (startCharPos === -1 + words[i].length) break;
+                      }
+                      
+                      let endCharPos = startCharPos;
+                      for (let i = startPos; i <= endPos; i++) {
+                        endCharPos = elementText.indexOf(words[i], endCharPos) + words[i].length;
+                        if (endCharPos === -1 + words[i].length) break;
+                      }
+                      
+                      // Add match
+                      if (startCharPos < endCharPos) {
+                        formulaMatches.push({
+                          term: formula,
+                          index: startCharPos,
+                          length: endCharPos - startCharPos,
+                          color
+                        });
+                        
+                        // Update match counts
+                        const existingCount = matchCounts.find((m) => m.term === formula);
+                        if (existingCount) {
+                          existingCount.count++;
+                        } else {
+                          matchCounts.push({ term: formula, count: 1, color });
+                        }
+                      }
+                    }
+                  });
+                });
+              }
+            } catch (formulaError) {
+              console.error(`Error processing formula "${formula}": ${formulaError instanceof Error ? formulaError.message : String(formulaError)}`);
+            }
+          });
+
+          // Apply highlights if there are matches
+          if (formulaMatches.length > 0) {
+            try {
+              // Sort matches by position
+              formulaMatches.sort((a, b) => a.index - b.index);
+
+              // Create temporary div to build highlighted content
+              const tempDiv = document.createElement('div');
+              let currentIndex = 0;
+
+              // Build the highlighted content
+              formulaMatches.forEach((match) => {
+                // Add text before this match
+                if (match.index > currentIndex) {
+                  tempDiv.appendChild(
+                    document.createTextNode(
+                      elementText.substring(currentIndex, match.index)
+                    )
+                  );
                 }
-              }
-            }
-          } else if (config.type === "single" && config.group) {
-            console.log("Processing single term search");
-            for (let i = 0; i < cleaned.length; i++) {
-              if (matchesGroup(cleaned[i], config.group)) {
-                matchedIndexes.push(i);
-              }
-            }
-          }
 
-          console.log("Found matches for formula:", formula, matchedIndexes);
-
-          if (matchedIndexes.length > 0) {
-            [...new Set(matchedIndexes)]
-              .sort((a, b) => b - a)
-              .forEach((i) => {
-                const start = offsets[i].start;
-                const end = start + offsets[i].word.length;
-                const range = document.createRange();
-                range.setStart(element.firstChild!, start);
-                range.setEnd(element.firstChild!, end);
-                const span = document.createElement("span");
-                span.className = "highlight-term";
-                span.style.backgroundColor = color;
-                span.appendChild(range.extractContents());
-                range.insertNode(span);
-
-                // Update match counts
-                const existingCount = matchCounts.find(
-                  (m) => m.term === formula
+                // Add the highlighted span
+                const span = document.createElement('span');
+                span.className = 'highlight-term';
+                span.style.backgroundColor = match.color;
+                span.textContent = elementText.substring(
+                  match.index,
+                  match.index + match.length
                 );
-                if (existingCount) {
-                  existingCount.count++;
-                } else {
-                  matchCounts.push({ term: formula, count: 1, color });
-                }
+                tempDiv.appendChild(span);
+
+                // Update current index
+                currentIndex = match.index + match.length;
               });
+
+              // Add any remaining text
+              if (currentIndex < elementText.length) {
+                tempDiv.appendChild(
+                  document.createTextNode(elementText.substring(currentIndex))
+                );
+              }
+
+              // Replace the element's content with the highlighted version
+              element.innerHTML = '';
+              Array.from(tempDiv.childNodes).forEach(node => {
+                element.appendChild(node.cloneNode(true));
+              });
+            } catch (highlightError) {
+              console.error(`Error applying formula highlights to element: ${highlightError instanceof Error ? highlightError.message : String(highlightError)}`);
+            }
           }
-        });
+        } catch (elementError) {
+          console.error(`Error processing element for formula highlighting: ${elementError instanceof Error ? elementError.message : String(elementError)}`);
+        }
       });
 
-      setFoundMatches((prev) => [...prev, ...matchCounts]);
+      // Update state once after processing all elements
+      if (matchCounts.length > 0) {
+        // Merge with existing matches instead of adding to the array
+        setFoundMatches(prevMatches => {
+          // Create a new array with merged results
+          const mergedMatches = [...prevMatches];
+          
+          // Add new matches from this highlighting pass
+          matchCounts.forEach(newMatch => {
+            const existingMatch = mergedMatches.find(m => m.term === newMatch.term);
+            if (existingMatch) {
+              existingMatch.count += newMatch.count;
+            } else {
+              mergedMatches.push(newMatch);
+            }
+          });
+          
+          return mergedMatches;
+        });
+      }
     } catch (err) {
-      console.error("Error applying formula highlights:", err);
+      console.error(`Error applying formula highlights: ${err instanceof Error ? err.message : String(err)}`);
+      console.error(`Target selector: ${targetSelector}, Formula searches: ${formulaSearches.length}`);
     }
-  }, [formulaSearches, targetSelector]);
+  }, [formulaSearches, targetSelector, parseFormula]);
 
   // Update useLayoutEffect to include formula highlights
   useLayoutEffect(() => {
-    if (
-      searchTerms.length > 0 ||
-      proximitySearches.length > 0 ||
-      formulaSearches.length > 0
-    ) {
-      const timeoutId = setTimeout(() => {
-        applyHighlights();
-        applyFormulaHighlights();
-      }, 0);
-
-      return () => clearTimeout(timeoutId);
-    } else {
+    // Check if we need to highlight or clear
+    const hasTerms = searchTerms.length > 0 || 
+                     proximitySearches.length > 0 ||
+                     formulaSearches.length > 0;
+                     
+    if (hasTerms) {
+      // Only apply highlights if needed (performance optimization)
+      if (needsHighlighting()) {
+        const timeoutId = setTimeout(() => {
+          applyHighlights();
+          applyFormulaHighlights();
+        }, 0);
+  
+        return () => clearTimeout(timeoutId);
+      }
+    } else if (foundMatches.length > 0) {
+      // Clear highlights if we had terms before but not anymore
       clearHighlights();
     }
 
-    return () => {
-      clearHighlights();
-    };
+    // No cleanup needed if we didn't do anything
+    return undefined;
   }, [
     searchTerms,
     proximitySearches,
@@ -852,37 +980,88 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     applyHighlights,
     applyFormulaHighlights,
     clearHighlights,
+    needsHighlighting,
+    foundMatches,
   ]);
-
-  // Reapply highlights when DOM changes (expansion/collapse)
+  
+  // Also fix the MutationObserver setup to avoid triggering too many updates
   useEffect(() => {
+    // Only setup observer if we have terms to highlight
+    if (searchTerms.length === 0 && proximitySearches.length === 0 && formulaSearches.length === 0) {
+      return;
+    }
+    
+    let timeoutId: NodeJS.Timeout | null = null;
+    let skipNextUpdate = false;
+    
     const handleDomChanges = () => {
-      if (searchTerms.length > 0 || proximitySearches.length > 0) {
-        // Increment the highlight ID to trigger a refresh
-        setHighlightId((prev) => prev + 1);
+      // Skip if we're already processing an update
+      if (skipNextUpdate) {
+        return;
       }
+      
+      // Debounce the updates to prevent multiple rapid changes
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      
+      timeoutId = setTimeout(() => {
+        // Check if we actually need to reapply highlights
+        if (needsHighlighting()) {
+          console.log("DOM changed, reapplying highlights");
+          
+          // Set flag to skip next mutation (our highlight changes will trigger mutations)
+          skipNextUpdate = true;
+          
+          // Increment the highlight ID to trigger a refresh
+          setHighlightId((prev) => prev + 1);
+          
+          // Reset skip flag after a short delay
+          setTimeout(() => {
+            skipNextUpdate = false;
+          }, 200);
+        }
+      }, 150); // Increased debounce timeout
     };
 
-    // Create a mutation observer to detect when claims or description is expanded
+    // Create a mutation observer to detect when claims or description elements change
     const observer = new MutationObserver(handleDomChanges);
 
-    // Elements to observe - claims and description content
-    const claimsContent = document.querySelector(".claims-content");
-    const descriptionContent = document.querySelector(".description-content");
-
-    // Start observing with subtree option to catch deeper changes
-    if (claimsContent) {
-      observer.observe(claimsContent, { childList: true, subtree: true });
+    // Get parent container that contains all highlightable sections
+    const patentDetailsContainer = document.querySelector(".patent-details");
+    
+    if (patentDetailsContainer) {
+      // Observe the entire patent details container for changes
+      observer.observe(patentDetailsContainer, { 
+        childList: true,      // Watch for added/removed nodes
+        subtree: true,        // Watch all descendants
+        characterData: true,  // Watch for text changes
+        attributes: false     // Don't need to watch attributes
+      });
+      
+      console.log("MutationObserver attached to patent details container");
+    } else {
+      // Fallback to observing individual sections
+      const highlightableElements = document.querySelectorAll(targetSelector);
+      highlightableElements.forEach(element => {
+        observer.observe(element, { 
+          childList: true, 
+          subtree: true,
+          characterData: true 
+        });
+      });
+      
+      console.log("MutationObserver attached to individual highlightable elements");
     }
-    if (descriptionContent) {
-      observer.observe(descriptionContent, { childList: true, subtree: true });
-    }
 
-    // Clean up observer
+    // Clean up observer and any pending timeouts
     return () => {
       observer.disconnect();
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
-  }, [searchTerms, proximitySearches]);
+  }, [searchTerms, proximitySearches, formulaSearches, targetSelector, needsHighlighting]);
 
   // Handle click outside modal
   useEffect(() => {
