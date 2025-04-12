@@ -30,7 +30,7 @@ const PatentHistory: React.FC = () => {
       apiCallInProgress.current = true;
       setIsLoading(true);
       const response = await authApi.getSearchHistory();
-      setSearchHistory(response.data || []);
+      setSearchHistory(response.data?.results || []);
     } catch (error) {
       console.error('Failed to fetch search history:', error);
     } finally {
