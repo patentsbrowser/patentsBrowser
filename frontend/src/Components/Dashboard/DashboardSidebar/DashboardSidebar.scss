@@ -1782,4 +1782,31 @@
       transition: color 0.2s ease;
     }
   }
+}
+
+.folder-actions, .subfolder-actions {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+
+  .search-all-icon, .add-patent-icon, .add-subfolder-icon, .add-patents-icon, .delete-folder-icon {
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+      transform: scale(1.1);
+    }
+  }
+
+  .search-all-icon {
+    color: #2196F3;
+    font-size: 1.1em;
+    
+    &:hover {
+      color: #0d8bf2;
+    }
+  }
 } 

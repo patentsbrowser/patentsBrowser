@@ -113,6 +113,16 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
   const [filterByFamily, setFilterByFamily] = useState(true);
   const [notFoundPatents, setNotFoundPatents] = useState<string[]>([]);
   const [isFromLocalStorage, setIsFromLocalStorage] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [recentSearches, setRecentSearches] = useState<Array<{patentId: string; timestamp: number}>>(() => {
+    try {
+      const storedRecentSearches = localStorage.getItem('recentSearches');
+      return storedRecentSearches ? JSON.parse(storedRecentSearches) : [];
+    } catch (error) {
+      console.error('Error parsing recent searches from localStorage:', error);
+      return [];
+    }
+  });
   
   const dispatch = useAppDispatch();
   const { filters, smartSearchResults, searchResults: reduxSearchResults } = useAppSelector((state: RootState) => state.patents);
@@ -450,7 +460,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
             const patentData = await patentApi.searchPatents(id, selectedApi);
             
             // Convert to our format
-            return normalizePatentResponse(patentData, id, selectedApi);
+            return normalizePatentResponse(patentData, selectedApi);
           } catch (error) {
             console.error(`Error searching for patent ${id}:`, error);
             return {
@@ -466,12 +476,24 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         console.log("Search results:", searchResults);
         
         // Filter out errors and set results
-        results = searchResults.filter(result => result.status === 'success') as PatentSummary[];
+        results = searchResults.filter(result => {
+          if (!result) return false;
+          const typedResult = result as unknown as { status?: string; patentId: string };
+          return typedResult.status === 'success';
+        }) as PatentSummary[];
         
         // Track patents that weren't found
-        const failedResults = searchResults.filter(result => result.status === 'error');
+        const failedResults = searchResults.filter(result => {
+          if (!result) return false;
+          const typedResult = result as unknown as { status?: string; patentId: string };
+          return typedResult.status === 'error';
+        });
         if (failedResults.length > 0) {
-          const notFoundIds = failedResults.map(r => r.patentId);
+          const notFoundIds = failedResults.map(r => {
+            if (!r) return '';
+            const typedResult = r as unknown as { patentId: string };
+            return typedResult.patentId || '';
+          }).filter(Boolean);
           setNotFoundPatents(notFoundIds);
           console.log("Patents not found:", notFoundIds);
           toast.error(`${notFoundIds.length} patents not found: ${notFoundIds.join(', ')}`);
@@ -628,28 +650,69 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     return await Promise.all(promises);
   };
 
+  // Update the handlePatentSelect function to trigger a direct search when a patent is selected from a folder
   const handlePatentSelect = (patentId: string) => {
-    if (selectedPatent) {
-      // We're in the full details view, and a family member was clicked
+    console.log(`Patent selected: ${patentId}`);
+    
+    // Clean up the patent ID if needed
+    const cleanedId = patentId.trim();
+    if (!cleanedId) return;
+    
+    // Detect API type for this patent ID
+    const apiType = detectApiType(cleanedId);
+    setSelectedApi(apiType);
+    
+    // Set the search query to this patent ID
+    setSearchQuery(cleanedId);
+    
+    // Set patent IDs array
+    setPatentIds([cleanedId]);
+    
+    // Perform a direct search for this patent ID
+    handlePerformSearch([cleanedId]);
+  };
+
+  // Define the function to handle patent selection with folder context
+  const handlePatentWithFolderClick = (patentId: string, folderName: string) => {
+    console.log(`Patent selected from folder "${folderName}": ${patentId}`);
+    
+    // Clean up the patent ID if needed
+    const cleanedId = patentId.trim();
+    if (!cleanedId) return;
+    
+    // Detect API type for this patent ID
+    const apiType = detectApiType(cleanedId);
+    setSelectedApi(apiType);
+    
+    // Set the search query to this patent ID
+    setSearchQuery(cleanedId);
+    
+    // Set patent IDs array
+    setPatentIds([cleanedId]);
+    
+    // Perform a direct search for this patent ID
+    handlePerformSearch([cleanedId]);
+    
+    // Add this patent to recent searches
+    updateRecentSearches(cleanedId, Date.now());
+  };
+
+  // Add a function to add a custom folder with selected patents
+  const handleAddCustomFolder = async (name: string, patentIds: string[]) => {
+    try {
+      const response = await authApi.saveCustomPatentList(name, patentIds, 'folderName');
+      console.log('Custom folder created:', response);
+      toast.success(`Folder "${name}" created with ${patentIds.length} patents.`);
       
-      // Create a temporary patent summary with loading state
-      const tempPatent: PatentSummary = {
-        patentId: patentId,
-        status: 'loading',
-        title: `Loading ${patentId}...`,
-        abstract: 'Fetching patent information...'
-      };
+      // Dispatch a custom event to notify the DashboardSidebar to refresh
+      const refreshEvent = new CustomEvent('refresh-custom-folders');
+      window.dispatchEvent(refreshEvent);
       
-      // Update the UI to show we're loading the new patent
-      setSelectedPatent(tempPatent);
-      
-      // Fetch the full details of the new patent
-      dispatch(fetchFullPatentDetails({ patentId, apiType: selectedApi }));
-    } else {
-      // Standard behavior when not in the modal
-      setSearchQuery(patentId);
-      const apiType = detectApiType(patentId);
-      setSelectedApi(apiType);
+      return response;
+    } catch (error) {
+      console.error('Error creating custom folder:', error);
+      toast.error('Failed to create custom folder.');
+      throw error;
     }
   };
 
@@ -1067,6 +1130,86 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     dispatch(clearPatentState()); // Clear Redux state
   };
 
+  // Handle page change function for pagination
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // You can implement actual pagination logic here if needed
+    // For now, this is just to satisfy the interface requirement
+  };
+
+  // Add a helper function to update recent searches
+  const updateRecentSearches = (patentId: string, timestamp: number) => {
+    // Clone current recent searches
+    const updatedRecentSearches = [...recentSearches];
+    
+    // Check if patent already exists in recent searches
+    const existingIndex = updatedRecentSearches.findIndex(
+      (search) => search.patentId === patentId
+    );
+    
+    if (existingIndex !== -1) {
+      // If exists, update timestamp to make it most recent
+      updatedRecentSearches[existingIndex].timestamp = timestamp;
+    } else {
+      // If new, add to recent searches
+      updatedRecentSearches.push({ patentId, timestamp });
+    }
+    
+    // Sort by timestamp (newest first)
+    updatedRecentSearches.sort((a, b) => b.timestamp - a.timestamp);
+    
+    // Keep only the most recent 50 searches
+    const limitedSearches = updatedRecentSearches.slice(0, 50);
+    
+    // Update state
+    setRecentSearches(limitedSearches);
+    
+    // Save to localStorage
+    try {
+      localStorage.setItem('recentSearches', JSON.stringify(limitedSearches));
+    } catch (error) {
+      console.error('Error saving recent searches to localStorage:', error);
+    }
+  };
+
+  // Add event listener for "search-patents" event from sidebar
+  useEffect(() => {
+    const handleSearchPatentsEvent = (event: CustomEvent) => {
+      const { patentIds, source } = event.detail;
+      
+      if (!patentIds || patentIds.length === 0) return;
+      
+      console.log(`Searching for ${patentIds.length} patents from ${source}`);
+      
+      // Set the search query to show all patent IDs
+      setSearchQuery(patentIds.join(', '));
+      
+      // Set the patent IDs array
+      setPatentIds(patentIds);
+      
+      // Auto-detect API type from the first patent ID
+      const apiType = detectApiType(patentIds[0]);
+      setSelectedApi(apiType);
+      
+      // Perform the search
+      handlePerformSearch(patentIds);
+      
+      // Add these patents to recent searches
+      const timestamp = Date.now();
+      patentIds.forEach((id: string) => {
+        updateRecentSearches(id, timestamp);
+      });
+    };
+    
+    // Add the event listener with type assertion
+    window.addEventListener('search-patents', handleSearchPatentsEvent as EventListener);
+    
+    return () => {
+      // Remove the event listener on cleanup
+      window.removeEventListener('search-patents', handleSearchPatentsEvent as EventListener);
+    };
+  }, []);
+
   return (
     <div className="patent-search">
       {!selectedPatent && patentSummaries.length === 0 && (
@@ -1108,7 +1251,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
       
       {patentSummaries.length > 0 && !isLoading && (
         <PatentSummaryList
-          patentSummaries={patentSummaries}
+          patentSummaries={filters.filteredPatents || patentSummaries}
           selectedPatent={selectedPatent}
           setSelectedPatent={setSelectedPatent}
           onViewDetails={handleViewDetails}
@@ -1116,6 +1259,15 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
           formatDate={formatDate}
           apiSource={selectedApi}
           onClearResults={handleClearResults}
+          onPageChange={handlePageChange}
+          pagination={{
+            currentPage,
+            totalPages: Math.ceil(patentSummaries.length / 10), // Assuming 10 items per page
+            totalResults: patentSummaries.length,
+            resultsPerPage: 10,
+            hasNextPage: currentPage < Math.ceil(patentSummaries.length / 10),
+            hasPreviousPage: currentPage > 1
+          }}
         />
       )}
 

@@ -6,7 +6,9 @@ import PatentSummaryCard from './PatentSummaryCard';
 import { ApiSource } from '../../api/patents';
 import { useAppSelector } from '../../Redux/hooks';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faChevronLeft, faChevronRight, faFolderPlus, faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
+import { authApi } from '../../api/auth';
+import toast from 'react-hot-toast';
 
 interface PatentSummaryListProps {
   patentSummaries: PatentSummary[];
@@ -45,6 +47,12 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
   const [itemsPerPage, setItemsPerPage] = useState(() => {
     return parseInt(localStorage.getItem('resultsPerPage') || '50', 10);
   });
+  
+  // States for patent selection and folder creation
+  const [selectedPatentIds, setSelectedPatentIds] = useState<string[]>([]);
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [folderName, setFolderName] = useState('');
+  const [showSaveToCustomFolder, setShowSaveToCustomFolder] = useState(false);
 
   // Update itemsPerPage when localStorage changes
   useEffect(() => {
@@ -78,7 +86,80 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
     }
   }, [pagination?.currentPage]);
 
-  if (patentSummaries.length === 0) return null;
+  // Handle patent selection
+  const handlePatentSelection = (patentId: string, selected: boolean) => {
+    if (selected) {
+      setSelectedPatentIds(prev => [...prev, patentId]);
+    } else {
+      setSelectedPatentIds(prev => prev.filter(id => id !== patentId));
+    }
+  };
+
+  // Handle "Select All" toggle
+  const toggleSelectAll = () => {
+    if (selectedPatentIds.length === patentSummaries.length) {
+      // If all are selected, deselect all
+      setSelectedPatentIds([]);
+    } else {
+      // Otherwise, select all
+      setSelectedPatentIds(patentSummaries.map(patent => patent.patentId));
+    }
+  };
+
+  // Handle folder creation
+  const handleCreateFolder = async () => {
+    if (!folderName.trim()) {
+      toast.error('Please enter a folder name');
+      return;
+    }
+
+    try {
+      // Use saveCustomPatentList with source parameter set to 'folderName' to ensure it appears in CustomSearch
+      await authApi.saveCustomPatentList(folderName, selectedPatentIds, 'folderName');
+      toast.success(`Created folder "${folderName}" with ${selectedPatentIds.length} patents`);
+      
+      // Dispatch a custom event to notify the DashboardSidebar to refresh
+      const refreshEvent = new CustomEvent('refresh-custom-folders');
+      window.dispatchEvent(refreshEvent);
+      
+      setIsCreatingFolder(false);
+      setFolderName('');
+      setSelectedPatentIds([]);
+    } catch (error) {
+      console.error('Error creating folder:', error);
+      toast.error('Failed to create folder. Please try again.');
+    }
+  };
+
+  // Handle saving selected patents to Custom folder in DashboardSidebar
+  const handleSaveToCustomFolder = async () => {
+    if (selectedPatentIds.length === 0) {
+      toast.error('Please select at least one patent');
+      return;
+    }
+
+    if (!folderName.trim()) {
+      toast.error('Please enter a folder name');
+      return;
+    }
+
+    try {
+      // Save the patents directly to the Custom folder with 'folderName' source
+      await authApi.saveCustomPatentList(folderName, selectedPatentIds, 'folderName');
+      toast.success(`Saved ${selectedPatentIds.length} patents to "${folderName}" in Custom folder`);
+      
+      // Dispatch a custom event to notify the DashboardSidebar to refresh
+      const refreshEvent = new CustomEvent('refresh-custom-folders');
+      window.dispatchEvent(refreshEvent);
+      
+      setShowSaveToCustomFolder(false);
+      setFolderName('');
+      setSelectedPatentIds([]);
+    } catch (error) {
+      console.error('Error saving to Custom folder:', error);
+      toast.error('Failed to save to Custom folder. Please try again.');
+    }
+  };
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
@@ -86,18 +167,103 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  if (patentSummaries.length === 0) return null;
+
   return (
     <div className="patent-summaries">
       <div className="summaries-header">
         <h3>Patent Search Results</h3>
-        <button 
-          className="clear-results-button"
-          onClick={onClearResults}
-          aria-label="Clear results"
-        >
-          <FontAwesomeIcon icon={faTimes} />
-        </button>
+        <div className="header-actions">
+          {selectedPatentIds.length > 0 && (
+            <div className="selection-actions">
+              <span className="selected-count">{selectedPatentIds.length} patents selected</span>
+              <button 
+                className="folder-action-btn custom-folder-btn"
+                onClick={() => setShowSaveToCustomFolder(true)}
+                title="Save to Custom folder in Dashboard"
+              >
+                <FontAwesomeIcon icon={faSave} /> Save to Custom Folder
+              </button>
+              <button 
+                className="folder-action-btn"
+                onClick={() => setIsCreatingFolder(true)}
+                title="Create folder with selected patents"
+              >
+                <FontAwesomeIcon icon={faFolderPlus} /> Create Folder
+              </button>
+            </div>
+          )}
+          <button
+            className="select-all-button"
+            onClick={toggleSelectAll}
+            title={selectedPatentIds.length === patentSummaries.length ? "Deselect all" : "Select all"}
+          >
+            {selectedPatentIds.length === patentSummaries.length ? "Deselect All" : "Select All"}
+          </button>
+          <button 
+            className="clear-results-button"
+            onClick={onClearResults}
+            aria-label="Clear results"
+          >
+            <FontAwesomeIcon icon={faTimes} />
+          </button>
+        </div>
       </div>
+
+      {isCreatingFolder && (
+        <div className="create-folder-panel">
+          <div className="create-folder-form">
+            <input
+              type="text"
+              placeholder="Enter folder name"
+              value={folderName}
+              onChange={(e) => setFolderName(e.target.value)}
+              className="folder-name-input"
+            />
+            <button 
+              className="create-btn" 
+              onClick={handleCreateFolder}
+              disabled={!folderName.trim() || selectedPatentIds.length === 0}
+            >
+              <FontAwesomeIcon icon={faCheck} /> Create
+            </button>
+            <button 
+              className="cancel-btn"
+              onClick={() => setIsCreatingFolder(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showSaveToCustomFolder && (
+        <div className="create-folder-panel">
+          <div className="create-folder-form">
+            <input
+              type="text"
+              placeholder="Enter Custom folder name"
+              value={folderName}
+              onChange={(e) => setFolderName(e.target.value)}
+              className="folder-name-input"
+            />
+            <button 
+              className="create-btn" 
+              onClick={handleSaveToCustomFolder}
+              disabled={!folderName.trim() || selectedPatentIds.length === 0}
+            >
+              <FontAwesomeIcon icon={faSave} /> Save to Custom
+            </button>
+            <button 
+              className="cancel-btn"
+              onClick={() => setShowSaveToCustomFolder(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="summaries-grid">
         {patentSummaries?.map((summary) => (
           <PatentSummaryCard
@@ -107,6 +273,8 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
             formatDate={formatDate}
             onPatentSelect={onPatentSelect}
             apiSource={apiSource}
+            isSelected={selectedPatentIds.includes(summary.patentId)}
+            onSelect={handlePatentSelection}
           />
         ))}
       </div>

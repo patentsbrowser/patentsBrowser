@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import "./DashboardSidebar.scss";
+import { toast } from "react-hot-toast";
 
 interface CustomPatentList {
   _id: string;
@@ -401,6 +402,22 @@ const CustomSearch: React.FC<CustomSearchProps> = ({
     }
   };
 
+  // Update the folder header to add a "Search All" button
+  const handleSearchAllPatents = (folderName: string, patentIds: string[]) => {
+    if (patentIds.length === 0) return;
+    
+    // Create a custom event to trigger a patent search
+    const event = new CustomEvent('search-patents', {
+      detail: {
+        patentIds,
+        source: folderName
+      }
+    });
+    
+    window.dispatchEvent(event);
+    toast.success(`Searching for ${patentIds.length} patents from folder "${folderName}"`);
+  };
+
   return (
     <div className="custom-search-section">
       <div className="section-header">
@@ -683,6 +700,16 @@ const CustomSearch: React.FC<CustomSearchProps> = ({
                   {showFolderActions === folder._id && (
                     <div className="folder-actions">
                       <span
+                        className="search-all-icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSearchAllPatents(folder.name, folder.patentIds);
+                        }}
+                        title="Search all patents in folder"
+                      >
+                        🔍
+                      </span>
+                      <span
                         className="add-patent-icon"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -830,6 +857,16 @@ const CustomSearch: React.FC<CustomSearchProps> = ({
 
                               {showFolderDeleteIcon === subfolder._id && (
                                 <div className="subfolder-actions">
+                                  <span
+                                    className="search-all-icon"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSearchAllPatents(subfolder.name, subfolder.patentIds);
+                                    }}
+                                    title="Search all patents in subfolder"
+                                  >
+                                    🔍
+                                  </span>
                                   <span
                                     className="add-patent-icon"
                                     onClick={(e) => {

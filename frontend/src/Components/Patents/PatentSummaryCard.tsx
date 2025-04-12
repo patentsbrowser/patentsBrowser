@@ -5,6 +5,8 @@ import { ApiSource } from '../../api/patents';
 import { useAppDispatch, useAppSelector } from '../../Redux/hooks';
 import { markPatentAsViewed } from '../../Redux/slices/patentSlice';
 import { RootState } from '../../Redux/store';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFolderPlus } from '@fortawesome/free-solid-svg-icons';
 
 interface PatentSummaryCardProps {
   summary: PatentSummary;
@@ -12,12 +14,19 @@ interface PatentSummaryCardProps {
   formatDate: (date: string | undefined) => string;
   onPatentSelect?: (patentId: string) => void;
   apiSource?: ApiSource;
+  isSelected?: boolean;
+  onSelect?: (patentId: string, selected: boolean) => void;
 }
 
 const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
   summary,
   onViewDetails,
-  formatDate}) => {
+  formatDate,
+  onPatentSelect,
+  apiSource,
+  isSelected = false,
+  onSelect,
+}) => {
   const dispatch = useAppDispatch();
   const viewedPatents = useAppSelector((state: RootState) => state.patents.viewedPatents);
   const isViewed = viewedPatents.includes(summary.patentId);
@@ -29,14 +38,33 @@ const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
     // Call the original onViewDetails handler
     onViewDetails(summary);
   };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    if (onSelect) {
+      onSelect(summary.patentId, e.target.checked);
+    }
+  };
   
   return (
     <div 
       key={summary.patentId[0]} 
-      className={`summary-card ${summary.status} ${isViewed ? 'viewed' : ''}`}
+      className={`summary-card ${summary.status} ${isViewed ? 'viewed' : ''} ${isSelected ? 'selected' : ''}`}
     >
       <div className="summary-header">
-        <span className="patent-id">{summary.patentId}</span>
+        <div className="patent-header-left">
+          {onSelect && (
+            <div className="patent-selection" onClick={(e) => e.stopPropagation()}>
+              <input 
+                type="checkbox" 
+                checked={isSelected}
+                onChange={handleCheckboxChange}
+                className="patent-checkbox"
+              />
+            </div>
+          )}
+          <span className="patent-id">{summary.patentId}</span>
+        </div>
         <span className="status-indicator">
           {summary.status === 'loading' ? '⌛' : 
            summary.status === 'success' 

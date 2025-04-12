@@ -132,6 +132,20 @@ const DashboardSidebar = ({
     }
   }, [isExpanded, hasLoadedLists]);
 
+  // Add event listener for refreshing custom folders
+  useEffect(() => {
+    const handleRefreshCustomFolders = () => {
+      console.log('Refreshing custom folders from event');
+      fetchCustomPatentLists();
+    };
+
+    window.addEventListener('refresh-custom-folders', handleRefreshCustomFolders);
+    
+    return () => {
+      window.removeEventListener('refresh-custom-folders', handleRefreshCustomFolders);
+    };
+  }, []);
+
   // Reset pin state when behavior changes
   useEffect(() => {
     if (sidebarBehavior === 'auto') {
