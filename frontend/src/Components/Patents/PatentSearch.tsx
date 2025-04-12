@@ -359,6 +359,8 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
           const result = await patentApi.searchMultiplePatentsUnified(formattedIds, 'smart');
           console.log("Smart search completed with results:", result);
           dispatch(setSmartSearchResults(result));
+          // Set loading to false after successful API call
+          setIsLoading(false);
           
         } catch (error) {
           console.error("Smart search error:", error);
