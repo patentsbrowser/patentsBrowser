@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { User } from '../models/User.js';
 import Subscription, { SubscriptionPlan, SubscriptionStatus } from '../models/Subscription.js';
 import PricingPlan from '../models/PricingPlan.js';
-import razorpayService from '../services/razorpayService.js';
+import googlePayService from '../services/googlePayService.js';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
 
@@ -23,7 +23,7 @@ export const getPricingPlans = async (req: Request, res: Response) => {
   }
 };
 
-// Create a Razorpay order for subscription
+// Create a Google Pay deep link for subscription
 export const createSubscriptionOrder = async (req: Request, res: Response) => {
   try {
     const { planId } = req.body;
@@ -54,34 +54,25 @@ export const createSubscriptionOrder = async (req: Request, res: Response) => {
       });
     }
 
-    // Create Razorpay customer if not already created
-    if (!user.razorpayCustomerId) {
-      const customer = await razorpayService.createCustomer(
-        user.name || 'Customer',
-        user.email,
-        user.number
-      );
-      
-      user.razorpayCustomerId = customer.id;
-      await user.save();
-    }
+    // Generate a unique order ID
+    const orderId = googlePayService.generateOrderId();
 
-    // Create a Razorpay order
-    const order = await razorpayService.createOrder(
+    // Create a Google Pay deep link
+    const paymentInfo = await googlePayService.createGooglePayDeepLink(
       plan.price,
-      `plan_${plan.type}_${Date.now()}`,
       {
-        userId: userId,
+        orderId,
         planId: planId,
-        planType: plan.type
+        planType: plan.type,
+        userId: userId,
+        description: `${plan.name} Subscription`
       }
     );
 
     return res.status(200).json({
       success: true,
       data: {
-        order,
-        key: process.env.RAZORPAY_KEY_ID,
+        paymentInfo,
         user: {
           name: user.name,
           email: user.email,
@@ -102,9 +93,10 @@ export const createSubscriptionOrder = async (req: Request, res: Response) => {
 export const activateSubscription = async (req: Request, res: Response) => {
   try {
     const {
-      razorpayPaymentId,
-      razorpayOrderId,
-      razorpaySignature,
+      paymentId,
+      orderId,
+      transactionId,
+      signature,
       planId
     } = req.body;
     
@@ -117,17 +109,18 @@ export const activateSubscription = async (req: Request, res: Response) => {
       });
     }
 
-    // Verify the payment signature
-    const isValidSignature = razorpayService.verifyPaymentSignature(
-      razorpayOrderId,
-      razorpayPaymentId,
-      razorpaySignature
-    );
+    // Verify the payment
+    const isValidPayment = googlePayService.verifyPayment({
+      orderId,
+      transactionId,
+      paymentId,
+      signature
+    });
 
-    if (!isValidSignature) {
+    if (!isValidPayment) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid payment signature'
+        message: 'Invalid payment'
       });
     }
 
@@ -141,7 +134,7 @@ export const activateSubscription = async (req: Request, res: Response) => {
     }
 
     const startDate = new Date();
-    const endDate = razorpayService.calculateSubscriptionEndDate(plan.type as SubscriptionPlan, startDate);
+    const endDate = googlePayService.calculateSubscriptionEndDate(plan.type as SubscriptionPlan, startDate);
 
     // Create or update the subscription
     const subscription = await Subscription.findOneAndUpdate(
@@ -151,8 +144,8 @@ export const activateSubscription = async (req: Request, res: Response) => {
         startDate,
         endDate,
         status: SubscriptionStatus.ACTIVE,
-        razorpayPaymentId,
-        razorpaySignature
+        googlePayPaymentId: paymentId,
+        googlePayTransactionId: transactionId
       },
       { upsert: true, new: true }
     );
@@ -314,51 +307,32 @@ export const cancelSubscription = async (req: Request, res: Response) => {
   }
 };
 
-// Handle Razorpay webhook
+// Handle Google Pay webhook
 export const handleWebhook = async (req: Request, res: Response) => {
   try {
-    const webhook = req.body;
-    const signature = req.headers['x-razorpay-signature'] as string;
+    const event = req.body;
+    
+    // Verify the webhook signature (implementation depends on Google Pay's webhook structure)
+    // This is a placeholder - you'll need to implement proper verification
 
-    // Verify webhook signature
-    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || '';
-    const generated = crypto
-      .createHmac('sha256', webhookSecret)
-      .update(JSON.stringify(webhook))
-      .digest('hex');
-
-    if (generated !== signature) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid webhook signature'
-      });
-    }
-
-    // Handle different webhook events
-    const event = webhook.event;
-
-    switch (event) {
-      case 'payment.captured':
-        // Payment was successful
-        // Update subscription status
+    // Process the event based on its type
+    switch (event.type) {
+      case 'payment.success':
+        // Process successful payment
+        // Note: This would be an alternative to the client-side callback
+        // You might want to activate the subscription here as well
         break;
       case 'payment.failed':
-        // Payment failed
-        // Update subscription status
+        // Handle failed payment
         break;
-      // Add other relevant events as needed
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
     }
 
-    return res.status(200).json({
-      success: true,
-      message: 'Webhook processed successfully'
-    });
+    res.status(200).json({ received: true });
   } catch (error) {
-    console.error('Error processing webhook:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Error processing webhook'
-    });
+    console.error('Webhook error:', error);
+    res.status(400).json({ success: false, message: 'Webhook error' });
   }
 };
 

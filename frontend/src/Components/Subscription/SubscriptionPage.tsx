@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import * as SubscriptionService from '../../services/SubscriptionService';
 import './SubscriptionPage.scss';
 // import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../AuthContext';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface Plan {
   _id: string;
@@ -25,10 +26,10 @@ interface Subscription {
   trialEndsAt?: string;
 }
 
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
+interface PaymentLinkState {
+  planId: string;
+  paymentLink: string;
+  planName: string;
 }
 
 const SubscriptionPage: React.FC = () => {
@@ -36,20 +37,12 @@ const SubscriptionPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [paymentLink, setPaymentLink] = useState<PaymentLinkState | null>(null);
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    const loadScript = () => {
-      return new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-        script.onload = () => resolve(true);
-        script.onerror = () => resolve(false);
-        document.body.appendChild(script);
-      });
-    };
-
     const fetchPlans = async () => {
       try {
         const result = await SubscriptionService.getSubscriptionPlans();
@@ -62,29 +55,59 @@ const SubscriptionPage: React.FC = () => {
       }
     };
 
-    // const fetchUserSubscription = async () => {
-    //   if (isAuthenticated) {
-    //     try {
-    //       const result = await SubscriptionService.getUserSubscription();
-    //       if (result.success) {
-    //         setSubscription(result.data);
-    //       }
-    //     } catch (error) {
-    //       console.error('Error fetching user subscription:', error);
-    //     }
-    //   }
-    // };
-
     const initialize = async () => {
       setLoading(true);
-      await loadScript();
       await fetchPlans();
-      // await fetchUserSubscription();
       setLoading(false);
     };
 
     initialize();
-  }, [isAuthenticated]);
+
+    // Check if the current URL includes callback parameters from Google Pay
+    if (location.pathname === '/subscription/callback') {
+      handlePaymentCallback();
+    }
+  }, [location.pathname]);
+
+  // Handle the callback from Google Pay
+  const handlePaymentCallback = async () => {
+    try {
+      // Get URL query parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const paymentId = urlParams.get('paymentId');
+      const orderId = urlParams.get('orderId');
+      const transactionId = urlParams.get('transactionId');
+      const signature = urlParams.get('signature');
+      const planId = urlParams.get('planId');
+      const status = urlParams.get('status');
+
+      if (status === 'success' && paymentId && orderId && transactionId && signature && planId) {
+        // Process successful payment
+        const activateResult = await SubscriptionService.activateSubscription({
+          paymentId,
+          orderId,
+          transactionId,
+          signature,
+          planId
+        });
+        
+        if (activateResult.success) {
+          toast.success('Subscription activated successfully!');
+          setSubscription(activateResult.data);
+          // Redirect to remove query params
+          navigate('/subscription', { replace: true });
+        } else {
+          toast.error('Failed to activate subscription');
+        }
+      } else if (status === 'failure') {
+        toast.error('Payment failed. Please try again.');
+        navigate('/subscription', { replace: true });
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error processing payment callback');
+      navigate('/subscription', { replace: true });
+    }
+  };
 
   const handleStartTrial = async () => {
     if (!isAuthenticated) {
@@ -115,6 +138,9 @@ const SubscriptionPage: React.FC = () => {
 
     try {
       setProcessingPayment(true);
+      // Clear any previous payment link
+      setPaymentLink(null);
+      
       const orderResult = await SubscriptionService.createSubscriptionOrder(plan._id);
       
       if (!orderResult.success) {
@@ -123,60 +149,33 @@ const SubscriptionPage: React.FC = () => {
         return;
       }
 
-      const { order, key, user: userData } = orderResult.data;
+      const { paymentInfo } = orderResult.data;
 
-      const options = {
-        key,
-        amount: order.amount,
-        currency: order.currency,
-        name: 'PatentsBrowser',
-        description: `Subscribe to ${plan.name} Plan`,
-        order_id: order.id,
-        prefill: {
-          name: userData.name,
-          email: userData.email,
-          contact: userData.contact
-        },
-        theme: {
-          color: '#592e83'  // Royal violet
-        },
-        handler: async function (response: any) {
-          try {
-            const paymentData = {
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpayOrderId: response.razorpay_order_id,
-              razorpaySignature: response.razorpay_signature,
-              planId: plan._id
-            };
-            
-            const activateResult = await SubscriptionService.activateSubscription(paymentData);
-            
-            if (activateResult.success) {
-              toast.success('Subscription activated successfully!');
-              setSubscription(activateResult.data);
-              navigate('/dashboard');
-            } else {
-              toast.error('Failed to activate subscription');
-            }
-          } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Payment verification failed');
-          } finally {
-            setProcessingPayment(false);
-          }
-        },
-        modal: {
-          ondismiss: function() {
-            setProcessingPayment(false);
-          }
-        }
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
+      // Handle Google Pay link - this will either open Google Pay on mobile
+      // or return the link for QR code on desktop
+      const result = await SubscriptionService.handleGooglePayLink(paymentInfo.deepLink);
+      
+      if (typeof result === 'string') {
+        // It's a desktop user, show QR code
+        setPaymentLink({
+          planId: plan._id,
+          paymentLink: result,
+          planName: plan.name
+        });
+      } else if (result === false) {
+        toast.error('Failed to process payment. Please try again.');
+      }
+      
+      setProcessingPayment(false);
+      
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to process subscription');
       setProcessingPayment(false);
     }
+  };
+
+  const handleCloseQRCode = () => {
+    setPaymentLink(null);
   };
 
   const handleCancelSubscription = async () => {
@@ -199,6 +198,14 @@ const SubscriptionPage: React.FC = () => {
     }
   };
 
+  const copyPaymentLink = () => {
+    if (paymentLink) {
+      navigator.clipboard.writeText(paymentLink.paymentLink)
+        .then(() => toast.success('Payment link copied to clipboard'))
+        .catch(() => toast.error('Failed to copy link'));
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -213,6 +220,38 @@ const SubscriptionPage: React.FC = () => {
 
   return (
     <div className="subscription-page">
+      {paymentLink && (
+        <div className="payment-modal-overlay">
+          <div className="payment-modal">
+            <div className="payment-modal-header">
+              <h2>Payment for {paymentLink.planName} Plan</h2>
+              <button className="close-button" onClick={handleCloseQRCode}>×</button>
+            </div>
+            <div className="payment-modal-body">
+              <p>Scan this QR code with your mobile device to pay with Google Pay:</p>
+              <div className="qr-code-container">
+                <QRCodeSVG value={paymentLink.paymentLink} size={250} />
+              </div>
+              <p>Or use this payment link:</p>
+              <div className="payment-link-container">
+                <input
+                  type="text"
+                  value={paymentLink.paymentLink}
+                  readOnly
+                  className="payment-link-input"
+                />
+                <button className="copy-link-btn" onClick={copyPaymentLink}>
+                  Copy
+                </button>
+              </div>
+              <p className="payment-instructions">
+                After completing the payment on your mobile device, return to this page to view your active subscription.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="subscription-header">
         <h1>Subscription Plans</h1>
         <p>Choose the perfect plan for your patent search needs</p>
@@ -284,11 +323,16 @@ const SubscriptionPage: React.FC = () => {
               ))}
             </ul>
             <button 
-              className="subscribe-btn"
+              className="google-pay-btn"
               onClick={() => handleSubscribe(plan)}
               disabled={processingPayment || (subscription?.status === 'active')}
             >
-              {processingPayment ? 'Processing...' : 'Subscribe Now'}
+              <img 
+                src="https://developers.google.com/static/pay/api/images/google-pay-mark.svg" 
+                alt="Google Pay" 
+                className="gpay-logo" 
+              />
+              {processingPayment ? 'Processing...' : 'Pay with Google Pay'}
             </button>
           </div>
         ))}

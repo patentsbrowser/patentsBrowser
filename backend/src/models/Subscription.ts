@@ -21,9 +21,9 @@ export interface ISubscription extends Document {
   startDate: Date;
   endDate: Date;
   status: SubscriptionStatus;
-  razorpaySubscriptionId?: string;
-  razorpayPaymentId?: string;
-  razorpaySignature?: string;
+  googlePayOrderId?: string;
+  googlePayPaymentId?: string;
+  googlePayTransactionId?: string;
   trialEndsAt?: Date;
   cancelledAt?: Date;
   createdAt: Date;
@@ -56,13 +56,13 @@ const subscriptionSchema = new Schema<ISubscription>(
       enum: Object.values(SubscriptionStatus),
       default: SubscriptionStatus.TRIAL
     },
-    razorpaySubscriptionId: {
+    googlePayOrderId: {
       type: String
     },
-    razorpayPaymentId: {
+    googlePayPaymentId: {
       type: String
     },
-    razorpaySignature: {
+    googlePayTransactionId: {
       type: String
     },
     trialEndsAt: {

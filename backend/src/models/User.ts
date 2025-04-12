@@ -20,7 +20,7 @@ interface IUser extends mongoose.Document {
   lastLogin: Date;
   subscriptionStatus: SubscriptionStatus;
   trialEndDate: Date;
-  razorpayCustomerId?: string;
+  googlePayCustomerId?: string;
 }
 
 const userSchema = new mongoose.Schema({
@@ -75,7 +75,7 @@ const userSchema = new mongoose.Schema({
       return date;
     }
   },
-  razorpayCustomerId: {
+  googlePayCustomerId: {
     type: String
   },
   address:{

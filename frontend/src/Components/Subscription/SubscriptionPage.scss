@@ -279,6 +279,38 @@
           cursor: not-allowed;
         }
       }
+
+      .google-pay-btn {
+        width: 100%;
+        margin-top: 10px;
+        padding: 0.8rem;
+        background-color: #000000;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        
+        .gpay-logo {
+          height: 20px;
+          margin-right: 10px;
+        }
+        
+        &:hover {
+          background-color: #333333;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        &:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+      }
     }
   }
 }

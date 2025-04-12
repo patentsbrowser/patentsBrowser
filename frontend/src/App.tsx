@@ -22,6 +22,7 @@ import SessionHandler from "./Components/Authentication/SessionHandler";
 import LandingPage from "./Components/LandingPage/LandingPage";
 import Forum from "./Components/Forum/Forum";
 import SubscriptionPage from "./Components/Subscription/SubscriptionPage";
+import SubscriptionCallback from "./Components/Subscription/SubscriptionCallback";
 import PatentHistory from "./Components/PatentHistory";
 // import { store } from './Redux/store';
 
@@ -104,6 +105,9 @@ const App = () => {
                   
                   {/* Subscription Page - Public with auth features */}
                   <Route path="/subscription" element={<SubscriptionPage />} />
+                  
+                  {/* Google Pay Callback - Public with auth features */}
+                  <Route path="/subscription/callback" element={<SubscriptionCallback />} />
                   
                   {/* Authentication routes */}
                   <Route 
