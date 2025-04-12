@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as SubscriptionService from '../../services/SubscriptionService';
 import './SubscriptionPage.scss';
@@ -44,6 +44,14 @@ const SubscriptionPage: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
+  // Add ESC key handler for closing modal
+  const handleEscapeKey = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'Escape' && paymentInfo) {
+      handleClosePaymentModal();
+    }
+  }, [paymentInfo]);
+
+  // Update useEffect to add/remove event listeners and manage body class
   useEffect(() => {
     const fetchPlans = async () => {
       try {
@@ -78,7 +86,29 @@ const SubscriptionPage: React.FC = () => {
     };
 
     initialize();
-  }, [isAuthenticated]);
+
+    // Add ESC key event listener
+    document.addEventListener('keydown', handleEscapeKey);
+    
+    return () => {
+      // Clean up event listener on component unmount
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isAuthenticated, handleEscapeKey]);
+
+  // Add/remove modal-open class on body when payment modal opens/closes
+  useEffect(() => {
+    if (paymentInfo) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    
+    // Clean up when component unmounts
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [paymentInfo]);
 
   const handleStartTrial = async () => {
     if (!isAuthenticated) {
@@ -185,52 +215,50 @@ const SubscriptionPage: React.FC = () => {
       
       // TEMPORARY TEST MODE: Allow direct verification without backend
       // Remove this when going to production
-      if (transactionRef.trim().length >= 6) {
-        // Simulate successful verification
-        toast.success('Subscription activated successfully!');
-        
-        // Create a mock subscription object
-        const mockSubscription = {
-          _id: `sub_${Date.now()}`,
-          plan: paymentInfo.planName.toLowerCase().replace('-', '_'),
-          status: 'active',
-          startDate: new Date().toISOString(),
-          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
-        };
-        
-        setSubscription(mockSubscription);
-        setPaymentInfo(null);
-        setTransactionRef('');
-        
-        // Don't redirect for demo purposes
-        // navigate('/dashboard');
-        
-        setVerifying(false);
-        return;
-      } else {
-        toast.error('Transaction reference must be at least 6 characters');
-        setVerifying(false);
-        return;
-      }
-      // END OF TEST MODE CODE
+      const isTestMode = true; // Toggle this flag for test/production mode
       
-      // Normal code flow:
-      const verifyResult = await SubscriptionService.verifyAndActivateSubscription({
-        transactionRef: transactionRef.trim(),
-        orderId: paymentInfo.orderId,
-        planId: paymentInfo.planId
-      });
-      
-      if (verifyResult.success) {
-        toast.success('Subscription activated successfully!');
-        setSubscription(verifyResult.data);
-        setPaymentInfo(null);
-        setTransactionRef('');
-        
-        // Redirect to dashboard after successful payment
-        navigate('/dashboard');
+      if (isTestMode) {
+        if (transactionRef.trim().length >= 6) {
+          // Simulate successful verification
+          toast.success('Subscription activated successfully!');
+          
+          // Create a mock subscription object
+          const mockSubscription = {
+            _id: `sub_${Date.now()}`,
+            plan: paymentInfo.planName.toLowerCase().replace('-', '_'),
+            status: 'active',
+            startDate: new Date().toISOString(),
+            endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+          };
+          
+          setSubscription(mockSubscription);
+          setPaymentInfo(null);
+          setTransactionRef('');
+          
+          // Don't redirect for demo purposes
+          // navigate('/dashboard');
+        } else {
+          toast.error('Transaction reference must be at least 6 characters');
+        }
       } else {
-        toast.error(verifyResult.message || 'Failed to verify payment');
+        // Normal production code flow:
+        const verifyResult = await SubscriptionService.verifyAndActivateSubscription({
+          transactionRef: transactionRef.trim(),
+          orderId: paymentInfo.orderId,
+          planId: paymentInfo.planId
+        });
+        
+        if (verifyResult.success) {
+          toast.success('Subscription activated successfully!');
+          setSubscription(verifyResult.data);
+          setPaymentInfo(null);
+          setTransactionRef('');
+          
+          // Redirect to dashboard after successful payment
+          navigate('/dashboard');
+        } else {
+          toast.error(verifyResult.message || 'Failed to verify payment');
+        }
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Error verifying payment');
@@ -266,17 +294,17 @@ const SubscriptionPage: React.FC = () => {
         <div className="payment-modal-overlay">
           <div className="payment-modal">
             <div className="payment-modal-header">
-              <h2>{paymentInfo.planName} Plan - ₹{formatIndianPrice(paymentInfo.amount)}</h2>
+              <h2>{paymentInfo.planName} Plan - ₹1</h2>
               <button className="close-button" onClick={handleClosePaymentModal}>×</button>
             </div>
             <div className="payment-modal-body">
               <div className="qr-code-container">
                 <div className="qr-code-wrapper">
-                  <QRCodeSVG value={paymentInfo.upiLink} size={250} />
+                  <QRCodeSVG value={paymentInfo.upiLink} size={180} />
                 </div>
                 <div className="payment-info">
                   <h3>Scan to Pay</h3>
-                  <p className="amount">₹{formatIndianPrice(paymentInfo.amount)}</p>
+                  <p className="amount">₹1</p>
                   <p className="plan-name">{paymentInfo.planName} Plan</p>
                 </div>
               </div>
@@ -284,9 +312,9 @@ const SubscriptionPage: React.FC = () => {
               <div className="payment-instructions">
                 <h4>Instructions:</h4>
                 <ol>
-                  <li>Scan this QR code with any UPI app (Google Pay, PhonePe, etc.)</li>
+                  <li>Scan this QR code with any UPI app</li>
                   <li>Complete the payment</li>
-                  <li>Enter the UPI Reference ID or Transaction ID below</li>
+                  <li>Enter the UPI Reference ID below</li>
                 </ol>
               </div>
               
@@ -298,7 +326,7 @@ const SubscriptionPage: React.FC = () => {
                     id="transactionRef"
                     value={transactionRef}
                     onChange={(e) => setTransactionRef(e.target.value)}
-                    placeholder="Enter UPI Reference ID or Transaction ID"
+                    placeholder="Enter UPI Reference ID"
                     required
                   />
                 </div>
@@ -354,26 +382,6 @@ const SubscriptionPage: React.FC = () => {
               </button>
             )}
           </div>
-        </div>
-      )}
-
-      {(!subscription || subscription.status === 'inactive' || subscription.status === 'cancelled') && (
-        <div className="free-trial-card">
-          <h2>Start with our 14-Day Free Trial</h2>
-          <p>Try all features with no commitment. No credit card required.</p>
-          <ul className="trial-features">
-            <li>Full search functionality</li>
-            <li>Save up to 10 patents</li>
-            <li>Basic analytics tools</li>
-            <li>Email support</li>
-          </ul>
-          <button 
-            className="start-trial-btn"
-            onClick={handleStartTrial}
-            disabled={processingPayment}
-          >
-            {processingPayment ? 'Processing...' : 'Start Free Trial'}
-          </button>
         </div>
       )}
 
