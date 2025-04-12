@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { authApi } from '../../api/auth';
 import './PatentHistory.scss';
 
@@ -17,13 +17,17 @@ const PatentHistory: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
+  const apiCallInProgress = useRef(false);
 
   useEffect(() => {
     fetchSearchHistory();
   }, []);
 
   const fetchSearchHistory = async () => {
+    if (apiCallInProgress.current) return;
+    
     try {
+      apiCallInProgress.current = true;
       setIsLoading(true);
       const response = await authApi.getSearchHistory();
       setSearchHistory(response.data || []);
@@ -31,6 +35,7 @@ const PatentHistory: React.FC = () => {
       console.error('Failed to fetch search history:', error);
     } finally {
       setIsLoading(false);
+      apiCallInProgress.current = false;
     }
   };
 
