@@ -11,7 +11,11 @@ export const store = configureStore({
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false,
+      serializableCheck: {
+        // Ignore non-serializable values that might be in our patent data
+        ignoredActions: ['patents/setSearchResults', 'patents/setSelectedPatent', 'patents/setSmartSearchResults'],
+        ignoredPaths: ['patents.searchResults', 'patents.selectedPatent', 'patents.smartSearchResults'],
+      },
     }),
 });
 

@@ -2,6 +2,15 @@ import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { patentApi, normalizePatentResponse, ApiSource } from '../../api/patents';
 import { detectApiType } from '../../Components/Patents/utils';
 
+// Define localStorage keys
+const LOCAL_STORAGE_KEYS = {
+  SEARCH_RESULTS: 'redux_patent_search_results',
+  SELECTED_PATENT: 'redux_selected_patent',
+  SMART_SEARCH_RESULTS: 'redux_smart_search_results',
+  FILTERS: 'redux_patent_filters',
+  VIEWED_PATENTS: 'viewed_patents'
+};
+
 interface Patent {
   patentId: string;
   status: 'success' | 'error' | 'loading';
@@ -60,6 +69,7 @@ interface PatentState {
   searchResults: Patent[];
   isLoading: boolean;
   error: string | null;
+  viewedPatents: string[];
   filters: {
     showGrantPatents: boolean;
     showApplicationPatents: boolean;
@@ -132,19 +142,45 @@ interface PatentState {
   } | null;
 }
 
+// Function to load state from localStorage
+const loadStateFromLocalStorage = (): Partial<PatentState> => {
+  try {
+    const searchResults = localStorage.getItem(LOCAL_STORAGE_KEYS.SEARCH_RESULTS);
+    const selectedPatent = localStorage.getItem(LOCAL_STORAGE_KEYS.SELECTED_PATENT);
+    const smartSearchResults = localStorage.getItem(LOCAL_STORAGE_KEYS.SMART_SEARCH_RESULTS);
+    const filters = localStorage.getItem(LOCAL_STORAGE_KEYS.FILTERS);
+    const viewedPatents = localStorage.getItem(LOCAL_STORAGE_KEYS.VIEWED_PATENTS);
+    
+    return {
+      searchResults: searchResults ? JSON.parse(searchResults) : [],
+      selectedPatent: selectedPatent ? JSON.parse(selectedPatent) : null,
+      smartSearchResults: smartSearchResults ? JSON.parse(smartSearchResults) : null,
+      filters: filters ? JSON.parse(filters) : undefined,
+      viewedPatents: viewedPatents ? JSON.parse(viewedPatents) : [],
+    };
+  } catch (error) {
+    console.error('Error loading patent state from localStorage:', error);
+    return {};
+  }
+};
+
+// Load saved state
+const savedState = loadStateFromLocalStorage();
+
 const initialState: PatentState = {
-  selectedPatent: null,
-  searchResults: [],
+  selectedPatent: savedState.selectedPatent || null,
+  searchResults: savedState.searchResults || [],
   isLoading: false,
   error: null,
-  filters: {
+  viewedPatents: savedState.viewedPatents || [],
+  filters: savedState.filters || {
     showGrantPatents: true,
     showApplicationPatents: true,
     filterByFamilyId: true,
     filteredPatents: null,
     filteredPatentIds: []
   },
-  smartSearchResults: null,
+  smartSearchResults: savedState.smartSearchResults || null,
 };
 
 // Async thunk for fetching full patent details
@@ -298,9 +334,19 @@ const patentSlice = createSlice({
   reducers: {
     setSelectedPatent: (state, action: PayloadAction<Patent | null>) => {
       state.selectedPatent = action.payload;
+      // Save to localStorage
+      if (action.payload) {
+        localStorage.setItem(LOCAL_STORAGE_KEYS.SELECTED_PATENT, JSON.stringify(action.payload));
+      } else {
+        localStorage.removeItem(LOCAL_STORAGE_KEYS.SELECTED_PATENT);
+      }
     },
     setSearchResults: (state, action: PayloadAction<Patent[]>) => {
       state.searchResults = action.payload;
+      state.isLoading = false;
+      state.error = null;
+      // Save to localStorage
+      localStorage.setItem(LOCAL_STORAGE_KEYS.SEARCH_RESULTS, JSON.stringify(action.payload));
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
@@ -308,26 +354,44 @@ const patentSlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
-    clearState: (state) => {
-      state.selectedPatent = null;
+    clearPatentState: (state) => {
       state.searchResults = [];
-      state.isLoading = false;
-      state.error = null;
+      state.selectedPatent = null;
+      state.smartSearchResults = null;
+      // Don't clear viewed patents when clearing other state
+      
+      // Clear localStorage
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.SEARCH_RESULTS);
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.SELECTED_PATENT);
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.SMART_SEARCH_RESULTS);
+      // Don't remove viewed patents from localStorage
     },
-    setFilters: (state, action: PayloadAction<{
-      showGrantPatents?: boolean;
-      showApplicationPatents?: boolean;
-      filterByFamilyId?: boolean;
-      filteredPatents?: Patent[] | null;
-      filteredPatentIds?: string[];
-    }>) => {
-      state.filters = {
-        ...state.filters,
-        ...action.payload
-      };
+    setFilters: (state, action: PayloadAction<Partial<PatentState['filters']>>) => {
+      state.filters = { ...state.filters, ...action.payload };
+      // Save to localStorage
+      localStorage.setItem(LOCAL_STORAGE_KEYS.FILTERS, JSON.stringify(state.filters));
     },
     setSmartSearchResults: (state, action: PayloadAction<PatentState['smartSearchResults']>) => {
       state.smartSearchResults = action.payload;
+      // Save to localStorage
+      if (action.payload) {
+        localStorage.setItem(LOCAL_STORAGE_KEYS.SMART_SEARCH_RESULTS, JSON.stringify(action.payload));
+      } else {
+        localStorage.removeItem(LOCAL_STORAGE_KEYS.SMART_SEARCH_RESULTS);
+      }
+    },
+    markPatentAsViewed: (state, action: PayloadAction<string>) => {
+      const patentId = action.payload;
+      if (!state.viewedPatents.includes(patentId)) {
+        state.viewedPatents.push(patentId);
+        
+        // Save to localStorage
+        localStorage.setItem(LOCAL_STORAGE_KEYS.VIEWED_PATENTS, JSON.stringify(state.viewedPatents));
+      }
+    },
+    clearViewedPatents: (state) => {
+      state.viewedPatents = [];
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.VIEWED_PATENTS);
     },
   },
   extraReducers: (builder) => {
@@ -424,9 +488,11 @@ export const {
   setSearchResults,
   setLoading,
   setError,
-  clearState,
+  clearPatentState,
   setFilters,
   setSmartSearchResults,
+  markPatentAsViewed,
+  clearViewedPatents,
 } = patentSlice.actions;
 
 export default patentSlice.reducer; 

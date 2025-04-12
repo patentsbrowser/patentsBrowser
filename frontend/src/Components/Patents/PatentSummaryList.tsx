@@ -4,9 +4,10 @@ import PatentDetails from './PatentDetails';
 import Loader from '../Common/Loader';
 import PatentSummaryCard from './PatentSummaryCard';
 import { ApiSource } from '../../api/patents';
-import { useAppSelector } from '../../Redux/hooks';
+import { useAppSelector, useAppDispatch } from '../../Redux/hooks';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import { clearViewedPatents } from '../../Redux/slices/patentSlice';
 
 interface PatentSummaryListProps {
   patentSummaries: PatentSummary[];
@@ -41,6 +42,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
   pagination
 }) => {
   const { isLoading } = useAppSelector((state) => state.patents);
+  const dispatch = useAppDispatch();
   const [currentPage, setCurrentPage] = useState(pagination?.currentPage || 1);
   const [itemsPerPage, setItemsPerPage] = useState(() => {
     return parseInt(localStorage.getItem('resultsPerPage') || '50', 10);
@@ -78,6 +80,10 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
     }
   }, [pagination?.currentPage]);
 
+  const handleClearViewedStatus = () => {
+    dispatch(clearViewedPatents());
+  };
+
   if (patentSummaries.length === 0) return null;
 
   const handlePageChange = (newPage: number) => {
@@ -90,13 +96,24 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
     <div className="patent-summaries">
       <div className="summaries-header">
         <h3>Patent Search Results</h3>
-        <button 
-          className="clear-results-button"
-          onClick={onClearResults}
-          aria-label="Clear results"
-        >
-          <FontAwesomeIcon icon={faTimes} />
-        </button>
+        <div className="action-buttons">
+          <button 
+            className="clear-viewed-button"
+            onClick={handleClearViewedStatus}
+            title="Clear all 'read' status indicators"
+          >
+            Clear Read Status
+          </button>
+          {onClearResults && (
+            <button 
+              className="clear-results-button"
+              onClick={onClearResults}
+              title="Clear all search results"
+            >
+              Clear Results
+            </button>
+          )}
+        </div>
       </div>
       <div className="summaries-grid">
         {patentSummaries?.map((summary) => (

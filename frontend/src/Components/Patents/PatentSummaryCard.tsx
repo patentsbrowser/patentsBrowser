@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { PatentSummary } from './types';
 import Loader from '../Common/Loader';
 import { ApiSource } from '../../api/patents';
+import { useAppDispatch, useAppSelector } from '../../Redux/hooks';
+import { markPatentAsViewed } from '../../Redux/slices/patentSlice';
+import { RootState } from '../../Redux/store';
 
 interface PatentSummaryCardProps {
   summary: PatentSummary;
@@ -15,16 +18,30 @@ const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
   summary,
   onViewDetails,
   formatDate}) => {
+  const dispatch = useAppDispatch();
+  const viewedPatents = useAppSelector((state: RootState) => state.patents.viewedPatents);
+  const isViewed = viewedPatents.includes(summary.patentId);
+  
+  const handleViewDetails = () => {
+    // Mark patent as viewed in Redux store
+    dispatch(markPatentAsViewed(summary.patentId));
+    
+    // Call the original onViewDetails handler
+    onViewDetails(summary);
+  };
+  
   return (
     <div 
       key={summary.patentId[0]} 
-      className={`summary-card ${summary.status}`}
+      className={`summary-card ${summary.status} ${isViewed ? 'viewed' : ''}`}
     >
       <div className="summary-header">
         <span className="patent-id">{summary.patentId}</span>
         <span className="status-indicator">
           {summary.status === 'loading' ? '⌛' : 
-           summary.status === 'success' ? '✓' : '✗'}
+           summary.status === 'success' 
+            ? (isViewed ? '👁️' : '✓') 
+            : '✗'}
         </span>
       </div>
       <div className="summary-content">
@@ -61,7 +78,7 @@ const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
             </div>
             <div className="action-buttons">
               <button 
-                onClick={() => onViewDetails(summary)}
+                onClick={handleViewDetails}
                 className="view-details"
               >
                 View Details

@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../Redux/hooks';
 import { RootState } from '../../Redux/store';
-import { fetchFullPatentDetails, setFilters, setSmartSearchResults } from '../../Redux/slices/patentSlice';
+import { 
+  fetchFullPatentDetails, 
+  setFilters, 
+  setSmartSearchResults,
+  setSearchResults,
+  clearPatentState,
+  markPatentAsViewed
+} from '../../Redux/slices/patentSlice';
 import './PatentSearch.scss';
 // import PatentDetails from './PatentDetails';
 import Loader from '../Common/Loader';
@@ -81,6 +88,15 @@ interface PatentHit {
   };
 }
 
+const LOCAL_STORAGE_KEYS = {
+  PATENT_SUMMARIES: 'patent_summaries',
+  SEARCH_QUERY: 'search_query',
+  PATENT_IDS: 'patent_ids',
+  SELECTED_API: 'selected_api',
+  SEARCH_TYPE: 'search_type',
+  NOT_FOUND_PATENTS: 'not_found_patents'
+};
+
 const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId = '' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [patentIds, setPatentIds] = useState<string[]>([]);
@@ -95,9 +111,86 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
   const [selectedTypes, setSelectedTypes] = useState({ grant: true, application: true });
   const [filterByFamily, setFilterByFamily] = useState(true);
   const [notFoundPatents, setNotFoundPatents] = useState<string[]>([]);
+  const [isFromLocalStorage, setIsFromLocalStorage] = useState(false);
   
   const dispatch = useAppDispatch();
-  const { filters, smartSearchResults } = useAppSelector((state: RootState) => state.patents);
+  const { filters, smartSearchResults, searchResults: reduxSearchResults } = useAppSelector((state: RootState) => state.patents);
+
+  // Load search results from localStorage on initial render
+  useEffect(() => {
+    const storedPatentSummaries = localStorage.getItem(LOCAL_STORAGE_KEYS.PATENT_SUMMARIES);
+    const storedSearchQuery = localStorage.getItem(LOCAL_STORAGE_KEYS.SEARCH_QUERY);
+    const storedPatentIds = localStorage.getItem(LOCAL_STORAGE_KEYS.PATENT_IDS);
+    const storedSelectedApi = localStorage.getItem(LOCAL_STORAGE_KEYS.SELECTED_API) as ApiSource;
+    const storedSearchType = localStorage.getItem(LOCAL_STORAGE_KEYS.SEARCH_TYPE) as 'full' | 'smart';
+    const storedNotFoundPatents = localStorage.getItem(LOCAL_STORAGE_KEYS.NOT_FOUND_PATENTS);
+    
+    // Try to load from component localStorage first
+    if (storedPatentSummaries && storedSearchQuery && storedPatentIds) {
+      try {
+        const parsedSummaries = JSON.parse(storedPatentSummaries);
+        const parsedIds = JSON.parse(storedPatentIds);
+        const parsedNotFoundPatents = storedNotFoundPatents ? JSON.parse(storedNotFoundPatents) : [];
+        
+        // Only restore from localStorage if there's no initialPatentId (which would override it)
+        if (!initialPatentId) {
+          setPatentSummaries(parsedSummaries);
+          setSearchQuery(storedSearchQuery);
+          setPatentIds(parsedIds);
+          if (storedSelectedApi) setSelectedApi(storedSelectedApi);
+          if (storedSearchType) setSearchType(storedSearchType);
+          setNotFoundPatents(parsedNotFoundPatents);
+          setIsFromLocalStorage(true);
+        }
+      } catch (error) {
+        console.error('Error parsing stored patent data:', error);
+        // Clear invalid localStorage data
+        clearLocalStorageData();
+      }
+    } 
+    // If no component localStorage, but Redux state has search results, use those
+    else if (reduxSearchResults && reduxSearchResults.length > 0 && !initialPatentId) {
+      // Convert Redux search results to component format
+      const summaries = reduxSearchResults.map(result => ({
+        patentId: result.patentId,
+        status: result.status,
+        title: result.title || '',
+        abstract: result.abstract || '',
+        details: result.details || {}
+      }));
+      
+      setPatentSummaries(summaries);
+      // We don't have searchQuery in Redux, so we extract it from the first patentId
+      if (reduxSearchResults.length > 0) {
+        const firstPatentId = reduxSearchResults[0].patentId;
+        setSearchQuery(firstPatentId);
+        setPatentIds([firstPatentId]);
+      }
+      setIsFromLocalStorage(true);
+    }
+  }, [initialPatentId, reduxSearchResults]);
+
+  // Save search results to localStorage whenever they change
+  useEffect(() => {
+    if (patentSummaries.length > 0 && !isFromLocalStorage) {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.PATENT_SUMMARIES, JSON.stringify(patentSummaries));
+      localStorage.setItem(LOCAL_STORAGE_KEYS.SEARCH_QUERY, searchQuery);
+      localStorage.setItem(LOCAL_STORAGE_KEYS.PATENT_IDS, JSON.stringify(patentIds));
+      localStorage.setItem(LOCAL_STORAGE_KEYS.SELECTED_API, selectedApi);
+      localStorage.setItem(LOCAL_STORAGE_KEYS.SEARCH_TYPE, searchType);
+      localStorage.setItem(LOCAL_STORAGE_KEYS.NOT_FOUND_PATENTS, JSON.stringify(notFoundPatents));
+    }
+  }, [patentSummaries, searchQuery, patentIds, selectedApi, searchType, notFoundPatents, isFromLocalStorage]);
+
+  // Helper function to clear localStorage data
+  const clearLocalStorageData = () => {
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.PATENT_SUMMARIES);
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.SEARCH_QUERY);
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.PATENT_IDS);
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.SELECTED_API);
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.SEARCH_TYPE);
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.NOT_FOUND_PATENTS);
+  };
 
   // Add this function to standardize patent ID processing
   const processPatentIds = (input: string): string[] => {
@@ -212,6 +305,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     setPatentSummaries([]);
     setNotFoundPatents([]); // Clear previous not found patents
     setIsLoading(true);
+    setIsFromLocalStorage(false); // Mark that this is a new search, not from localStorage
     
     // Format the IDs before searching
     const formattedIds = idsToSearch.map(id => {
@@ -233,29 +327,26 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     });
 
     try {
+      let results: PatentSummary[] = [];
+      
       if (searchType === 'smart' && selectedApi === 'unified') {
-        // For smart search - use special flow with modal
-        console.log("Making API call to searchMultiplePatentsUnified with", formattedIds, "using smart search");
-        const result = await patentApi.searchMultiplePatentsUnified(formattedIds, 'smart');
-        console.log("Smart search API result received:", result);
-        
-        // Store in Redux
-        dispatch(setSmartSearchResults(result));
-        
-        // Track not found patents
-        if (result?.hits?.hits) {
-          const foundPatents = new Set(result.hits.hits.map((hit: any) => hit._id));
-          const notFound = formattedIds.filter(id => !foundPatents.has(id));
-          setNotFoundPatents(notFound);
+        // For smart search with unified API
+        try {
+          setShowSmartSearchModal(true);
+          
+          // Call smart search in the API
+          const smartSearchResponse = await handleSearch(formattedIds, 'smart', selectedApi);
+          
+          // Don't set results yet, as the user will need to review in modal first
+          console.log("Smart search completed with results:", smartSearchResponse);
+          
+        } catch (error) {
+          console.error("Smart search error:", error);
+          toast.error("Smart search failed. Try again or use regular search.");
+          setIsLoading(false);
         }
-        
-        // For smart search, open modal and wait for user to select filters
-        setShowSmartSearchModal(true);
-        onSearch(formattedIds);
-        
-        // Set loading to false after receiving results
-        setIsLoading(false);
-      } else if (searchType === 'full' && selectedApi === 'unified') {
+      }
+      else if (searchType === 'full' && selectedApi === 'unified') {
         // For full search with unified API - use direct search
         console.log("Making unified API full search call with", formattedIds);
         try {
@@ -305,124 +396,108 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
                   rating_citation: source?.rating_citation || '',
                   rating_litigation: source?.rating_litigation || '',
                   rating_validity: source?.rating_validity || '',
-                  family_id: source?.family_id || '',
-                  extended_family_id: source?.extended_family_id || '',
-                  hyperlink_google: source?.hyperlink_google || '',
-                  is_litigated: source?.is_litigated || 'false',
-                  is_challenged: source?.is_challenged || 'false',
-                  num_litigated: source?.num_litigated || 0,
-                  num_challenged: source?.num_challenged || 0,
-                  last_litigated_at: source?.last_litigated_at || null,
-                  last_challenged_at: source?.last_challenged_at || null,
-                  family_annuities: source?.family_annuities || 0,
-                  norm_family_annuities: source?.norm_family_annuities || 0,
-                  rnix_score: source?.rnix_score || 0
                 }
               };
             });
             
-            setPatentSummaries(patents);
+            // Apply filters to the patents before setting state
+            results = filterSearchResults(patents);
             
-            // Add patents to search history and create folder if needed
-            try {
-              const patentIds = patents.map((patent: PatentSummary) => patent.patentId);
-              
-              if (patentIds.length > 0) {
-                // Add each patent to search history individually
-                for (const patentId of patentIds) {
-                  await authApi.addToSearchHistory(patentId, 'direct_search');
-                }
-                console.log(`Added ${patentIds.length} patents to search history`);
-                
-                // If there are multiple patents, create a folder to contain them
-                if (patentIds.length > 1) {
-                  // Generate a folder name with date and time
-                  const folderName = `Direct Search ${new Date().toLocaleString()}`;
-                  
-                  // Create a custom patent list for multiple patents
-                  await authApi.saveCustomPatentList(folderName, patentIds, 'direct_search');
-                  
-                  console.log(`Created folder "${folderName}" with ${patentIds.length} patents`);
-                  
-                  // Show success message about folder creation
-                  toast.success(
-                    `Created folder "${folderName}" with ${patentIds.length} patents`, 
-                    { duration: 4000 }
-                  );
-                }
-              }
-            } catch (error) {
-              console.error("Error saving patents to history:", error);
-              // Don't show error toast to avoid overwhelming the user with multiple errors
-            }
-          } else {
-            throw new Error('Invalid API response structure');
-          }
-          
-          onSearch(formattedIds);
-        } catch (error: any) {
-          console.error('Unified API full search error:', error);
-          setPatentSummaries([{
-            patentId: formattedIds[0],
-            status: 'error' as const,
-            error: error.message || 'An unexpected error occurred during unified search'
-          }]);
-        }
-      } else {
-        // For other API sources or types - use standard search
-        console.log("Making direct search API call with", formattedIds);
-        const searchResults = await handleSearch(formattedIds, 'direct', selectedApi);
-        console.log("Direct search results received");
-        
-        // Update UI with results immediately for full search
-        setPatentSummaries(searchResults);
-        onSearch(formattedIds);
-        
-        // Add patents to search history and create folder if needed
-        try {
-          // Filter out error results
-          const successfulPatents = searchResults.filter(result => result.status === 'success');
-          const patentIds = successfulPatents.map(patent => patent.patentId);
-          
-          if (patentIds.length > 0) {
-            // Add each patent to search history individually
-            for (const patentId of patentIds) {
-              await authApi.addToSearchHistory(patentId, 'other_api');
-            }
-            console.log(`Added ${patentIds.length} patents to search history`);
+            // Check for patents that weren't found
+            const foundPatentIds = new Set(results.map(p => p.patentId));
+            const notFound = formattedIds.filter(id => !foundPatentIds.has(id) && 
+              !foundPatentIds.has(id.replace(/-/g, '')) && 
+              !foundPatentIds.has(id.toUpperCase()) &&
+              !foundPatentIds.has(id.toLowerCase()));
             
-            // If there are multiple patents, create a folder to contain them
-            if (patentIds.length > 1) {
-              // Generate a folder name with date and time
-              const folderName = `Search Results ${new Date().toLocaleString()}`;
-              
-              // Create a custom patent list for multiple patents
-              await authApi.saveCustomPatentList(folderName, patentIds, 'other_api');
-              
-              console.log(`Created folder "${folderName}" with ${patentIds.length} patents`);
-              
-              // Show success message about folder creation
-              toast.success(
-                `Created folder "${folderName}" with ${patentIds.length} patents`, 
-                { duration: 4000 }
-              );
+            if (notFound.length > 0) {
+              setNotFoundPatents(notFound);
+              console.log("Patents not found:", notFound);
+              toast.error(`${notFound.length} patents not found: ${notFound.join(', ')}`);
             }
+            
+            setPatentSummaries(results);
+
+            // Update Redux state with search results
+            const reduxResults = results.map(result => ({
+              patentId: result.patentId,
+              status: result.status,
+              title: result.title || '',
+              abstract: result.abstract || '',
+              details: result.details || {}
+            }));
+            dispatch(setSearchResults(reduxResults));
           }
         } catch (error) {
-          console.error("Error saving patents to history:", error);
-          // Don't show error toast to avoid overwhelming the user with multiple errors
+          console.error("Unified API error:", error);
+          toast.error("Search failed. Please check your input and try again.");
+        } finally {
+          setIsLoading(false);
         }
       }
-    } catch (error: any) {
-      console.error('Search error:', error);
-      setPatentSummaries([{
-        patentId: formattedIds[0],
-        status: 'error' as const,
-        error: error.message || 'An unexpected error occurred during search'
-      }]);
+      else {
+        // For SerpAPI search or other cases
+        console.log("Making SerpAPI or individual unified API calls with", formattedIds);
+        
+        // Create an array of promises for each patent ID
+        const searchPromises = formattedIds.map(async (id) => {
+          try {
+            // Get patent data for each ID
+            const patentData = await patentApi.searchPatents(id, selectedApi);
+            
+            // Convert to our format
+            return normalizePatentResponse(patentData, id, selectedApi);
+          } catch (error) {
+            console.error(`Error searching for patent ${id}:`, error);
+            return {
+              patentId: id,
+              status: 'error' as const,
+              error: error instanceof Error ? error.message : 'Unknown error'
+            };
+          }
+        });
+        
+        // Execute all promises in parallel
+        const searchResults = await Promise.all(searchPromises);
+        console.log("Search results:", searchResults);
+        
+        // Filter out errors and set results
+        results = searchResults.filter(result => result.status === 'success') as PatentSummary[];
+        
+        // Track patents that weren't found
+        const failedResults = searchResults.filter(result => result.status === 'error');
+        if (failedResults.length > 0) {
+          const notFoundIds = failedResults.map(r => r.patentId);
+          setNotFoundPatents(notFoundIds);
+          console.log("Patents not found:", notFoundIds);
+          toast.error(`${notFoundIds.length} patents not found: ${notFoundIds.join(', ')}`);
+        }
+        
+        setPatentSummaries(results);
+
+        // Update Redux state with search results
+        const reduxResults = results.map(result => ({
+          patentId: result.patentId,
+          status: result.status,
+          title: result.title || '',
+          abstract: result.abstract || '',
+          details: result.details || {}
+        }));
+        dispatch(setSearchResults(reduxResults));
+        
+        setIsLoading(false);
+      }
       
-      toast.error(`Error searching patents: ${error.message || 'Unknown error'}`);
-    } finally {
+      // If we have at least one successful result, call the onSearch callback
+      if (results.length > 0) {
+        // Extract successful patent IDs and pass to parent
+        const successfulIds = results.map(result => result.patentId);
+        onSearch(successfulIds);
+      }
+      
+    } catch (error) {
+      console.error("Search error:", error);
+      toast.error("An error occurred during search. Please try again.");
       setIsLoading(false);
     }
   };
@@ -572,6 +647,9 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
   };
 
   const handleViewDetails = async (summary: PatentSummary) => {
+    // Mark patent as viewed
+    dispatch(markPatentAsViewed(summary.patentId));
+    
     setSelectedPatent(summary);
     
     if (selectedApi === 'unified') {
@@ -971,9 +1049,12 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
 
   const handleClearResults = () => {
     setPatentSummaries([]);
-    setSelectedPatent(null);
     setSearchQuery('');
     setPatentIds([]);
+    setSelectedPatent(null);
+    setNotFoundPatents([]);
+    clearLocalStorageData(); // Clear component localStorage
+    dispatch(clearPatentState()); // Clear Redux state
   };
 
   return (
