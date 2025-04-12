@@ -12,7 +12,8 @@ export enum SubscriptionStatus {
   INACTIVE = 'inactive',
   TRIAL = 'trial',
   CANCELLED = 'cancelled',
-  PAYMENT_PENDING = 'payment_pending'
+  PAYMENT_PENDING = 'payment_pending',
+  PAID = 'paid'
 }
 
 export interface ISubscription extends Document {

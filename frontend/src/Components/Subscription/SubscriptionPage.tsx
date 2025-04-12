@@ -14,14 +14,24 @@ interface Plan {
   popular: boolean;
 }
 
+interface Subscription {
+  _id: string;
+  status: 'active' | 'expired' | 'pending';
+  plan: Plan;
+  startDate: string;
+  endDate: string;
+  userId: string;
+}
+
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   plan: Plan;
+  onPaymentComplete: () => void;
 }
 
 // UPI Payment Modal Component
-const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan }) => {
+const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPaymentComplete }) => {
   const [transactionId, setTransactionId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [upiOrderId, setUpiOrderId] = useState('');
@@ -77,8 +87,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan }) =>
   
   // Generate UPI link for the plan
   const generateUpiLink = (amount: number, planName: string, orderId: string) => {
-    // Get UPI ID from environment variables, with fallback
-    const upiId = import.meta.env.VITE_UPI_ID || "patentsbrowser@ybl";
+    // Replace with your actual UPI ID
+    const upiId = "patentsbrowser@ybl";
     const merchantName = "PatentsBrowser";
     const planLabel = `${planName}_${orderId}`;
     
@@ -105,6 +115,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan }) =>
         setPaymentStep('complete');
         toast.success('Payment verified! Your subscription is now active.');
         setTimeout(() => {
+          onPaymentComplete(); // Call this to refresh subscription data
           onClose();
         }, 2000);
       } else {
@@ -210,13 +221,116 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan }) =>
   );
 };
 
+// Subscription Status Component
+const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscription }) => {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', { 
+      day: 'numeric', 
+      month: 'short', 
+      year: 'numeric' 
+    });
+  };
+
+  const calculateDaysLeft = (endDateString: string) => {
+    const endDate = new Date(endDateString);
+    const today = new Date();
+    
+    // Clear time portion for accurate day calculation
+    endDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    
+    const diffTime = endDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
+  };
+
+  const daysLeft = calculateDaysLeft(subscription.endDate);
+
+  return (
+    <div className="subscription-status">
+      <div className="status-header">
+        <h2>Your Subscription</h2>
+        <span className={`status-badge ${subscription.status}`}>
+          {subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1)}
+        </span>
+      </div>
+      
+      <div className="subscription-details">
+        <div className="plan-name">
+          <h3>{subscription.plan.name} Plan</h3>
+          <div className="plan-type">
+            {subscription.plan.type === 'monthly' ? 'Monthly' : 
+              subscription.plan.type === 'quarterly' ? 'Quarterly' : 
+              subscription.plan.type === 'half_yearly' ? 'Half Yearly' : 'Yearly'} Plan
+          </div>
+        </div>
+        
+        <div className="date-info">
+          <div className="date-item">
+            <span className="date-label">Started on:</span>
+            <span className="date-value">{formatDate(subscription.startDate)}</span>
+          </div>
+          <div className="date-item">
+            <span className="date-label">Expires on:</span>
+            <span className="date-value">{formatDate(subscription.endDate)}</span>
+          </div>
+        </div>
+        
+        {subscription.status === 'active' && (
+          <div className="time-remaining">
+            <div className="days-left">{daysLeft}</div>
+            <div className="days-label">days remaining</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const SubscriptionPage: React.FC = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [userSubscription, setUserSubscription] = useState<Subscription | null>(null);
+  const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
+  
   // Use ref to track if data has been fetched to prevent duplicate calls
   const dataFetchedRef = useRef(false);
+
+  const fetchUserSubscription = async () => {
+    try {
+      setIsLoadingSubscription(true);
+      const result = await SubscriptionService.getUserSubscription();
+      
+      if (result.success && result.data) {
+        console.log('Fetched user subscription:', result.data);
+        setUserSubscription(result.data);
+      } else {
+        console.log('No active subscription found');
+        setUserSubscription(null);
+      }
+    } catch (error) {
+      console.error('Error fetching user subscription:', error);
+      setUserSubscription(null);
+    } finally {
+      setIsLoadingSubscription(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserSubscription();
+    
+    // Set up interval to check subscription status (every 5 minutes)
+    const intervalId = setInterval(() => {
+      console.log('Checking subscription status...');
+      fetchUserSubscription();
+    }, 5 * 60 * 1000);
+    
+    return () => clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     // Only fetch if we haven't already done so
@@ -268,6 +382,11 @@ const SubscriptionPage: React.FC = () => {
     setSelectedPlan(null);
   };
 
+  const handlePaymentComplete = () => {
+    // Refetch subscription data after payment is complete
+    fetchUserSubscription();
+  };
+
   if (loading) {
     return <div className="subscription-page loading">Loading subscription plans...</div>;
   }
@@ -278,6 +397,18 @@ const SubscriptionPage: React.FC = () => {
         <h1>Subscription Plans</h1>
         <p>Choose the perfect plan for your patent search needs</p>
       </div>
+
+      {isLoadingSubscription ? (
+        <div className="loading-subscription">Loading your subscription details...</div>
+      ) : userSubscription && userSubscription.status === 'active' ? (
+        <SubscriptionStatus subscription={userSubscription} />
+      ) : (
+        <div className="no-subscription-message">
+          {userSubscription && userSubscription.status === 'expired' ? 
+            "Your subscription has expired. Please renew to continue using premium features." : 
+            "You don't have an active subscription. Subscribe now to access premium features."}
+        </div>
+      )}
 
       <div className="subscription-plans">
         {plans.map((plan) => (
@@ -306,7 +437,7 @@ const SubscriptionPage: React.FC = () => {
               className="subscribe-btn"
               onClick={() => handleSubscribeClick(plan)}
             >
-              Subscribe Now
+              {userSubscription && userSubscription.status === 'active' ? 'Upgrade' : 'Subscribe Now'}
             </button>
           </div>
         ))}
@@ -317,6 +448,7 @@ const SubscriptionPage: React.FC = () => {
           isOpen={isPaymentModalOpen} 
           onClose={closePaymentModal} 
           plan={selectedPlan}
+          onPaymentComplete={handlePaymentComplete}
         />
       )}
     </div>
