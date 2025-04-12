@@ -97,7 +97,7 @@ const SubscriptionPage: React.FC = () => {
               className="subscribe-btn"
               onClick={() => toast.info('Subscription functionality is currently being reimplemented. Please check back later.')}
             >
-              Contact for Subscription
+              Subscribe Now
             </button>
           </div>
         ))}
