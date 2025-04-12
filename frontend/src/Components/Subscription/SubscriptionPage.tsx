@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as SubscriptionService from '../../services/SubscriptionService';
 import './SubscriptionPage.scss';
 import { toast } from 'react-toastify';
@@ -16,12 +16,23 @@ interface Plan {
 const SubscriptionPage: React.FC = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
+  // Use ref to track if data has been fetched to prevent duplicate calls
+  const dataFetchedRef = useRef(false);
 
   useEffect(() => {
+    // Only fetch if we haven't already done so
+    if (dataFetchedRef.current) {
+      console.log("Plans already fetched, skipping API call");
+      return;
+    }
+
     const fetchPlans = async () => {
       try {
+        console.log("Fetching subscription plans...");
         const result = await SubscriptionService.getSubscriptionPlans();
+        
         if (result.success) {
+          console.log(`Successfully fetched ${result.data.length} plans`);
           setPlans(result.data);
         } else {
           console.error('Failed to load plans:', result.message);
@@ -31,11 +42,18 @@ const SubscriptionPage: React.FC = () => {
         console.error('Error fetching plans:', error);
       } finally {
         setLoading(false);
+        // Mark that we've fetched the data
+        dataFetchedRef.current = true;
       }
     };
 
     fetchPlans();
-  }, []);
+    
+    // Cleanup function
+    return () => {
+      console.log("SubscriptionPage unmounting");
+    };
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   const formatIndianPrice = (price: number): string => {
     return price.toLocaleString('en-IN');

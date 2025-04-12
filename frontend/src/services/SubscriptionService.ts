@@ -10,6 +10,28 @@ const axiosInstance = axios.create({
   }
 });
 
+// Cache system to prevent duplicate API calls
+interface CachedData {
+  data: {
+    success: boolean;
+    data: any[];
+  } | null;
+  timestamp: number;
+  pendingPromise: Promise<any> | null;
+  expiryTime: number;
+}
+
+const apiCache: {
+  subscriptionPlans: CachedData
+} = {
+  subscriptionPlans: {
+    data: null,
+    timestamp: 0,
+    pendingPromise: null,
+    expiryTime: 5 * 60 * 1000 // 5 minutes cache
+  }
+};
+
 // Add auth token to requests
 axiosInstance.interceptors.request.use(
   (config) => {
@@ -40,13 +62,58 @@ const debugLog = (message: string, data: any): void => {
 
 /**
  * Get all available subscription plans
+ * Uses caching to prevent duplicate API calls
  */
 export const getSubscriptionPlans = async () => {
+  debugLog('getSubscriptionPlans called', { 
+    cached: !!apiCache.subscriptionPlans.data,
+    pendingRequest: !!apiCache.subscriptionPlans.pendingPromise 
+  });
+  
+  const now = Date.now();
+  const cache = apiCache.subscriptionPlans;
+  
+  // If we have cached data that's still valid, return it
+  if (cache.data && (now - cache.timestamp) < cache.expiryTime) {
+    debugLog('Returning cached subscription plans', { 
+      age: now - cache.timestamp,
+      plansCount: cache.data.data?.length 
+    });
+    return cache.data;
+  }
+  
+  // If there's already a request in progress, return that promise to prevent duplicate requests
+  if (cache.pendingPromise) {
+    debugLog('Returning pending subscription plans request', {});
+    return cache.pendingPromise;
+  }
+  
   try {
-    const response = await axiosInstance.get('/subscriptions/plans');
-    return response.data;
+    debugLog('Making new API request to /subscriptions/plans', {});
+    
+    // Store the promise so concurrent calls can use it
+    cache.pendingPromise = axiosInstance.get('/subscriptions/plans')
+      .then(response => {
+        // Update cache with fresh data
+        cache.data = response.data;
+        cache.timestamp = now;
+        debugLog('API response received and cached', { 
+          plansCount: response.data.data?.length 
+        });
+        return response.data;
+      })
+      .catch(error => {
+        console.error('Error fetching subscription plans:', error);
+        throw error;
+      })
+      .finally(() => {
+        // Clear the pending promise reference
+        cache.pendingPromise = null;
+      });
+    
+    return cache.pendingPromise;
   } catch (error) {
-    console.error('Error fetching subscription plans:', error);
+    console.error('Error setting up subscription plans request:', error);
     throw error;
   }
 };
