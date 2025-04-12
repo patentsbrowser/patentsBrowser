@@ -451,7 +451,7 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
 
       // Only reset state if we actually cleared something
       if (anyCleared) {
-        setFoundMatches([]);
+      setFoundMatches([]);
       }
     } catch (err) {
       console.error(`Error clearing highlights: ${err instanceof Error ? err.message : String(err)}`);
@@ -614,7 +614,7 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
   const applyHighlights = useCallback(() => {
     // First clear any existing highlights
     try {
-      clearHighlights();
+    clearHighlights();
     } catch (clearErr) {
       console.error(`Error while clearing highlights before applying new ones: ${clearErr instanceof Error ? clearErr.message : String(clearErr)}`);
     }
@@ -635,21 +635,21 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
       // Process each element
       elements.forEach((element) => {
         try {
-          // Skip elements that are not safe to modify
-          if (!isSafeToModify(element)) {
-            console.log("Skipping unsafe element");
-            return;
-          }
+        // Skip elements that are not safe to modify
+        if (!isSafeToModify(element)) {
+          console.log("Skipping unsafe element");
+          return;
+        }
 
           // Get the element's text and nodes using our improved function
           const { text: elementText, nodes } = getTextWithOffsets(element);
           if (!elementText.trim()) {
-            console.log("Skipping empty element");
-            return; // Skip empty elements
-          }
+          console.log("Skipping empty element");
+          return; // Skip empty elements
+        }
 
-          console.log(
-            "Processing element text:",
+        console.log(
+          "Processing element text:",
             elementText.substring(0, 50) + "..."
           );
 
@@ -657,11 +657,11 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
           let matches: Match[] = [];
 
           // Add simple term matches
-          searchTerms.forEach(({ term, color }) => {
+        searchTerms.forEach(({ term, color }) => {
             // Use a proper regex for word boundaries
             const regex = new RegExp(`\\b${term}\\b`, 'gi');
             let match;
-            
+
             // Find all matches
             while ((match = regex.exec(elementText)) !== null) {
               matches.push({
@@ -670,7 +670,7 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
                 length: match[0].length,
                 color,
               });
-              
+
               // Add to match counts
               const existingMatch = matchCounts.find((m) => m.term === term);
               if (existingMatch) {
@@ -731,18 +731,18 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
               // Add the highlighted span
               const span = document.createElement('span');
               span.className = 'highlight-term';
-              span.style.backgroundColor = match.color;
+          span.style.backgroundColor = match.color;
               span.textContent = elementText.substring(
-                match.index,
-                match.index + match.length
-              );
+            match.index,
+            match.index + match.length
+          );
               tempDiv.appendChild(span);
 
               // Update current index
               currentIndex = match.index + match.length;
             });
 
-            // Add any remaining text
+        // Add any remaining text
             if (currentIndex < elementText.length) {
               tempDiv.appendChild(
                 document.createTextNode(elementText.substring(currentIndex))
@@ -762,7 +762,7 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
 
       // Update state once with all matches after processing all elements
       if (matchCounts.length > 0) {
-        setFoundMatches(matchCounts);
+      setFoundMatches(matchCounts);
       }
     } catch (err) {
       console.error(`Error applying highlights: ${err instanceof Error ? err.message : String(err)}`);
@@ -782,7 +782,7 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
       // Process each element
       elements.forEach((element) => {
         try {
-          if (!isSafeToModify(element)) return;
+        if (!isSafeToModify(element)) return;
 
           // Get the element text
           const { text: elementText } = getTextWithOffsets(element);
@@ -999,13 +999,13 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
                           length: endCharPos - startCharPos,
                           color
                         });
-                        
-                        // Update match counts
+
+                // Update match counts
                         const existingCount = matchCounts.find((m) => m.term === formula);
-                        if (existingCount) {
-                          existingCount.count++;
-                        } else {
-                          matchCounts.push({ term: formula, count: 1, color });
+                if (existingCount) {
+                  existingCount.count++;
+                } else {
+                  matchCounts.push({ term: formula, count: 1, color });
                         }
                       }
                     }

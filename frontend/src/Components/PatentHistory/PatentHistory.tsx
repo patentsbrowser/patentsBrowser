@@ -18,9 +18,30 @@ const PatentHistory: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
   const apiCallInProgress = useRef(false);
+  const lastUpdateTime = useRef<number>(0);
 
   useEffect(() => {
     fetchSearchHistory();
+    
+    // Set up an interval to refresh the data every minute
+    const intervalId = setInterval(() => {
+      fetchSearchHistory();
+    }, 60000);
+    
+    // Listen for patent-searched events
+    const handlePatentSearched = () => {
+      console.log('Patent searched event received, refreshing history');
+      fetchSearchHistory();
+    };
+    
+    // Add event listener
+    window.addEventListener('patent-searched', handlePatentSearched);
+    
+    // Clean up on unmount
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('patent-searched', handlePatentSearched);
+    };
   }, []);
 
   const fetchSearchHistory = async () => {
@@ -31,6 +52,7 @@ const PatentHistory: React.FC = () => {
       setIsLoading(true);
       const response = await authApi.getSearchHistory();
       setSearchHistory(response.data?.results || []);
+      lastUpdateTime.current = Date.now();
     } catch (error) {
       console.error('Failed to fetch search history:', error);
     } finally {

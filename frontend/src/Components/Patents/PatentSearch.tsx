@@ -311,6 +311,13 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     return patentId;
   };
 
+  // Helper function to emit 'patent-searched' event
+  const emitPatentSearchedEvent = () => {
+    const event = new CustomEvent('patent-searched');
+    window.dispatchEvent(event);
+  };
+
+  // Modify handlePerformSearch to fix the reference to handleSearch
   const handlePerformSearch = async (idsToSearch: string[]) => {
     // Clear previous results when starting a new search
     setPatentSummaries([]);
@@ -348,11 +355,10 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         try {
           setShowSmartSearchModal(true);
           
-          // Call smart search in the API
-          const smartSearchResponse = await handleSearch(formattedIds, 'smart', selectedApi);
-          
-          // Don't set results yet, as the user will need to review in modal first
-          console.log("Smart search completed with results:", smartSearchResponse);
+          // Call patent API directly instead of handleSearch
+          const result = await patentApi.searchMultiplePatentsUnified(formattedIds, 'smart');
+          console.log("Smart search completed with results:", result);
+          dispatch(setSmartSearchResults(result));
           
         } catch (error) {
           console.error("Smart search error:", error);
@@ -519,6 +525,18 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         // Extract successful patent IDs and pass to parent
         const successfulIds = results.map(result => result.patentId);
         onSearch(successfulIds);
+
+        // Add each patent to search history
+        try {
+          for (const patentId of successfulIds) {
+            await authApi.addToSearchHistory(patentId, 'search');
+          }
+          // Dispatch event to notify history component
+          emitPatentSearchedEvent();
+          console.log(`Added ${successfulIds.length} patents to search history`);
+        } catch (error) {
+          console.error("Error adding patents to search history:", error);
+        }
       }
       
     } catch (error) {
@@ -542,116 +560,8 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     });
   };
 
-  // Modify handleSearch to include filtering
-  const handleSearch = async (
-    idsToSearch: string[],
-    searchType: 'direct' | 'smart',
-    apiType: ApiSource
-  ): Promise<PatentSummary[]> => {
-    // Reset viewed status for patents being searched again
-    dispatch(resetViewedStatus(idsToSearch));
-    
-    if (apiType === 'unified') {
-      try {
-        console.log(`Calling searchMultiplePatentsUnified with type: ${searchType}`);
-        const result = await patentApi.searchMultiplePatentsUnified(idsToSearch, searchType);
-        console.log(`Received ${searchType} search results:`, result);
-        
-        // Only store results in Redux and check for modal if this is a smart search
-        if (searchType === 'smart') {
-          dispatch(setSmartSearchResults(result));
-          
-          // For smart search mode, if showSmartSearchModal is true, don't process results now
-          if (showSmartSearchModal) {
-            return [];
-          }
-        } else {
-          // For direct search, we still want to store results but not wait for modal
-          dispatch(setSmartSearchResults(result));
-        }
-        
-        const hits = result.hits?.hits || [];
-        
-        // Filter patents by family_id if enabled
-        const filteredHits = filters.filterByFamilyId 
-          ? filterPatentsByFamilyId(hits, true, true)
-          : hits;
-        
-        // Map the hits to our patent format
-        const patents = filteredHits.map((hit: any) => {
-          const source = hit._source;
-          return {
-            patentId: source?.ucid_spif?.[0] || source?.publication_number || hit._id || '',
-            status: 'success' as const,
-            title: source?.title || '',
-            abstract: source?.abstract || '',
-            details: {
-              grant_number: source?.grant_number || '',
-              expiration_date: source?.expiration_date || '',
-              assignee_current: source?.assignee_current || [],
-              type: source?.type || '',
-              num_cit_pat: source?.num_cit_pat || 0,
-              family_id: source?.family_id || '',
-              extended_family_id: source?.extended_family_id || '',
-              hyperlink_google: source?.hyperlink_google || '',
-              is_litigated: source?.is_litigated || 'false',
-              is_challenged: source?.is_challenged || 'false',
-              num_litigated: source?.num_litigated || 0,
-              num_challenged: source?.num_challenged || 0,
-              last_litigated_at: source?.last_litigated_at || null,
-              last_challenged_at: source?.last_challenged_at || null,
-              family_annuities: source?.family_annuities || 0,
-              norm_family_annuities: source?.norm_family_annuities || 0,
-              rnix_score: source?.rnix_score || 0
-            }
-          };
-        });
-
-        // Apply publication type filters
-        return filterSearchResults(patents);
-      } catch (error) {
-        console.error('Unified API error:', error);
-        throw error;
-      }
-    }
-
-    // For other API sources, use the existing logic
-    const promises = idsToSearch.map(async (id) => {
-      try {
-        const formattedId = formatPatentId(id, apiType);
-        const result = await patentApi.searchPatents(formattedId, apiType);
-        const normalizedResult = normalizePatentResponse(result, apiType);
-        
-        if (!normalizedResult) {
-          return {
-            patentId: id,
-            status: 'error' as const,
-            error: 'No data found for this patent ID'
-          };
-        }
-        
-        return {
-          patentId: id,
-          status: 'success' as const,
-          title: normalizedResult.title,
-          abstract: normalizedResult.abstract,
-          details: normalizedResult.details
-        };
-      } catch (error) {
-        console.error(`Error searching patent ${id}:`, error);
-        return {
-          patentId: id,
-          status: 'error' as const,
-          error: error instanceof Error ? error.message : 'Unknown error occurred'
-        };
-      }
-    });
-
-    return await Promise.all(promises);
-  };
-
   // Update the handlePatentSelect function to trigger a direct search when a patent is selected from a folder
-  const handlePatentSelect = (patentId: string) => {
+  const handlePatentSelect = async (patentId: string) => {
     console.log(`Patent selected: ${patentId}`);
     
     // Clean up the patent ID if needed
@@ -668,12 +578,22 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     // Set patent IDs array
     setPatentIds([cleanedId]);
     
+    // Add to search history when selecting a patent
+    try {
+      await authApi.addToSearchHistory(cleanedId, 'direct-selection');
+      // Dispatch an event to notify that a patent has been searched
+      emitPatentSearchedEvent();
+      console.log(`Added patent ${cleanedId} to search history from selection`);
+    } catch (error) {
+      console.error('Error adding patent to search history:', error);
+    }
+    
     // Perform a direct search for this patent ID
     handlePerformSearch([cleanedId]);
   };
 
   // Define the function to handle patent selection with folder context
-  const handlePatentWithFolderClick = (patentId: string, folderName: string) => {
+  const handlePatentWithFolderClick = async (patentId: string, folderName: string) => {
     console.log(`Patent selected from folder "${folderName}": ${patentId}`);
     
     // Clean up the patent ID if needed
@@ -689,6 +609,16 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     
     // Set patent IDs array
     setPatentIds([cleanedId]);
+    
+    // Add to search history when selecting from folder
+    try {
+      await authApi.addToSearchHistory(cleanedId, 'folder-selection');
+      // Dispatch an event to notify that a patent has been searched
+      emitPatentSearchedEvent();
+      console.log(`Added patent ${cleanedId} to search history from folder selection`);
+    } catch (error) {
+      console.error('Error adding patent to search history:', error);
+    }
     
     // Perform a direct search for this patent ID
     handlePerformSearch([cleanedId]);
@@ -721,6 +651,16 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     dispatch(markPatentAsViewed(summary.patentId));
     
     setSelectedPatent(summary);
+    
+    // Add to search history when viewing details
+    try {
+      await authApi.addToSearchHistory(summary.patentId, 'view-details');
+      // Dispatch an event to notify that a patent has been searched
+      window.dispatchEvent(new CustomEvent('patent-searched'));
+      console.log(`Added patent ${summary.patentId} to search history from view details`);
+    } catch (error) {
+      console.error('Error adding patent to search history:', error);
+    }
     
     if (selectedApi === 'unified') {
       // Use the original patentId directly without any formatting
