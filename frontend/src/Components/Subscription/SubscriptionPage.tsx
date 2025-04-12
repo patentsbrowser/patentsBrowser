@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as SubscriptionService from '../../services/SubscriptionService';
 import './SubscriptionPage.scss';
 import { toast } from 'react-toastify';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface Plan {
   _id: string;
@@ -13,9 +14,114 @@ interface Plan {
   popular: boolean;
 }
 
+interface PaymentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  plan: Plan;
+}
+
+// UPI Payment Modal Component
+const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan }) => {
+  const [transactionId, setTransactionId] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  if (!isOpen) return null;
+  
+  // Generate UPI link for the plan
+  const generateUpiLink = (amount: number, planName: string) => {
+    // Replace with your actual UPI ID
+    const upiId = "patentsbrowser@ybl";
+    const merchantName = "PatentsBrowser";
+    const planLabel = `${planName} Plan`;
+    
+    return `upi://pay?pa=${upiId}&pn=${encodeURIComponent(merchantName)}&tn=${encodeURIComponent(planLabel)}&am=${amount}&cu=INR`;
+  };
+  
+  const upiLink = generateUpiLink(plan.price, plan.name);
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!transactionId.trim()) {
+      toast.error('Please enter your UPI Transaction ID');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    // Here you would normally send this to your backend
+    // For now we'll just simulate success
+    setTimeout(() => {
+      toast.success('Payment verification initiated! We will update your subscription shortly.');
+      setIsSubmitting(false);
+      onClose();
+    }, 1500);
+  };
+  
+  return (
+    <div className="payment-modal-overlay" onClick={onClose}>
+      <div className="payment-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="payment-modal-header">
+          <h2>Pay with UPI</h2>
+          <button className="close-button" onClick={onClose}>&times;</button>
+        </div>
+        <div className="payment-modal-body">
+          <div className="qr-code-container">
+            <div className="qr-code-wrapper">
+              <QRCodeSVG value={upiLink} size={180} />
+            </div>
+            <div className="payment-info">
+              <h3>{plan.name} Plan</h3>
+              <div className="amount">₹{plan.price.toLocaleString('en-IN')}</div>
+              <div className="plan-name">
+                {plan.type === 'monthly' ? 'Monthly' : 
+                  plan.type === 'quarterly' ? 'Quarterly' : 
+                  plan.type === 'half_yearly' ? 'Half Yearly' : 'Yearly'} Plan
+              </div>
+            </div>
+          </div>
+          
+          <div className="payment-instructions">
+            <h4>How to pay:</h4>
+            <ol>
+              <li>Open your UPI app (Google Pay, PhonePe, etc.)</li>
+              <li>Scan the QR code above</li>
+              <li>Complete the payment</li>
+              <li>Enter the UPI Reference ID below</li>
+            </ol>
+          </div>
+          
+          <form className="transaction-form" onSubmit={handleSubmit}>
+            <div className="input-group">
+              <label htmlFor="transaction-id">UPI Transaction Reference ID</label>
+              <input 
+                id="transaction-id"
+                type="text" 
+                value={transactionId}
+                onChange={(e) => setTransactionId(e.target.value)}
+                placeholder="e.g. 123456789012"
+                required
+              />
+            </div>
+            <button 
+              type="submit" 
+              className="verify-button"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Verifying...' : 'Verify Payment'}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SubscriptionPage: React.FC = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   // Use ref to track if data has been fetched to prevent duplicate calls
   const dataFetchedRef = useRef(false);
 
@@ -58,6 +164,16 @@ const SubscriptionPage: React.FC = () => {
   const formatIndianPrice = (price: number): string => {
     return price.toLocaleString('en-IN');
   };
+  
+  const handleSubscribeClick = (plan: Plan) => {
+    setSelectedPlan(plan);
+    setIsPaymentModalOpen(true);
+  };
+  
+  const closePaymentModal = () => {
+    setIsPaymentModalOpen(false);
+    setSelectedPlan(null);
+  };
 
   if (loading) {
     return <div className="subscription-page loading">Loading subscription plans...</div>;
@@ -95,13 +211,21 @@ const SubscriptionPage: React.FC = () => {
             </ul>
             <button 
               className="subscribe-btn"
-              onClick={() => toast.info('Subscription functionality is currently being reimplemented. Please check back later.')}
+              onClick={() => handleSubscribeClick(plan)}
             >
               Subscribe Now
             </button>
           </div>
         ))}
       </div>
+      
+      {selectedPlan && (
+        <PaymentModal 
+          isOpen={isPaymentModalOpen} 
+          onClose={closePaymentModal} 
+          plan={selectedPlan}
+        />
+      )}
     </div>
   );
 };
