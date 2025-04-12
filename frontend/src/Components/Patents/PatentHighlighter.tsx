@@ -35,7 +35,7 @@ interface PatentHighlighterProps {
   targetSelector: string; // CSS selector for elements to highlight within
   isOpen?: boolean; // New prop for modal state
   onClose?: () => void; // New prop for closing modal
-  ...props: any; // Added ...props for additional properties
+  [key: string]: any; // Rest parameter for additional properties
 }
 
 interface PredefinedSet {
@@ -443,7 +443,7 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
             const textNode = document.createTextNode(span.textContent || "");
             // Replace the span with its text content
             span.parentNode?.replaceChild(textNode, span);
-          } catch (spanErr) {
+          } catch (spanErr: any) {
             console.error(`Error unwrapping highlight span: ${spanErr.message}`);
           }
         });
@@ -770,6 +770,126 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     }
   }, [searchTerms, proximitySearches, targetSelector, clearHighlights, findProximityMatches]);
 
+  // Function to process formula matches
+  const applyProximityHighlights = useCallback(() => {
+    if (proximitySearches.length === 0) return;
+
+    try {
+      // Get all elements matching the selector
+      const elements = document.querySelectorAll(targetSelector);
+      const matchCounts: { term: string; count: number; color: string }[] = [];
+
+      // Process each element
+      elements.forEach((element) => {
+        try {
+          if (!isSafeToModify(element)) return;
+
+          // Get the element text
+          const { text: elementText } = getTextWithOffsets(element);
+          if (!elementText.trim()) return;
+
+          // Track all matches from proximity searches
+          const proxMatches: Match[] = [];
+
+          // Apply proximity searches
+          proximitySearches.forEach((proxSearch) => {
+            const matches = findProximityMatches(elementText, proxSearch);
+            
+            matches.forEach(({ start, end }) => {
+              const matchText = elementText.substring(start, end);
+              proxMatches.push({
+                term: proxSearch.terms.join(" near "),
+                index: start,
+                length: end - start,
+                color: proxSearch.color
+              });
+              
+              // Count matches
+              const termKey = proxSearch.terms.join(" near ");
+              const existingMatch = matchCounts.find(m => m.term === termKey);
+              if (existingMatch) {
+                existingMatch.count++;
+              } else {
+                matchCounts.push({
+                  term: termKey,
+                  count: 1,
+                  color: proxSearch.color
+                });
+              }
+            });
+          });
+
+          // If we found matches, apply them
+          if (proxMatches.length > 0) {
+            // Sort matches by index
+            proxMatches.sort((a, b) => a.index - b.index);
+            
+            // Create a document fragment for highlighted content
+            const tempDiv = document.createElement('div');
+            let currentIndex = 0;
+            
+            // Build highlighted content
+            proxMatches.forEach(match => {
+              // Add text before match
+              if (match.index > currentIndex) {
+                tempDiv.appendChild(
+                  document.createTextNode(
+                    elementText.substring(currentIndex, match.index)
+                  )
+                );
+              }
+              
+              // Add highlighted span
+              const span = document.createElement('span');
+              span.className = 'highlight-term';
+              span.style.backgroundColor = match.color;
+              span.textContent = elementText.substring(
+                match.index, match.index + match.length
+              );
+              tempDiv.appendChild(span);
+              
+              // Update current index
+              currentIndex = match.index + match.length;
+            });
+            
+            // Add any remaining text
+            if (currentIndex < elementText.length) {
+              tempDiv.appendChild(
+                document.createTextNode(elementText.substring(currentIndex))
+              );
+            }
+            
+            // Replace element content
+            element.innerHTML = '';
+            Array.from(tempDiv.childNodes).forEach(node => {
+              element.appendChild(node.cloneNode(true));
+            });
+          }
+        } catch (error) {
+          console.error(`Error processing element for proximity highlighting: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      });
+
+      // Update match counts
+      if (matchCounts.length > 0) {
+        setFoundMatches(prev => {
+          const merged = [...prev];
+          matchCounts.forEach(newMatch => {
+            const existing = merged.find(m => m.term === newMatch.term);
+            if (existing) {
+              existing.count += newMatch.count;
+            } else {
+              merged.push(newMatch);
+            }
+          });
+          return merged;
+        });
+      }
+    } catch (error) {
+      console.error(`Error applying proximity highlights: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }, [proximitySearches, targetSelector, findProximityMatches, isSafeToModify, getTextWithOffsets]);
+
   // Apply formula highlights
   const applyFormulaHighlights = useCallback(() => {
     if (formulaSearches.length === 0) return;
@@ -806,7 +926,7 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
 
                 // Find all matches for this group
                 words.forEach((word, index) => {
-                  if (matchesGroup(word, parsedFormula.group)) {
+                  if (parsedFormula.group && matchesGroup(word, parsedFormula.group)) {
                     // Find position of this word in the original text
                     let position = 0;
                     for (let i = 0; i < index; i++) {
@@ -842,10 +962,10 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
                 const group2Positions: number[] = [];
                 
                 words.forEach((word, index) => {
-                  if (parsedFormula.group1.some(regex => regex.test(word))) {
+                  if (parsedFormula.group1 && parsedFormula.group1.some(regex => regex.test(word))) {
                     group1Positions.push(index);
                   }
-                  if (parsedFormula.group2.some(regex => regex.test(word))) {
+                  if (parsedFormula.group2 && parsedFormula.group2.some(regex => regex.test(word))) {
                     group2Positions.push(index);
                   }
                 });
@@ -853,7 +973,7 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
                 // Find valid matches within distance
                 group1Positions.forEach(pos1 => {
                   group2Positions.forEach(pos2 => {
-                    if (Math.abs(pos1 - pos2) <= parsedFormula.distance) {
+                    if (parsedFormula.distance && Math.abs(pos1 - pos2) <= parsedFormula.distance) {
                       // Define match range
                       const startPos = Math.min(pos1, pos2);
                       const endPos = Math.max(pos1, pos2);
@@ -955,19 +1075,25 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
 
       // Update state once after processing all elements
       if (matchCounts.length > 0) {
-        // Merge with existing matches instead of adding to the array
+        // Create a stable update that doesn't cause an infinite loop
         setFoundMatches(prevMatches => {
+          // Check if the update would actually change anything
+          const hasSameMatches = matchCounts.every(newMatch => {
+            const existingMatch = prevMatches.find(m => m.term === newMatch.term);
+            return existingMatch && existingMatch.count === newMatch.count;
+          });
+          
+          if (hasSameMatches && prevMatches.length === matchCounts.length) {
+            // If nothing would change, return the previous state to avoid updates
+            return prevMatches;
+          }
+          
           // Create a new array with merged results
-          const mergedMatches = [...prevMatches];
+          const mergedMatches: { term: string; count: number; color: string }[] = [];
           
           // Add new matches from this highlighting pass
           matchCounts.forEach(newMatch => {
-            const existingMatch = mergedMatches.find(m => m.term === newMatch.term);
-            if (existingMatch) {
-              existingMatch.count += newMatch.count;
-            } else {
-              mergedMatches.push(newMatch);
-            }
+            mergedMatches.push({...newMatch});
           });
           
           return mergedMatches;
@@ -977,7 +1103,7 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
       console.error(`Error applying formula highlights: ${err instanceof Error ? err.message : String(err)}`);
       console.error(`Target selector: ${targetSelector}, Formula searches: ${formulaSearches.length}`);
     }
-  }, [formulaSearches, targetSelector, parseFormula]);
+  }, [formulaSearches, targetSelector, parseFormula, isSafeToModify, getTextWithOffsets]);
 
   // Apply highlights when searchTerms, targetSelector, or isOpen changes
   useLayoutEffect(() => {
@@ -1004,7 +1130,10 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     } catch (error) {
       console.error(`[PatentHighlighter] (${location}) Error applying highlights:`, error);
     }
-  }, [searchTerms, proximitySearches, formulaSearches, targetSelector, applyHighlights, applyProximityHighlights, applyFormulaHighlights, location]);
+    
+    // Don't include highlightId in deps to prevent infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerms, proximitySearches, formulaSearches, targetSelector, location]);
 
   // Update the document when isOpen state changes
   useEffect(() => {
@@ -1015,7 +1144,7 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     }
   }, [isOpen, location]);
   
-  // Also fix the MutationObserver setup to avoid triggering too many updates
+  // Fix the mutation observer effect to prevent unnecessary updates
   useEffect(() => {
     // Only setup observer if we have terms to highlight
     if (searchTerms.length === 0 && proximitySearches.length === 0 && formulaSearches.length === 0) {
@@ -1024,10 +1153,11 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     
     let timeoutId: NodeJS.Timeout | null = null;
     let skipNextUpdate = false;
+    let isUpdating = false;
     
     const handleDomChanges = () => {
       // Skip if we're already processing an update
-      if (skipNextUpdate) {
+      if (skipNextUpdate || isUpdating) {
         return;
       }
       
@@ -1041,18 +1171,34 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
         if (needsHighlighting()) {
           console.log("DOM changed, reapplying highlights");
           
-          // Set flag to skip next mutation (our highlight changes will trigger mutations)
+          // Set flags to prevent recursive updates
           skipNextUpdate = true;
+          isUpdating = true;
           
-          // Increment the highlight ID to trigger a refresh
-          setHighlightId((prev) => prev + 1);
+          // Directly apply highlights without triggering state updates
+          try {
+            if (searchTerms.length > 0) {
+              applyHighlights();
+            }
+            
+            if (proximitySearches.length > 0) {
+              applyProximityHighlights();
+            }
+            
+            if (formulaSearches.length > 0) {
+              applyFormulaHighlights();
+            }
+          } catch (error) {
+            console.error("Error reapplying highlights:", error);
+          }
           
-          // Reset skip flag after a short delay
+          // Reset flags after a short delay
           setTimeout(() => {
             skipNextUpdate = false;
-          }, 200);
+            isUpdating = false;
+          }, 300);
         }
-      }, 150); // Increased debounce timeout
+      }, 250); // Increased debounce timeout for better performance
     };
 
     // Create a mutation observer to detect when claims or description elements change
