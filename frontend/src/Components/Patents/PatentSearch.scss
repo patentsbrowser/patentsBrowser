@@ -633,7 +633,7 @@
 
         &:hover {
           background: var(--hover-bg);
-          color: var(--error-color);
+          color: var(--text-color-strong, #333);
         }
       }
     }

@@ -27,6 +27,40 @@
       font-size: 1.2rem;
       flex: 1;
     }
+    
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      
+      .highlighter-toggle-button {
+        background-color: var(--bg-secondary, #f0f0f0);
+        border: 1px solid var(--border-color, #ddd);
+        border-radius: 4px;
+        padding: 6px 10px;
+        cursor: pointer;
+        color: var(--text-color, #444);
+        transition: all 0.2s;
+        
+        &:hover {
+          background-color: var(--bg-hover, #e0e0e0);
+          color: var(--text-color-strong, #000);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        // Active state for when highlighter is open
+        &.active {
+          background-color: var(--highlight-color, #4caf50);
+          color: white;
+          border-color: var(--highlight-color-dark, #388e3c);
+          
+          &:hover {
+            background-color: var(--highlight-color-dark, #388e3c);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+          }
+        }
+      }
+    }
   }
 
   h3 {

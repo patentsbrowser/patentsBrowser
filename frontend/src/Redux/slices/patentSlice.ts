@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { patentApi, normalizePatentResponse, ApiSource } from '../../api/patents';
-import { detectApiType } from '../../Components/Patents/utils';
+// import { detectApiType } from '../../Components/Patents/utils';
+import { RootState } from '../../Redux/store';
 
 // Define localStorage keys
 const LOCAL_STORAGE_KEYS = {
@@ -17,6 +18,15 @@ interface Patent {
   title?: string;
   abstract?: string;
   initialFetch?: boolean;
+  description?: string;
+  claims?: Array<{
+    description: string;
+    text: string;
+    ucid: string;
+    children: any[];
+  }>;
+  figures?: any[];
+  familyMembers?: any[];
   details?: {
     grant_number?: string;
     expiration_date?: string;
@@ -61,6 +71,16 @@ interface Patent {
     family_annuities?: number;
     norm_family_annuities?: number;
     rnix_score?: number;
+    // Add these fields to avoid type errors
+    description?: string;
+    claims?: Array<{
+      description: string;
+      text: string;
+      ucid: string;
+      children: any[];
+    }>;
+    figures?: any[];
+    family_members?: any[];
   };
 }
 
@@ -188,13 +208,21 @@ export const fetchFullPatentDetails = createAsyncThunk(
   'patents/fetchFullDetails',
   async ({ patentId, apiType }: { patentId: string; apiType: ApiSource }, { rejectWithValue, getState }) => {
     try {
-      // Check if we already have the complete data in the state
-      const state = getState() as any;
+      // Validate patentId before making any API calls
+      if (!patentId || patentId.length < 4) {
+        console.warn('Invalid or incomplete patent ID. Skipping API call for:', patentId);
+        return rejectWithValue('Invalid or incomplete patent ID');
+      }
+    
+      // Get the current state
+      const state = getState() as RootState;
+      
+      // Check if we already have this patent selected with all details
       const existingSelectedPatent = state.patents.selectedPatent;
       
-      // If we already have this patent selected with all needed details, return it
+      // If we already have this patent with all needed details, return it
       if (existingSelectedPatent && 
-          existingSelectedPatent.patentId === patentId &&
+          existingSelectedPatent.patentId === patentId && 
           existingSelectedPatent.details && 
           existingSelectedPatent.details.description && 
           existingSelectedPatent.details.claims && 
@@ -252,6 +280,7 @@ export const fetchFullPatentDetails = createAsyncThunk(
 
         return {
           patentId, // Keep the original patentId in the response
+          status: 'success' as const, // Use a const assertion to narrow the type
           title: patentData._source.title,
           abstract: patentData._source.abstract,
           description: fullLanguageData?.description || '',
@@ -483,7 +512,13 @@ const patentSlice = createSlice({
         const patentData = action.payload;
         const patentArray = Array.isArray(patentData) ? patentData : [patentData];
         
-        state.searchResults = patentArray;
+        // Add status for each patent if missing
+        const patentArrayWithStatus = patentArray.map(patent => ({
+          ...patent,
+          status: patent.status || 'success' as 'success' | 'error' | 'loading'
+        }));
+        
+        state.searchResults = patentArrayWithStatus;
       })
       // Handle search patents rejected
       .addCase(searchPatents.rejected, (state, action) => {

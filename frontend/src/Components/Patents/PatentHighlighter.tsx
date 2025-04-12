@@ -35,6 +35,7 @@ interface PatentHighlighterProps {
   targetSelector: string; // CSS selector for elements to highlight within
   isOpen?: boolean; // New prop for modal state
   onClose?: () => void; // New prop for closing modal
+  ...props: any; // Added ...props for additional properties
 }
 
 interface PredefinedSet {
@@ -133,16 +134,47 @@ const PREDEFINED_SETS: PredefinedSets = {
  */
 const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
   targetSelector,
-  isOpen = false, // Default to false for backward compatibility
+  isOpen = false,
   onClose,
+  ...props
 }) => {
-  const [searchTerms, setSearchTerms] = useState<TermColor[]>([]);
-  const [proximitySearches, setProximitySearches] = useState<ProximityTerm[]>(
-    []
-  );
+  // Use location data attribute to track which instance this is for debugging
+  const location = props['data-location'] || 'unknown';
+  console.log(`PatentHighlighter init (${location}): isOpen=${isOpen}`);
+
+  // Load state from localStorage if available
+  const [searchTerms, setSearchTerms] = useState<TermColor[]>(() => {
+    try {
+      const savedTerms = localStorage.getItem('patent_highlighter_terms');
+      return savedTerms ? JSON.parse(savedTerms) : [];
+    } catch (e) {
+      console.error('Error loading search terms from localStorage:', e);
+      return [];
+    }
+  });
+
+  const [proximitySearches, setProximitySearches] = useState<ProximityTerm[]>(() => {
+    try {
+      const savedProximity = localStorage.getItem('patent_highlighter_proximity');
+      return savedProximity ? JSON.parse(savedProximity) : [];
+    } catch (e) {
+      console.error('Error loading proximity searches from localStorage:', e);
+      return [];
+    }
+  });
+
   const [formulaSearches, setFormulaSearches] = useState<
     { formula: string; color: string }[]
-  >([]);
+  >(() => {
+    try {
+      const savedFormulas = localStorage.getItem('patent_highlighter_formulas');
+      return savedFormulas ? JSON.parse(savedFormulas) : [];
+    } catch (e) {
+      console.error('Error loading formula searches from localStorage:', e);
+      return [];
+    }
+  });
+
   const [inputTerm, setInputTerm] = useState("");
   const [activeSearchType, setActiveSearchType] = useState<'predefined' | 'proximity' | 'formula' | null>(null);
   const [foundMatches, setFoundMatches] = useState<
@@ -947,42 +979,41 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     }
   }, [formulaSearches, targetSelector, parseFormula]);
 
-  // Update useLayoutEffect to include formula highlights
+  // Apply highlights when searchTerms, targetSelector, or isOpen changes
   useLayoutEffect(() => {
-    // Check if we need to highlight or clear
-    const hasTerms = searchTerms.length > 0 || 
-                     proximitySearches.length > 0 ||
-                     formulaSearches.length > 0;
-                     
-    if (hasTerms) {
-      // Only apply highlights if needed (performance optimization)
-      if (needsHighlighting()) {
-        const timeoutId = setTimeout(() => {
-          applyHighlights();
-          applyFormulaHighlights();
-        }, 0);
-  
-        return () => clearTimeout(timeoutId);
-      }
-    } else if (foundMatches.length > 0) {
-      // Clear highlights if we had terms before but not anymore
-      clearHighlights();
+    // Skip if there are no search terms to apply or no target selector
+    if ((!searchTerms.length && !proximitySearches.length && !formulaSearches.length) || !targetSelector) {
+      return;
     }
+    
+    console.log(`[PatentHighlighter] (${location}) Applying highlights to ${targetSelector}`);
+    
+    try {
+      // Apply all types of highlights
+      if (searchTerms.length > 0) {
+        applyHighlights();
+      }
+      
+      if (proximitySearches.length > 0) {
+        applyProximityHighlights();
+      }
+      
+      if (formulaSearches.length > 0) {
+        applyFormulaHighlights();
+      }
+    } catch (error) {
+      console.error(`[PatentHighlighter] (${location}) Error applying highlights:`, error);
+    }
+  }, [searchTerms, proximitySearches, formulaSearches, targetSelector, applyHighlights, applyProximityHighlights, applyFormulaHighlights, location]);
 
-    // No cleanup needed if we didn't do anything
-    return undefined;
-  }, [
-    searchTerms,
-    proximitySearches,
-    formulaSearches,
-    targetSelector,
-    highlightId,
-    applyHighlights,
-    applyFormulaHighlights,
-    clearHighlights,
-    needsHighlighting,
-    foundMatches,
-  ]);
+  // Update the document when isOpen state changes
+  useEffect(() => {
+    if (isOpen) {
+      console.log(`[PatentHighlighter] (${location}) Modal opened`);
+    } else {
+      console.log(`[PatentHighlighter] (${location}) Modal closed - highlights remain active`);
+    }
+  }, [isOpen, location]);
   
   // Also fix the MutationObserver setup to avoid triggering too many updates
   useEffect(() => {
@@ -1104,6 +1135,13 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     setProximitySearches([]);
     setFormulaSearches([]);
     setFoundMatches([]);
+    
+    // Clear localStorage
+    localStorage.removeItem('patent_highlighter_terms');
+    localStorage.removeItem('patent_highlighter_proximity');
+    localStorage.removeItem('patent_highlighter_formulas');
+    
+    // Clear highlights from the DOM
     clearHighlights();
   };
 
@@ -1112,8 +1150,24 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     setActiveSearchType(prev => prev === type ? null : type);
   };
 
+  // Save search terms whenever they change
+  useEffect(() => {
+    localStorage.setItem('patent_highlighter_terms', JSON.stringify(searchTerms));
+  }, [searchTerms]);
+  
+  // Save proximity searches whenever they change
+  useEffect(() => {
+    localStorage.setItem('patent_highlighter_proximity', JSON.stringify(proximitySearches));
+  }, [proximitySearches]);
+  
+  // Save formula searches whenever they change
+  useEffect(() => {
+    localStorage.setItem('patent_highlighter_formulas', JSON.stringify(formulaSearches));
+  }, [formulaSearches]);
+
   // If not in modal mode, render as before
   if (!isOpen) {
+    // Return just the button but don't clear highlights when modal is closed
     return (
       <button 
         className="highlighter-settings-button"

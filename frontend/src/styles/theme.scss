@@ -2,6 +2,7 @@
   --primary-bg: #ffffff;
   --secondary-bg: #f5f5f5;
   --text-color: #333333;
+  --text-color-strong: #000000;
   --text-secondary: #777777;
   --border-color: #e0e0e0;
   --accent-color: #592e83;
@@ -11,15 +12,23 @@
   --bg-rgb: 255, 255, 255;
   --hover-bg: rgba(0, 0, 0, 0.05);
   --error-color: #f44336;
+  --error-color-dark: #d32f2f;
   --shadow-color: rgba(0, 0, 0, 0.1);
   --tag-bg: #e9ecef;
   --accent-hover: #4b2770;
+  
+  /* Highlighter specific colors */
+  --bg-secondary: #f0f0f0;
+  --bg-hover: #e0e0e0;
+  --highlight-color: #4caf50;
+  --highlight-color-dark: #388e3c;
 }
 
 [data-theme="dark"] {
   --primary-bg: #121212;
   --secondary-bg: #1e1e1e;
   --text-color: #ffffff;
+  --text-color-strong: #ffffff;
   --text-secondary: #aaaaaa;
   --border-color: #333333;
   --accent-color: #592e83;
@@ -29,7 +38,14 @@
   --bg-rgb: 18, 18, 18;
   --hover-bg: rgba(255, 255, 255, 0.05);
   --error-color: #f44336;
+  --error-color-dark: #b71c1c;
   --shadow-color: rgba(0, 0, 0, 0.3);
   --tag-bg: #2a2a2a;
   --accent-hover: #4b2770;
+  
+  /* Highlighter specific colors - adjusted for dark mode */
+  --bg-secondary: #2a2a2a;
+  --bg-hover: #3a3a3a;
+  --highlight-color: #43a047;
+  --highlight-color-dark: #2e7d32;
 } 

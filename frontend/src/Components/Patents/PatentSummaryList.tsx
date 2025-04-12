@@ -6,9 +6,11 @@ import PatentSummaryCard from './PatentSummaryCard';
 import { ApiSource } from '../../api/patents';
 import { useAppSelector } from '../../Redux/hooks';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faChevronLeft, faChevronRight, faFolderPlus, faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faChevronLeft, faChevronRight, faFolderPlus, faCheck, faSave, faCog } from '@fortawesome/free-solid-svg-icons';
 import { authApi } from '../../api/auth';
 import toast from 'react-hot-toast';
+import PatentHighlighter from './PatentHighlighter';
+import './PatentSummaryList.scss';
 
 interface PatentSummaryListProps {
   patentSummaries: PatentSummary[];
@@ -29,6 +31,24 @@ interface PatentSummaryListProps {
     hasPreviousPage: boolean;
   };
 }
+
+// Create a wrapper component that doesn't show anything if not open
+const ControlledPatentHighlighter: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  targetSelector: string;
+}> = ({ isOpen, onClose, targetSelector }) => {
+  // Always render PatentHighlighter but with isOpen set to false when closed
+  // This ensures highlights are applied but the UI is not visible
+  return (
+    <PatentHighlighter 
+      targetSelector={targetSelector}
+      isOpen={isOpen} // Pass the actual isOpen state
+      onClose={onClose}
+      data-location="search-results" // Add a data attribute to identify this instance
+      props={undefined}    />
+  );
+};
 
 const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
   patentSummaries,
@@ -53,6 +73,17 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [folderName, setFolderName] = useState('');
   const [showSaveToCustomFolder, setShowSaveToCustomFolder] = useState(false);
+  // Add state for highlighter
+  const [isHighlighterOpen, setIsHighlighterOpen] = useState(() => {
+    // Initialize from localStorage if available
+    const savedState = localStorage.getItem('patentHighlighterOpen');
+    return savedState ? JSON.parse(savedState) : false;
+  });
+
+  // Save highlighter state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('patentHighlighterOpen', JSON.stringify(isHighlighterOpen));
+  }, [isHighlighterOpen]);
 
   // Update itemsPerPage when localStorage changes
   useEffect(() => {
@@ -94,6 +125,18 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
       setSelectedPatentIds(prev => prev.filter(id => id !== patentId));
     }
   };
+
+  // Properly handle viewing details - ensure we disable highlighter to prevent API loops
+  const handleViewDetails = (patent: PatentSummary) => {
+    // If highlighter is open, just hide it before viewing details to prevent API issues
+    // But don't disable/clear the highlights
+    if (isHighlighterOpen) {
+      setIsHighlighterOpen(false);
+    }
+    
+    // Call the original onViewDetails handler
+    onViewDetails(patent);
+  }
 
   // Handle "Select All" toggle
   const toggleSelectAll = () => {
@@ -170,7 +213,14 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
   if (patentSummaries.length === 0) return null;
 
   return (
-    <div className="patent-summaries">
+    <div className={`patent-summaries ${isHighlighterOpen ? 'highlighter-active' : ''}`}>
+      {/* Use our controlled wrapper component */}
+      <ControlledPatentHighlighter 
+        targetSelector=".highlightable" 
+        isOpen={isHighlighterOpen}
+        onClose={() => setIsHighlighterOpen(!isHighlighterOpen)}
+      />
+
       <div className="summaries-header">
         <h3>Patent Search Results</h3>
         <div className="header-actions">
@@ -199,6 +249,14 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
             title={selectedPatentIds.length === patentSummaries.length ? "Deselect all" : "Select all"}
           >
             {selectedPatentIds.length === patentSummaries.length ? "Deselect All" : "Select All"}
+          </button>
+          <button 
+            className={`highlighter-toggle-button ${isHighlighterOpen ? 'active' : ''}`}
+            onClick={() => setIsHighlighterOpen(!isHighlighterOpen)}
+            title="Toggle Patent Highlighter"
+            aria-label="Toggle Patent Highlighter"
+          >
+            <FontAwesomeIcon icon={faCog} />
           </button>
           <button 
             className="clear-results-button"
@@ -269,7 +327,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
           <PatentSummaryCard
             key={summary.patentId}
             summary={summary}
-            onViewDetails={onViewDetails}
+            onViewDetails={handleViewDetails}
             formatDate={formatDate}
             onPatentSelect={onPatentSelect}
             apiSource={apiSource}
@@ -311,13 +369,15 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
         <div className="full-details-section">
           <div className="section-header">
             <h3>Full Patent Details - {selectedPatent.patentId}</h3>
-            <button 
-              className="close-details"
-              onClick={() => setSelectedPatent(null)}
-              aria-label="Close details"
-            >
-              <FontAwesomeIcon icon={faTimes} />
-            </button>
+            <div className="section-actions">
+              <button 
+                className="close-details"
+                onClick={() => setSelectedPatent(null)}
+                aria-label="Close details"
+              >
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
           </div>
           <div className="patent-card">
             {isLoading || selectedPatent.status === 'loading' ? (

@@ -32,11 +32,16 @@ const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
   const isViewed = viewedPatents.includes(summary.patentId);
   
   const handleViewDetails = () => {
-    // Mark patent as viewed in Redux store
-    dispatch(markPatentAsViewed(summary.patentId));
-    
-    // Call the original onViewDetails handler
-    onViewDetails(summary);
+    // Make sure we have a valid patentId
+    if (summary.patentId) {
+      // Mark patent as viewed in Redux store
+      dispatch(markPatentAsViewed(summary.patentId));
+      
+      // Call the original onViewDetails handler
+      onViewDetails(summary);
+    } else {
+      console.error('Invalid patent ID:', summary.patentId);
+    }
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,7 +84,7 @@ const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
           </div>
         ) : summary.status === 'success' ? (
           <div className="success">
-            <h4>{summary.title || 'No Title Available'}</h4>
+            <h4 className="highlightable">{summary.title || 'No Title Available'}</h4>
             <div className="patent-info">
               <div className="info-item">
                 <span className="label">Assignee:</span>
@@ -100,7 +105,7 @@ const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
             </div>
             <div className="abstract-section">
               <h5 className="abstract-title">Abstract</h5>
-              <div className="abstract">
+              <div className="abstract highlightable">
                 {summary.abstract || 'No abstract available'}
               </div>
             </div>

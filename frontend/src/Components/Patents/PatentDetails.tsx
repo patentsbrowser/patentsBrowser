@@ -8,6 +8,8 @@ import { useAppDispatch, useAppSelector } from '../../Redux/hooks';
 import { fetchFullPatentDetails } from '../../Redux/slices/patentSlice';
 import './PatentDetails.scss';
 import { ApiSource } from '../../api/patents';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCog } from '@fortawesome/free-solid-svg-icons';
 // import { formatPatentId } from '../Patents/utils';
 
 interface PatentDetailsProps {
@@ -22,6 +24,24 @@ interface PatentDetailsProps {
   apiSource?: ApiSource;
   initialFetch?: boolean; // Flag to indicate if the parent already triggered a fetch
 }
+
+// Create a wrapper component that doesn't show anything if not open
+const ControlledPatentHighlighter: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  targetSelector: string;
+}> = ({ isOpen, onClose, targetSelector }) => {
+  // Always render PatentHighlighter but with isOpen set to false when closed
+  // This ensures highlights are applied but the UI is not visible
+  return (
+    <PatentHighlighter 
+      targetSelector={targetSelector} 
+      isOpen={isOpen} // Pass the actual isOpen state
+      onClose={onClose}
+      data-location="patent-details" // Add a data attribute to identify this instance
+    />
+  );
+};
 
 const PatentDetails: React.FC<PatentDetailsProps> = ({
   title,
@@ -39,8 +59,35 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
   const { selectedPatent, isLoading, error } = useAppSelector((state) => state.patents);
   const hasFetchedRef = useRef(initialFetch);
   const [localFetchStatus, setLocalFetchStatus] = useState<'idle' | 'fetching' | 'done'>('idle');
-  const [isHighlighterOpen, setIsHighlighterOpen] = useState(false);
+  
+  // Initialize highlighter state from localStorage to stay in sync with other components
+  const [isHighlighterOpen, setIsHighlighterOpen] = useState(() => {
+    // Get from localStorage if available, but open by default only if terms exist
+    try {
+      const savedState = localStorage.getItem('patentHighlighterOpen');
+      const hasHighlightTerms = localStorage.getItem('patent_highlighter_terms') && 
+                               JSON.parse(localStorage.getItem('patent_highlighter_terms') || '[]').length > 0;
+      const hasProximityTerms = localStorage.getItem('patent_highlighter_proximity') && 
+                               JSON.parse(localStorage.getItem('patent_highlighter_proximity') || '[]').length > 0;
+      const hasFormulaTerms = localStorage.getItem('patent_highlighter_formulas') && 
+                             JSON.parse(localStorage.getItem('patent_highlighter_formulas') || '[]').length > 0;
+      
+      // Return the saved state, or open by default if any terms exist
+      return savedState ? JSON.parse(savedState) : (hasHighlightTerms || hasProximityTerms || hasFormulaTerms);
+    } catch (e) {
+      console.error('Error loading highlighter state:', e);
+      return false;
+    }
+  });
 
+  // Sync highlighter state with localStorage
+  useEffect(() => {
+    localStorage.setItem('patentHighlighterOpen', JSON.stringify(isHighlighterOpen));
+  }, [isHighlighterOpen]);
+
+  // Add a check for invalid patent IDs
+  const canFetchDetails = patentId && patentId.length > 3;
+  
   useEffect(() => {
     // Reset local fetch status when patent ID changes
     if (patentId) {
@@ -52,22 +99,24 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
   useEffect(() => {
     const shouldFetch = 
       apiSource === 'unified' && 
-      patentId && 
+      canFetchDetails &&
       localFetchStatus === 'idle' &&
       !hasFetchedRef.current &&
-      (!claims?.length || !description || !figures?.length);
+      (!claims?.length || !description || !figures?.length) &&
+      !isHighlighterOpen; // Don't fetch when highlighter is open
 
     if (shouldFetch) {
       console.log('Fetching additional patent details for Unified API patent:', patentId);
       setLocalFetchStatus('fetching');
       hasFetchedRef.current = true;
       
-      // For Unified API, ensure the patent ID is in the correct format (XX-NNNNNN-YY)
-      // If it's not already in the correct format with hyphens, assume it's already formatted correctly
-      // since it should be formatted by the parent component
-      dispatch(fetchFullPatentDetails({ patentId, apiType: apiSource }));
+      dispatch(fetchFullPatentDetails({ patentId, apiType: apiSource }))
+        .catch(error => {
+          console.error('Error fetching patent details:', error);
+          setLocalFetchStatus('idle');
+        });
     }
-  }, [patentId, dispatch, apiSource, localFetchStatus, claims, description, figures]);
+  }, [patentId, dispatch, apiSource, localFetchStatus, claims, description, figures, isHighlighterOpen, canFetchDetails]);
 
   // Update local fetch status when data is received
   useEffect(() => {
@@ -124,10 +173,20 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
     <div className="patent-details">
       <div className="patent-header">
         <h3>{title}</h3>
-        <PatentHighlighter 
-          targetSelector=".highlightable" 
+        <div className="header-actions">
+          <button 
+            className={`highlighter-toggle-button ${isHighlighterOpen ? 'active' : ''}`}
+            onClick={() => setIsHighlighterOpen(!isHighlighterOpen)}
+            title="Toggle Patent Highlighter"
+            aria-label="Toggle Patent Highlighter"
+          >
+            <FontAwesomeIcon icon={faCog} />
+          </button>
+        </div>
+        <ControlledPatentHighlighter 
           isOpen={isHighlighterOpen}
           onClose={() => setIsHighlighterOpen(!isHighlighterOpen)}
+          targetSelector=".highlightable"
         />
       </div>
       
