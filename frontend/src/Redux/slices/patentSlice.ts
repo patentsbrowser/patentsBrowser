@@ -387,12 +387,21 @@ const patentSlice = createSlice({
       state.searchResults = [];
       state.selectedPatent = null;
       state.smartSearchResults = null;
+      // Reset filters to default values
+      state.filters = {
+        showGrantPatents: true,
+        showApplicationPatents: true,
+        filterByFamilyId: true,
+        filteredPatents: null,
+        filteredPatentIds: []
+      };
       // Don't clear viewed patents when clearing other state
       
       // Clear localStorage
       localStorage.removeItem(LOCAL_STORAGE_KEYS.SEARCH_RESULTS);
       localStorage.removeItem(LOCAL_STORAGE_KEYS.SELECTED_PATENT);
       localStorage.removeItem(LOCAL_STORAGE_KEYS.SMART_SEARCH_RESULTS);
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.FILTERS);
       // Don't remove viewed patents from localStorage
     },
     setFilters: (state, action: PayloadAction<Partial<PatentState['filters']>>) => {

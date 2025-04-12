@@ -1068,8 +1068,26 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     setPatentIds([]);
     setSelectedPatent(null);
     setNotFoundPatents([]);
+    setCurrentPage(1);
     clearLocalStorageData(); // Clear component localStorage
-    dispatch(clearPatentState()); // Clear Redux state
+    
+    // Make sure we clear all patent-related state in Redux
+    dispatch(clearPatentState()); 
+    
+    // Explicitly clear smart search results in Redux as they might be persisting
+    dispatch(setSmartSearchResults(null));
+    
+    // Also explicitly set search results to empty array to ensure clearing
+    dispatch(setSearchResults([]));
+    
+    // Reset filters to default values to prevent filtered results from persisting
+    dispatch(setFilters({
+      showGrantPatents: true,
+      showApplicationPatents: true,
+      filterByFamilyId: true,
+      filteredPatents: null,
+      filteredPatentIds: []
+    }));
   };
 
   // Handle page change function for pagination
