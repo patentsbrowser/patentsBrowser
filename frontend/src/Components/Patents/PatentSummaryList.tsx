@@ -90,6 +90,13 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
     <div className="patent-summaries">
       <div className="summaries-header">
         <h3>Patent Search Results</h3>
+        <button 
+          className="clear-results-button"
+          onClick={onClearResults}
+          aria-label="Clear results"
+        >
+          <FontAwesomeIcon icon={faTimes} />
+        </button>
       </div>
       <div className="summaries-grid">
         {patentSummaries?.map((summary) => (
@@ -141,7 +148,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
               onClick={() => setSelectedPatent(null)}
               aria-label="Close details"
             >
-              ×
+              <FontAwesomeIcon icon={faTimes} />
             </button>
           </div>
           <div className="patent-card">

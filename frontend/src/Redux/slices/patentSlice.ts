@@ -389,6 +389,16 @@ const patentSlice = createSlice({
         localStorage.setItem(LOCAL_STORAGE_KEYS.VIEWED_PATENTS, JSON.stringify(state.viewedPatents));
       }
     },
+    resetViewedStatus: (state, action: PayloadAction<string[]>) => {
+      // Remove specified patents from viewed list
+      const patentIdsToReset = action.payload;
+      state.viewedPatents = state.viewedPatents.filter(
+        id => !patentIdsToReset.includes(id)
+      );
+      
+      // Update localStorage
+      localStorage.setItem(LOCAL_STORAGE_KEYS.VIEWED_PATENTS, JSON.stringify(state.viewedPatents));
+    },
     clearViewedPatents: (state) => {
       state.viewedPatents = [];
       localStorage.removeItem(LOCAL_STORAGE_KEYS.VIEWED_PATENTS);
@@ -492,6 +502,7 @@ export const {
   setFilters,
   setSmartSearchResults,
   markPatentAsViewed,
+  resetViewedStatus,
   clearViewedPatents,
 } = patentSlice.actions;
 

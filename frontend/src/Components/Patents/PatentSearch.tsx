@@ -7,7 +7,8 @@ import {
   setSmartSearchResults,
   setSearchResults,
   clearPatentState,
-  markPatentAsViewed
+  markPatentAsViewed,
+  resetViewedStatus
 } from '../../Redux/slices/patentSlice';
 import './PatentSearch.scss';
 // import PatentDetails from './PatentDetails';
@@ -307,6 +308,9 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     setIsLoading(true);
     setIsFromLocalStorage(false); // Mark that this is a new search, not from localStorage
     
+    // Reset viewed status for patents being searched again
+    dispatch(resetViewedStatus(idsToSearch));
+    
     // Format the IDs before searching
     const formattedIds = idsToSearch.map(id => {
       if (selectedApi === 'unified') {
@@ -522,6 +526,9 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     searchType: 'direct' | 'smart',
     apiType: ApiSource
   ): Promise<PatentSummary[]> => {
+    // Reset viewed status for patents being searched again
+    dispatch(resetViewedStatus(idsToSearch));
+    
     if (apiType === 'unified') {
       try {
         console.log(`Calling searchMultiplePatentsUnified with type: ${searchType}`);
@@ -675,6 +682,9 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
 
   // Update SmartSearchModal callback to handle filter selection
   const handleSmartSearch = (idsToSearch: string[]) => {
+    // Reset viewed status for patents being searched again
+    dispatch(resetViewedStatus(idsToSearch));
+    
     // Just handle the IDs returned from the SmartSearchModal
     // and pass them to the main search function
     handlePerformSearch(idsToSearch);
