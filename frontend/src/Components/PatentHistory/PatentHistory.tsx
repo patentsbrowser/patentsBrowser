@@ -9,7 +9,7 @@ interface PatentHistoryItem {
 }
 
 interface GroupedPatents {
-  [date: string]: PatentHistoryItem[];
+  [date: string]: PatentHistoryItem[][];
 }
 
 const PatentHistory: React.FC = () => {
@@ -57,18 +57,31 @@ const PatentHistory: React.FC = () => {
     );
   };
 
-  // Group patents by date
+  // Group patents by date and search session
   const groupPatentsByDate = (): GroupedPatents => {
     const grouped: GroupedPatents = {};
     
-    searchHistory.forEach(item => {
+    // Sort search history by timestamp
+    const sortedHistory = [...searchHistory].sort((a, b) => b.timestamp - a.timestamp);
+    
+    sortedHistory.forEach(item => {
       const date = new Date(item.timestamp).toLocaleDateString();
       
       if (!grouped[date]) {
         grouped[date] = [];
       }
       
-      grouped[date].push(item);
+      // Check if this patent was searched within 5 seconds of the previous one
+      const lastGroup = grouped[date][grouped[date].length - 1];
+      if (lastGroup && 
+          Math.abs(lastGroup[0].timestamp - item.timestamp) < 5000 && 
+          lastGroup[0].source === item.source) {
+        // Add to existing group
+        lastGroup.push(item);
+      } else {
+        // Create new group
+        grouped[date].push([item]);
+      }
     });
     
     return grouped;
@@ -91,7 +104,17 @@ const PatentHistory: React.FC = () => {
           grouped[date] = [];
         }
         
-        grouped[date].push(item);
+        // Check if this patent was searched within 5 seconds of the previous one
+        const lastGroup = grouped[date][grouped[date].length - 1];
+        if (lastGroup && 
+            Math.abs(lastGroup[0].timestamp - item.timestamp) < 5000 && 
+            lastGroup[0].source === item.source) {
+          // Add to existing group
+          lastGroup.push(item);
+        } else {
+          // Create new group
+          grouped[date].push([item]);
+        }
       }
     });
     
@@ -131,7 +154,7 @@ const PatentHistory: React.FC = () => {
       ) : (
         <div className="history-list">
           {sortedDates.map(date => {
-            const patents = filteredGroupedPatents()[date];
+            const patentGroups = filteredGroupedPatents()[date];
             const isExpanded = expandedDates.includes(date);
             
             return (
@@ -142,7 +165,7 @@ const PatentHistory: React.FC = () => {
                 >
                   <span className="date-label">{date}</span>
                   <span className="patent-count">
-                    ({patents.length} patent{patents.length !== 1 ? 's' : ''})
+                    ({patentGroups.reduce((sum, group) => sum + group.length, 0)} patent{patentGroups.reduce((sum, group) => sum + group.length, 0) !== 1 ? 's' : ''})
                   </span>
                   <span className="expansion-icon">
                     {isExpanded ? '▼' : '▶'}
@@ -151,19 +174,40 @@ const PatentHistory: React.FC = () => {
                 
                 {isExpanded && (
                   <div className="patent-items">
-                    {patents.map((item, index) => (
-                      <div 
-                        key={`${item.patentId}-${index}`}
-                        className="patent-item"
-                        onClick={() => handlePatentClick(item.patentId)}
-                      >
-                        <span className="patent-id">{item.patentId}</span>
-                        <span className="timestamp">
-                          {new Date(item.timestamp).toLocaleTimeString()}
-                        </span>
-                        {item.source && (
-                          <span className="source-tag">{item.source}</span>
-                        )}
+                    {patentGroups.map((group, groupIndex) => (
+                      <div key={`group-${groupIndex}`} className="patent-group">
+                        {group.length > 1 ? (
+                          <div className="group-header">
+                            <span className="group-count">{group.length} patents</span>
+                            {group[0].source && (
+                              <span className="source-tag">{group[0].source}</span>
+                            )}
+                            <span className="timestamp">
+                              {new Date(group[0].timestamp).toLocaleTimeString()}
+                            </span>
+                          </div>
+                        ) : null}
+                        <div className="patent-items-in-group">
+                          {group.map((item, index) => (
+                            <div 
+                              key={`${item.patentId}-${index}`}
+                              className="patent-item"
+                              onClick={() => handlePatentClick(item.patentId)}
+                            >
+                              <span className="patent-id">{item.patentId}</span>
+                              {group.length === 1 && (
+                                <>
+                                  <span className="timestamp">
+                                    {new Date(item.timestamp).toLocaleTimeString()}
+                                  </span>
+                                  {item.source && (
+                                    <span className="source-tag">{item.source}</span>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>

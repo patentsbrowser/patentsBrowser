@@ -24,4 +24,7 @@ const searchHistorySchema = new mongoose.Schema({
   }
 });
 
+// Add a compound index for userId + patentId to prevent duplicates
+searchHistorySchema.index({ userId: 1, patentId: 1 }, { unique: true });
+
 export const SearchHistory = mongoose.model('SearchHistory', searchHistorySchema); 

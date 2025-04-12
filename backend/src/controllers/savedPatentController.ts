@@ -736,30 +736,71 @@ export const getImportedLists = async (req: AuthRequest, res: Response) => {
 export const getSearchHistory = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
+    const { limit = 20, page = 1, source, sort = 'timestamp', order = 'desc', search } = req.query;
 
     if (!userId) {
       return res.status(401).json({
         statusCode: 401,
         message: 'User not authenticated',
-        data: null
+        data: null,
+        code: 'AUTH_ERROR'
       });
     }
 
-    // Find all search history entries for this user
-    const searchHistory = await SearchHistory.find({ userId })
-      .sort({ timestamp: -1 }); // Most recent first
+    // Build query
+    const query: any = { userId };
+    
+    // Add source filter if provided
+    if (source) {
+      query.source = source;
+    }
+    
+    // Add search filter if provided
+    if (search) {
+      query.patentId = { $regex: search, $options: 'i' };
+    }
+
+    // Calculate pagination
+    const pageNumber = parseInt(page as string, 10) || 1;
+    const pageSize = parseInt(limit as string, 10) || 20;
+    const skip = (pageNumber - 1) * pageSize;
+
+    // Build sort object
+    const sortField = (sort as string) || 'timestamp';
+    const sortOrder = (order as string) === 'asc' ? 1 : -1;
+    const sortObject: any = {};
+    sortObject[sortField] = sortOrder;
+
+    // Count total documents for pagination
+    const total = await SearchHistory.countDocuments(query);
+
+    // Find search history entries with pagination and sorting
+    const searchHistory = await SearchHistory.find(query)
+      .sort(sortObject)
+      .skip(skip)
+      .limit(pageSize);
 
     res.status(200).json({
       statusCode: 200,
       message: 'Search history retrieved successfully',
-      data: searchHistory
+      data: {
+        results: searchHistory,
+        pagination: {
+          total,
+          page: pageNumber,
+          limit: pageSize,
+          pages: Math.ceil(total / pageSize)
+        }
+      },
+      code: 'SUCCESS'
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching search history:', error);
     res.status(500).json({
       statusCode: 500,
-      message: 'Failed to fetch search history',
-      data: null
+      message: error.message || 'Failed to fetch search history',
+      data: null,
+      code: 'SERVER_ERROR'
     });
   }
 };
@@ -796,46 +837,108 @@ export const clearSearchHistory = async (req: AuthRequest, res: Response) => {
 
 export const addToSearchHistory = async (req: AuthRequest, res: Response) => {
   try {
-    const { patentIds, source } = req.body;
+    const { patentId, patentIds, source } = req.body;
+    
+    console.log('Adding to search history:', { patentId, patentIds, source });
+    
+    // Check if userId is present
     const userId = req.user?.userId;
-
-    if (!patentIds || !Array.isArray(patentIds) || patentIds.length === 0) {
+    if (!userId) {
+      console.log('No userId found in decoded token');
       return res.status(400).json({
         statusCode: 400,
-        message: 'At least one Patent ID is required',
-        data: null
+        message: 'User ID is required',
+        data: null,
+        code: 'INVALID_REQUEST'
       });
     }
 
-    if (!userId) {
-      return res.status(401).json({
-        statusCode: 401,
-        message: 'User not authenticated',
-        data: null
+    // Determine which patents to process
+    let idsToProcess: string[] = [];
+    
+    // Handle both single patentId and array of patentIds
+    if (patentId) {
+      if (typeof patentId === 'string') {
+        idsToProcess.push(patentId);
+      } else {
+        return res.status(400).json({
+          statusCode: 400,
+          message: 'patentId must be a string',
+          data: null,
+          code: 'INVALID_REQUEST'
+        });
+      }
+    } else if (patentIds) {
+      if (Array.isArray(patentIds)) {
+        if (patentIds.length === 0) {
+          return res.status(400).json({
+            statusCode: 400,
+            message: 'patentIds array must not be empty',
+            data: null,
+            code: 'INVALID_REQUEST'
+          });
+        }
+        idsToProcess = patentIds;
+      } else {
+        return res.status(400).json({
+          statusCode: 400,
+          message: 'patentIds must be an array',
+          data: null,
+          code: 'INVALID_REQUEST'
+        });
+      }
+    } else {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Either patentId or patentIds is required',
+        data: null,
+        code: 'INVALID_REQUEST'
       });
     }
 
-    // Create and save multiple search history entries in one operation
-    const searchHistoryEntries = patentIds.map(patentId => ({
-      userId,
-      patentId,
-      source,
-      timestamp: Date.now()
+    // Standardize patent IDs (remove hyphens)
+    const standardizedPatentIds = idsToProcess.map(id => id.replace(/-/g, ''));
+    console.log('Standardized patent IDs:', standardizedPatentIds);
+
+    // Use bulkWrite with upsert to handle duplicates
+    const bulkOperations = standardizedPatentIds.map(patentId => ({
+      updateOne: {
+        filter: { userId, patentId },
+        update: { 
+          $set: { 
+            source: source || 'manual',
+            timestamp: new Date()
+          }
+        },
+        upsert: true
+      }
     }));
 
-    const savedEntries = await SearchHistory.insertMany(searchHistoryEntries);
+    const result = await SearchHistory.bulkWrite(bulkOperations);
+    console.log('Search history entries saved:', {
+      insertedCount: result.insertedCount,
+      modifiedCount: result.modifiedCount,
+      upsertedCount: result.upsertedCount
+    });
 
     res.status(201).json({
       statusCode: 201,
-      message: 'Added to search history successfully',
-      data: savedEntries
+      message: 'Search history entries added successfully',
+      data: {
+        insertedCount: result.insertedCount,
+        modifiedCount: result.modifiedCount,
+        upsertedCount: result.upsertedCount,
+        totalProcessed: standardizedPatentIds.length
+      },
+      code: 'SUCCESS'
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error adding to search history:', error);
     res.status(500).json({
       statusCode: 500,
-      message: 'Failed to add to search history',
-      data: null
+      message: error.message || 'Failed to add to search history',
+      data: null,
+      code: 'SERVER_ERROR'
     });
   }
 };

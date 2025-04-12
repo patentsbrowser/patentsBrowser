@@ -270,12 +270,41 @@ export const authApi = {
   },
 
   // Patent search history methods
-  getSearchHistory: async () => {
+  getSearchHistory: async (params?: {
+    limit?: number;
+    page?: number;
+    source?: string;
+    sort?: string;
+    order?: 'asc' | 'desc';
+    search?: string;
+  }) => {
     try {
-      const response = await axiosInstance.get(`/saved-patents/search-history`);
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      
+      if (params) {
+        if (params.limit) queryParams.append('limit', params.limit.toString());
+        if (params.page) queryParams.append('page', params.page.toString());
+        if (params.source) queryParams.append('source', params.source);
+        if (params.sort) queryParams.append('sort', params.sort);
+        if (params.order) queryParams.append('order', params.order);
+        if (params.search) queryParams.append('search', params.search);
+      }
+      
+      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+      
+      console.log('Getting search history with params:', queryString);
+      
+      const response = await axiosInstance.get(`/saved-patents/search-history${queryString}`);
+      console.log('Search history response:', response.data);
+      
       return response.data;
-    } catch (error) {
-      console.error('Error fetching search history:', error);
+    } catch (error: any) {
+      console.error('Error getting search history:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       throw error;
     }
   },
@@ -290,18 +319,45 @@ export const authApi = {
     }
   },
 
-  addToSearchHistory: async (patentIds: string | string[], source?: string) => {
+  addToSearchHistory: async (patentId: string | string[], source?: string) => {
     try {
-      // Convert single patentId to array if needed
-      const idsArray = Array.isArray(patentIds) ? patentIds : [patentIds];
-      
-      const response = await axiosInstance.post(`/saved-patents/search-history`, { 
-        patentIds: idsArray, 
-        source 
+      console.log('Adding to search history:', {
+        patentId,
+        source,
+        token: localStorage.getItem('token')
       });
-      return response.data;
-    } catch (error) {
-      console.error('Error adding to search history:', error);
+      
+      // Determine if we're sending a single ID or an array
+      if (Array.isArray(patentId)) {
+        // Send as patentIds array
+        const response = await axiosInstance.post(`/saved-patents/search-history`, { 
+          patentIds: patentId, 
+          source 
+        });
+        
+        console.log('Search history response (array):', response.data);
+        return response.data;
+      } else {
+        // Send as single patentId
+        const response = await axiosInstance.post(`/saved-patents/search-history`, { 
+          patentId, 
+          source 
+        });
+        
+        console.log('Search history response (single):', response.data);
+        return response.data;
+      }
+    } catch (error: any) {
+      console.error('Error adding to search history:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          data: error.config?.data
+        }
+      });
       throw error;
     }
   }

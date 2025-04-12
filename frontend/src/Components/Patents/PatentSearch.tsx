@@ -323,12 +323,11 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
             
             setPatentSummaries(patents);
             
-            // Add patents to search history and create folder if needed
+            // Add patents to search history as a batch
             try {
               const patentIds = patents.map((patent: PatentSummary) => patent.patentId);
               
               if (patentIds.length > 0) {
-                // Add all patents to search history in one batch
                 await authApi.addToSearchHistory(patentIds, 'direct_search');
                 console.log(`Added ${patentIds.length} patents to search history`);
                 
@@ -376,14 +375,13 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         setPatentSummaries(searchResults);
         onSearch(formattedIds);
         
-        // Add patents to search history and create folder if needed
+        // Add patents to search history as a batch
         try {
           // Filter out error results
           const successfulPatents = searchResults.filter(result => result.status === 'success');
           const patentIds = successfulPatents.map(patent => patent.patentId);
           
           if (patentIds.length > 0) {
-            // Add all patents to search history in one batch
             await authApi.addToSearchHistory(patentIds, 'other_api');
             console.log(`Added ${patentIds.length} patents to search history`);
             
@@ -780,12 +778,11 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         // Close the smart search modal
         setShowSmartSearchModal(false);
         
-        // Add patents to search history and create folder if needed
+        // Add patents to search history as a batch
         try {
           const patentIds = patents.map((patent: PatentSummary) => patent.patentId);
           
           if (patentIds.length > 0) {
-            // Add all patents to search history in one batch
             await authApi.addToSearchHistory(patentIds, 'search');
             console.log(`Added ${patentIds.length} patents to search history`);
             
