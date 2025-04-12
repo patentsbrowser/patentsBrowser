@@ -57,7 +57,7 @@ if (missingEnvVars.length === 0) {
 const app = express();
 
 // Request logging middleware
-app.use((req, res, next) => {
+app.use((req:any, res:any, next:any) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   console.log('Request body:', req.body);
   next();

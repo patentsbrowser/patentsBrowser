@@ -151,7 +151,7 @@ export const getSavedPatents = async (req: AuthRequest, res: Response) => {
 export const saveCustomPatentList = async (req: AuthRequest, res: Response) => {
   try {
     console.log('customPatentList controller called');
-    console.log('Request body:', req.body);
+    // console.log('Request body:', req.body);
     console.log('User:', req.user);
     
     const { name, patentIds, source } = req.body;
