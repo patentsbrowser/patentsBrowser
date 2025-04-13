@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { authApi } from '../../api/auth';
 import './PatentHistory.scss';
+import Loader from '../Common/Loader';
 
 interface PatentHistoryItem {
   patentId: string;
@@ -175,7 +176,7 @@ const PatentHistory: React.FC = () => {
       </div>
 
       {isLoading ? (
-        <div className="loading-message">Loading search history...</div>
+        <Loader fullScreen={true} text="Loading search history..." />
       ) : searchHistory.length === 0 ? (
         <div className="empty-message">No search history available.</div>
       ) : (
