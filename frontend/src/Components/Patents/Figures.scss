@@ -93,9 +93,11 @@
     max-height: 95vh;
     background-color: var(--primary-bg);
     border-radius: 8px;
-    overflow: hidden;
+    overflow: visible;
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
     animation: zoomIn 0.2s ease-out;
+    display: flex;
+    flex-direction: column;
     
     .close-button {
       position: absolute;
@@ -127,14 +129,52 @@
       align-items: center;
       justify-content: center;
       background-color: #000;
-      overflow: hidden;
-      max-height: 80vh;
+      overflow: visible;
+      height: auto;
+      min-height: 50vh;
+      padding: 20px;
+      box-sizing: border-box;
+      flex: 1;
+      position: relative;
+      transition: all 0.3s ease;
+      
+      /* Rotation-specific styles */
+      &.rotation-0, &.rotation-180 {
+        background-color: #000;
+      }
+      
+      &.rotation-90, &.rotation-270 {
+        background-color: #121212;
+        padding: 5vh 10vw;
+        min-height: 60vh;
+      }
+      
+      /* Adjust container shape when image is rotated */
+      &:has(img[style*="rotate(90deg)"]), &:has(img[style*="rotate(270deg)"]) {
+        padding: 5vh 10vw;
+        min-height: 60vh;
+        background-color: #121212;
+      }
       
       img {
-        max-width: 98%;
-        max-height: 75vh;
+        max-width: 90%;
+        max-height: 70vh;
         object-fit: contain;
         transition: transform 0.3s ease;
+        
+        &.image-loading {
+          opacity: 0.5;
+        }
+        
+        &.image-loaded {
+          opacity: 1;
+        }
+        
+        /* For rotated images */
+        &[style*="rotate(90deg)"], &[style*="rotate(270deg)"] {
+          max-height: 70vw;
+          max-width: 70vh;
+        }
       }
     }
     
@@ -145,8 +185,20 @@
       color: var(--text-color);
       font-size: 16px;
       font-weight: 500;
-      max-height: 4rem;
-      overflow-y: auto;
+      flex-shrink: 0;
+      background-color: var(--primary-bg);
+      border-radius: 0 0 8px 8px;
+      z-index: 3;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+      position: relative;
+    }
+    
+    /* For browsers that don't support :has selector, use a class-based approach */
+    &[data-rotation="90"] .modal-image-container,
+    &[data-rotation="270"] .modal-image-container {
+      padding: 5vh 10vw;
+      min-height: 60vh;
+      background-color: #121212;
     }
     
     .modal-controls {
@@ -157,6 +209,9 @@
       gap: 10px;
       justify-content: center;
       align-items: center;
+      flex-shrink: 0;
+      background-color: var(--primary-bg);
+      z-index: 3;
       
       button {
         background-color: var(--primary-bg);
@@ -194,6 +249,9 @@
       font-size: 12px;
       color: var(--text-secondary);
       background-color: rgba(0, 0, 0, 0.05);
+      flex-shrink: 0;
+      z-index: 3;
+      border-radius: 0 0 8px 8px;
     }
   }
   
@@ -207,7 +265,7 @@
     font-size: 30px;
     padding: 15px 10px;
     cursor: pointer;
-    z-index: 2;
+    z-index: 5;
     border-radius: 4px;
     transition: background 0.2s;
     
@@ -281,13 +339,44 @@
       max-height: 90vh;
       
       .modal-image-container {
-        max-height: 70vh;
+        min-height: 40vh;
+        padding: 15px;
+        
+        &.rotation-90, &.rotation-270 {
+          padding: 4vh 8vw;
+          min-height: 50vh;
+        }
         
         img {
-          max-width: 98%;
-          max-height: 65vh;
+          max-width: 90%;
+          max-height: 60vh;
+          
+          &[style*="rotate(90deg)"], &[style*="rotate(270deg)"] {
+            max-height: 60vw;
+            max-width: 60vh;
+          }
         }
       }
+      
+      .modal-title {
+        padding: 8px 12px;
+        font-size: 15px;
+      }
+      
+      .modal-controls {
+        padding: 8px 12px;
+      }
+      
+      .keyboard-hint {
+        padding: 6px 12px;
+        font-size: 11px;
+      }
+    }
+    
+    .modal-content[data-rotation="90"] .modal-image-container,
+    .modal-content[data-rotation="270"] .modal-image-container {
+      padding: 4vh 8vw;
+      min-height: 50vh;
     }
     
     .nav-arrow {
@@ -325,12 +414,28 @@
       max-height: 90vh;
       
       .modal-image-container {
-        max-height: 70vh;
+        min-height: 30vh;
+        padding: 10px;
+        
+        &.rotation-90, &.rotation-270 {
+          padding: 3vh 5vw;
+          min-height: 45vh;
+        }
         
         img {
-          max-width: 100%;
-          max-height: 65vh;
+          max-width: 85%;
+          max-height: 55vh;
+          
+          &[style*="rotate(90deg)"], &[style*="rotate(270deg)"] {
+            max-height: 55vw;
+            max-width: 55vh;
+          }
         }
+      }
+      
+      .modal-title {
+        padding: 8px 10px;
+        font-size: 14px;
       }
       
       .modal-controls {
@@ -342,6 +447,17 @@
           font-size: 12px;
         }
       }
+      
+      .keyboard-hint {
+        padding: 5px 10px;
+        font-size: 10px;
+      }
+    }
+    
+    .modal-content[data-rotation="90"] .modal-image-container,
+    .modal-content[data-rotation="270"] .modal-image-container {
+      padding: 3vh 5vw;
+      min-height: 45vh;
     }
   }
 } 

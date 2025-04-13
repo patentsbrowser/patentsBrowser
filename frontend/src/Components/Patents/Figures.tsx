@@ -17,6 +17,7 @@ const Figures = ({ initialFigures, noDataMessage = "No figures available for thi
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [rotation, setRotation] = useState(0);
   const [navStyle, setNavStyle] = useState<'arrows' | 'buttons'>('arrows');
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   // Extract figures array from potentially nested structure
   let figuresArray: Figure[] = [];
@@ -44,6 +45,7 @@ const Figures = ({ initialFigures, noDataMessage = "No figures available for thi
     setSelectedImage(figure);
     setSelectedIndex(index);
     setRotation(0); // Reset rotation when opening a new image
+    setImageLoaded(false); // Reset image loaded state
   };
 
   const closeFullscreen = () => {
@@ -69,6 +71,7 @@ const Figures = ({ initialFigures, noDataMessage = "No figures available for thi
     setSelectedImage(figuresArray[newIndex]);
     setSelectedIndex(newIndex);
     setRotation(0); // Reset rotation on navigation
+    setImageLoaded(false); // Reset image loaded state
   };
   
   const toggleNavigationStyle = () => {
@@ -109,6 +112,16 @@ const Figures = ({ initialFigures, noDataMessage = "No figures available for thi
     };
   }, [selectedImage, selectedIndex, figuresArray.length]);
 
+  // Handle image loading
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
+  // Add function to determine image orientation class
+  const getOrientationClass = () => {
+    return rotation === 90 || rotation === 270 ? 'rotated-vertical' : 'rotated-horizontal';
+  };
+
   if (!figuresArray || figuresArray.length === 0) {
     return (
       <div className="section-content figures-content">
@@ -138,7 +151,11 @@ const Figures = ({ initialFigures, noDataMessage = "No figures available for thi
       {/* Fullscreen Image Modal */}
       {selectedImage && (
         <div className="fullscreen-modal" onClick={closeFullscreen}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="modal-content" 
+            onClick={(e) => e.stopPropagation()}
+            data-rotation={rotation}
+          >
             <button className="close-button" onClick={closeFullscreen}>×</button>
             
             {/* Navigation Style 1: Side Arrows */}
@@ -161,11 +178,13 @@ const Figures = ({ initialFigures, noDataMessage = "No figures available for thi
               </>
             )}
             
-            <div className="modal-image-container">
+            <div className={`modal-image-container rotation-${rotation}`}>
               <img 
                 src={getImageSource(selectedImage)} 
                 alt={selectedImage.title || 'Figure'} 
                 style={{ transform: `rotate(${rotation}deg)` }}
+                onLoad={handleImageLoad}
+                className={imageLoaded ? 'image-loaded' : 'image-loading'}
               />
             </div>
             
