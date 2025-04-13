@@ -105,7 +105,7 @@ const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
             </div>
             <div className="abstract-section">
               <h5 className="abstract-title">Abstract</h5>
-              <div className="abstract highlightable">
+              <div className="abstract highlightable full-abstract">
                 {summary.abstract || 'No abstract available'}
               </div>
             </div>
