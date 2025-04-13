@@ -348,10 +348,26 @@ export const patentApi = {
     return response.data;
   },
 
+  // Get figures for a specific patent
   getFigures: async (patentNumber: string) => {
-    // Keep direct axios for third-party APIs that don't need auth
-    const response = await axios.get(`https://api.unifiedpatents.com/patents/${patentNumber}/figures`);
-    return response.data;
+    try {
+      // Try to get figures from Unified Patents API
+      const response = await axios.get(`https://api.unifiedpatents.com/patents/${patentNumber}/figures`);
+      return response.data;
+    } catch (unifiedError) {
+      console.error('Error fetching figures from Unified API:', unifiedError);
+      
+      try {
+        // Fall back to SerpAPI if Unified fails
+        const serpResponse = await axiosInstance.get(`/patents/figures`, {
+          params: { patent_id: patentNumber }
+        });
+        return serpResponse.data;
+      } catch (serpError) {
+        console.error('Error fetching figures from SerpAPI:', serpError);
+        throw new Error('Failed to fetch patent figures from any available source');
+      }
+    }
   },
 };
 

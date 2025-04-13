@@ -8,7 +8,13 @@ body {
 
 .app-container {
   min-height: 100vh;
-  // background-color: #020212;
+  position: relative;
+  z-index: 1; // Ensure z-index stacking context
+
+  &.patent-browser-app {
+    z-index: 1;
+    position: relative;
+  }
 
   .main-content {
     margin-left: 250px;

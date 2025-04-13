@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { ApiSource } from './types';
 import { useWindowSize } from './utils';
 import toast from 'react-hot-toast';
+import PatentFigureSearch from './PatentFigureSearch';
 
 interface PatentSearchFormProps {
   searchQuery: string;
@@ -284,6 +285,11 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
           {patentIds.length} patent ID{patentIds.length > 1 ? 's' : ''} detected. 
           Click Search to view results.
         </small>
+      )}
+      
+      {/* Add Patent Figure Search Component */}
+      {searchType === 'full' && (
+        <PatentFigureSearch patentIds={patentIds} />
       )}
     </form>
   );

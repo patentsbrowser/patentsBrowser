@@ -129,7 +129,7 @@ const App = () => {
                     path="/auth/*" 
                     element={
                       <AuthGuard>
-                        <div className="app-container">
+                        <div className="app-container patent-browser-app">
                           <Header />
                           <Sidebar />
                           <main className="main-content">
