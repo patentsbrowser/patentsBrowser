@@ -6,7 +6,7 @@ import PatentSummaryCard from './PatentSummaryCard';
 import { ApiSource } from '../../api/patents';
 import { useAppSelector } from '../../Redux/hooks';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faChevronLeft, faChevronRight, faFolderPlus, faCheck, faSave, faCog } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faChevronLeft, faChevronRight, faFolderPlus, faCheck, faSave, faCog, faFilter } from '@fortawesome/free-solid-svg-icons';
 import { authApi } from '../../api/auth';
 import toast from 'react-hot-toast';
 import PatentHighlighter from './PatentHighlighter';
@@ -210,6 +210,14 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleResultsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newValue = e.target.value;
+    localStorage.setItem('resultsPerPage', newValue);
+    setItemsPerPage(parseInt(newValue, 10));
+    setCurrentPage(1); // Reset to first page
+    onPageChange(1);
+  };
+
   if (patentSummaries.length === 0) return null;
 
   return (
@@ -323,18 +331,54 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
       )}
 
       <div className="summaries-grid">
-        {patentSummaries?.map((summary) => (
-          <PatentSummaryCard
-            key={summary.patentId}
-            summary={summary}
-            onViewDetails={handleViewDetails}
-            formatDate={formatDate}
-            onPatentSelect={onPatentSelect}
-            apiSource={apiSource}
-            isSelected={selectedPatentIds.includes(summary.patentId)}
-            onSelect={handlePatentSelection}
-          />
-        ))}
+        {pagination ? (
+          // Paginate the results
+          patentSummaries
+            .slice(
+              (pagination.currentPage - 1) * pagination.resultsPerPage,
+              pagination.currentPage * pagination.resultsPerPage
+            )
+            .map((summary) => (
+              <PatentSummaryCard
+                key={summary.patentId}
+                summary={summary}
+                onViewDetails={handleViewDetails}
+                formatDate={formatDate}
+                onPatentSelect={onPatentSelect}
+                apiSource={apiSource}
+                isSelected={selectedPatentIds.includes(summary.patentId)}
+                onSelect={handlePatentSelection}
+              />
+            ))
+        ) : (
+          // If no pagination info, show all results
+          patentSummaries.map((summary) => (
+            <PatentSummaryCard
+              key={summary.patentId}
+              summary={summary}
+              onViewDetails={handleViewDetails}
+              formatDate={formatDate}
+              onPatentSelect={onPatentSelect}
+              apiSource={apiSource}
+              isSelected={selectedPatentIds.includes(summary.patentId)}
+              onSelect={handlePatentSelection}
+            />
+          ))
+        )}
+      </div>
+
+      {/* Results per page selector */}
+      <div className="results-per-page">
+        <span className="results-label">Results per page:</span>
+        <select 
+          value={itemsPerPage.toString()} 
+          onChange={handleResultsPerPageChange}
+        >
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
       </div>
 
       {/* Pagination Controls */}

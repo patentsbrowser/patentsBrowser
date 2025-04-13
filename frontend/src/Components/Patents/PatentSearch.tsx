@@ -1222,10 +1222,10 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
           onPageChange={handlePageChange}
           pagination={{
             currentPage,
-            totalPages: Math.ceil(patentSummaries.length / 10), // Assuming 10 items per page
+            totalPages: Math.ceil(patentSummaries.length / parseInt(localStorage.getItem('resultsPerPage') || '50', 10)),
             totalResults: patentSummaries.length,
-            resultsPerPage: 10,
-            hasNextPage: currentPage < Math.ceil(patentSummaries.length / 10),
+            resultsPerPage: parseInt(localStorage.getItem('resultsPerPage') || '50', 10),
+            hasNextPage: currentPage < Math.ceil(patentSummaries.length / parseInt(localStorage.getItem('resultsPerPage') || '50', 10)),
             hasPreviousPage: currentPage > 1
           }}
         />
