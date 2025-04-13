@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import FigureViewer from './FigureViewer';
 import './PatentFigureSearch.scss';
 
@@ -9,24 +9,9 @@ interface PatentFigureSearchProps {
 const PatentFigureSearch: React.FC<PatentFigureSearchProps> = ({ patentIds }) => {
   const [showFigureViewer, setShowFigureViewer] = useState(false);
   const [currentPatentIndex, setCurrentPatentIndex] = useState(0);
-  const [customPatentId, setCustomPatentId] = useState('');
-  const [activePatentIds, setActivePatentIds] = useState<string[]>([]);
   
-  // Parse custom patent IDs when input changes
-  useEffect(() => {
-    if (customPatentId.trim()) {
-      const parsedIds = customPatentId
-        .split(/[,\s]+/)
-        .map(id => id.trim())
-        .filter(id => id);
-      setActivePatentIds(parsedIds);
-    } else {
-      setActivePatentIds([]);
-    }
-  }, [customPatentId]);
-
   const handleViewFigures = (e: React.MouseEvent) => {
-    // Prevent default form submission behavior which might trigger search
+    // Prevent default form submission behavior
     e.preventDefault();
     e.stopPropagation();
     
@@ -34,30 +19,19 @@ const PatentFigureSearch: React.FC<PatentFigureSearchProps> = ({ patentIds }) =>
       // Use search query patent IDs
       setCurrentPatentIndex(0);
       setShowFigureViewer(true);
-    } else if (activePatentIds.length > 0) {
-      // Use custom input patent IDs
-      setCurrentPatentIndex(0);
-      setShowFigureViewer(true);
     } else {
-      alert('Please enter a patent ID or search for patents first');
+      alert('Please enter a patent ID in the search field above');
     }
   };
 
-  const handleCustomPatentIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCustomPatentId(e.target.value);
-  };
-
   const handleNextPatent = () => {
-    // Determine which patent ID array to use
-    const idsToUse = patentIds.length > 0 ? patentIds : activePatentIds;
-    
-    if (idsToUse.length > 0) {
+    if (patentIds.length > 0) {
       // Move to the next patent in the sequence
       const nextIndex = currentPatentIndex + 1;
       
-      if (nextIndex < idsToUse.length) {
+      if (nextIndex < patentIds.length) {
         setCurrentPatentIndex(nextIndex);
-        console.log(`Moving to next patent: ${idsToUse[nextIndex]} (${nextIndex + 1}/${idsToUse.length})`);
+        console.log(`Moving to next patent: ${patentIds[nextIndex]} (${nextIndex + 1}/${patentIds.length})`);
       } else {
         // We've reached the end of the patent list
         console.log('Reached the end of patent list, closing viewer');
@@ -65,7 +39,7 @@ const PatentFigureSearch: React.FC<PatentFigureSearchProps> = ({ patentIds }) =>
         // Optional: Show a toast or message indicating completion
       }
     } else {
-      // If we're in custom patent mode with a single ID, just close the viewer
+      // If there are no patent IDs, just close the viewer
       setShowFigureViewer(false);
     }
   };
@@ -75,49 +49,31 @@ const PatentFigureSearch: React.FC<PatentFigureSearchProps> = ({ patentIds }) =>
   };
 
   // Get the current patent ID to display
-  // Prioritize search query patent IDs, then custom entered IDs
-  const idsToUse = patentIds.length > 0 ? patentIds : activePatentIds;
-  const currentPatentId = idsToUse.length > 0 && currentPatentIndex < idsToUse.length 
-    ? idsToUse[currentPatentIndex] 
+  const currentPatentId = patentIds.length > 0 && currentPatentIndex < patentIds.length 
+    ? patentIds[currentPatentIndex] 
     : '';
     
   // Display the patent viewing progress
-  const viewingProgress = idsToUse.length > 0 
-    ? `Viewing ${currentPatentIndex + 1} of ${idsToUse.length}` 
+  const viewingProgress = patentIds.length > 0 
+    ? `Viewing ${currentPatentIndex + 1} of ${patentIds.length}` 
     : '';
 
   return (
     <div className="patent-figure-search" onClick={(e) => e.stopPropagation()}>
-      <form 
-        className="figure-search-form" 
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleViewFigures(e as any);
-        }}
-      >
-        <div className="figure-search-controls">
-          <input
-            type="text"
-            value={customPatentId}
-            onChange={handleCustomPatentIdChange}
-            placeholder="Enter patent IDs separated by commas or spaces"
-            className="patent-figure-input"
-            onClick={(e) => e.stopPropagation()}
-          />
-          <button 
-            type="submit"
-            className="view-figures-button"
-            onClick={handleViewFigures}
-            disabled={!patentIds.length && !activePatentIds.length}
-          >
-            View Figures
-          </button>
-        </div>
-      </form>
+      <div className="figure-search-controls">
+        <button 
+          type="button"
+          className="view-figures-button"
+          onClick={handleViewFigures}
+          disabled={!patentIds.length}
+        >
+          View Figures
+        </button>
+      </div>
       
-      {activePatentIds.length > 1 && (
+      {patentIds.length > 1 && (
         <div className="patent-ids-preview">
-          {activePatentIds.map((id, index) => (
+          {patentIds.map((id, index) => (
             <div 
               key={index} 
               className={`patent-id-tag ${currentPatentIndex === index && showFigureViewer ? 'active' : ''}`}
@@ -142,7 +98,7 @@ const PatentFigureSearch: React.FC<PatentFigureSearchProps> = ({ patentIds }) =>
             onClose={closeFigureViewer}
             onNextRequested={handleNextPatent}
             patentIndex={currentPatentIndex + 1}
-            totalPatents={idsToUse.length}
+            totalPatents={patentIds.length}
           />
         </div>
       )}

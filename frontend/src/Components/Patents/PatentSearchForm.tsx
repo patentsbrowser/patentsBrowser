@@ -283,7 +283,7 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
       {searchType === 'full' && patentIds.length > 0 && (
         <small className="helper-text">
           {patentIds.length} patent ID{patentIds.length > 1 ? 's' : ''} detected. 
-          Click Search to view results.
+          Click Search to view results or use the View Figures button below.
         </small>
       )}
       
