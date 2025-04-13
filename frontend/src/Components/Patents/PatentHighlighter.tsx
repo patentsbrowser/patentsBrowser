@@ -731,11 +731,13 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
               // Add the highlighted span
               const span = document.createElement('span');
               span.className = 'highlight-term';
-          span.style.backgroundColor = match.color;
+              span.style.backgroundColor = match.color;
+              span.style.display = 'inline';
+              span.style.whiteSpace = 'normal';
               span.textContent = elementText.substring(
-            match.index,
-            match.index + match.length
-          );
+                match.index,
+                match.index + match.length
+              );
               tempDiv.appendChild(span);
 
               // Update current index
@@ -843,6 +845,8 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
               const span = document.createElement('span');
               span.className = 'highlight-term';
               span.style.backgroundColor = match.color;
+              span.style.display = 'inline';
+              span.style.whiteSpace = 'normal';
               span.textContent = elementText.substring(
                 match.index, match.index + match.length
               );
@@ -1042,6 +1046,8 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
                 const span = document.createElement('span');
                 span.className = 'highlight-term';
                 span.style.backgroundColor = match.color;
+                span.style.display = 'inline';
+                span.style.whiteSpace = 'normal';
                 span.textContent = elementText.substring(
                   match.index,
                   match.index + match.length

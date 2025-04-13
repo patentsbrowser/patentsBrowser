@@ -34,6 +34,40 @@
           }
         }
       }
+
+      .selection-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        
+        .selected-count {
+          color: var(--text-secondary);
+          font-size: 0.9rem;
+        }
+        
+        .folder-action-btn {
+          padding: 0.5rem 0.75rem;
+          border-radius: 4px;
+          font-size: 0.9rem;
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          
+          &.custom-folder-btn {
+            background-color: #6a26cd; /* Violet color */
+            color: white;
+            border: 1px solid #6a26cd;
+            
+            &:hover {
+              background-color: #5a1cb5; /* Darker violet */
+              border: 1px solid #ffd700; /* Gold border */
+              box-shadow: 0 0 8px rgba(255, 215, 0, 0.4); /* Gold glow */
+            }
+          }
+        }
+      }
     }
   }
 
@@ -95,48 +129,163 @@
   
   // Style for highlighted elements
   .highlightable {
-    // This ensures the text is selectable and can be highlighted
-    user-select: text;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
     
-    // Style for highlighted terms (applied by PatentHighlighter component)
     .highlight-term {
       display: inline;
-      border-radius: 2px;
-      padding: 0 2px;
-      margin: 0 1px;
-      transition: all 0.2s;
-      position: relative;
+      white-space: normal;
+      overflow: visible;
+    }
+  }
+
+  // Custom styles for the folder creation panel
+  .create-folder-panel {
+    padding: 0.75rem;
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    
+    .create-folder-form {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
       
-      // Add a slight border in dark mode for better visibility
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+      .folder-name-input {
+        flex: 1;
+        padding: 0.6rem 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        font-size: 0.9rem;
+        background-color: var(--input-bg);
+        color: var(--text-color);
+        transition: all 0.2s ease;
+        
+        &:focus {
+          outline: none;
+          border-color: var(--accent-color);
+          box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.1);
+        }
+        
+        &::placeholder {
+          color: var(--text-secondary);
+        }
+      }
       
-      // Ensure text is visible against the highlight color
-      color: rgba(0, 0, 0, 0.8);
+      .create-btn {
+        padding: 0.6rem 1rem;
+        border-radius: 4px;
+        border: 1px solid #6a26cd;
+        background-color: #6a26cd; /* Violet color */
+        color: white;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: all 0.2s ease;
+        
+        &:hover:not(:disabled) {
+          background-color: #5a1cb5; /* Darker violet */
+          border: 1px solid #ffd700; /* Gold border */
+          box-shadow: 0 0 8px rgba(255, 215, 0, 0.4); /* Gold glow */
+        }
+        
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          pointer-events: none;
+        }
+      }
+      
+      .cancel-btn {
+        padding: 0.6rem 1rem;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        background-color: transparent;
+        color: var(--text-color);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        
+        &:hover {
+          border-color: var(--accent-secondary);
+          color: var(--accent-secondary);
+          background-color: rgba(var(--accent-secondary-rgb), 0.05);
+        }
+      }
+    }
+  }
+
+  // Custom styles for the save-to-custom button component (the green button in screenshot)
+  .save-to-custom-button {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    width: 100%;
+    
+    .custom-folder-input {
+      flex: 1;
+      padding: 0.6rem 0.75rem;
+      height: 38px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 0.9rem;
+      background-color: var(--input-bg);
+      color: var(--text-color);
+      transition: all 0.2s ease;
+      
+      &:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.1);
+      }
+      
+      &::placeholder {
+        color: var(--text-secondary);
+      }
+    }
+    
+    .save-to-custom-btn {
+      height: 38px;
+      padding: 0 1rem;
+      border-radius: 4px;
+      background-color: #6a26cd; /* Violet color */
+      color: white;
       font-weight: 500;
+      border: 1px solid #6a26cd;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
       
-      // Only apply dark text in light mode
-      @media (prefers-color-scheme: dark) {
-        color: rgba(255, 255, 255, 0.9);
-        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+      &:hover:not(:disabled) {
+        background-color: #5a1cb5; /* Darker violet */
+        border: 1px solid #ffd700; /* Gold border */
+        box-shadow: 0 0 8px rgba(255, 215, 0, 0.4); /* Gold glow */
       }
       
-      // Also honor the data-theme attribute
-      [data-theme="dark"] & {
-        color: rgba(255, 255, 255, 0.9);
-        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
       }
+    }
+    
+    .cancel-action-btn {
+      height: 38px;
+      padding: 0 1rem;
+      border-radius: 4px;
+      background-color: transparent;
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: all 0.2s ease;
       
       &:hover {
-        filter: brightness(1.1);
-        box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
-        
-        @media (prefers-color-scheme: dark) {
-          box-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
-        }
-        
-        [data-theme="dark"] & {
-          box-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
-        }
+        background-color: var(--hover-bg, #e0e0e0);
+        color: var(--text-color-strong, #000);
       }
     }
   }

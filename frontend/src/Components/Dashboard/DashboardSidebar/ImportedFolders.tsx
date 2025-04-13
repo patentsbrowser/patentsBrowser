@@ -65,25 +65,26 @@ const PatentSelectionModal: React.FC<PatentSelectionModalProps> = ({
 
   return (
     <div className="patent-selection-modal-overlay">
-      <div className="patent-selection-modal">
+      <div className="patent-selection-modal select-patents-dialog">
         <div className="modal-header">
-          <h3>{folder.name}</h3>
+          <div className="header-with-select">
+            <h3>{folder.name}</h3>
+            <div className="select-all-container">
+              <label className="select-all-label">
+                <input 
+                  type="checkbox" 
+                  checked={selectedPatentIds.length === folder.patentIds.length && folder.patentIds.length > 0}
+                  onChange={handleSelectAll}
+                />
+                Select All ({folder.patentIds.length})
+              </label>
+            </div>
+          </div>
           <button className="close-button" onClick={onClose}>×</button>
         </div>
         
         <div className="modal-body">
-          <div className="select-all-container">
-            <label className="select-all-label">
-              <input 
-                type="checkbox" 
-                checked={selectedPatentIds.length === folder.patentIds.length && folder.patentIds.length > 0}
-                onChange={handleSelectAll}
-              />
-              Select All ({folder.patentIds.length})
-            </label>
-          </div>
-          
-          <div className="patent-list">
+          <div className="patents-list">
             {folder.patentIds.map((patentId) => (
               <div key={patentId} className="patent-checkbox-item">
                 <label>
@@ -99,7 +100,7 @@ const PatentSelectionModal: React.FC<PatentSelectionModalProps> = ({
           </div>
         </div>
         
-        <div className="modal-footer">
+        <div className="dialog-actions">
           <button 
             className="cancel-button" 
             onClick={onClose}

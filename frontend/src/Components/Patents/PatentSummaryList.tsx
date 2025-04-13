@@ -297,23 +297,23 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
 
       {showSaveToCustomFolder && (
         <div className="create-folder-panel">
-          <div className="create-folder-form">
+          <div className="save-to-custom-button">
             <input
               type="text"
               placeholder="Enter Custom folder name"
               value={folderName}
               onChange={(e) => setFolderName(e.target.value)}
-              className="folder-name-input"
+              className="custom-folder-input"
             />
             <button 
-              className="create-btn" 
+              className="save-to-custom-btn" 
               onClick={handleSaveToCustomFolder}
               disabled={!folderName.trim() || selectedPatentIds.length === 0}
             >
               <FontAwesomeIcon icon={faSave} /> Save to Custom
             </button>
             <button 
-              className="cancel-btn"
+              className="cancel-action-btn"
               onClick={() => setShowSaveToCustomFolder(false)}
             >
               Cancel

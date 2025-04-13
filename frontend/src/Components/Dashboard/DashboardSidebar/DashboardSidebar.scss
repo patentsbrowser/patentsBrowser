@@ -1527,7 +1527,6 @@
   border-radius: 10px;
   width: 90%;
   max-width: 500px;
-  max-height: 80vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 15px rgba(var(--accent-rgb), 0.3);
@@ -1554,10 +1553,38 @@
     justify-content: space-between;
     align-items: center;
 
-    h3 {
-      margin: 0;
-      color: var(--accent-color);
-      font-weight: 600;
+    .header-with-select {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+
+      h3 {
+        margin: 0;
+        color: var(--accent-color);
+        font-weight: 600;
+      }
+
+      .select-all-container {
+        margin-top: 5px;
+        padding: 0;
+        border-bottom: none;
+
+        .select-all-label {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          cursor: pointer;
+          color: var(--text-color);
+          font-size: 0.9rem;
+          
+          input[type="checkbox"] {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent-color);
+          }
+        }
+      }
     }
 
     .close-button {
@@ -1583,40 +1610,24 @@
   }
 
   .modal-body {
-    padding: 20px;
-    overflow-y: auto;
-    max-height: 60vh;
+    padding: 0;
+    overflow: hidden;
 
-    .select-all-container {
-      padding-bottom: 10px;
-      margin-bottom: 15px;
-      border-bottom: 1px solid var(--border-color);
-
-      .select-all-label {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        cursor: pointer;
-        color: var(--text-color);
-        
-        input[type="checkbox"] {
-          cursor: pointer;
-          width: 16px;
-          height: 16px;
-          accent-color: var(--accent-color);
-        }
-      }
-    }
-
-    .patent-list {
+    .patents-list {
+      max-height: 300px;
+      overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 0;
 
       .patent-checkbox-item {
-        padding: 8px 10px;
-        border-radius: 4px;
+        padding: 8px 20px;
+        border-bottom: 1px solid var(--border-light, #f0f0f0);
         transition: all 0.2s ease;
+        
+        &:last-child {
+          border-bottom: none;
+        }
         
         &:hover {
           background-color: rgba(var(--accent-rgb), 0.05);
@@ -1640,11 +1651,11 @@
     }
   }
 
-  .modal-footer {
+  .dialog-actions {
     padding: 15px 20px;
     border-top: 1px solid var(--border-color);
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     gap: 10px;
 
     .cancel-button {
@@ -1673,6 +1684,12 @@
       position: relative;
       overflow: hidden;
 
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+
       &::before {
         content: '';
         position: absolute;
@@ -1689,7 +1706,7 @@
         z-index: 1;
       }
       
-      &:hover {
+      &:hover:not(:disabled) {
         box-shadow: 0 5px 15px rgba(var(--accent-rgb), 0.3), 0 0 10px rgba(var(--accent-secondary-rgb), 0.2);
         transform: translateY(-2px);
         
@@ -1698,17 +1715,22 @@
           left: -30%;
         }
       }
+    }
+  }
 
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        transform: none;
-        box-shadow: none;
-        
-        &::before {
-          display: none;
-        }
-      }
+  /* Apply the select patents dialog styles */
+  &.select-patents-dialog {
+    max-height: none;
+    height: auto;
+    
+    .modal-body {
+      padding: 0;
+      overflow: hidden;
+    }
+    
+    .patents-list {
+      max-height: 300px;
+      overflow-y: auto;
     }
   }
 }
