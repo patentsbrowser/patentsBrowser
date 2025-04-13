@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import Loader from "../Loader/Loader";
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { authApi } from "../../api/auth";
+import { motion } from "framer-motion";
 
 const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
   const [email, setEmail] = useState("");
@@ -50,13 +51,57 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
     setShowPassword(!showPassword);
   };
 
+  const formVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: {
+        staggerChildren: 0.15,
+        delayChildren: 0.2,
+      }
+    }
+  };
+
+  const inputVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: { 
+      opacity: 1, 
+      x: 0,
+      transition: { type: "spring", stiffness: 150, damping: 13 }
+    }
+  };
+
   return (
     <>
       <Loader isLoading={loginMutation.isPending} />
-      <div className="auth-box">
-        <h2>Sign In</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
+      <motion.div 
+        className="auth-box"
+        initial={{ opacity: 0, rotateY: 30, scale: 0.9 }}
+        animate={{ opacity: 1, rotateY: 0, scale: 1 }}
+        transition={{ 
+          type: "spring", 
+          stiffness: 100, 
+          damping: 15,
+          duration: 0.8 
+        }}
+        whileHover={{ translateZ: 40 }}
+      >
+        <motion.h2
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+        >Sign In</motion.h2>
+        <motion.form 
+          onSubmit={handleSubmit}
+          variants={formVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.div 
+            className="form-group"
+            variants={inputVariants}
+          >
             <label htmlFor="email">Email Address</label>
             <input
               type="email"
@@ -68,8 +113,11 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
               disabled={loginMutation.isPending}
               className="auth-input"
             />
-          </div>
-          <div className="form-group">
+          </motion.div>
+          <motion.div 
+            className="form-group"
+            variants={inputVariants}
+          >
             <label htmlFor="password">Password</label>
             <div className="password-input-container">
               <input
@@ -82,35 +130,53 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
                 disabled={loginMutation.isPending}
                 className="auth-input"
               />
-              <button
+              <motion.button
                 type="button"
                 className="password-toggle-btn"
                 onClick={togglePasswordVisibility}
                 tabIndex={-1}
+                whileHover={{ scale: 1.2, rotate: 5 }}
+                whileTap={{ scale: 0.9 }}
               >
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </button>
+              </motion.button>
             </div>
-          </div>
-          <button 
+          </motion.div>
+          <motion.button 
             type="submit" 
             className="submit-btn"
             disabled={loginMutation.isPending}
+            variants={inputVariants}
+            whileHover={{ 
+              scale: 1.05, 
+              y: -5,
+              boxShadow: "0 10px 25px rgba(106, 38, 205, 0.4)"
+            }}
+            whileTap={{ scale: 0.95 }}
           >
             {loginMutation.isPending ? 'Signing In...' : 'Sign In'}
-          </button>
-        </form>
-        <p>
+          </motion.button>
+        </motion.form>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+        >
           Don't have an account?{' '}
-          <button
+          <motion.button
             className="switch-btn"
             onClick={switchToSignup}
             disabled={loginMutation.isPending}
+            whileHover={{ 
+              scale: 1.1,
+              color: "#ffffff",
+              textShadow: "0 0 8px rgba(255, 215, 0, 0.8)" 
+            }}
           >
             Sign Up
-          </button>
-        </p>
-      </div>
+          </motion.button>
+        </motion.p>
+      </motion.div>
     </>
   );
 };

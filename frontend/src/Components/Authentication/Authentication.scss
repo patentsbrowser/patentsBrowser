@@ -5,7 +5,10 @@
   background-color: #1a1a1a;
   background-image: linear-gradient(135deg, rgba(89, 46, 131, 0.15) 0%, rgba(40, 167, 69, 0.1) 100%);
   position: relative;
+  perspective: 1000px;
+  overflow: hidden;
   
+  // Patent document background patterns
   &::before {
     content: '';
     position: absolute;
@@ -13,11 +16,92 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffd700' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+    background-image: 
+      url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffd700' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236a26cd' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
     opacity: 0.8;
     z-index: 0;
   }
   
+  // Floating background elements
+  .floating-patent {
+    position: absolute;
+    top: 10vh;
+    right: 5vw;
+    width: 120px;
+    height: 120px;
+    background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 10h100v100H10z' fill='none' stroke='%236a26cd' stroke-width='1'/%3E%3Cpath d='M20 20h80v80H20z' fill='none' stroke='%23ffd700' stroke-width='1'/%3E%3Ccircle cx='60' cy='60' r='20' fill='none' stroke='%236a26cd' stroke-width='1'/%3E%3Cpath d='M40 60h40M60 40v40' stroke='%23ffd700' stroke-width='1'/%3E%3C/svg%3E");
+    opacity: 0.7;
+    filter: drop-shadow(0 0 15px rgba(106, 38, 205, 0.5));
+    z-index: 1;
+    pointer-events: none;
+  }
+  
+  .floating-magnifier {
+    position: absolute;
+    bottom: 15vh;
+    left: 8vw;
+    width: 80px;
+    height: 80px;
+    background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='35' cy='35' r='20' fill='none' stroke='%23ffd700' stroke-width='2'/%3E%3Cpath d='M50 50l20 20' stroke='%23ffd700' stroke-width='2'/%3E%3C/svg%3E");
+    opacity: 0.6;
+    filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.5));
+    z-index: 1;
+    pointer-events: none;
+  }
+  
+  .floating-grid {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100vw;
+    height: 100vh;
+    background-image: 
+      linear-gradient(to right, rgba(106, 38, 205, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(106, 38, 205, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    z-index: 0;
+    pointer-events: none;
+  }
+  
+  // Floating patents background
+  .floating-patents-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 1;
+    pointer-events: none;
+  }
+  
+  .floating-patent-id {
+    position: absolute;
+    color: rgba(106, 38, 205, 0.3);
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(106, 38, 205, 0.4);
+    white-space: nowrap;
+    pointer-events: none;
+    
+    &:nth-child(odd) {
+      color: rgba(255, 215, 0, 0.3);
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+    }
+    
+    &:nth-child(3n) {
+      font-family: Arial, sans-serif;
+      letter-spacing: 1px;
+    }
+    
+    &:nth-child(5n) {
+      font-style: italic;
+    }
+  }
+  
+  // Authentication navigation bar
   .auth-nav {
     display: flex;
     justify-content: space-between;
@@ -26,7 +110,7 @@
     background-color: rgba(0, 0, 0, 0.5);
     border-bottom: 1px solid rgba(255, 215, 0, 0.2);
     position: relative;
-    z-index: 1;
+    z-index: 10;
     
     &::after {
       content: '';
@@ -44,11 +128,16 @@
       color: #ffd700; // Gold
       text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
       cursor: pointer;
-      transition: all 0.3s ease;
+      position: relative;
       
-      &:hover {
-        color: white;
-        transform: scale(1.05);
+      &::before {
+        content: 'PatentsBrowser';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        color: #6a26cd; // Violet
+        opacity: 0.6;
+        filter: blur(2px);
       }
     }
     
@@ -62,7 +151,6 @@
         font-weight: 500;
         cursor: pointer;
         border: none;
-        transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
         
@@ -82,39 +170,22 @@
           z-index: 1;
         }
         
-        &:hover::before {
-          top: -30%;
-          left: -30%;
-        }
-        
         &.btn-home {
           background: transparent;
           border: 1px solid #ffd700; // Gold
           color: white;
-          
-          &:hover {
-            background-color: rgba(255, 215, 0, 0.1);
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
-            transform: translateY(-2px);
-          }
         }
         
         &.btn-forum {
           background: transparent;
           border: 1px solid white;
           color: white;
-          
-          &:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-color: #ffd700; // Gold
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
-            transform: translateY(-2px);
-          }
         }
       }
     }
   }
   
+  // Main auth box styles
   .auth-box {
     background-color: rgba(25, 25, 25, 0.9);
     width: 420px;
@@ -124,19 +195,38 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 15px rgba(89, 46, 131, 0.3);
     margin: auto;
     position: relative;
-    z-index: 1;
+    z-index: 10;
     border: 1px solid rgba(89, 46, 131, 0.3);
-    animation: fadeIn 0.4s ease-out;
+    transform-style: preserve-3d;
     
+    // Patent decoration
     &::before {
       content: '';
       position: absolute;
-      top: -1px;
-      left: -1px;
-      right: -1px;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.6), transparent);
-      border-radius: 12px 12px 0 0;
+      top: -20px;
+      right: -20px;
+      width: 80px;
+      height: 80px;
+      background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 10h60v60H10z' fill='none' stroke='%236a26cd' stroke-width='1'/%3E%3Cpath d='M20 20h40v40H20z' fill='none' stroke='%23ffd700' stroke-width='1'/%3E%3Ccircle cx='40' cy='40' r='10' fill='none' stroke='%236a26cd' stroke-width='1'/%3E%3Cpath d='M30 40h20M40 30v20' stroke='%23ffd700' stroke-width='1'/%3E%3C/svg%3E");
+      opacity: 0.7;
+      filter: drop-shadow(0 0 10px rgba(106, 38, 205, 0.5));
+      z-index: 2;
+      pointer-events: none;
+    }
+    
+    // Magnifying glass element
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -15px;
+      left: -15px;
+      width: 60px;
+      height: 60px;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='25' cy='25' r='15' fill='none' stroke='%23ffd700' stroke-width='2'/%3E%3Cpath d='M35 35l15 15' stroke='%23ffd700' stroke-width='2'/%3E%3C/svg%3E");
+      opacity: 0.6;
+      filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.5));
+      z-index: 2;
+      pointer-events: none;
     }
     
     h2 {
@@ -158,6 +248,8 @@
         width: 80px;
         height: 2px;
         background: linear-gradient(90deg, transparent, #ffd700, transparent);
+        border-radius: 2px;
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
       }
     }
     
@@ -250,13 +342,13 @@
         font-weight: 600;
         border: none;
         cursor: pointer;
-        transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
         margin-top: 0.5rem;
         max-width: 180px;
         align-self: center;
         font-size: 0.95rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         
         &::before {
           content: '';
@@ -274,21 +366,9 @@
           z-index: 1;
         }
         
-        &:hover {
-          background: linear-gradient(to right, #6b3b9b, #8d4dca);
-          box-shadow: 0 5px 15px rgba(89, 46, 131, 0.4), 0 0 10px rgba(255, 215, 0, 0.3);
-          transform: translateY(-2px);
-          
-          &::before {
-            top: -30%;
-            left: -30%;
-          }
-        }
-        
         &:disabled {
           background: #444;
           cursor: not-allowed;
-          transform: none;
           box-shadow: none;
           
           &::before {
@@ -313,12 +393,6 @@
         font-size: inherit;
         font-weight: 600;
         transition: all 0.2s ease;
-        
-        &:hover {
-          color: white;
-          text-decoration: underline;
-          text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
-        }
         
         &:disabled {
           color: #666;
@@ -364,20 +438,35 @@
       &:focus {
         outline: none;
       }
-      
-      &:hover {
-        color: #ffd700;
-      }
     }
+  }
+  
+  // OTP Modal styling
+  .otp-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
   }
   
   .otp-modal {
     padding: 2rem;
+    width: 400px;
+    max-width: 95vw;
     text-align: center;
     background-color: rgba(25, 25, 25, 0.95);
     border-radius: 12px;
     border: 1px solid rgba(89, 46, 131, 0.4);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(89, 46, 131, 0.3);
+    position: relative;
+    transform-style: preserve-3d;
     
     &::before {
       content: '';
@@ -388,6 +477,12 @@
       height: 2px;
       background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.6), transparent);
       border-radius: 12px 12px 0 0;
+    }
+    
+    h3 {
+      color: #ffd700;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
     }
   
     .otp-instructions {
@@ -438,12 +533,6 @@
       transition: all 0.3s ease;
       margin-bottom: 1.5rem;
       
-      &:hover {
-        background: linear-gradient(to right, #6b3b9b, #8d4dca);
-        box-shadow: 0 5px 15px rgba(89, 46, 131, 0.4), 0 0 10px rgba(255, 215, 0, 0.3);
-        transform: translateY(-2px);
-      }
-      
       &:disabled {
         background: #444;
         cursor: not-allowed;
@@ -465,11 +554,6 @@
         font-weight: 600;
         transition: color 0.3s ease;
   
-        &:hover {
-          color: white;
-          text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
-        }
-  
         &:disabled {
           color: #666;
           cursor: not-allowed;
@@ -477,16 +561,39 @@
         }
       }
     }
-  }
-  
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(-15px);
+    
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: none;
+      border: none;
+      color: #aaa;
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      
+      &:hover {
+        color: white;
+      }
     }
-    to {
-      opacity: 1;
-      transform: translateY(0);
+    
+    .patent-decoration {
+      position: absolute;
+      bottom: -20px;
+      right: -20px;
+      width: 100px;
+      height: 100px;
+      background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='50' cy='50' r='40' fill='none' stroke='%236a26cd' stroke-width='1'/%3E%3Cpath d='M30 50h40M50 30v40' stroke='%23ffd700' stroke-width='1'/%3E%3Ccircle cx='50' cy='50' r='20' fill='none' stroke='%23ffd700' stroke-width='1'/%3E%3C/svg%3E");
+      opacity: 0.2;
+      z-index: -1;
+      pointer-events: none;
     }
   }
   
@@ -511,6 +618,11 @@
       h2 {
         font-size: 1.8rem;
       }
+    }
+    
+    .floating-patent,
+    .floating-magnifier {
+      display: none;
     }
   }
   
@@ -542,7 +654,7 @@
       .otp-input-container {
         gap: 0.3rem;
         
-        .otp-input {
+        input {
           width: 45px !important;
           height: 45px !important;
           font-size: 1.2rem !important;
@@ -554,67 +666,17 @@
         max-width: 200px;
       }
     }
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-// Media queries for responsiveness
-@media (max-width: 480px) {
-  .auth-container {
-    padding: 1rem;
     
-    .auth-box {
-      padding: 2rem;
-      
-      h2 {
-        font-size: 1.75rem;
-      }
+    .floating-patent-id {
+      font-size: 0.8rem !important;
     }
   }
 }
 
-.password-input-container {
-  position: relative;
-  width: 100%;
-  
-  input {
-    width: 100%;
-    padding-right: 30px;
-  }
-  
-  .password-toggle-btn {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #ccc;
-    padding: 0;
-    font-size: 14px;
-    height: 24px;
-    width: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    
-    &:focus {
-      outline: none;
-    }
-    
-    &:hover {
-      color: #fff;
-    }
-  }
+// Add will-change properties for browser optimizations
+.auth-box,
+.otp-modal,
+.submit-btn,
+.btn {
+  will-change: transform, opacity;
 } 

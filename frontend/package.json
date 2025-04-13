@@ -24,6 +24,7 @@
     "axios": "^1.8.1",
     "country-state-city": "^3.2.1",
     "formik": "^2.4.6",
+    "framer-motion": "^12.6.5",
     "libphonenumber-js": "^1.12.6",
     "otp-input-react": "^0.3.0",
     "qrcode.react": "^4.2.0",
