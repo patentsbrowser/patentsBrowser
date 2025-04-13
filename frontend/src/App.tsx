@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { useState, useEffect, Component, ReactNode } from "react";
+import { useState, Component, ReactNode } from "react";
 import { AuthProvider } from "./AuthContext";
 import Header from "./Components/Header/Header";
 import Sidebar from "./Components/Sidebar/Sidebar";
