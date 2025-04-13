@@ -1313,16 +1313,8 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
 
   // If not in modal mode, render as before
   if (!isOpen) {
-    // Return just the button but don't clear highlights when modal is closed
-    return (
-      <button 
-        className="highlighter-settings-button"
-        onClick={onClose}
-        title="Open Patent Highlighter"
-      >
-        <FontAwesomeIcon icon={faCog} />
-      </button>
-    );
+    // Return null - don't show the button since we have one in PatentSummaryList
+    return null;
   }
 
   return (

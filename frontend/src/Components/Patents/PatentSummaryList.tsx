@@ -224,6 +224,14 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
       <div className="summaries-header">
         <h3>Patent Search Results</h3>
         <div className="header-actions">
+          <button 
+            className={`highlighter-toggle-button ${isHighlighterOpen ? 'active' : ''}`}
+            onClick={() => setIsHighlighterOpen(!isHighlighterOpen)}
+            title="Patent Highlighter Settings"
+            aria-label="Patent Highlighter Settings"
+          >
+            <FontAwesomeIcon icon={faCog} /> Highlighter
+          </button>
           {selectedPatentIds.length > 0 && (
             <div className="selection-actions">
               <span className="selected-count">{selectedPatentIds.length} patents selected</span>
@@ -234,13 +242,13 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
               >
                 <FontAwesomeIcon icon={faSave} /> Save to Custom Folder
               </button>
-              <button 
+              {/* <button 
                 className="folder-action-btn"
                 onClick={() => setIsCreatingFolder(true)}
                 title="Create folder with selected patents"
               >
                 <FontAwesomeIcon icon={faFolderPlus} /> Create Folder
-              </button>
+              </button> */}
             </div>
           )}
           <button
@@ -249,14 +257,6 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
             title={selectedPatentIds.length === patentSummaries.length ? "Deselect all" : "Select all"}
           >
             {selectedPatentIds.length === patentSummaries.length ? "Deselect All" : "Select All"}
-          </button>
-          <button 
-            className={`highlighter-toggle-button ${isHighlighterOpen ? 'active' : ''}`}
-            onClick={() => setIsHighlighterOpen(!isHighlighterOpen)}
-            title="Toggle Patent Highlighter"
-            aria-label="Toggle Patent Highlighter"
-          >
-            <FontAwesomeIcon icon={faCog} />
           </button>
           <button 
             className="clear-results-button"

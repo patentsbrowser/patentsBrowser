@@ -8,8 +8,8 @@ import { useAppDispatch, useAppSelector } from '../../Redux/hooks';
 import { fetchFullPatentDetails } from '../../Redux/slices/patentSlice';
 import './PatentDetails.scss';
 import { ApiSource } from '../../api/patents';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCog } from '@fortawesome/free-solid-svg-icons';
+// import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+// import { faCog } from '@fortawesome/free-solid-svg-icons';
 // import { formatPatentId } from '../Patents/utils';
 
 interface PatentDetailsProps {
@@ -174,14 +174,7 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
       <div className="patent-header">
         <h3>{title}</h3>
         <div className="header-actions">
-          <button 
-            className={`highlighter-toggle-button ${isHighlighterOpen ? 'active' : ''}`}
-            onClick={() => setIsHighlighterOpen(!isHighlighterOpen)}
-            title="Toggle Patent Highlighter"
-            aria-label="Toggle Patent Highlighter"
-          >
-            <FontAwesomeIcon icon={faCog} />
-          </button>
+          {/* Settings button removed - use the one in PatentSummaryList instead */}
         </div>
         <ControlledPatentHighlighter 
           isOpen={isHighlighterOpen}
