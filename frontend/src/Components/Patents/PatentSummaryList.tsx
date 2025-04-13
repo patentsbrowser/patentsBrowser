@@ -11,6 +11,7 @@ import { authApi } from '../../api/auth';
 import toast from 'react-hot-toast';
 import PatentHighlighter from './PatentHighlighter';
 import './PatentSummaryList.scss';
+import MultiFolderSelector from './MultiFolderSelector';
 
 interface PatentSummaryListProps {
   patentSummaries: PatentSummary[];
@@ -73,6 +74,8 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [folderName, setFolderName] = useState('');
   const [showSaveToCustomFolder, setShowSaveToCustomFolder] = useState(false);
+  const [showAddToExistingFolder, setShowAddToExistingFolder] = useState(false);
+  
   // Add state for highlighter
   const [isHighlighterOpen, setIsHighlighterOpen] = useState(() => {
     // Initialize from localStorage if available
@@ -204,6 +207,16 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
     }
   };
 
+  // New handler for adding to existing folder
+  const handleAddToExistingFolder = () => {
+    if (selectedPatentIds.length === 0) {
+      toast.error('Please select at least one patent');
+      return;
+    }
+    
+    setShowAddToExistingFolder(true);
+  };
+
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
     onPageChange(newPage);
@@ -248,15 +261,15 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
                 onClick={() => setShowSaveToCustomFolder(true)}
                 title="Save to Custom folder in Dashboard"
               >
-                <FontAwesomeIcon icon={faSave} /> Save to Custom Folder
+                <FontAwesomeIcon icon={faSave} /> New Folder
               </button>
-              {/* <button 
-                className="folder-action-btn"
-                onClick={() => setIsCreatingFolder(true)}
-                title="Create folder with selected patents"
+              <button 
+                className="folder-action-btn existing-folder-btn"
+                onClick={handleAddToExistingFolder}
+                title="Add to existing folder"
               >
-                <FontAwesomeIcon icon={faFolderPlus} /> Create Folder
-              </button> */}
+                <FontAwesomeIcon icon={faFolderPlus} /> Add to Folder
+              </button>
             </div>
           )}
           <button
@@ -328,6 +341,15 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
             </button>
           </div>
         </div>
+      )}
+
+      {/* Add the MultiFolderSelector component */}
+      {showAddToExistingFolder && (
+        <MultiFolderSelector
+          isOpen={showAddToExistingFolder}
+          onClose={() => setShowAddToExistingFolder(false)}
+          patentIds={selectedPatentIds}
+        />
       )}
 
       <div className="summaries-grid">

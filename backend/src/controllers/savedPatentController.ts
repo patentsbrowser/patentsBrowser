@@ -300,6 +300,176 @@ export const removePatentFromFolder = async (req: AuthRequest, res: Response) =>
   }
 };
 
+// New function to add a patent to an existing folder
+export const addPatentToFolder = async (req: AuthRequest, res: Response) => {
+  try {
+    const { folderId, patentId } = req.body;
+    const userId = req.user?.userId;
+
+    // Validate required fields
+    if (!folderId || !patentId) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Folder ID and Patent ID are required',
+        data: null
+      });
+    }
+
+    if (!userId) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'User not authenticated',
+        data: null
+      });
+    }
+
+    // Standardize the patent ID
+    const standardizedPatentId = standardizePatentNumber(patentId.trim());
+    
+    // Find the custom list
+    const customList = await CustomPatentList.findOne({ 
+      _id: folderId,
+      userId 
+    });
+
+    if (!customList) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'Custom folder not found',
+        data: null
+      });
+    }
+
+    // Check if the patent is already in the folder
+    if (customList.patentIds.includes(standardizedPatentId)) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Patent is already in this folder',
+        data: customList
+      });
+    }
+
+    // Add the patent ID to the list
+    customList.patentIds.push(standardizedPatentId);
+    
+    // Save the updated list
+    await customList.save();
+
+    // Also save the patent to the SavedPatent collection if it doesn't exist
+    let savedPatent = await SavedPatent.findOne({ userId, patentId: standardizedPatentId });
+    
+    if (!savedPatent) {
+      savedPatent = new SavedPatent({
+        userId,
+        patentId: standardizedPatentId
+      });
+      await savedPatent.save();
+    }
+
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Patent added to folder successfully',
+      data: customList
+    });
+  } catch (error) {
+    console.error('Error adding patent to folder:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to add patent to folder',
+      data: null
+    });
+  }
+};
+
+// New function to add multiple patents to an existing folder
+export const addPatentsToFolder = async (req: AuthRequest, res: Response) => {
+  try {
+    const { folderId, patentIds } = req.body;
+    const userId = req.user?.userId;
+
+    // Validate required fields
+    if (!folderId || !patentIds || !Array.isArray(patentIds) || patentIds.length === 0) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Folder ID and at least one Patent ID are required',
+        data: null
+      });
+    }
+
+    if (!userId) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'User not authenticated',
+        data: null
+      });
+    }
+
+    // Standardize the patent IDs
+    const standardizedPatentIds = patentIds.map(id => standardizePatentNumber(id.trim()));
+    
+    // Find the custom list
+    const customList = await CustomPatentList.findOne({ 
+      _id: folderId,
+      userId 
+    });
+
+    if (!customList) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'Custom folder not found',
+        data: null
+      });
+    }
+
+    // Filter out patents that are already in the folder
+    const newPatentIds = standardizedPatentIds.filter(id => !customList.patentIds.includes(id));
+    
+    if (newPatentIds.length === 0) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'All patents are already in this folder',
+        data: customList
+      });
+    }
+
+    // Add the patent IDs to the list
+    customList.patentIds.push(...newPatentIds);
+    
+    // Save the updated list
+    await customList.save();
+
+    // Also save the patents to the SavedPatent collection if they don't exist
+    for (const patentId of newPatentIds) {
+      let savedPatent = await SavedPatent.findOne({ userId, patentId });
+      
+      if (!savedPatent) {
+        savedPatent = new SavedPatent({
+          userId,
+          patentId
+        });
+        await savedPatent.save();
+      }
+    }
+
+    res.status(200).json({
+      statusCode: 200,
+      message: `${newPatentIds.length} patents added to folder successfully`,
+      data: {
+        customList,
+        addedCount: newPatentIds.length,
+        totalCount: standardizedPatentIds.length
+      }
+    });
+  } catch (error) {
+    console.error('Error adding patents to folder:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to add patents to folder',
+      data: null
+    });
+  }
+};
+
 // New function to extract patent IDs from uploaded files and optionally save to a folder
 export const extractPatentIdsFromFile = async (req: AuthRequest, res: Response) => {
   try {

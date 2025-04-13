@@ -3,7 +3,7 @@ import { authApi } from '../../api/auth';
 import toast from 'react-hot-toast';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolderPlus, faTimes } from '@fortawesome/free-solid-svg-icons';
-import './PatentFolderSelector.scss';
+import './PatentFolderSelector.scss'; // Reuse same styles
 
 interface CustomFolder {
   _id: string;
@@ -11,16 +11,16 @@ interface CustomFolder {
   patentIds: string[];
 }
 
-interface PatentFolderSelectorProps {
+interface MultiFolderSelectorProps {
   isOpen: boolean;
   onClose: () => void;
-  patentId: string;
+  patentIds: string[];
 }
 
-const PatentFolderSelector: React.FC<PatentFolderSelectorProps> = ({ 
+const MultiFolderSelector: React.FC<MultiFolderSelectorProps> = ({ 
   isOpen,
   onClose,
-  patentId
+  patentIds
 }) => {
   const [folders, setFolders] = useState<CustomFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
@@ -63,23 +63,41 @@ const PatentFolderSelector: React.FC<PatentFolderSelectorProps> = ({
       return;
     }
     
+    if (patentIds.length === 0) {
+      toast.error('No patents selected');
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
-      await authApi.addPatentToFolder(selectedFolder, patentId);
-      toast.success('Patent added to folder successfully');
+      const response = await authApi.addPatentsToFolder(selectedFolder, patentIds);
       
-      // Refresh folders in the sidebar
-      const refreshEvent = new CustomEvent('refresh-custom-folders');
-      window.dispatchEvent(refreshEvent);
+      // The response structure is { statusCode, message, data: { customList, addedCount, totalCount } }
+      if (response.data && response.data.addedCount > 0) {
+        toast.success(`${response.data.addedCount} patents added to folder successfully`);
+        
+        // If some patents were already in the folder
+        if (response.data.addedCount < response.data.totalCount) {
+          toast.info(`${response.data.totalCount - response.data.addedCount} patents were already in the folder`);
+        }
+        
+        // Refresh folders in the sidebar
+        const refreshEvent = new CustomEvent('refresh-custom-folders');
+        window.dispatchEvent(refreshEvent);
+      } else {
+        toast.info('All patents were already in this folder');
+      }
       
       onClose();
     } catch (error: any) {
-      console.error('Error adding patent to folder:', error);
-      if (error.response?.data?.message === 'Patent is already in this folder') {
-        toast.info('Patent is already in this folder');
+      console.error('Error adding patents to folder:', error);
+      if (error.response?.data?.message === 'All patents are already in this folder') {
+        toast.info('All patents are already in this folder');
+      } else if (error.response?.status === 404) {
+        toast.error('Folder not found. Please try again or create a new folder.');
       } else {
-        toast.error('Failed to add patent to folder. Please try again.');
+        toast.error('Failed to add patents to folder. Please try again.');
       }
     } finally {
       setIsSubmitting(false);
@@ -96,7 +114,7 @@ const PatentFolderSelector: React.FC<PatentFolderSelectorProps> = ({
     <div className="patent-folder-selector-modal">
       <div className="modal-content">
         <div className="modal-header">
-          <h3>Select Folder</h3>
+          <h3>Add {patentIds.length} Patent{patentIds.length !== 1 ? 's' : ''} to Folder</h3>
           <button className="close-button" onClick={onClose} disabled={isSubmitting}>
             <FontAwesomeIcon icon={faTimes} />
           </button>
@@ -160,4 +178,4 @@ const PatentFolderSelector: React.FC<PatentFolderSelectorProps> = ({
   );
 };
 
-export default PatentFolderSelector; 
+export default MultiFolderSelector; 

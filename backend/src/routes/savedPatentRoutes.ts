@@ -11,7 +11,9 @@ import {
   getImportedLists,
   getSearchHistory,
   clearSearchHistory,
-  addToSearchHistory
+  addToSearchHistory,
+  addPatentToFolder,
+  addPatentsToFolder
 } from '../controllers/savedPatentController.js';
 import multer from 'multer';
 import path from 'path';
@@ -75,6 +77,12 @@ router.get('/get-imported-lists', auth, getImportedLists as any);
 router.get('/search-history', auth, getSearchHistory as any);
 router.delete('/search-history', auth, clearSearchHistory as any);
 router.post('/search-history', auth, addToSearchHistory as any);
+
+// New route for adding a patent to an existing folder
+router.post('/add-to-folder', auth, addPatentToFolder as any);
+
+// New route for adding multiple patents to an existing folder
+router.post('/add-patents-to-folder', auth, addPatentsToFolder as any);
 
 // New route for extracting patent IDs from files
 router.post(

@@ -187,6 +187,36 @@ export const authApi = {
     }
   },
   
+  addPatentToFolder: async (folderId: string, patentId: string) => {
+    try {
+      const response = await axiosInstance.post(
+        `/saved-patents/add-to-folder`,
+        { folderId, patentId }
+      );
+      
+      console.log('Patent added to folder response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error adding patent to folder:', error);
+      throw error;
+    }
+  },
+  
+  addPatentsToFolder: async (folderId: string, patentIds: string[]) => {
+    try {
+      const response = await axiosInstance.post(
+        `/saved-patents/add-patents-to-folder`,
+        { folderId, patentIds }
+      );
+      
+      console.log('Patents added to folder response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error adding patents to folder:', error);
+      throw error;
+    }
+  },
+  
   logout: async () => {
     // Prevent multiple logout calls
     if (isLoggingOut) {

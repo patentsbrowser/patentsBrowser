@@ -164,6 +164,23 @@ app.use('/api/otp', otpRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/feedback', feedbackRoutes);
 
+// Debug: Log all registered routes
+console.log('============ REGISTERED ROUTES ============');
+app._router.stack.forEach((middleware: any) => {
+  if (middleware.route) {
+    // Routes registered directly on the app
+    console.log(`${middleware.route.path}`);
+  } else if (middleware.name === 'router') {
+    // Router middleware
+    middleware.handle.stack.forEach((handler: any) => {
+      if (handler.route) {
+        console.log(`${handler.route.path}`);
+      }
+    });
+  }
+});
+console.log('=========================================');
+
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/patent_db';
 

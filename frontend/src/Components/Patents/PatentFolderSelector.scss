@@ -178,4 +178,161 @@
     align-items: center;
     min-height: 200px;
   }
+}
+
+.patent-folder-selector-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  
+  .modal-content {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    width: 100%;
+    max-width: 500px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid #eee;
+      
+      h3 {
+        margin: 0;
+        font-size: 20px;
+        color: #333;
+      }
+      
+      .close-button {
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: #666;
+        
+        &:hover {
+          color: #000;
+        }
+      }
+    }
+    
+    .folder-search {
+      padding: 16px 20px;
+      border-bottom: 1px solid #eee;
+      
+      input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        
+        &:focus {
+          outline: none;
+          border-color: #4a90e2;
+        }
+      }
+    }
+    
+    .loading-message,
+    .no-folders-message {
+      padding: 30px 20px;
+      text-align: center;
+      color: #666;
+      font-size: 16px;
+    }
+    
+    .folder-list {
+      padding: 10px;
+      overflow-y: auto;
+      max-height: 300px;
+      
+      .folder-item {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        
+        &:hover {
+          background-color: #f5f5f5;
+        }
+        
+        &.selected {
+          background-color: #eaf4fe;
+          border: 1px solid #4a90e2;
+        }
+        
+        .folder-icon {
+          margin-right: 10px;
+          font-size: 20px;
+        }
+        
+        .folder-name {
+          flex-grow: 1;
+          font-size: 16px;
+          color: #333;
+        }
+        
+        .folder-count {
+          color: #888;
+          font-size: 14px;
+        }
+      }
+    }
+    
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 20px;
+      border-top: 1px solid #eee;
+      
+      button {
+        padding: 10px 16px;
+        border-radius: 4px;
+        font-size: 14px;
+        cursor: pointer;
+        
+        &.add-to-folder-button {
+          background-color: #4a90e2;
+          color: white;
+          border: none;
+          
+          &:hover {
+            background-color: #3a80d2;
+          }
+          
+          &:disabled {
+            background-color: #9fc7f5;
+            cursor: not-allowed;
+          }
+        }
+        
+        &.cancel-button {
+          background-color: white;
+          border: 1px solid #ddd;
+          color: #555;
+          
+          &:hover {
+            background-color: #f5f5f5;
+          }
+        }
+      }
+    }
+  }
 } 
