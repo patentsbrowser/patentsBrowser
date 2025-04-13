@@ -223,7 +223,7 @@ export const patentApi = {
   // Search patents using Unified Patents API
   searchPatentsUnified: async (patentNumber: string): Promise<UnifiedPatentResponse> => {
     // Keep direct axios for third-party APIs that don't need auth
-    const response = await axios.get(`https://api.unifiedpatents.com/patents/${patentNumber}`);
+    const response = await axios.get(`https://api.unifiedpatents.com/patents/${patentNumber}?with_cases=true`);
     return response.data;
   },
   
