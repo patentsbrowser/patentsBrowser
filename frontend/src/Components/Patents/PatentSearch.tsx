@@ -11,7 +11,6 @@ import {
   resetViewedStatus
 } from '../../Redux/slices/patentSlice';
 import './PatentSearch.scss';
-// import PatentDetails from './PatentDetails';
 import Loader from '../Common/Loader';
 import SmartSearchModal from './SmartSearchModal';
 import PatentSearchForm from './PatentSearchForm';
@@ -20,13 +19,7 @@ import { detectApiType, formatDate } from './utils';
 import { PatentSummary } from './types';
 import { ApiSource, patentApi, normalizePatentResponse } from '../../api/patents';
 import toast from 'react-hot-toast';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faProjectDiagram } from '@fortawesome/free-solid-svg-icons';
-import { filterPatentsByFamilyId } from '../../utils/patentUtils';
 import { authApi } from '../../api/auth';
-// import PatentSummaryList from './PatentSummaryList';
-// import { PatentSummary, ApiSource } from './types';
-// import { formatDate, detectApiType } from './utils';
 
 interface PatentSearchProps {
   onSearch: (patentIds: string[]) => void;
@@ -34,61 +27,6 @@ interface PatentSearchProps {
 }
 
 // Update interface for hit type with optional fields
-interface PatentHit {
-  _id: string;
-  _source: {
-    country: string;
-    assignee_original: string[];
-    family_annuities: number;
-    abstract: string | null;
-    application_date: string;
-    application_number: string;
-    assignee_current: string[];
-    assignee_parent: string[];
-    cpc_codes: string[];
-    description: string | null;
-    examiner: string[];
-    expiration_date: string;
-    extended_family_id: string;
-    family_id: string;
-    figures: any[];
-    grant_date: string;
-    grant_number: string;
-    hyperlink_google: string;
-    inventors: string[];
-    is_challenged: string;
-    is_litigated: string;
-    kind_code: string;
-    last_challenged_at: string | null;
-    last_litigated_at: string | null;
-    law_firm: string;
-    litigation_score: number;
-    norm_family_annuities: number;
-    num_challenged: number;
-    num_cit_npl: number;
-    num_cit_pat: number;
-    num_cit_pat_forward: number;
-    num_litigated: number;
-    portfolio_score: number;
-    priority_date: string;
-    publication_date: string;
-    publication_number: string;
-    publication_status: string;
-    publication_type: string;
-    rating_broadness: string;
-    rating_citation: string;
-    rating_litigation: string;
-    rating_validity: string;
-    rnix_score: number;
-    title: string;
-    type: string;
-    ucid_spif: string[];
-    uspc_codes: string[];
-    citations_pat_forward?: string[]; // Make optional
-    filing_date?: string; // Make optional
-  };
-}
-
 const LOCAL_STORAGE_KEYS = {
   PATENT_SUMMARIES: 'patent_summaries',
   SEARCH_QUERY: 'search_query',
@@ -685,16 +623,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     }
   };
 
-  // Update SmartSearchModal callback to handle filter selection
-  const handleSmartSearch = (idsToSearch: string[]) => {
-    // Reset viewed status for patents being searched again
-    dispatch(resetViewedStatus(idsToSearch));
-    
-    // Just handle the IDs returned from the SmartSearchModal
-    // and pass them to the main search function
-    handlePerformSearch(idsToSearch);
-  };
-
   // Update the useEffect for handling smartSearchResults
   useEffect(() => {
     if (smartSearchResults && smartSearchResults.hits && smartSearchResults.hits.hits) {
@@ -947,22 +875,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
       setShowSmartSearchModal(false);
     };
   }, []); // Empty dependency array means this runs only on mount/unmount
-
-  const handleSearchTypeChange = (type: 'full' | 'smart') => {
-    setSearchType(type);
-    // Clear all relevant state when switching search types
-    setPatentSummaries([]);
-    setSelectedPatent(null);
-    setShowSmartSearchModal(false);
-    dispatch(setSmartSearchResults(null));
-    dispatch(setFilters({
-      showGrantPatents: true,
-      showApplicationPatents: true,
-      filteredPatents: null
-    }));
-    // Preserve filterByFamily state
-    setFilterByFamily(true);
-  };
 
   // Add this function to handle corrected patent searches from modal
   const handleCorrectedPatentSearch = async (correctedIds: string[]) => {

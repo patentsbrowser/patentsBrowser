@@ -390,7 +390,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
       </div>
 
       {/* Results per page selector */}
-      <div className="results-per-page">
+      {/* <div className="results-per-page">
         <span className="results-label">Results per page:</span>
         <select 
           value={itemsPerPage.toString()} 
@@ -401,7 +401,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
           <option value="50">50</option>
           <option value="100">100</option>
         </select>
-      </div>
+      </div> */}
 
       {/* Pagination Controls */}
       {pagination && pagination.totalPages > 1 && (
