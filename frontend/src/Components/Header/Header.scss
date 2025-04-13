@@ -10,8 +10,35 @@
   right: 0;
   z-index: 100;
   box-shadow: 2px 0 4px rgba(32, 52, 1, 0.1);
-
   border-bottom: 1px solid var(--border-color);
+  
+  // Simplified header when figure viewer is open
+  body.figure-viewer-open & {
+    border-bottom: none;
+    box-shadow: none;
+    background-color: transparent;
+    pointer-events: none;
+    
+    // Hide most elements in the header when figure viewer is open
+    .header-right {
+      .theme-toggle, .user-profile {
+        display: none;
+      }
+    }
+    
+    // Hide all header text content when figure viewer is open
+    .header-left h1, 
+    .header-left *:not(button), 
+    .header-right *:not(button) {
+      display: none;
+    }
+    
+    // Only keep essential UI elements like back buttons
+    button.essential-ui {
+      pointer-events: auto;
+      display: block;
+    }
+  }
 
   .header-left {
     h1 {
@@ -25,6 +52,7 @@
     display: flex;
     align-items: center;
     gap: 1rem;
+    bottom: 100;
 
     .theme-toggle {
       padding: 8px;

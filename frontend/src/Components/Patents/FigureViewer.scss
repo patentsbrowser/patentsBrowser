@@ -306,6 +306,28 @@
           cursor: not-allowed;
         }
       }
+      
+      .rotate-button {
+        background-color: #333;
+      }
+      
+      .nav-button {
+        &.prev-button {
+          background-color: #444;
+          
+          &:hover {
+            background-color: #555;
+          }
+        }
+        
+        &.next-button {
+          background-color: #4d9fff;
+          
+          &:hover {
+            background-color: #3a8be8;
+          }
+        }
+      }
     }
   }
 }
@@ -538,6 +560,16 @@
 /* Override any potential scrolling behaviors */
 body.figure-viewer-open {
   overflow: hidden;
+  pointer-events: none;
+  
+  /* Hide patent search tool related elements */
+  .patent-search-title,
+  .patent-tool-header,
+  .patent-tool-title,
+  .patent-search-tool-title,
+  .dashboard-sidebar {
+    display: none !important;
+  }
 }
 
 .figure-viewer-wrapper {

@@ -263,29 +263,27 @@ const FigureViewer: React.FC<FigureViewerProps> = ({
                 <button className="rotate-button" onClick={rotateImage} title="Rotate image">
                   Rotate
                 </button>
+                {figuresArray.length > 1 && (
+                  <>
+                    <button 
+                      className="nav-button prev-button" 
+                      onClick={(e) => navigateToImage(e, 'prev')}
+                      title="Previous figure"
+                    >
+                      Previous
+                    </button>
+                    <button 
+                      className="nav-button next-button" 
+                      onClick={(e) => navigateToImage(e, 'next')}
+                      title="Next figure"
+                    >
+                      Next
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
-        )}
-        
-        {/* Navigation controls positioned outside the image */}
-        {selectedImage && figuresArray.length > 1 && (
-          <>
-            <button 
-              className="fixed-nav-button prev-button" 
-              onClick={(e) => navigateToImage(e, 'prev')}
-              aria-label="Previous figure"
-            >
-              &lt;
-            </button>
-            <button 
-              className="fixed-nav-button next-button" 
-              onClick={(e) => navigateToImage(e, 'next')}
-              aria-label="Next figure"
-            >
-              &gt;
-            </button>
-          </>
         )}
         
         {/* Thumbnails on the right side */}
