@@ -274,7 +274,7 @@ export const patentApi = {
             "created_at", "updated_at", "id", "*.created_at", "*.updated_at",
             "*.id", "patent_id", "patent.title",
             "*.full_text", "citations_npl", "citations_pat",
-            "family_members", "abstract_fulltext",,
+            "family_members", "abstract_fulltext",
             "non_patent_citations"
           ]
         }
