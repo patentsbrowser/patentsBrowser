@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import './Admin.scss';
+import UserProfileModal from './UserProfileModal';
 
 interface User {
   id: string;
@@ -14,6 +15,8 @@ interface User {
 
 const UsersList = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   
   const { data: users = [], isLoading, error } = useQuery({
     queryKey: ['adminUsers'],
@@ -47,6 +50,15 @@ const UsersList = () => {
       default:
         return 'status-unknown';
     }
+  };
+
+  const handleViewUser = (userId: string) => {
+    setSelectedUserId(userId);
+    setIsProfileModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsProfileModalOpen(false);
   };
 
   return (
@@ -115,7 +127,12 @@ const UsersList = () => {
                       <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</td>
                       <td>{user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'N/A'}</td>
                       <td className="actions-cell">
-                        <button className="action-btn view-btn">View</button>
+                        <button 
+                          className="action-btn view-btn"
+                          onClick={() => handleViewUser(user.id)}
+                        >
+                          View
+                        </button>
                         <button className="action-btn edit-btn">Edit</button>
                       </td>
                     </tr>
@@ -131,6 +148,14 @@ const UsersList = () => {
             </table>
           </div>
         </>
+      )}
+
+      {selectedUserId && (
+        <UserProfileModal 
+          userId={selectedUserId}
+          isOpen={isProfileModalOpen}
+          onClose={handleCloseModal}
+        />
       )}
     </div>
   );
