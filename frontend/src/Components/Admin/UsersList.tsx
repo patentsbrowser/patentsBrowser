@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import './Admin.scss';
 import UserProfileModal from './UserProfileModal';
+import UserSubscriptionModal from './UserSubscriptionModal';
 
 interface User {
   id: string;
@@ -17,8 +18,10 @@ const UsersList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   
-  const { data: users = [], isLoading, error } = useQuery({
+  const { data: users = [], isLoading, error, refetch } = useQuery({
     queryKey: ['adminUsers'],
     queryFn: async () => {
       const token = localStorage.getItem('token');
@@ -57,8 +60,23 @@ const UsersList = () => {
     setIsProfileModalOpen(true);
   };
 
-  const handleCloseModal = () => {
+  const handleEditSubscription = (user: User) => {
+    setSelectedUser(user);
+    setSelectedUserId(user.id);
+    setIsSubscriptionModalOpen(true);
+  };
+
+  const handleCloseProfileModal = () => {
     setIsProfileModalOpen(false);
+  };
+
+  const handleCloseSubscriptionModal = () => {
+    setIsSubscriptionModalOpen(false);
+  };
+
+  const handleSubscriptionSuccess = () => {
+    // Refetch the users data to update the UI with new subscription status
+    refetch();
   };
 
   return (
@@ -133,7 +151,12 @@ const UsersList = () => {
                         >
                           View
                         </button>
-                        <button className="action-btn edit-btn">Edit</button>
+                        <button 
+                          className="action-btn edit-btn"
+                          onClick={() => handleEditSubscription(user)}
+                        >
+                          Edit
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -154,7 +177,19 @@ const UsersList = () => {
         <UserProfileModal 
           userId={selectedUserId}
           isOpen={isProfileModalOpen}
-          onClose={handleCloseModal}
+          onClose={handleCloseProfileModal}
+        />
+      )}
+
+      {selectedUser && (
+        <UserSubscriptionModal 
+          userId={selectedUser.id}
+          userName={selectedUser.name}
+          userEmail={selectedUser.email}
+          currentSubscription={selectedUser.subscriptionStatus}
+          isOpen={isSubscriptionModalOpen}
+          onClose={handleCloseSubscriptionModal}
+          onSuccess={handleSubscriptionSuccess}
         />
       )}
     </div>

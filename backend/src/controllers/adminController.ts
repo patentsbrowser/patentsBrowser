@@ -355,4 +355,90 @@ export const removeAdminStatus = async (req: Request, res: Response) => {
       data: null
     });
   }
+};
+
+// Manage user subscription as admin
+export const manageUserSubscription = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.id;
+    const { plan, startDate, endDate, status } = req.body;
+
+    // Check if the ID is valid
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Invalid user ID',
+        data: null
+      });
+    }
+
+    // Validate required fields
+    if (!startDate || !endDate || !status) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Missing required fields: startDate, endDate, and status are required',
+        data: null
+      });
+    }
+
+    // Find the user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'User not found',
+        data: null
+      });
+    }
+
+    // Find existing subscription or create new one
+    let subscription = await Subscription.findOne({ userId });
+    
+    if (subscription) {
+      // Update existing subscription
+      subscription.plan = plan || 'paid';
+      subscription.startDate = new Date(startDate);
+      subscription.endDate = new Date(endDate);
+      subscription.status = status;
+      subscription.updatedAt = new Date();
+      await subscription.save();
+    } else {
+      // Create new subscription
+      subscription = new Subscription({
+        userId,
+        plan: plan || 'paid',
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        status
+      });
+      await subscription.save();
+    }
+
+    // Update user's subscription status
+    await User.findByIdAndUpdate(userId, {
+      subscriptionStatus: status,
+      updatedAt: new Date()
+    });
+
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Subscription updated successfully',
+      data: {
+        subscription: {
+          userId,
+          plan: subscription.plan,
+          startDate: subscription.startDate,
+          endDate: subscription.endDate,
+          status: subscription.status
+        }
+      }
+    });
+  } catch (error: any) {
+    console.error('Error managing user subscription:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to update subscription: ' + error.message,
+      data: null
+    });
+  }
 }; 

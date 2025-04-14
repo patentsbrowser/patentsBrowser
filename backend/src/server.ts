@@ -57,9 +57,23 @@ if (missingEnvVars.length === 0) {
 const app = express();
 
 // Request logging middleware
-app.use((req:any, res:any, next:any) => {
+app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  console.log('Request body:', req.body);
+  if (req.method !== 'GET') {
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+  }
+  
+  // Capture the original send function
+  const originalSend = res.send;
+  
+  // Override the send function to log responses
+  res.send = function(body) {
+    if (res.statusCode >= 400) {
+      console.log(`Response [${res.statusCode}]:`, body);
+    }
+    return originalSend.call(this, body);
+  };
+  
   next();
 });
 
@@ -209,6 +223,16 @@ app._router.stack.forEach((middleware: any) => {
   }
 });
 console.log('=========================================');
+
+// Error handling middleware (must be registered last)
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({
+    statusCode: 500,
+    message: 'An unexpected error occurred',
+    error: err.message || 'Unknown error'
+  });
+});
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/patent_db';

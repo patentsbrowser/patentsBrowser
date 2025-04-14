@@ -335,58 +335,85 @@
   }
 }
 
-// Modal styles
+// Enhanced Modal styles
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  overflow-y: auto;
-  padding: 2rem;
+  padding: 1rem;
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modal-content {
   background-color: var(--secondary-bg);
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
   width: 90%;
-  max-width: 600px;
-  max-height: 90vh;
+  max-width: 550px;
+  max-height: calc(100vh - 3rem);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  animation: slideIn 0.2s ease-out;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  
+  @media (max-width: 600px) {
+    width: 95%;
+    max-height: calc(100vh - 2rem);
+  }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .modal-header {
-  padding: 1rem 1.5rem;
+  padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background: linear-gradient(to right, rgba(var(--accent-rgb), 0.1), rgba(var(--accent-rgb), 0));
 
   h2 {
     margin: 0;
     font-size: 1.25rem;
     font-weight: 600;
+    color: var(--accent-color);
   }
 
   .close-btn {
     background: none;
     border: none;
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     line-height: 1;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: color 0.2s ease;
+    transition: all 0.2s ease;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
 
     &:hover {
       color: var(--text-color);
+      background-color: rgba(255, 255, 255, 0.1);
     }
   }
 }
@@ -395,14 +422,34 @@
   padding: 1.5rem;
   overflow-y: auto;
   flex: 1;
+  
+  // Custom thin scrollbar
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(var(--accent-rgb), 0.3);
+    border-radius: 10px;
+    
+    &:hover {
+      background: rgba(var(--accent-rgb), 0.5);
+    }
+  }
 }
 
 .modal-footer {
-  padding: 1rem 1.5rem;
+  padding: 1.25rem 1.5rem;
   border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
+  background-color: rgba(0, 0, 0, 0.2);
 }
 
 // User profile modal specific styles
@@ -506,6 +553,267 @@
     
     &:hover {
       background-color: rgba(var(--accent-rgb), 0.8);
+    }
+  }
+}
+
+// Enhanced Subscription modal styles
+.subscription-modal {
+  .user-info {
+    margin-bottom: 1.75rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    
+    h3 {
+      margin: 0 0 0.5rem;
+      font-size: 1.35rem;
+      font-weight: 600;
+    }
+    
+    .email {
+      margin: 0 0 0.75rem;
+      color: var(--text-secondary);
+    }
+    
+    .current-subscription {
+      margin: 0.75rem 0 0;
+      font-weight: 500;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+      
+      span {
+        display: block;
+        padding: 0.35rem 0.75rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-top: 0.25rem;
+        
+        &.status-active, &.status-paid {
+          background-color: rgba(76, 175, 80, 0.2);
+          color: #4caf50;
+        }
+        
+        &.status-trial {
+          background-color: rgba(255, 152, 0, 0.2);
+          color: #ff9800;
+        }
+        
+        &.status-expired, &.status-inactive, &.status-none {
+          background-color: rgba(244, 67, 54, 0.2);
+          color: #f44336;
+        }
+      }
+    }
+  }
+  
+  // Form row layout for date inputs (since plan field was removed)
+  .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 1.75rem;
+    
+    .form-group {
+      width: 100%;
+      margin-bottom: 0;
+      
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+      }
+    }
+  }
+  
+  // Give more space for date options since we removed the plan field
+  .date-options {
+    margin-top: 0.75rem;
+    margin-bottom: 2.25rem;
+    background-color: rgba(var(--accent-rgb), 0.05);
+    padding: 1rem;
+    border-radius: 0.75rem;
+    border: 1px dashed rgba(var(--accent-rgb), 0.2);
+  }
+  
+  .error-message {
+    color: #f44336;
+    margin-bottom: 1.25rem;
+    padding: 0.75rem 1rem;
+    background-color: rgba(244, 67, 54, 0.1);
+    border-radius: 0.5rem;
+    border-left: 4px solid #f44336;
+    font-weight: 500;
+  }
+  
+  .success-message {
+    color: #4caf50;
+    padding: 2rem 1rem;
+    text-align: center;
+    background-color: rgba(76, 175, 80, 0.1);
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 1.1rem;
+    
+    p {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+  }
+  
+  .action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+  
+  .btn {
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    min-width: 120px;
+    text-align: center;
+    
+    &.btn-primary {
+      background-color: var(--accent-color);
+      color: var(--button-text);
+      
+      &:hover:not(:disabled) {
+        background-color: rgba(var(--accent-rgb), 0.85);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.25);
+      }
+      
+      &:active:not(:disabled) {
+        transform: translateY(0);
+      }
+    }
+    
+    &.btn-secondary {
+      background-color: transparent;
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      
+      &:hover:not(:disabled) {
+        background-color: var(--hover-bg);
+        border-color: var(--text-color);
+      }
+    }
+    
+    &:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.date-input-wrapper {
+  position: relative;
+  
+  .calendar-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-style: normal;
+    pointer-events: none;
+    color: var(--accent-color);
+    font-size: 1.2rem;
+    background-color: rgba(var(--accent-rgb), 0.08);
+    padding: 0.25rem;
+    border-radius: 4px;
+  }
+  
+  input[type="date"] {
+    position: relative;
+    padding: 0.65rem 0.85rem;
+    padding-right: 40px;
+    cursor: pointer;
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    
+    &:focus {
+      border-color: var(--accent-color);
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.1);
+    }
+    
+    &:hover {
+      border-color: var(--accent-color);
+    }
+    
+    &::-webkit-calendar-picker-indicator {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+  }
+}
+
+.date-options {
+  margin-top: 1rem;
+  
+  .date-options-label {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+  }
+  
+  .date-option-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    
+    .date-option-btn {
+      background-color: rgba(var(--accent-rgb), 0.1);
+      border: 1px solid rgba(var(--accent-rgb), 0.3);
+      color: var(--text-color);
+      font-size: 0.9rem;
+      padding: 0.65rem 1rem;
+      border-radius: 2rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+      
+      &:hover {
+        background-color: rgba(var(--accent-rgb), 0.2);
+        border-color: var(--accent-color);
+        transform: translateY(-2px);
+      }
+      
+      &:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
+      }
+      
+      &:active {
+        transform: scale(0.97);
+      }
     }
   }
 } 

@@ -8,7 +8,8 @@ import {
   deleteUserById,
   getSubscriptionStats,
   makeUserAdmin,
-  removeAdminStatus
+  removeAdminStatus,
+  manageUserSubscription
 } from '../controllers/adminController.js';
 
 const router = express.Router();
@@ -25,6 +26,7 @@ router.delete('/users/:id', deleteUserById);
 
 // Subscription management routes
 router.get('/subscription-stats', getSubscriptionStats);
+router.post('/users/:id/subscription', manageUserSubscription);
 
 // Admin management routes
 router.put('/users/:id/make-admin', makeUserAdmin);
