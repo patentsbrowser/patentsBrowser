@@ -41,29 +41,25 @@ export const authApi = {
   // Login function
   login: async (credentials: { email: string; password: string }) => {
     try {
-      console.log('Logging in with credentials:', credentials);
       const response = await api.post('/auth/login', credentials);
-      console.log('Login response:', response.data);
       
       // If login is successful, save the token
       if (response.data.statusCode === 200) {
-        const userData = response.data.data.user;
-        console.log('Login successful. User data:', userData);
-        console.log('isAdmin status:', userData?.isAdmin);
-        
         localStorage.setItem('token', response.data.data.token);
+        const user = response.data.data.user;
         
-        // Make sure isAdmin is included
-        if (userData) {
-          const userToStore = {
-            ...userData,
-            isAdmin: userData.isAdmin === true, // Ensure it's a boolean
-          };
-          
-          // Set the user in localStorage (for persistence)
-          localStorage.setItem('user', JSON.stringify(userToStore));
-          console.log('User data stored in localStorage:', userToStore);
-        }
+        // Debug logs
+        console.log('Login response raw:', response.data);
+        console.log('User object from login response:', user);
+        console.log('Is admin from login response:', user?.isAdmin);
+        
+        // Set the user in localStorage (for persistence)
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        // Debug: Verify what's in localStorage
+        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+        console.log('User stored in localStorage:', storedUser);
+        console.log('Is admin in localStorage:', storedUser?.isAdmin);
       }
       
       return {
@@ -158,15 +154,20 @@ export const authApi = {
   // Check admin status - a helper function to check if user is admin
   checkAdminStatus: async () => {
     try {
+      console.log('Checking admin status from API...');
       const response = await api.get('/auth/check-admin');
+      console.log('Admin status response:', response.data);
       return {
         isAdmin: response.data.isAdmin,
         statusCode: response.data.statusCode
       };
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error checking admin status:', error);
+      console.log('Error response:', error.response);
       return {
         isAdmin: false,
-        statusCode: 500
+        statusCode: error.response?.status || 500,
+        error: error.message
       };
     }
   },

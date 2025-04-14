@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "start:stage": "vite --mode stage",
+    "startdev:stage": "vite --mode stage",
     "build": "vite build",
     "build:stage": "vite build --mode stage",
     "typecheck": "tsc -b",

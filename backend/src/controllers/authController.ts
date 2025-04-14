@@ -147,10 +147,24 @@ export const getProfile = async (req: Request, res: Response) => {
       });
     }
 
+    // Log user data including admin status
+    console.log('getProfile - User data returned:', {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      isAdmin: user.isAdmin
+    });
+
+    // Create response data with explicit admin status included
+    const responseData = {
+      ...user.toObject(),
+      isAdmin: user.isAdmin || false
+    };
+
     res.status(200).json({
       statusCode: 200,
       message: 'Profile fetched successfully',
-      data: user
+      data: responseData
     });
   } catch (error) {
     res.status(500).json({
@@ -294,8 +308,11 @@ export const uploadImage = async (req: Request, res: Response) => {
 // Check if a user has admin privileges
 export const checkAdminStatus = async (req: Request, res: Response) => {
   try {
+    console.log('checkAdminStatus called with user:', req.user);
+    
     // Check if user exists
     if (!req.user || !req.user.userId) {
+      console.log('checkAdminStatus: No user in request');
       return res.status(401).json({
         statusCode: 401,
         message: 'Unauthorized',
@@ -304,6 +321,12 @@ export const checkAdminStatus = async (req: Request, res: Response) => {
     }
 
     const user = await User.findById(req.user.userId);
+    console.log('checkAdminStatus: Found user:', user ? {
+      id: user._id,
+      email: user.email,
+      isAdmin: user.isAdmin
+    } : 'No user found');
+    
     if (!user) {
       return res.status(404).json({
         statusCode: 404,
@@ -312,6 +335,8 @@ export const checkAdminStatus = async (req: Request, res: Response) => {
       });
     }
 
+    console.log('checkAdminStatus: Returning isAdmin status:', !!user.isAdmin);
+    
     res.status(200).json({
       statusCode: 200,
       message: 'Admin status checked successfully',

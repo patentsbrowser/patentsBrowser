@@ -23,8 +23,6 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
     },
     onSuccess: (response) => {
       console.log("Login response:", response);
-      console.log("User data:", response.data?.user);
-      console.log("Is admin:", response.data?.user?.isAdmin);
       if (response.statusCode === 200) {
         toast.success("Login successful!");
         // Store token and user data from the response
@@ -32,6 +30,62 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
         localStorage.setItem("user", JSON.stringify(response.data.user));
         // Set user state from the response
         setUser(response.data.user);
+        
+        // After successful login, check admin status directly
+        setTimeout(async () => {
+          try {
+            const adminCheck = await authApi.checkAdminStatus();
+            console.log("Direct admin check after login:", adminCheck);
+            
+            if (adminCheck.error || adminCheck.statusCode >= 400) {
+              console.error("Admin check error or bad status code:", adminCheck);
+              
+              // Fallback: check if user is already marked as admin in response
+              const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+              console.log("Checking stored user for admin status:", storedUser);
+              
+              if (storedUser.isAdmin) {
+                console.log("User already has admin flag in localStorage");
+                // Update user state
+                setUser(prev => prev ? {...prev, isAdmin: true} : null);
+              } else {
+                // Try alternative approach: get profile
+                try {
+                  console.log("Attempting to get profile as admin check fallback");
+                  const profileResponse = await authApi.getProfile();
+                  console.log("Profile response:", profileResponse);
+                  
+                  if (profileResponse?.statusCode === 200 && 
+                      profileResponse?.data?.isAdmin) {
+                    
+                    console.log("User is admin according to profile");
+                    // Update user in localStorage
+                    storedUser.isAdmin = true;
+                    localStorage.setItem("user", JSON.stringify(storedUser));
+                    console.log("Updated user in localStorage with admin status from profile");
+                    
+                    // Update user state
+                    setUser(prev => prev ? {...prev, isAdmin: true} : null);
+                  }
+                } catch (profileErr) {
+                  console.error("Failed to get profile as fallback:", profileErr);
+                }
+              }
+            } else if (adminCheck.isAdmin) {
+              // Admin check succeeded and confirms user is admin
+              const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+              storedUser.isAdmin = true;
+              localStorage.setItem("user", JSON.stringify(storedUser));
+              console.log("Updated user in localStorage with admin status:", storedUser);
+              
+              // Update user state
+              setUser(prev => prev ? {...prev, isAdmin: true} : null);
+            }
+          } catch (err) {
+            console.error("Failed to check admin status after login:", err);
+          }
+        }, 500);
+        
         navigate("/auth/dashboard");
       } else {
         toast.error(response.message || "Login failed. Please check your credentials.");

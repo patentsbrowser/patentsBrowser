@@ -167,15 +167,43 @@ app.use('/api/admin', adminRoutes);
 
 // Debug: Log all registered routes
 console.log('============ REGISTERED ROUTES ============');
+// First log our auth routes specifically
+console.log('AUTH ROUTES:');
+const authRouter = app._router.stack.find((middleware: any) => {
+  return middleware.name === 'router' && 
+         middleware.regexp.toString().includes('/api/auth');
+});
+
+if (authRouter) {
+  authRouter.handle.stack.forEach((handler: any) => {
+    if (handler.route) {
+      const fullPath = handler.route.path;
+      const methods = Object.keys(handler.route.methods).map(m => m.toUpperCase()).join(',');
+      console.log(`${methods} /api/auth${fullPath}`);
+    }
+  });
+} else {
+  console.log('Auth router not found!');
+}
+
+console.log('\nALL ROUTES:');
 app._router.stack.forEach((middleware: any) => {
   if (middleware.route) {
     // Routes registered directly on the app
-    console.log(`${middleware.route.path}`);
+    const methods = Object.keys(middleware.route.methods).map(m => m.toUpperCase()).join(',');
+    console.log(`${methods} ${middleware.route.path}`);
   } else if (middleware.name === 'router') {
     // Router middleware
+    const routerPath = middleware.regexp.toString();
+    console.log(`Router: ${routerPath}`);
+    
     middleware.handle.stack.forEach((handler: any) => {
       if (handler.route) {
-        console.log(`${handler.route.path}`);
+        const fullPath = handler.route.path;
+        const methods = Object.keys(handler.route.methods).map(m => m.toUpperCase()).join(',');
+        const routePattern = middleware.regexp.toString().replace(/[\\^$.*+?()[\]{}|]/g, '');
+        const basePath = routePattern.replace(/\\\//g, '/').replace(/\?.*$/, '');
+        console.log(`  ${methods} ${basePath}${fullPath}`);
       }
     });
   }

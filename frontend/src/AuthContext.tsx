@@ -36,30 +36,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const savedUser = localStorage.getItem('user');
       // Only parse if savedUser exists and is not "undefined"
       const parsedUser = savedUser && savedUser !== "undefined" ? JSON.parse(savedUser) : null;
-      
-      // Log the user data from localStorage
-      console.log('AuthContext - User from localStorage:', parsedUser);
-      console.log('AuthContext - Is admin from localStorage:', parsedUser?.isAdmin);
-      
+      console.log('AuthContext - Initial user from localStorage:', parsedUser);
+      console.log('AuthContext - Initial isAdmin from localStorage:', parsedUser?.isAdmin);
       return parsedUser;
     } catch (error) {
       // Clear potentially corrupted data
-      console.error('Error parsing user from localStorage:', error);
       localStorage.removeItem('user');
       return null;
     }
   });
-
-  // When the user state changes, update localStorage
-  useEffect(() => {
-    if (user) {
-      console.log('AuthContext - Updating user in localStorage:', user);
-      localStorage.setItem('user', JSON.stringify({
-        ...user,
-        isAdmin: user.isAdmin === true
-      }));
-    }
-  }, [user]);
 
   // Check if token exists on component mount
   useEffect(() => {
@@ -84,6 +69,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginMutation = useMutation({
     mutationFn: (credentials: { email: string; password: string }) => authApi.login(credentials),
     onSuccess: (data) => {
+      console.log('AuthContext login mutation - Response data:', data);
+      console.log('AuthContext login mutation - User object:', data.user);
+      console.log('AuthContext login mutation - isAdmin:', data.user?.isAdmin);
+      
       localStorage.setItem('token', data.data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       setUser(data.user);

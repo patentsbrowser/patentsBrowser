@@ -1,7 +1,7 @@
 import { useAuth } from '../../AuthContext';
 import { useAdmin } from '../../context/AdminContext';
-import './ModeSwitcher.scss';
 import { useEffect, useState } from 'react';
+import './ModeSwitcher.scss';
 
 const ModeSwitcher = () => {
   const { user } = useAuth();
@@ -11,28 +11,29 @@ const ModeSwitcher = () => {
   // Add debugging logs
   console.log('ModeSwitcher - User:', user);
   console.log('ModeSwitcher - Is admin from user:', user?.isAdmin);
-  
-  useEffect(() => {
-    // Additional check from localStorage as a backup
-    try {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const userData = JSON.parse(storedUser);
-        console.log('ModeSwitcher - User from localStorage:', userData);
-        console.log('ModeSwitcher - Is admin from localStorage:', userData?.isAdmin);
-        
-        setIsAdmin(!!userData?.isAdmin);
-      }
-    } catch (error) {
-      console.error('Error checking admin status from localStorage:', error);
-    }
-  }, [user]);
-
-  console.log('ModeSwitcher - Final admin status:', isAdmin);
   console.log('ModeSwitcher - Admin mode:', isAdminMode);
 
+  // Check admin status from API directly
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        try {
+          const { authApi } = await import('../../api/auth');
+          const result = await authApi.checkAdminStatus();
+          console.log('ModeSwitcher - Admin API check result:', result);
+          setIsAdmin(result.isAdmin);
+        } catch (error) {
+          console.error('Error checking admin status:', error);
+          setIsAdmin(!!user?.isAdmin);
+        }
+      }
+    };
+    
+    checkAdminStatus();
+  }, [user]);
+
   // Only show the switcher if the user has admin privileges
-  if (!isAdmin && !user?.isAdmin) {
+  if (!isAdmin) {
     console.log('ModeSwitcher - Not showing switcher (not admin)');
     return null;
   }

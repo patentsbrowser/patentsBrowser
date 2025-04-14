@@ -58,6 +58,32 @@ const Header = () => {
   const profileImage = profile?.imageUrl;
   const profileName = profile?.name || '';
 
+  // Debug logs
+  console.log('Header - Profile data:', profile);
+  console.log('Header - Is admin from profile:', profile?.isAdmin);
+  
+  // Check for admin status - direct access for debugging
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  
+  useEffect(() => {
+    // Check if the profile indicates admin status
+    if (profile?.isAdmin) {
+      console.log('Header - Setting admin status from profile:', profile.isAdmin);
+      setIsAdmin(true);
+    } else {
+      // Fallback to localStorage
+      try {
+        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+        if (storedUser?.isAdmin) {
+          console.log('Header - Setting admin status from localStorage:', storedUser.isAdmin);
+          setIsAdmin(true);
+        }
+      } catch (error) {
+        console.error('Error parsing user from localStorage:', error);
+      }
+    }
+  }, [profile]);
+
   const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
   };
@@ -110,7 +136,7 @@ const Header = () => {
         <h1>Patent Search Tool</h1>
       </div>
       <div className="header-right">
-        <ModeSwitcher />
+        {isAdmin && <ModeSwitcher />}
         <button className="theme-toggle" onClick={toggleTheme}>
           {theme === 'dark' ? '☀️' : '🌙'}
         </button>
