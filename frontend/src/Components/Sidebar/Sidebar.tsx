@@ -23,10 +23,11 @@ const Sidebar = () => {
   ];
 
   const adminMenuItems = [
-    { path: '/auth/admin', exact: true, label: 'Admin Dashboard', icon: '⚙️' },
-    { path: '/auth/admin/users', label: 'Users', icon: '👥' },
+    { path: '/auth/dashboard', exact: true, label: 'Admin Dashboard', icon: '⚙️' },
+    { path: '/auth/admin/users', label: 'Manage Users', icon: '👥' },
     { path: '/auth/admin/subscriptions', label: 'Subscriptions', icon: '💰' },
     { path: '/auth/admin/settings', label: 'Admin Settings', icon: '🔧' },
+    { path: '/auth/patents-dashboard', label: 'Patents Search', icon: '🔍' },
   ];
 
   // Only show admin menu items if both conditions are true:

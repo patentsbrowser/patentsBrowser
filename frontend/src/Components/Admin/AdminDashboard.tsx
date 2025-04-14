@@ -58,13 +58,14 @@ const AdminDashboard = () => {
 
   // Determine the active tab based on the URL path
   useEffect(() => {
-    if (location.pathname.includes('/admin/users')) {
+    if (location.pathname.includes('/auth/admin/users')) {
       setActiveTab(AdminTab.USERS);
-    } else if (location.pathname.includes('/admin/subscriptions')) {
+    } else if (location.pathname.includes('/auth/admin/subscriptions')) {
       setActiveTab(AdminTab.SUBSCRIPTIONS);
-    } else if (location.pathname.includes('/admin/settings')) {
+    } else if (location.pathname.includes('/auth/admin/settings')) {
       setActiveTab(AdminTab.SETTINGS);
-    } else {
+    } else if (location.pathname === '/auth/dashboard') {
+      // Main dashboard path
       setActiveTab(AdminTab.DASHBOARD);
     }
   }, [location.pathname]);

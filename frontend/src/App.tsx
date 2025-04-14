@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { useState, Component, ReactNode } from "react";
-import { AuthProvider } from "./AuthContext";
-import { AdminProvider } from "./context/AdminContext";
+import { useState, Component, ReactNode, useContext } from "react";
+import { AuthProvider, useAuth } from "./AuthContext";
+import { AdminProvider, useAdmin } from "./context/AdminContext";
 import Header from "./Components/Header/Header";
 import Sidebar from "./Components/Sidebar/Sidebar";
 import Dashboard from "./Components/Dashboard/Dashboard";
@@ -77,6 +77,20 @@ const queryClient = new QueryClient({
   },
 });
 
+// Component to conditionally render Dashboard or AdminDashboard
+const DashboardSelector = () => {
+  const { user } = useAuth();
+  const { isAdminMode } = useAdmin();
+  
+  // If user is admin and in admin mode, show admin dashboard
+  if (user?.isAdmin && isAdminMode) {
+    return <AdminDashboard />;
+  }
+  
+  // Otherwise show regular dashboard
+  return <Dashboard />;
+};
+
 const App = () => {
   console.log('STAGE', import.meta.env.VITE_API_URL || 'No API URL defined');
   // Get the sidebar behavior from localStorage
@@ -138,8 +152,11 @@ const App = () => {
                             <Sidebar />
                             <main className="main-content">
                               <Routes>
+                                {/* Root path redirects to dashboard */}
+                                <Route path="" element={<Navigate to="dashboard" replace />} />
+                                
                                 {/* User Routes */}
-                                <Route path="dashboard" element={<Dashboard />} />
+                                <Route path="dashboard" element={<DashboardSelector />} />
                                 <Route 
                                   path="settings" 
                                   element={
@@ -155,12 +172,15 @@ const App = () => {
                                 <Route path="subscription" element={<SubscriptionPage />} />
                                 <Route path="patent-history" element={<PatentHistory />} />
                                 
+                                {/* Patents Dashboard - Available for all users including admins */}
+                                <Route path="patents-dashboard" element={<Dashboard />} />
+                                
                                 {/* Admin Routes - Protected by AdminGuard */}
                                 <Route 
                                   path="admin" 
                                   element={
                                     <AdminGuard>
-                                      <AdminDashboard />
+                                      <Navigate to="/auth/dashboard" replace />
                                     </AdminGuard>
                                   } 
                                 />
