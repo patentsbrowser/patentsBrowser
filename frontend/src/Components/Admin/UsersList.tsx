@@ -10,6 +10,7 @@ interface User {
   email: string;
   name: string;
   subscriptionStatus?: string;
+  referenceNumber?: string;
   createdAt?: string;
   lastLogin?: string;
 }
@@ -179,11 +180,11 @@ const UsersList = () => {
     try {
       // Prepare data for export
       const data = filteredUsers.map((user: User, index: number) => (
-        `${index + 1},${user.name || ''},${user.email || ''},${user.subscriptionStatus || 'Unknown'},${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'},${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'N/A'}`
+        `${index + 1},${user.name || ''},${user.email || ''},${user.subscriptionStatus || 'Unknown'},${user.referenceNumber || 'N/A'},${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'},${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'N/A'}`
       )).join('\n');
       
       // Add headers
-      const headers = 'S.No,Name,Email,Subscription,Joined Date,Last Login';
+      const headers = 'S.No,Name,Email,Subscription,Reference Number,Joined Date,Last Login';
       const csvContent = `${headers}\n${data}`;
       
       // Create a blob and download
@@ -287,6 +288,7 @@ const UsersList = () => {
                   <th>Name</th>
                   <th>Email</th>
                   <th>Subscription</th>
+                  <th>Reference Number</th>
                   <th>Joined Date</th>
                   <th>Last Login</th>
                 </tr>
@@ -300,6 +302,7 @@ const UsersList = () => {
                       <td>${user.name || ''}</td>
                       <td>${user.email || ''}</td>
                       <td><span class="subscription ${statusClass}">${user.subscriptionStatus || 'Unknown'}</span></td>
+                      <td>${user.referenceNumber || 'N/A'}</td>
                       <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</td>
                       <td>${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'N/A'}</td>
                     </tr>
@@ -441,6 +444,7 @@ const UsersList = () => {
                   <th>Name</th>
                   <th>Email</th>
                   <th>Subscription</th>
+                  <th>Reference Number</th>
                   <th>Joined</th>
                   <th>Last Login</th>
                   <th>Actions</th>
@@ -458,6 +462,7 @@ const UsersList = () => {
                           {user.subscriptionStatus || 'Unknown'}
                         </span>
                       </td>
+                      <td>{user.referenceNumber || 'N/A'}</td>
                       <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</td>
                       <td>{user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'N/A'}</td>
                       <td className="actions-cell">
@@ -478,7 +483,7 @@ const UsersList = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="no-users-message">
+                    <td colSpan={8} className="no-users-message">
                       {searchTerm ? 'No users match your search.' : 'No users found.'}
                     </td>
                   </tr>
@@ -499,7 +504,6 @@ const UsersList = () => {
               </button>
               <button 
                 onClick={() => handlePageChange(currentPage - 1)}
-
                 disabled={currentPage === 1}
                 className="pagination-btn"
               >
