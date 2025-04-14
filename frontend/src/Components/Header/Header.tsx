@@ -8,6 +8,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi } from '../../api/auth';
 import LogoutModal from '../Modal/LogoutModal';
 import ModeSwitcher from './ModeSwitcher';
+import { useAdmin } from '../../context/AdminContext';
 
 interface ProfileResponse {
   statusCode: number;
@@ -133,7 +134,7 @@ const Header = () => {
   return (
     <header className="header">
       <div className="header-left">
-        <h1>Patent Search Tool</h1>
+        <h1>{isAdmin && useAdmin().isAdminMode ? 'Admin Dashboard' : 'Patent Search Tool'}</h1>
       </div>
       <div className="header-right">
         {isAdmin && <ModeSwitcher />}

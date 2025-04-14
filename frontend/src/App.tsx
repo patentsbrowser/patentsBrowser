@@ -172,9 +172,6 @@ const App = () => {
                                 <Route path="subscription" element={<SubscriptionPage />} />
                                 <Route path="patent-history" element={<PatentHistory />} />
                                 
-                                {/* Patents Dashboard - Available for all users including admins */}
-                                <Route path="patents-dashboard" element={<Dashboard />} />
-                                
                                 {/* Admin Routes - Protected by AdminGuard */}
                                 <Route 
                                   path="admin" 
