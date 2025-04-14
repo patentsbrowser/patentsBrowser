@@ -1,0 +1,39 @@
+.mode-switcher {
+  display: flex;
+  align-items: center;
+  background: var(--secondary-bg);
+  border-radius: 20px;
+  padding: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  height: 36px;
+  margin-right: 1rem;
+
+  .mode-option {
+    padding: 6px 12px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border-radius: 18px;
+    text-align: center;
+    min-width: 60px;
+    
+    &.active {
+      background-color: var(--accent-color);
+      color: var(--button-text);
+      box-shadow: 0 1px 3px rgba(var(--accent-rgb), 0.4);
+    }
+    
+    &:not(.active) {
+      color: var(--text-secondary);
+      
+      &:hover {
+        background-color: var(--hover-bg);
+        color: var(--text-color);
+      }
+    }
+  }
+} 

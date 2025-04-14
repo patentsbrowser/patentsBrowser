@@ -7,6 +7,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi } from '../../api/auth';
 import LogoutModal from '../Modal/LogoutModal';
+import ModeSwitcher from './ModeSwitcher';
 
 interface ProfileResponse {
   statusCode: number;
@@ -109,6 +110,7 @@ const Header = () => {
         <h1>Patent Search Tool</h1>
       </div>
       <div className="header-right">
+        <ModeSwitcher />
         <button className="theme-toggle" onClick={toggleTheme}>
           {theme === 'dark' ? '☀️' : '🌙'}
         </button>

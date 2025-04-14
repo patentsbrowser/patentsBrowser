@@ -21,6 +21,7 @@ interface IUser extends mongoose.Document {
   subscriptionStatus: SubscriptionStatus;
   trialEndDate: Date;
   googlePayCustomerId?: string;
+  isAdmin: boolean;
 }
 
 const userSchema = new mongoose.Schema({
@@ -103,6 +104,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  isAdmin: {
+    type: Boolean,
+    default: false
+  }
 });
 
 userSchema.pre('save', async function(next) {

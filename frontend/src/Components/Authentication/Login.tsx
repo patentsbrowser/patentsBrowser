@@ -23,6 +23,8 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
     },
     onSuccess: (response) => {
       console.log("Login response:", response);
+      console.log("User data:", response.data?.user);
+      console.log("Is admin:", response.data?.user?.isAdmin);
       if (response.statusCode === 200) {
         toast.success("Login successful!");
         // Store token and user data from the response

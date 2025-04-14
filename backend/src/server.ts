@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import patentRoutes from './routes/patentRoutes.js';
@@ -162,6 +163,7 @@ app.use('/api/saved-patents', savedPatentRoutes);
 app.use('/api/otp', otpRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Debug: Log all registered routes
 console.log('============ REGISTERED ROUTES ============');

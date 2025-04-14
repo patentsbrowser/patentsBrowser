@@ -1,25 +1,40 @@
 import { NavLink } from 'react-router-dom';
 import './Sidebar.scss';
+import { useAdmin } from '../../context/AdminContext';
+import { useAuth } from '../../AuthContext';
 
 const Sidebar = () => {
-  const menuItems = [
+  const { isAdminMode } = useAdmin();
+  const { user } = useAuth();
+  
+  const userMenuItems = [
     { path: '/auth/dashboard', label: 'Dashboard', icon: '📊' },
     { path: '/auth/patent-history', label: 'Patent History', icon: '🕒' },
     { path: '/auth/patentSaver', label: 'Saved Patents', icon: '📑' },
     { path: '/auth/subscription', label: 'Subscription', icon: '💎' },
     { path: '/auth/settings', label: 'Settings', icon: '📝' },
-    // { path: '/auth/charts', label: 'Charts', icon: '📈' },
-    // { path: '/auth/trade', label: 'Trading Terminal', icon: '💹' },
-    // { path: '/auth/strategies', label: 'Strategies', icon: '📚' },
-    // { path: '/auth/signals', label: 'Trading Signals', icon: '🎯' },
-    // { path: '/auth/backtest', label: 'Strategy Backtest', icon: '🔬' },
     { path: '/auth/update-profile', label: 'Update Profile', icon: '👤' },
   ];
 
+  const adminMenuItems = [
+    { path: '/auth/admin', label: 'Admin Dashboard', icon: '⚙️' },
+    { path: '/auth/admin/users', label: 'Users', icon: '👥' },
+    { path: '/auth/admin/subscriptions', label: 'Subscriptions', icon: '💰' },
+    { path: '/auth/admin/settings', label: 'Admin Settings', icon: '🔧' },
+  ];
+
+  // Determine which menu items to show based on mode
+  const menuItems = isAdminMode ? adminMenuItems : userMenuItems;
+
   return (
     <div className="sidebar">
+      {user?.isAdmin && (
+        <div className="mode-indicator">
+          <span>{isAdminMode ? 'Admin Mode' : 'User Mode'}</span>
+        </div>
+      )}
       <nav>
-        {menuItems?.map((item) => (
+        {menuItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}

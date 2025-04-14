@@ -97,13 +97,24 @@ export const login = async (req: Request, res: Response) => {
     await user.save();
     
     console.log('User logged in successfully, token updated');
+    console.log('User data returned:', {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      isAdmin: user.isAdmin
+    });
 
     res.status(200).json({
       statusCode: 200,
       message: 'Successfully logged in!',
       data: {
         token,
-        user: { id: user._id, email: user.email, name: user.name }
+        user: { 
+          id: user._id, 
+          email: user.email, 
+          name: user.name,
+          isAdmin: user.isAdmin 
+        }
       }
     });
   } catch (error) {
@@ -276,6 +287,43 @@ export const uploadImage = async (req: Request, res: Response) => {
       statusCode: 500,
       message: 'Failed to upload image',
       data: null
+    });
+  }
+};
+
+// Check if a user has admin privileges
+export const checkAdminStatus = async (req: Request, res: Response) => {
+  try {
+    // Check if user exists
+    if (!req.user || !req.user.userId) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'Unauthorized',
+        data: null
+      });
+    }
+
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'User not found',
+        data: null
+      });
+    }
+
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Admin status checked successfully',
+      isAdmin: !!user.isAdmin
+    });
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to check admin status',
+      data: null,
+      isAdmin: false
     });
   }
 }; 

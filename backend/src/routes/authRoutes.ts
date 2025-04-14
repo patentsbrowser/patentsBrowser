@@ -1,5 +1,5 @@
 import express from 'express';
-import { getProfile, login, logout, signup, updateProfile, uploadImage } from '../controllers/authController.js';
+import { getProfile, login, logout, signup, updateProfile, uploadImage, checkAdminStatus } from '../controllers/authController.js';
 import { auth } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import { User } from '../models/User.js';
@@ -130,7 +130,8 @@ router.post('/verify-otp', async (req, res) => {
         user: {
           id: user._id,
           name: user.name,
-          email: user.email
+          email: user.email,
+          isAdmin: user.isAdmin
         }
       }
     });
@@ -145,64 +146,7 @@ router.post('/verify-otp', async (req, res) => {
 });
 
 // Login route
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    // Find user
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({
-        statusCode: 400,
-        message: 'Invalid credentials',
-        data: null
-      });
-    }
-
-    // Check password
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(400).json({
-        statusCode: 400,
-        message: 'Invalid credentials',
-        data: null
-      });
-    }
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
-    );
-
-    // Update the user's activeToken and lastLogin
-    user.activeToken = token;
-    user.lastLogin = new Date();
-    await user.save();
-
-    return res.status(200).json({
-      statusCode: 200,
-      message: 'Successfully logged in!',
-      data: {
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email
-        }
-      }
-    });
-
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({
-      statusCode: 500,
-      message: 'Error logging in',
-      data: null
-    });
-  }
-});
+router.post('/login', login);
 
 // Resend OTP route
 router.post('/resend-otp', async (req, res) => {
@@ -277,6 +221,9 @@ router.post('/logout', auth, async (req, res) => {
     });
   }
 });
+
+// Check admin status route
+router.get('/check-admin', auth, checkAdminStatus);
 
 router.get('/profile', auth, getProfile);
 router.post('/update-profile', auth, updateProfile);

@@ -6,6 +6,7 @@ interface User {
   id: string;
   email: string;
   name: string;
+  isAdmin?: boolean;
 }
 
 interface SignupCredentials {
@@ -34,13 +35,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const savedUser = localStorage.getItem('user');
       // Only parse if savedUser exists and is not "undefined"
-      return savedUser && savedUser !== "undefined" ? JSON.parse(savedUser) : null;
+      const parsedUser = savedUser && savedUser !== "undefined" ? JSON.parse(savedUser) : null;
+      
+      // Log the user data from localStorage
+      console.log('AuthContext - User from localStorage:', parsedUser);
+      console.log('AuthContext - Is admin from localStorage:', parsedUser?.isAdmin);
+      
+      return parsedUser;
     } catch (error) {
       // Clear potentially corrupted data
+      console.error('Error parsing user from localStorage:', error);
       localStorage.removeItem('user');
       return null;
     }
   });
+
+  // When the user state changes, update localStorage
+  useEffect(() => {
+    if (user) {
+      console.log('AuthContext - Updating user in localStorage:', user);
+      localStorage.setItem('user', JSON.stringify({
+        ...user,
+        isAdmin: user.isAdmin === true
+      }));
+    }
+  }, [user]);
 
   // Check if token exists on component mount
   useEffect(() => {

@@ -8,6 +8,20 @@
   padding-top: 2rem;
   box-shadow: 2px 0 4px rgba(93, 153, 4, 0.1);
 
+  .mode-indicator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0.5rem;
+    margin: 0 1rem 1rem;
+    background-color: var(--secondary-bg);
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--accent-color);
+    text-align: center;
+  }
 
   nav {
     display: flex;
