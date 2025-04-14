@@ -6,6 +6,7 @@ import { useAuth } from '../../AuthContext';
 const Sidebar = () => {
   const { isAdminMode } = useAdmin();
   const { user } = useAuth();
+  const location = useLocation();
   
   // Debug logs
   console.log('Sidebar - User:', user);
@@ -22,7 +23,7 @@ const Sidebar = () => {
   ];
 
   const adminMenuItems = [
-    { path: '/auth/admin', label: 'Admin Dashboard', icon: '⚙️' },
+    { path: '/auth/admin', exact: true, label: 'Admin Dashboard', icon: '⚙️' },
     { path: '/auth/admin/users', label: 'Users', icon: '👥' },
     { path: '/auth/admin/subscriptions', label: 'Subscriptions', icon: '💰' },
     { path: '/auth/admin/settings', label: 'Admin Settings', icon: '🔧' },
@@ -49,7 +50,14 @@ const Sidebar = () => {
           <NavLink
             key={item.path}
             to={item.path}
-            className={({ isActive }) => isActive ? 'active' : ''}
+            className={({ isActive }) => {
+              // For items marked as exact, only highlight if path matches exactly
+              if (item.exact) {
+                return location.pathname === item.path ? 'active' : '';
+              }
+              // For other items, use the default isActive from NavLink
+              return isActive ? 'active' : '';
+            }}
           >
             <span className="icon">{item.icon}</span>
             {item.label}

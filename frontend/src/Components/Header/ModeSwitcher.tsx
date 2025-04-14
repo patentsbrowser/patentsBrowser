@@ -13,15 +13,6 @@ const ModeSwitcher = () => {
   console.log('ModeSwitcher - Admin mode:', isAdminMode);
   console.log('ModeSwitcher - Admin check performed:', adminCheckPerformed);
 
-  // Force user mode on initial render
-  useEffect(() => {
-    // Ensure users always start in user mode
-    if (isAdminMode) {
-      console.log('ModeSwitcher - Forcing user mode on initial render');
-      setAdminMode(false);
-    }
-  }, []);
-
   // Only show the switcher if the user has admin privileges
   if (!user?.isAdmin) {
     console.log('ModeSwitcher - Not showing switcher (not admin)');

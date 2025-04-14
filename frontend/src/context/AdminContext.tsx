@@ -11,7 +11,7 @@ const AdminContext = createContext<AdminContextType | null>(null);
 
 export const AdminProvider = ({ children }: { children: ReactNode }) => {
   const { user, adminCheckPerformed } = useAuth();
-  // Always initialize isAdminMode to false to ensure users start in user mode
+  // Initialize isAdminMode to true for admin users, false for regular users
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -21,12 +21,18 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
   console.log('AdminContext - Admin mode state:', isAdminMode);
   console.log('AdminContext - Admin check performed:', adminCheckPerformed);
 
-  // Reset admin mode to false when user changes (e.g., on login/logout)
+  // Update admin mode when user info changes or admin status changes
   useEffect(() => {
-    // Ensure admin mode is always false initially, even for admin users
-    setIsAdminMode(false);
-    console.log('AdminContext - Reset admin mode to false on user change');
-  }, [user?.id]); // Only reset when user ID changes (login/logout)
+    if (user?.isAdmin) {
+      // Set admin mode to true by default for admin users
+      setIsAdminMode(true);
+      console.log('AdminContext - Setting admin mode to true for admin user');
+    } else {
+      // Reset to false for non-admin users
+      setIsAdminMode(false);
+      console.log('AdminContext - Reset admin mode to false for non-admin user');
+    }
+  }, [user?.id, user?.isAdmin]); // Update when user ID or admin status changes
 
   const toggleAdminMode = () => {
     console.log('AdminContext - Toggling admin mode from', isAdminMode, 'to', !isAdminMode);
