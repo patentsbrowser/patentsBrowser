@@ -14,12 +14,40 @@ interface User {
   lastLogin?: string;
 }
 
+// Default pagination options
+const PAGINATION_OPTIONS = [10, 25, 50, 100];
+
 const UsersList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    // Try to get the default pagination limit from settings
+    const savedLimit = localStorage.getItem('adminDefaultPaginationLimit');
+    return savedLimit ? Number(savedLimit) : 10; // Default to 10 if not set
+  });
+  
+  // Listen for settings updates
+  useEffect(() => {
+    const handleSettingsUpdate = (event: CustomEvent) => {
+      if (event.detail && event.detail.defaultPaginationLimit) {
+        setItemsPerPage(event.detail.defaultPaginationLimit);
+        setCurrentPage(1); // Reset to first page
+      }
+    };
+    
+    // Add event listener
+    window.addEventListener('adminSettingsUpdated', handleSettingsUpdate as EventListener);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('adminSettingsUpdated', handleSettingsUpdate as EventListener);
+    };
+  }, []);
   
   const { data: users = [], isLoading, error, refetch } = useQuery({
     queryKey: ['adminUsers'],
@@ -38,6 +66,17 @@ const UsersList = () => {
     user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Reset to first page when search term or items per page changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, itemsPerPage]);
 
   const getSubscriptionStatusClass = (status?: string) => {
     if (!status) return 'status-unknown';
@@ -77,6 +116,17 @@ const UsersList = () => {
   const handleSubscriptionSuccess = () => {
     // Refetch the users data to update the UI with new subscription status
     refetch();
+  };
+
+  const handlePageChange = (pageNumber: number) => {
+    if (pageNumber > 0 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
+    }
+  };
+
+  const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1); // Reset to first page when changing items per page
   };
 
   return (
@@ -119,10 +169,30 @@ const UsersList = () => {
             </div>
           </div>
 
+          <div className="pagination-controls">
+            <div className="items-per-page">
+              <label htmlFor="itemsPerPage">Show per page: </label>
+              <select 
+                id="itemsPerPage" 
+                value={itemsPerPage} 
+                onChange={handleItemsPerPageChange}
+                className="settings-select"
+              >
+                {PAGINATION_OPTIONS.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+            <div className="pagination-info">
+              Showing {Math.min(filteredUsers.length, 1 + indexOfFirstItem)}-{Math.min(indexOfLastItem, filteredUsers.length)} of {filteredUsers.length} users
+            </div>
+          </div>
+
           <div className="users-table-container">
             <table className="users-table">
               <thead>
                 <tr>
+                  <th>S.No</th>
                   <th>Name</th>
                   <th>Email</th>
                   <th>Subscription</th>
@@ -132,9 +202,10 @@ const UsersList = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.length > 0 ? (
-                  filteredUsers.map((user: User) => (
+                {currentUsers.length > 0 ? (
+                  currentUsers.map((user: User, index: number) => (
                     <tr key={user.id}>
+                      <td>{indexOfFirstItem + index + 1}</td>
                       <td>{user.name}</td>
                       <td>{user.email}</td>
                       <td>
@@ -162,7 +233,7 @@ const UsersList = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="no-users-message">
+                    <td colSpan={7} className="no-users-message">
                       {searchTerm ? 'No users match your search.' : 'No users found.'}
                     </td>
                   </tr>
@@ -170,6 +241,67 @@ const UsersList = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {filteredUsers.length > 0 && (
+            <div className="pagination">
+              <button 
+                onClick={() => handlePageChange(1)} 
+                disabled={currentPage === 1}
+                className="pagination-btn"
+              >
+                &laquo;
+              </button>
+              <button 
+                onClick={() => handlePageChange(currentPage - 1)}
+
+                disabled={currentPage === 1}
+                className="pagination-btn"
+              >
+                &lsaquo;
+              </button>
+              
+              {/* Page numbers */}
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                // Logic to show pages around current page
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <button 
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageNum)}
+                    className={`pagination-btn ${currentPage === pageNum ? 'active' : ''}`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+              
+              <button 
+                onClick={() => handlePageChange(currentPage + 1)} 
+                disabled={currentPage === totalPages}
+                className="pagination-btn"
+              >
+                &rsaquo;
+              </button>
+              <button 
+                onClick={() => handlePageChange(totalPages)} 
+                disabled={currentPage === totalPages}
+                className="pagination-btn"
+              >
+                &raquo;
+              </button>
+            </div>
+          )}
         </>
       )}
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import UsersList from './UsersList';
+import AdminSettings from './AdminSettings';
 import './Admin.scss';
 
 enum AdminTab {
@@ -87,10 +88,7 @@ const AdminDashboard = () => {
             </div>
           )}
           {activeTab === AdminTab.SETTINGS && (
-            <div>
-              <h1>Admin Settings</h1>
-              <p>Admin settings features will be implemented here.</p>
-            </div>
+            <AdminSettings />
           )}
         </div>
       </div>

@@ -131,6 +131,94 @@
   margin-top: 1.5rem;
 }
 
+// Pagination controls styles
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 1rem 0;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  
+  .items-per-page {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    
+    label {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    
+    select {
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.25rem;
+      border: 1px solid var(--border-color);
+      background-color: var(--input-bg);
+      color: var(--text-color);
+      font-size: 0.9rem;
+      min-width: 80px;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.7rem center;
+      padding-right: 2rem;
+      
+      &:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.1);
+      }
+      
+      &:hover {
+        border-color: var(--accent-color);
+      }
+    }
+  }
+  
+  .pagination-info {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 0.25rem;
+  margin: 1.5rem 0;
+  
+  .pagination-btn {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--primary-bg);
+    color: var(--text-color);
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 2.5rem;
+    
+    &:hover:not(:disabled) {
+      background-color: var(--hover-bg);
+      border-color: var(--accent-color);
+    }
+    
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    &.active {
+      background-color: var(--accent-color);
+      color: var(--button-text);
+      border-color: var(--accent-color);
+    }
+  }
+}
+
 .users-table {
   width: 100%;
   border-collapse: collapse;
@@ -139,6 +227,13 @@
     padding: 1rem;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
+  }
+  
+  // Set a reasonable width for the S.No column
+  th:first-child,
+  td:first-child {
+    width: 70px;
+    text-align: center;
   }
   
   th {
@@ -813,6 +908,139 @@
       
       &:active {
         transform: scale(0.97);
+      }
+    }
+  }
+}
+
+// Admin Settings Styles
+.admin-settings-container {
+  h1 {
+    margin-bottom: 1.5rem;
+  }
+  
+  .settings-section {
+    background-color: var(--secondary-bg);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    
+    h2 {
+      font-size: 1.2rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+  }
+  
+  .setting-group {
+    margin-bottom: 1.5rem;
+    
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    
+    .settings-select {
+      padding: 0.6rem 1rem;
+      border-radius: 0.4rem;
+      border: 1px solid var(--border-color);
+      background-color: var(--input-bg);
+      color: var(--text-color);
+      font-size: 1rem;
+      min-width: 180px;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      padding-right: 2.5rem;
+      
+      &:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.1);
+      }
+      
+      &:hover {
+        border-color: var(--accent-color);
+      }
+    }
+    
+    .setting-description {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      max-width: 600px;
+    }
+  }
+  
+  .settings-actions {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: flex-end;
+    
+    .btn {
+      min-width: 120px;
+    }
+  }
+}
+
+// Apply the same styles to all selects with settings-select class
+.settings-select {
+  padding: 0.6rem 1rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  font-size: 1rem;
+  min-width: 120px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  padding-right: 2rem;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.1);
+  }
+  
+  &:hover {
+    border-color: var(--accent-color);
+  }
+  
+  // Style the dropdown options
+  option {
+    background-color: var(--secondary-bg);
+    color: var(--text-color);
+    padding: 8px;
+    
+    &:checked {
+      background-color: rgba(var(--accent-rgb), 0.2);
+      color: var(--text-color);
+    }
+    
+    &:hover {
+      background-color: var(--hover-bg);
+    }
+  }
+}
+
+// Style for the select component in the admin settings 
+.admin-settings-container {
+  .settings-select {
+    option {
+      background-color: var(--secondary-bg);
+      color: var(--text-color);
+      
+      &:checked {
+        background-color: rgba(var(--accent-rgb), 0.15);
+        color: var(--text-color);
       }
     }
   }
