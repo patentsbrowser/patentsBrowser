@@ -4,37 +4,14 @@ import { useEffect, useState } from 'react';
 import './ModeSwitcher.scss';
 
 const ModeSwitcher = () => {
-  const { user } = useAuth();
+  const { user, adminCheckPerformed } = useAuth();
   const { isAdminMode, toggleAdminMode, setAdminMode } = useAdmin();
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   // Add debugging logs
   console.log('ModeSwitcher - User:', user);
   console.log('ModeSwitcher - Is admin from user:', user?.isAdmin);
   console.log('ModeSwitcher - Admin mode:', isAdminMode);
-
-  // Check admin status from API directly
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (user) {
-        try {
-          const { authApi } = await import('../../api/auth');
-          const result = await authApi.checkAdminStatus();
-          console.log('ModeSwitcher - Admin API check result:', result);
-          setIsAdmin(result.isAdmin);
-        } catch (error) {
-          console.error('Error checking admin status:', error);
-          // Fallback to user object if API fails
-          setIsAdmin(!!user?.isAdmin);
-        }
-      } else {
-        // No user means not admin
-        setIsAdmin(false);
-      }
-    };
-    
-    checkAdminStatus();
-  }, [user]);
+  console.log('ModeSwitcher - Admin check performed:', adminCheckPerformed);
 
   // Force user mode on initial render
   useEffect(() => {
@@ -46,7 +23,7 @@ const ModeSwitcher = () => {
   }, []);
 
   // Only show the switcher if the user has admin privileges
-  if (!isAdmin) {
+  if (!user?.isAdmin) {
     console.log('ModeSwitcher - Not showing switcher (not admin)');
     return null;
   }

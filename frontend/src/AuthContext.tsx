@@ -23,6 +23,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   setUser: (user: User | null) => void;
   checkAuth: () => boolean;
+  checkAdminStatus: () => Promise<void>;
+  forceAdminCheck: () => void;
+  adminCheckPerformed: boolean;
 }
 
 // const API_URL = 'http://localhost:5000/api';
@@ -66,6 +69,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  // Add a new state variable to track when admin check has already been performed
+  const [adminCheckPerformed, setAdminCheckPerformed] = useState<boolean>(false);
+
+  // Function to check admin status (to be called only once)
+  const checkAdminStatus = async () => {
+    // Skip if already checked or no user
+    if (adminCheckPerformed || !user) return;
+    
+    console.log('AuthContext - Performing single admin status check');
+    
+    try {
+      const { authApi } = await import('./api/auth');
+      const result = await authApi.checkAdminStatus();
+      console.log('AuthContext - Admin status check result:', result);
+      
+      if (result.isAdmin) {
+        // Update user object with admin status
+        const updatedUser = { ...user, isAdmin: true };
+        setUser(updatedUser);
+        
+        // Update localStorage
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        console.log('AuthContext - Updated user with admin status');
+      }
+    } catch (error) {
+      console.error('AuthContext - Error checking admin status:', error);
+    } finally {
+      setAdminCheckPerformed(true);
+    }
+  };
+
+  // Expose the admin check function
+  const forceAdminCheck = () => {
+    setAdminCheckPerformed(false);
+    checkAdminStatus();
+  };
+
   const loginMutation = useMutation({
     mutationFn: (credentials: { email: string; password: string }) => authApi.login(credentials),
     onSuccess: (data) => {
@@ -106,16 +146,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Add new effect to trigger the admin check when user changes
+  useEffect(() => {
+    if (user) {
+      checkAdminStatus();
+    }
+  }, [user]);
+
   return (
-    <AuthContext.Provider value={{ 
-      user,
-      login: (email: string, password: string) => loginMutation.mutateAsync({ email, password }),
-      signup: (credentials) => signupMutation.mutateAsync(credentials),
-      logout: () => logoutMutation.mutateAsync(),
-      isAuthenticated: !!user,
-      setUser,
-      checkAuth
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        setUser,
+        isAuthenticated: !!user,
+        login: (email: string, password: string) => loginMutation.mutateAsync({ email, password }),
+        signup: (credentials) => signupMutation.mutateAsync(credentials),
+        logout: () => logoutMutation.mutateAsync(),
+        checkAuth,
+        checkAdminStatus,
+        forceAdminCheck,
+        adminCheckPerformed
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
