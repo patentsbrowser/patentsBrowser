@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import './Admin.scss';
@@ -32,6 +32,9 @@ const UsersList = () => {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
+  const exportDropdownRef = useRef<HTMLDivElement>(null);
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(() => {
@@ -105,6 +108,20 @@ const UsersList = () => {
     setCurrentPage(1);
   }, [searchTerm, subscriptionFilter, itemsPerPage]);
 
+  // Close export dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportDropdownRef.current && !exportDropdownRef.current.contains(event.target as Node)) {
+        setExportDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const getSubscriptionStatusClass = (status?: string) => {
     if (!status) return 'status-unknown';
     
@@ -156,6 +173,190 @@ const UsersList = () => {
     setCurrentPage(1); // Reset to first page when changing items per page
   };
 
+  const handleExportToExcel = () => {
+    setIsExporting(true);
+    
+    try {
+      // Prepare data for export
+      const data = filteredUsers.map((user: User, index: number) => (
+        `${index + 1},${user.name || ''},${user.email || ''},${user.subscriptionStatus || 'Unknown'},${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'},${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'N/A'}`
+      )).join('\n');
+      
+      // Add headers
+      const headers = 'S.No,Name,Email,Subscription,Joined Date,Last Login';
+      const csvContent = `${headers}\n${data}`;
+      
+      // Create a blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'users_list.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setIsExporting(false);
+    } catch (error) {
+      console.error('Error exporting to CSV:', error);
+      setIsExporting(false);
+    }
+  };
+  
+  const handleExportToPDF = () => {
+    setIsExporting(true);
+    
+    try {
+      // Create a new window for printing
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        alert('Please allow pop-ups to export PDF');
+        setIsExporting(false);
+        return;
+      }
+      
+      // Style the document
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Users List</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                margin: 20px;
+                color: #333;
+              }
+              h1 {
+                text-align: center;
+                margin-bottom: 20px;
+                color: #2563eb;
+              }
+              table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 30px;
+              }
+              th, td {
+                border: 1px solid #ddd;
+                padding: 12px;
+                text-align: left;
+              }
+              th {
+                background-color: #f8f9fa;
+                font-weight: bold;
+              }
+              tr:nth-child(even) {
+                background-color: #f2f2f2;
+              }
+              .subscription {
+                padding: 5px 10px;
+                border-radius: 20px;
+                font-weight: 500;
+                display: inline-block;
+              }
+              .active {
+                background-color: rgba(76, 175, 80, 0.2);
+                color: #4caf50;
+              }
+              .trial {
+                background-color: rgba(255, 152, 0, 0.2);
+                color: #ff9800;
+              }
+              .expired {
+                background-color: rgba(244, 67, 54, 0.2);
+                color: #f44336;
+              }
+              .unknown {
+                background-color: rgba(158, 158, 158, 0.2);
+                color: #9e9e9e;
+              }
+              .footer {
+                text-align: center;
+                margin-top: 30px;
+                font-size: 14px;
+                color: #666;
+              }
+            </style>
+          </head>
+          <body>
+            <h1>Users List</h1>
+            <table>
+              <thead>
+                <tr>
+                  <th>S.No</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Subscription</th>
+                  <th>Joined Date</th>
+                  <th>Last Login</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filteredUsers.map((user: User, index: number) => {
+                  const statusClass = getSubscriptionStatusForPDF(user.subscriptionStatus);
+                  return `
+                    <tr>
+                      <td>${index + 1}</td>
+                      <td>${user.name || ''}</td>
+                      <td>${user.email || ''}</td>
+                      <td><span class="subscription ${statusClass}">${user.subscriptionStatus || 'Unknown'}</span></td>
+                      <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</td>
+                      <td>${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'N/A'}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+            <div class="footer">
+              Generated on ${new Date().toLocaleString()} | Total Users: ${filteredUsers.length}
+            </div>
+          </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+      
+      // Wait for resources to load then print
+      printWindow.onload = function() {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.onafterprint = () => {
+          printWindow.close();
+          setIsExporting(false);
+        };
+      };
+      
+    } catch (error) {
+      console.error('Error exporting to PDF:', error);
+      setIsExporting(false);
+    }
+  };
+  
+  const getSubscriptionStatusForPDF = (status?: string) => {
+    if (!status) return 'unknown';
+    
+    switch (status.toLowerCase()) {
+      case 'active':
+      case 'paid':
+        return 'active';
+      case 'trial':
+        return 'trial';
+      case 'expired':
+        return 'expired';
+      default:
+        return 'unknown';
+    }
+  };
+  
+  const handleExport = (format: 'excel' | 'pdf') => {
+    if (format === 'excel') {
+      handleExportToExcel();
+    } else {
+      handleExportToPDF();
+    }
+    setExportDropdownOpen(false);
+  };
+
   return (
     <div className="admin-users-container">
       <div className="admin-header">
@@ -180,6 +381,21 @@ const UsersList = () => {
                 </option>
               ))}
             </select>
+          </div>
+          <div className="export-dropdown" ref={exportDropdownRef}>
+            <button
+              className="export-btn"
+              onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
+              disabled={isExporting || filteredUsers.length === 0}
+            >
+              {isExporting ? 'Exporting...' : 'Export Data'}
+            </button>
+            {exportDropdownOpen && (
+              <div className="export-dropdown-menu">
+                <button onClick={() => handleExport('excel')}>Export as Excel/CSV</button>
+                <button onClick={() => handleExport('pdf')}>Export as PDF</button>
+              </div>
+            )}
           </div>
         </div>
       </div>

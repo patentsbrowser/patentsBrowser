@@ -55,6 +55,66 @@
   }
 }
 
+.export-dropdown {
+  position: relative;
+  
+  .export-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    background-color: var(--accent-color);
+    color: var(--button-text);
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    min-width: 130px;
+    transition: all 0.2s ease;
+    
+    &:hover:not(:disabled) {
+      background-color: rgba(var(--accent-rgb), 0.85);
+    }
+    
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+  
+  .export-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 5px);
+    right: 0;
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 180px;
+    z-index: 10;
+    overflow: hidden;
+    
+    button {
+      display: block;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      text-align: left;
+      background: none;
+      border: none;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-color);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
+      &:hover {
+        background-color: var(--hover-bg);
+        color: var(--accent-color);
+      }
+    }
+  }
+}
+
 .admin-nav {
   display: flex;
   gap: 0.5rem;
