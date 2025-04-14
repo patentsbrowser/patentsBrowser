@@ -17,8 +17,17 @@ interface User {
 // Default pagination options
 const PAGINATION_OPTIONS = [10, 25, 50, 100];
 
+// Subscription filter options
+const SUBSCRIPTION_FILTERS = [
+  { value: 'all', label: 'All Subscriptions' },
+  { value: 'active', label: 'Active/Paid' },
+  { value: 'trial', label: 'Free Trial' },
+  { value: 'expired', label: 'Expired' },
+];
+
 const UsersList = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [subscriptionFilter, setSubscriptionFilter] = useState('all');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
@@ -62,10 +71,28 @@ const UsersList = () => {
     }
   });
 
-  const filteredUsers = users.filter((user: User) => 
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter((user: User) => {
+    // Filter by search term
+    const matchesSearch = 
+      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Filter by subscription status
+    let matchesSubscription = true;
+    if (subscriptionFilter !== 'all') {
+      const status = user.subscriptionStatus?.toLowerCase() || '';
+      
+      if (subscriptionFilter === 'active') {
+        matchesSubscription = status === 'active' || status === 'paid';
+      } else if (subscriptionFilter === 'trial') {
+        matchesSubscription = status === 'trial';
+      } else if (subscriptionFilter === 'expired') {
+        matchesSubscription = status === 'expired';
+      }
+    }
+    
+    return matchesSearch && matchesSubscription;
+  });
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
@@ -73,10 +100,10 @@ const UsersList = () => {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentUsers = filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
 
-  // Reset to first page when search term or items per page changes
+  // Reset to first page when search term, subscription filter, or items per page changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, itemsPerPage]);
+  }, [searchTerm, subscriptionFilter, itemsPerPage]);
 
   const getSubscriptionStatusClass = (status?: string) => {
     if (!status) return 'status-unknown';
@@ -133,13 +160,27 @@ const UsersList = () => {
     <div className="admin-users-container">
       <div className="admin-header">
         <h1>Users Management</h1>
-        <div className="search-box">
-          <input
-            type="text"
-            placeholder="Search users..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="admin-filters">
+          <div className="search-box">
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="subscription-filter">
+            <select
+              value={subscriptionFilter}
+              onChange={(e) => setSubscriptionFilter(e.target.value)}
+            >
+              {SUBSCRIPTION_FILTERS.map(filter => (
+                <option key={filter.value} value={filter.value}>
+                  {filter.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
