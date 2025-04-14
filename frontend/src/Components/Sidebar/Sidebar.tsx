@@ -1,8 +1,7 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import './Sidebar.scss';
 import { useAdmin } from '../../context/AdminContext';
 import { useAuth } from '../../AuthContext';
-import { useEffect } from 'react';
 
 const Sidebar = () => {
   const { isAdminMode } = useAdmin();

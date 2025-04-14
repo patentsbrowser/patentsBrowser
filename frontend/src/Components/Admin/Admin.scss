@@ -1,17 +1,9 @@
 .admin-dashboard {
   display: flex;
+  flex-direction: column;
   height: calc(100vh - 78px);
   background-color: var(--primary-bg);
   color: var(--text-color);
-}
-
-.admin-sidebar {
-  width: 240px;
-  background-color: var(--secondary-bg);
-  border-right: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  padding: 1rem 0;
 }
 
 .admin-header {
@@ -30,9 +22,7 @@
 
 .admin-nav {
   display: flex;
-  flex-direction: column;
   gap: 0.5rem;
-  padding: 0 1rem;
 }
 
 .admin-nav-item {
@@ -67,6 +57,13 @@
   flex: 1;
   padding: 1.5rem;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-tab-content {
+  margin-top: 1rem;
+  flex: 1;
 }
 
 .admin-section {
