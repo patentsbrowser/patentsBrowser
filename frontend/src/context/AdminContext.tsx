@@ -4,18 +4,28 @@ import { useAuth } from "../AuthContext";
 interface AdminContextType {
   isAdminMode: boolean;
   toggleAdminMode: () => void;
+  setAdminMode: (value: boolean) => void;
 }
 
 const AdminContext = createContext<AdminContextType | null>(null);
 
 export const AdminProvider = ({ children }: { children: ReactNode }) => {
   const { user, setUser } = useAuth();
+  // Always initialize isAdminMode to false to ensure users start in user mode
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Log user state for debugging
   console.log('AdminContext - User state:', user);
   console.log('AdminContext - Is admin:', user?.isAdmin);
+  console.log('AdminContext - Admin mode state:', isAdminMode);
+
+  // Reset admin mode to false when user changes (e.g., on login/logout)
+  useEffect(() => {
+    // Ensure admin mode is always false initially, even for admin users
+    setIsAdminMode(false);
+    console.log('AdminContext - Reset admin mode to false on user change');
+  }, [user?.id]); // Only reset when user ID changes (login/logout)
 
   // Check admin status from API
   useEffect(() => {
@@ -97,13 +107,21 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
   }, [user, setUser]);
 
   const toggleAdminMode = () => {
+    console.log('AdminContext - Toggling admin mode from', isAdminMode, 'to', !isAdminMode);
     setIsAdminMode(prev => !prev);
+  };
+
+  // Direct setter for admin mode
+  const setAdminMode = (value: boolean) => {
+    console.log('AdminContext - Setting admin mode to:', value);
+    setIsAdminMode(value);
   };
 
   return (
     <AdminContext.Provider value={{ 
       isAdminMode,
-      toggleAdminMode
+      toggleAdminMode,
+      setAdminMode
     }}>
       {children}
     </AdminContext.Provider>

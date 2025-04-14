@@ -72,28 +72,20 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if email is verified
-    console.log('Email verification status:', user.isEmailVerified ? 'Verified' : 'Not verified');
-    
-    if (!user.isEmailVerified) {
-      console.log('Generating and sending OTP for unverified email');
-      const otp = generateOTP();
-      await sendOTP(email, otp);
-      storeOTP(email, otp);
-
-      return res.status(200).json({
-        statusCode: 200,
-        message: 'Please verify your email with OTP',
-        data: null
-      });
-    }
-
-    // Generate a new token
+    // Generate a new token regardless of email verification status
     const token = jwt.sign({ userId: user._id }, JWT_SECRET);
     
     // Update the user's activeToken and lastLogin
     user.activeToken = token;
     user.lastLogin = new Date();
+    
+    // If email is not verified, mark it as verified since we're allowing login
+    // without OTP verification
+    if (!user.isEmailVerified) {
+      console.log('Auto-verifying email on login for user:', email);
+      user.isEmailVerified = true;
+    }
+    
     await user.save();
     
     console.log('User logged in successfully, token updated');

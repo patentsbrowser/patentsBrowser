@@ -2,10 +2,16 @@ import { NavLink } from 'react-router-dom';
 import './Sidebar.scss';
 import { useAdmin } from '../../context/AdminContext';
 import { useAuth } from '../../AuthContext';
+import { useEffect } from 'react';
 
 const Sidebar = () => {
   const { isAdminMode } = useAdmin();
   const { user } = useAuth();
+  
+  // Debug logs
+  console.log('Sidebar - User:', user);
+  console.log('Sidebar - Is user admin?', !!user?.isAdmin);
+  console.log('Sidebar - Is admin mode active?', isAdminMode);
   
   const userMenuItems = [
     { path: '/auth/dashboard', label: 'Dashboard', icon: '📊' },
@@ -23,8 +29,14 @@ const Sidebar = () => {
     { path: '/auth/admin/settings', label: 'Admin Settings', icon: '🔧' },
   ];
 
-  // Determine which menu items to show based on mode
-  const menuItems = isAdminMode ? adminMenuItems : userMenuItems;
+  // Only show admin menu items if both conditions are true:
+  // 1. User has admin role
+  // 2. Admin mode is explicitly toggled on
+  const shouldShowAdminMenu = user?.isAdmin === true && isAdminMode === true;
+  console.log('Sidebar - Should show admin menu?', shouldShowAdminMenu);
+  
+  // Always default to user menu items unless explicitly in admin mode
+  const menuItems = shouldShowAdminMenu ? adminMenuItems : userMenuItems;
 
   return (
     <div className="sidebar">
