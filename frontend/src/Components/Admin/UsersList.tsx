@@ -34,6 +34,7 @@ const UsersList = () => {
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'excel' | 'pdf' | null>(null);
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const exportDropdownRef = useRef<HTMLDivElement>(null);
   // Pagination states
@@ -176,6 +177,7 @@ const UsersList = () => {
 
   const handleExportToExcel = () => {
     setIsExporting(true);
+    setExportFormat('excel');
     
     try {
       // Prepare data for export
@@ -198,14 +200,17 @@ const UsersList = () => {
       document.body.removeChild(link);
       
       setIsExporting(false);
+      setExportFormat(null);
     } catch (error) {
       console.error('Error exporting to CSV:', error);
       setIsExporting(false);
+      setExportFormat(null);
     }
   };
   
   const handleExportToPDF = () => {
     setIsExporting(true);
+    setExportFormat('pdf');
     
     try {
       // Create a new window for printing
@@ -213,6 +218,7 @@ const UsersList = () => {
       if (!printWindow) {
         alert('Please allow pop-ups to export PDF');
         setIsExporting(false);
+        setExportFormat(null);
         return;
       }
       
@@ -326,12 +332,14 @@ const UsersList = () => {
         printWindow.onafterprint = () => {
           printWindow.close();
           setIsExporting(false);
+          setExportFormat(null);
         };
       };
       
     } catch (error) {
       console.error('Error exporting to PDF:', error);
       setIsExporting(false);
+      setExportFormat(null);
     }
   };
   
@@ -391,12 +399,16 @@ const UsersList = () => {
               onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
               disabled={isExporting || filteredUsers.length === 0}
             >
-              {isExporting ? 'Exporting...' : 'Export Data'}
+              Export Data
             </button>
             {exportDropdownOpen && (
               <div className="export-dropdown-menu">
-                <button onClick={() => handleExport('excel')}>Export as Excel/CSV</button>
-                <button onClick={() => handleExport('pdf')}>Export as PDF</button>
+                <button onClick={() => handleExport('excel')} disabled={isExporting}>
+                  Export as Excel/CSV
+                </button>
+                <button onClick={() => handleExport('pdf')} disabled={isExporting}>
+                  Export as PDF
+                </button>
               </div>
             )}
           </div>
