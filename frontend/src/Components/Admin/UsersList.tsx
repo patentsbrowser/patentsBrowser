@@ -170,19 +170,7 @@ const UsersList = () => {
           </div>
 
           <div className="pagination-controls">
-            <div className="items-per-page">
-              <label htmlFor="itemsPerPage">Show per page: </label>
-              <select 
-                id="itemsPerPage" 
-                value={itemsPerPage} 
-                onChange={handleItemsPerPageChange}
-                className="settings-select"
-              >
-                {PAGINATION_OPTIONS.map(option => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
-            </div>
+            
             <div className="pagination-info">
               Showing {Math.min(filteredUsers.length, 1 + indexOfFirstItem)}-{Math.min(indexOfLastItem, filteredUsers.length)} of {filteredUsers.length} users
             </div>
