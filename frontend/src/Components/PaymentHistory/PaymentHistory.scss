@@ -1,0 +1,126 @@
+.payment-history-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .payment-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    
+    h2 {
+      font-size: 24px;
+      margin: 0;
+      color: var(--text-color);
+    }
+  }
+
+  .error-message {
+    background-color: rgba(231, 76, 60, 0.1);
+    border-left: 4px solid #e74c3c;
+    color: #c0392b;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+
+  .empty-message {
+    background-color: var(--secondary-bg, #f7f7f7);
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    color: var(--text-secondary, #666);
+    font-size: 16px;
+    margin-top: 20px;
+  }
+
+  .payment-list {
+    background-color: var(--secondary-bg, #fff);
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    
+    .payment-table {
+      width: 100%;
+      border-collapse: collapse;
+      
+      th, td {
+        padding: 16px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color, #eaeaea);
+      }
+      
+      th {
+        background-color: var(--primary-bg, #f5f5f5);
+        font-weight: 600;
+        color: var(--text-secondary, #444);
+        font-size: 14px;
+      }
+      
+      td {
+        color: var(--text-color, #333);
+        font-size: 14px;
+        
+        &.plan-info {
+          .plan-name {
+            font-weight: 600;
+            color: var(--accent-color, #2563eb);
+          }
+        }
+        
+        &.amount {
+          font-weight: 600;
+        }
+        
+        &.reference-number {
+          font-family: monospace;
+          color: var(--text-secondary, #666);
+        }
+        
+        &.status {
+          font-weight: 600;
+          
+          &.status-active {
+            color: #10b981;
+          }
+          
+          &.status-pending {
+            color: #f59e0b;
+          }
+          
+          &.status-rejected {
+            color: #ef4444;
+          }
+          
+          &.status-cancelled {
+            color: #6b7280;
+          }
+        }
+      }
+      
+      tr:hover {
+        background-color: var(--hover-bg, rgba(0, 0, 0, 0.02));
+      }
+    }
+  }
+}
+
+// Mobile responsiveness
+@media (max-width: 768px) {
+  .payment-history-container {
+    padding: 16px;
+    
+    .payment-list {
+      .payment-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+        
+        th, td {
+          padding: 12px;
+        }
+      }
+    }
+  }
+} 

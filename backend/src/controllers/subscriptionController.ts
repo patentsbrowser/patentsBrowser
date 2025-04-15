@@ -502,6 +502,57 @@ export const updatePaymentVerification = async (req: Request, res: Response) => 
   }
 };
 
+// Get user's payment history
+export const getUserPaymentHistory = async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - User ID is added by auth middleware
+    const userId = req.user._id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+    
+    // Find all subscriptions for this user
+    const subscriptions = await Subscription.find({ 
+      userId,
+      upiTransactionRef: { $exists: true, $ne: null } // Only include subscriptions with a transaction reference
+    }).sort({ createdAt: -1 }); // Sort by most recent first
+    
+    // Transform to the expected format
+    const paymentHistory = await Promise.all(subscriptions.map(async (sub) => {
+      const plan = await PricingPlan.findOne({ type: sub.plan });
+      
+      return {
+        id: sub._id,
+        amount: plan?.price || 0,
+        currency: "₹",
+        planName: `${sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1)} Plan`,
+        planDuration: sub.plan,
+        referenceNumber: sub.upiTransactionRef || 'No Reference',
+        status: sub.status,
+        startDate: sub.startDate,
+        endDate: sub.endDate,
+        transactionDate: sub.createdAt,
+        orderId: sub.upiOrderId || 'No Order ID',
+      };
+    }));
+    
+    return res.status(200).json({
+      success: true,
+      data: paymentHistory
+    });
+  } catch (error) {
+    console.error('Error fetching user payment history:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching payment history'
+    });
+  }
+};
+
 // Export all controller methods
 export default {
   getPricingPlans,
@@ -510,5 +561,6 @@ export default {
   getUserSubscription,
   getPaymentStatus,
   getPendingPayments,
-  updatePaymentVerification
+  updatePaymentVerification,
+  getUserPaymentHistory
 }; 

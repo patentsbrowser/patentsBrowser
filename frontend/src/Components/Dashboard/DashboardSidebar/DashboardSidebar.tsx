@@ -346,6 +346,13 @@ const DashboardSidebar = ({
             <span className="link-text">View Complete Patent History</span>
           </Link>
         </div>
+
+        <div className="payment-history-link-section highlight-section">
+          <Link to="/auth/payment-history" className="payment-history-link highlight-link">
+            <span className="payment-icon">💳</span>
+            <span className="link-text">View Payment History</span>
+          </Link>
+        </div>
       </div>
     </div>
   );

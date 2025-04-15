@@ -162,6 +162,9 @@ const Header = () => {
                 <Link to="/auth/profile" className="dropdown-item" onClick={() => setShowDropdown(false)}>
                   Profile
                 </Link>
+                <Link to="/auth/payment-history" className="dropdown-item" onClick={() => setShowDropdown(false)}>
+                  Payment History
+                </Link>
                 <button className="dropdown-item logout" onClick={() => {
                   setShowLogoutModal(true);
                   setShowDropdown(false);

@@ -26,6 +26,7 @@ import Forum from "./Components/Forum/Forum";
 import SubscriptionPage from "./Components/Subscription/SubscriptionPage";
 import PatentHistory from "./Components/PatentHistory";
 import AdminDashboard from "./Components/Admin/AdminDashboard";
+import PaymentHistory from "./Components/PaymentHistory";
 // import { store } from './Redux/store';
 
 // Error boundary to catch rendering errors
@@ -171,6 +172,7 @@ const App = () => {
                                 <Route path="profile" element={<ProfilePage />} />
                                 <Route path="subscription" element={<SubscriptionPage />} />
                                 <Route path="patent-history" element={<PatentHistory />} />
+                                <Route path="payment-history" element={<PaymentHistory />} />
                                 
                                 {/* Admin Routes - Protected by AdminGuard */}
                                 <Route 

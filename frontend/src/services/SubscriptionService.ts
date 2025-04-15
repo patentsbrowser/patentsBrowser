@@ -213,10 +213,34 @@ export const checkPaymentVerificationStatus = async (transactionId: string) => {
   }
 };
 
+/**
+ * Get the current user's payment history
+ */
+export const getUserPaymentHistory = async () => {
+  try {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('User not authenticated');
+    }
+    
+    debugLog('Getting user payment history', {});
+    
+    const response = await axiosInstance.get('/subscriptions/payment-history');
+    
+    debugLog('User payment history response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error getting user payment history:', error);
+    throw error;
+  }
+};
+
 export default {
   getSubscriptionPlans,
   createPendingSubscription,
   verifyUpiPayment,
   getUserSubscription,
-  checkPaymentVerificationStatus
+  checkPaymentVerificationStatus,
+  getUserPaymentHistory
 }; 
