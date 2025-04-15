@@ -282,23 +282,22 @@
 .pagination {
   display: flex;
   justify-content: center;
-  gap: 0.25rem;
-  margin: 1.5rem 0;
+  align-items: center;
+  margin: 2rem 0;
+  gap: 0.5rem;
   
   .pagination-btn {
     padding: 0.5rem 0.75rem;
-    border: 1px solid var(--border-color);
-    background-color: var(--primary-bg);
-    color: var(--text-color);
+    background-color: var(--secondary-bg, #fff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    color: var(--text-color, #4a5568);
     border-radius: 0.25rem;
-    font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.2s ease;
-    min-width: 2.5rem;
+    transition: all 0.2s;
     
     &:hover:not(:disabled) {
-      background-color: var(--hover-bg);
-      border-color: var(--accent-color);
+      background-color: var(--accent-color, #4a6fa5);
+      color: white;
     }
     
     &:disabled {
@@ -307,9 +306,38 @@
     }
     
     &.active {
-      background-color: var(--accent-color);
-      color: var(--button-text);
-      border-color: var(--accent-color);
+      background-color: var(--accent-color, #4a6fa5);
+      color: white;
+      font-weight: 600;
+    }
+  }
+  
+  .items-per-page-control {
+    margin-left: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary, #718096);
+    
+    span {
+      white-space: nowrap;
+    }
+    
+    select {
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background-color: var(--secondary-bg, #fff);
+      color: var(--text-color, #4a5568);
+      font-size: 0.9rem;
+      cursor: pointer;
+      
+      &:focus {
+        outline: none;
+        border-color: var(--accent-color, #4a6fa5);
+        box-shadow: 0 0 0 1px var(--accent-color, #4a6fa5);
+      }
     }
   }
 }

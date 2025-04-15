@@ -552,13 +552,15 @@ const UsersList = () => {
             </div>
           </div>
 
-          <div className="pagination-controls">
-            <div className="pagination-info">
-              Showing {Math.min(filteredUsers.length, 1 + indexOfFirstItem)}-
-              {Math.min(indexOfLastItem, filteredUsers.length)} of{" "}
-              {filteredUsers.length} users
+          {filteredUsers.length > 0 && (
+            <div className="pagination-controls">
+              <div className="pagination-info">
+                Showing {Math.min(filteredUsers.length, 1 + indexOfFirstItem)}-
+                {Math.min(indexOfLastItem, filteredUsers.length)} of{" "}
+                {filteredUsers.length} users
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="users-table-container">
             <table className="users-table">
@@ -635,7 +637,7 @@ const UsersList = () => {
           </div>
 
           {/* Pagination */}
-          {filteredUsers.length > 0 && (
+          {filteredUsers.length > itemsPerPage && (
             <div className="pagination">
               <button
                 onClick={() => handlePageChange(1)}
@@ -693,6 +695,20 @@ const UsersList = () => {
               >
                 &raquo;
               </button>
+              
+              <div className="items-per-page-control">
+                <span>Items per page:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={handleItemsPerPageChange}
+                >
+                  {PAGINATION_OPTIONS.map(option => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
         </>
