@@ -11,6 +11,7 @@ interface User {
   name: string;
   subscriptionStatus?: string;
   referenceNumber?: string;
+  timeSpent?: number; // Time spent in minutes
   createdAt?: string;
   lastLogin?: string;
 }
@@ -182,11 +183,11 @@ const UsersList = () => {
     try {
       // Prepare data for export
       const data = filteredUsers.map((user: User, index: number) => (
-        `${index + 1},${user.name || ''},${user.email || ''},${user.subscriptionStatus || 'Unknown'},${user.referenceNumber || 'N/A'},${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'},${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'N/A'}`
+        `${index + 1},${user.name || ''},${user.email || ''},${user.subscriptionStatus || 'Unknown'},${user.referenceNumber || 'N/A'},${formatTimeSpent(user.timeSpent)},${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'},${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'N/A'}`
       )).join('\n');
       
       // Add headers
-      const headers = 'S.No,Name,Email,Subscription,Reference Number,Joined Date,Last Login';
+      const headers = 'S.No,Name,Email,Subscription,Reference Number,Time Spent,Joined Date,Last Login';
       const csvContent = `${headers}\n${data}`;
       
       // Create a blob and download
@@ -295,6 +296,7 @@ const UsersList = () => {
                   <th>Email</th>
                   <th>Subscription</th>
                   <th>Reference Number</th>
+                  <th>Time Spent</th>
                   <th>Joined Date</th>
                   <th>Last Login</th>
                 </tr>
@@ -309,6 +311,7 @@ const UsersList = () => {
                       <td>${user.email || ''}</td>
                       <td><span class="subscription ${statusClass}">${user.subscriptionStatus || 'Unknown'}</span></td>
                       <td>${user.referenceNumber || 'N/A'}</td>
+                      <td>${formatTimeSpent(user.timeSpent)}</td>
                       <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</td>
                       <td>${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'N/A'}</td>
                     </tr>
@@ -366,6 +369,38 @@ const UsersList = () => {
       handleExportToPDF();
     }
     setExportDropdownOpen(false);
+  };
+
+  // Helper function to format time spent
+  const formatTimeSpent = (minutes?: number): string => {
+    if (!minutes) return 'N/A';
+    
+    if (minutes < 60) {
+      return `${minutes} min`;
+    } else if (minutes < 1440) { // less than 24 hours
+      const hours = Math.floor(minutes / 60);
+      const remainingMinutes = minutes % 60;
+      return `${hours}h ${remainingMinutes}m`;
+    } else { // days
+      const days = Math.floor(minutes / 1440);
+      const remainingHours = Math.floor((minutes % 1440) / 60);
+      return `${days}d ${remainingHours}h`;
+    }
+  };
+  
+  // Get CSS class based on time spent
+  const getTimeSpentClass = (minutes?: number): string => {
+    if (!minutes) return '';
+    
+    if (minutes < 60) { // Less than 1 hour
+      return 'time-spent-low';
+    } else if (minutes < 300) { // 1-5 hours
+      return 'time-spent-medium';
+    } else if (minutes < 1200) { // 5-20 hours
+      return 'time-spent-high';
+    } else { // More than 20 hours
+      return 'time-spent-power';
+    }
   };
 
   return (
@@ -457,6 +492,7 @@ const UsersList = () => {
                   <th>Email</th>
                   <th>Subscription</th>
                   <th>Reference Number</th>
+                  <th>Time Spent</th>
                   <th>Joined</th>
                   <th>Last Login</th>
                   <th>Actions</th>
@@ -475,6 +511,9 @@ const UsersList = () => {
                         </span>
                       </td>
                       <td>{user.referenceNumber || 'N/A'}</td>
+                      <td className={getTimeSpentClass(user.timeSpent)}>
+                        {formatTimeSpent(user.timeSpent)}
+                      </td>
                       <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</td>
                       <td>{user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'N/A'}</td>
                       <td className="actions-cell">

@@ -23,6 +23,10 @@ interface UserProfile {
   nationality?: string;
   isAdmin?: boolean;
   isEmailVerified?: boolean;
+  timeSpent?: number; // Total time spent in minutes
+  loginCount?: number; // Total number of logins
+  avgSessionDuration?: number; // Average session time in minutes
+  lastSessionDuration?: number; // Last session duration in minutes
   subscription?: {
     plan?: string;
     startDate?: string;
@@ -72,6 +76,23 @@ const UserProfileModal = ({ userId, isOpen, onClose }: UserProfileModalProps) =>
       setError(err.message || 'An error occurred while fetching the user profile');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Format time spent (minutes) to a human-readable format
+  const formatTimeSpent = (minutes?: number): string => {
+    if (!minutes) return 'N/A';
+    
+    if (minutes < 60) {
+      return `${minutes} minutes`;
+    } else if (minutes < 1440) { // less than 24 hours
+      const hours = Math.floor(minutes / 60);
+      const remainingMinutes = minutes % 60;
+      return `${hours} hour${hours !== 1 ? 's' : ''} ${remainingMinutes > 0 ? `${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}` : ''}`;
+    } else { // days
+      const days = Math.floor(minutes / 1440);
+      const remainingHours = Math.floor((minutes % 1440) / 60);
+      return `${days} day${days !== 1 ? 's' : ''} ${remainingHours > 0 ? `${remainingHours} hour${remainingHours !== 1 ? 's' : ''}` : ''}`;
     }
   };
 
@@ -183,6 +204,35 @@ const UserProfileModal = ({ userId, isOpen, onClose }: UserProfileModalProps) =>
                     <span className="detail-label">Admin Status:</span>
                     <span className="detail-value">
                       {userProfile.isAdmin ? 'Administrator' : 'Regular User'}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Platform Usage Statistics */}
+                <div className="detail-group">
+                  <h4>Platform Usage</h4>
+                  <div className="detail-row">
+                    <span className="detail-label">Total Time Spent:</span>
+                    <span className="detail-value">{formatTimeSpent(userProfile.timeSpent)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Login Count:</span>
+                    <span className="detail-value">{userProfile.loginCount || 0}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Avg. Session:</span>
+                    <span className="detail-value">
+                      {userProfile.avgSessionDuration
+                        ? `${Math.round(userProfile.avgSessionDuration)} minutes`
+                        : 'N/A'}
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Last Session:</span>
+                    <span className="detail-value">
+                      {userProfile.lastSessionDuration
+                        ? `${Math.round(userProfile.lastSessionDuration)} minutes`
+                        : 'N/A'}
                     </span>
                   </div>
                 </div>
