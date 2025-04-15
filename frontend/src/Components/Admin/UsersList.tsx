@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
-import './Admin.scss';
-import UserProfileModal from './UserProfileModal';
-import UserSubscriptionModal from './UserSubscriptionModal';
+import { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
+import "./Admin.scss";
+import UserProfileModal from "./UserProfileModal";
+import UserSubscriptionModal from "./UserSubscriptionModal";
 
 interface User {
   id: string;
@@ -21,31 +21,33 @@ const PAGINATION_OPTIONS = [10, 25, 50, 100];
 
 // Subscription filter options
 const SUBSCRIPTION_FILTERS = [
-  { value: 'all', label: 'All Subscriptions' },
-  { value: 'active', label: 'Active/Paid' },
-  { value: 'trial', label: 'Free Trial' },
-  { value: 'expired', label: 'Expired' },
+  { value: "all", label: "All Subscriptions" },
+  { value: "active", label: "Active/Paid" },
+  { value: "trial", label: "Free Trial" },
+  { value: "expired", label: "Expired" },
 ];
 
 const UsersList = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [subscriptionFilter, setSubscriptionFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [subscriptionFilter, setSubscriptionFilter] = useState("all");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [exportFormat, setExportFormat] = useState<'excel' | 'pdf' | null>(null);
+  const [exportFormat, setExportFormat] = useState<"excel" | "pdf" | null>(
+    null
+  );
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const exportDropdownRef = useRef<HTMLDivElement>(null);
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(() => {
     // Try to get the default pagination limit from settings
-    const savedLimit = localStorage.getItem('adminDefaultPaginationLimit');
+    const savedLimit = localStorage.getItem("adminDefaultPaginationLimit");
     return savedLimit ? Number(savedLimit) : 10; // Default to 10 if not set
   });
-  
+
   // Listen for settings updates
   useEffect(() => {
     const handleSettingsUpdate = (event: CustomEvent) => {
@@ -54,49 +56,63 @@ const UsersList = () => {
         setCurrentPage(1); // Reset to first page
       }
     };
-    
+
     // Add event listener
-    window.addEventListener('adminSettingsUpdated', handleSettingsUpdate as EventListener);
-    
+    window.addEventListener(
+      "adminSettingsUpdated",
+      handleSettingsUpdate as EventListener
+    );
+
     // Cleanup
     return () => {
-      window.removeEventListener('adminSettingsUpdated', handleSettingsUpdate as EventListener);
+      window.removeEventListener(
+        "adminSettingsUpdated",
+        handleSettingsUpdate as EventListener
+      );
     };
   }, []);
-  
-  const { data: users = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['adminUsers'],
+
+  const {
+    data: users = [],
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["adminUsers"],
     queryFn: async () => {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/admin/users`, {
-        headers: {
-          Authorization: `Bearer ${token}`
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/admin/users`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
       return response.data.data.users;
-    }
+    },
   });
 
   const filteredUsers = users.filter((user: User) => {
     // Filter by search term
-    const matchesSearch = 
+    const matchesSearch =
       user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     // Filter by subscription status
     let matchesSubscription = true;
-    if (subscriptionFilter !== 'all') {
-      const status = user.subscriptionStatus?.toLowerCase() || '';
-      
-      if (subscriptionFilter === 'active') {
-        matchesSubscription = status === 'active' || status === 'paid';
-      } else if (subscriptionFilter === 'trial') {
-        matchesSubscription = status === 'trial';
-      } else if (subscriptionFilter === 'expired') {
-        matchesSubscription = status === 'expired';
+    if (subscriptionFilter !== "all") {
+      const status = user.subscriptionStatus?.toLowerCase() || "";
+
+      if (subscriptionFilter === "active") {
+        matchesSubscription = status === "active" || status === "paid";
+      } else if (subscriptionFilter === "trial") {
+        matchesSubscription = status === "trial";
+      } else if (subscriptionFilter === "expired") {
+        matchesSubscription = status === "expired";
       }
     }
-    
+
     return matchesSearch && matchesSubscription;
   });
 
@@ -114,30 +130,33 @@ const UsersList = () => {
   // Close export dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (exportDropdownRef.current && !exportDropdownRef.current.contains(event.target as Node)) {
+      if (
+        exportDropdownRef.current &&
+        !exportDropdownRef.current.contains(event.target as Node)
+      ) {
         setExportDropdownOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
   const getSubscriptionStatusClass = (status?: string) => {
-    if (!status) return 'status-unknown';
-    
+    if (!status) return "status-unknown";
+
     switch (status.toLowerCase()) {
-      case 'active':
-      case 'paid':
-        return 'status-active';
-      case 'trial':
-        return 'status-trial';
-      case 'expired':
-        return 'status-expired';
+      case "active":
+      case "paid":
+        return "status-active";
+      case "trial":
+        return "status-trial";
+      case "expired":
+        return "status-expired";
       default:
-        return 'status-unknown';
+        return "status-unknown";
     }
   };
 
@@ -171,58 +190,76 @@ const UsersList = () => {
     }
   };
 
-  const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleItemsPerPageChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
     setItemsPerPage(Number(e.target.value));
     setCurrentPage(1); // Reset to first page when changing items per page
   };
 
   const handleExportToExcel = () => {
     setIsExporting(true);
-    setExportFormat('excel');
-    
+    setExportFormat("excel");
+
     try {
       // Prepare data for export
-      const data = filteredUsers.map((user: User, index: number) => (
-        `${index + 1},${user.name || ''},${user.email || ''},${user.subscriptionStatus || 'Unknown'},${user.referenceNumber || 'N/A'},${formatTimeSpent(user.timeSpent)},${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'},${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'N/A'}`
-      )).join('\n');
-      
+      const data = filteredUsers
+        .map(
+          (user: User, index: number) =>
+            `${index + 1},${user.name || ""},${user.email || ""},${
+              user.subscriptionStatus || "Unknown"
+            },${user.referenceNumber || "N/A"},${formatTimeSpent(
+              user.timeSpent
+            )},${
+              user.createdAt
+                ? new Date(user.createdAt).toLocaleDateString()
+                : "N/A"
+            },${
+              user.lastLogin
+                ? new Date(user.lastLogin).toLocaleDateString()
+                : "N/A"
+            }`
+        )
+        .join("\n");
+
       // Add headers
-      const headers = 'S.No,Name,Email,Subscription,Reference Number,Time Spent,Joined Date,Last Login';
+      const headers =
+        "S.No,Name,Email,Subscription,Reference Number,Time Spent,Joined Date,Last Login";
       const csvContent = `${headers}\n${data}`;
-      
+
       // Create a blob and download
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', 'users_list.csv');
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "users_list.csv");
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       setIsExporting(false);
       setExportFormat(null);
     } catch (error) {
-      console.error('Error exporting to CSV:', error);
+      console.error("Error exporting to CSV:", error);
       setIsExporting(false);
       setExportFormat(null);
     }
   };
-  
+
   const handleExportToPDF = () => {
     setIsExporting(true);
-    setExportFormat('pdf');
-    
+    setExportFormat("pdf");
+
     try {
       // Create a new window for printing
-      const printWindow = window.open('', '_blank');
+      const printWindow = window.open("", "_blank");
       if (!printWindow) {
-        alert('Please allow pop-ups to export PDF');
+        alert("Please allow pop-ups to export PDF");
         setIsExporting(false);
         setExportFormat(null);
         return;
       }
-      
+
       // Style the document
       printWindow.document.write(`
         <html>
@@ -302,34 +339,50 @@ const UsersList = () => {
                 </tr>
               </thead>
               <tbody>
-                ${filteredUsers.map((user: User, index: number) => {
-                  const statusClass = getSubscriptionStatusForPDF(user.subscriptionStatus);
-                  return `
+                ${filteredUsers
+                  .map((user: User, index: number) => {
+                    const statusClass = getSubscriptionStatusForPDF(
+                      user.subscriptionStatus
+                    );
+                    return `
                     <tr>
                       <td>${index + 1}</td>
-                      <td>${user.name || ''}</td>
-                      <td>${user.email || ''}</td>
-                      <td><span class="subscription ${statusClass}">${user.subscriptionStatus || 'Unknown'}</span></td>
-                      <td>${user.referenceNumber || 'N/A'}</td>
+                      <td>${user.name || ""}</td>
+                      <td>${user.email || ""}</td>
+                      <td><span class="subscription ${statusClass}">${
+                      user.subscriptionStatus || "Unknown"
+                    }</span></td>
+                      <td>${user.referenceNumber || "N/A"}</td>
                       <td>${formatTimeSpent(user.timeSpent)}</td>
-                      <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</td>
-                      <td>${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'N/A'}</td>
+                      <td>${
+                        user.createdAt
+                          ? new Date(user.createdAt).toLocaleDateString()
+                          : "N/A"
+                      }</td>
+                      <td>${
+                        user.lastLogin
+                          ? new Date(user.lastLogin).toLocaleDateString()
+                          : "N/A"
+                      }</td>
                     </tr>
                   `;
-                }).join('')}
+                  })
+                  .join("")}
               </tbody>
             </table>
             <div class="footer">
-              Generated on ${new Date().toLocaleString()} | Total Users: ${filteredUsers.length}
+              Generated on ${new Date().toLocaleString()} | Total Users: ${
+        filteredUsers.length
+      }
             </div>
           </body>
         </html>
       `);
-      
+
       printWindow.document.close();
-      
+
       // Wait for resources to load then print
-      printWindow.onload = function() {
+      printWindow.onload = function () {
         printWindow.focus();
         printWindow.print();
         printWindow.onafterprint = () => {
@@ -338,32 +391,31 @@ const UsersList = () => {
           setExportFormat(null);
         };
       };
-      
     } catch (error) {
-      console.error('Error exporting to PDF:', error);
+      console.error("Error exporting to PDF:", error);
       setIsExporting(false);
       setExportFormat(null);
     }
   };
-  
+
   const getSubscriptionStatusForPDF = (status?: string) => {
-    if (!status) return 'unknown';
-    
+    if (!status) return "unknown";
+
     switch (status.toLowerCase()) {
-      case 'active':
-      case 'paid':
-        return 'active';
-      case 'trial':
-        return 'trial';
-      case 'expired':
-        return 'expired';
+      case "active":
+      case "paid":
+        return "active";
+      case "trial":
+        return "trial";
+      case "expired":
+        return "expired";
       default:
-        return 'unknown';
+        return "unknown";
     }
   };
-  
-  const handleExport = (format: 'excel' | 'pdf') => {
-    if (format === 'excel') {
+
+  const handleExport = (format: "excel" | "pdf") => {
+    if (format === "excel") {
       handleExportToExcel();
     } else {
       handleExportToPDF();
@@ -373,33 +425,39 @@ const UsersList = () => {
 
   // Helper function to format time spent
   const formatTimeSpent = (minutes?: number): string => {
-    if (!minutes) return 'N/A';
-    
+    if (!minutes) return "N/A";
+
     if (minutes < 60) {
       return `${minutes} min`;
-    } else if (minutes < 1440) { // less than 24 hours
+    } else if (minutes < 1440) {
+      // less than 24 hours
       const hours = Math.floor(minutes / 60);
       const remainingMinutes = minutes % 60;
       return `${hours}h ${remainingMinutes}m`;
-    } else { // days
+    } else {
+      // days
       const days = Math.floor(minutes / 1440);
       const remainingHours = Math.floor((minutes % 1440) / 60);
       return `${days}d ${remainingHours}h`;
     }
   };
-  
+
   // Get CSS class based on time spent
   const getTimeSpentClass = (minutes?: number): string => {
-    if (!minutes) return '';
-    
-    if (minutes < 60) { // Less than 1 hour
-      return 'time-spent-low';
-    } else if (minutes < 300) { // 1-5 hours
-      return 'time-spent-medium';
-    } else if (minutes < 1200) { // 5-20 hours
-      return 'time-spent-high';
-    } else { // More than 20 hours
-      return 'time-spent-power';
+    if (!minutes) return "";
+
+    if (minutes < 60) {
+      // Less than 1 hour
+      return "time-spent-low";
+    } else if (minutes < 300) {
+      // 1-5 hours
+      return "time-spent-medium";
+    } else if (minutes < 1200) {
+      // 5-20 hours
+      return "time-spent-high";
+    } else {
+      // More than 20 hours
+      return "time-spent-power";
     }
   };
 
@@ -421,7 +479,7 @@ const UsersList = () => {
               value={subscriptionFilter}
               onChange={(e) => setSubscriptionFilter(e.target.value)}
             >
-              {SUBSCRIPTION_FILTERS.map(filter => (
+              {SUBSCRIPTION_FILTERS.map((filter) => (
                 <option key={filter.value} value={filter.value}>
                   {filter.label}
                 </option>
@@ -438,10 +496,16 @@ const UsersList = () => {
             </button>
             {exportDropdownOpen && (
               <div className="export-dropdown-menu">
-                <button onClick={() => handleExport('excel')} disabled={isExporting}>
+                <button
+                  onClick={() => handleExport("excel")}
+                  disabled={isExporting}
+                >
                   Export as Excel/CSV
                 </button>
-                <button onClick={() => handleExport('pdf')} disabled={isExporting}>
+                <button
+                  onClick={() => handleExport("pdf")}
+                  disabled={isExporting}
+                >
                   Export as PDF
                 </button>
               </div>
@@ -453,7 +517,9 @@ const UsersList = () => {
       {isLoading ? (
         <div className="loading-state">Loading users...</div>
       ) : error ? (
-        <div className="error-state">Error loading users. Please try again.</div>
+        <div className="error-state">
+          Error loading users. Please try again.
+        </div>
       ) : (
         <>
           <div className="users-stats">
@@ -463,23 +529,34 @@ const UsersList = () => {
             </div>
             <div className="stat-box">
               <h3>Active Subscriptions</h3>
-              <p>{users.filter((user: User) => 
-                user.subscriptionStatus?.toLowerCase() === 'active' || 
-                user.subscriptionStatus?.toLowerCase() === 'paid').length}
+              <p>
+                {
+                  users.filter(
+                    (user: User) =>
+                      user.subscriptionStatus?.toLowerCase() === "active" ||
+                      user.subscriptionStatus?.toLowerCase() === "paid"
+                  ).length
+                }
               </p>
             </div>
             <div className="stat-box">
               <h3>Trial Users</h3>
-              <p>{users.filter((user: User) => 
-                user.subscriptionStatus?.toLowerCase() === 'trial').length}
+              <p>
+                {
+                  users.filter(
+                    (user: User) =>
+                      user.subscriptionStatus?.toLowerCase() === "trial"
+                  ).length
+                }
               </p>
             </div>
           </div>
 
           <div className="pagination-controls">
-            
             <div className="pagination-info">
-              Showing {Math.min(filteredUsers.length, 1 + indexOfFirstItem)}-{Math.min(indexOfLastItem, filteredUsers.length)} of {filteredUsers.length} users
+              Showing {Math.min(filteredUsers.length, 1 + indexOfFirstItem)}-
+              {Math.min(indexOfLastItem, filteredUsers.length)} of{" "}
+              {filteredUsers.length} users
             </div>
           </div>
 
@@ -506,24 +583,36 @@ const UsersList = () => {
                       <td>{user.name}</td>
                       <td>{user.email}</td>
                       <td>
-                        <span className={`subscription-status ${getSubscriptionStatusClass(user.subscriptionStatus)}`}>
-                          {user.subscriptionStatus || 'Unknown'}
+                        <span
+                          className={`subscription-status ${getSubscriptionStatusClass(
+                            user.subscriptionStatus
+                          )}`}
+                        >
+                          {user.subscriptionStatus || "Unknown"}
                         </span>
                       </td>
-                      <td>{user.referenceNumber || 'N/A'}</td>
+                      <td>{user.referenceNumber || "N/A"}</td>
                       <td className={getTimeSpentClass(user.timeSpent)}>
                         {formatTimeSpent(user.timeSpent)}
                       </td>
-                      <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</td>
-                      <td>{user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'N/A'}</td>
+                      <td>
+                        {user.createdAt
+                          ? new Date(user.createdAt).toLocaleDateString()
+                          : "N/A"}
+                      </td>
+                      <td>
+                        {user.lastLogin
+                          ? new Date(user.lastLogin).toLocaleDateString()
+                          : "N/A"}
+                      </td>
                       <td className="actions-cell">
-                        <button 
+                        <button
                           className="action-btn view-btn"
                           onClick={() => handleViewUser(user.id)}
                         >
                           View
                         </button>
-                        <button 
+                        <button
                           className="action-btn edit-btn"
                           onClick={() => handleEditSubscription(user)}
                         >
@@ -535,7 +624,9 @@ const UsersList = () => {
                 ) : (
                   <tr>
                     <td colSpan={8} className="no-users-message">
-                      {searchTerm ? 'No users match your search.' : 'No users found.'}
+                      {searchTerm
+                        ? "No users match your search."
+                        : "No users found."}
                     </td>
                   </tr>
                 )}
@@ -546,21 +637,21 @@ const UsersList = () => {
           {/* Pagination */}
           {filteredUsers.length > 0 && (
             <div className="pagination">
-              <button 
-                onClick={() => handlePageChange(1)} 
+              <button
+                onClick={() => handlePageChange(1)}
                 disabled={currentPage === 1}
                 className="pagination-btn"
               >
                 &laquo;
               </button>
-              <button 
+              <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
                 className="pagination-btn"
               >
                 &lsaquo;
               </button>
-              
+
               {/* Page numbers */}
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 // Logic to show pages around current page
@@ -574,27 +665,29 @@ const UsersList = () => {
                 } else {
                   pageNum = currentPage - 2 + i;
                 }
-                
+
                 return (
-                  <button 
+                  <button
                     key={pageNum}
                     onClick={() => handlePageChange(pageNum)}
-                    className={`pagination-btn ${currentPage === pageNum ? 'active' : ''}`}
+                    className={`pagination-btn ${
+                      currentPage === pageNum ? "active" : ""
+                    }`}
                   >
                     {pageNum}
                   </button>
                 );
               })}
-              
-              <button 
-                onClick={() => handlePageChange(currentPage + 1)} 
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
                 className="pagination-btn"
               >
                 &rsaquo;
               </button>
-              <button 
-                onClick={() => handlePageChange(totalPages)} 
+              <button
+                onClick={() => handlePageChange(totalPages)}
                 disabled={currentPage === totalPages}
                 className="pagination-btn"
               >
@@ -606,7 +699,7 @@ const UsersList = () => {
       )}
 
       {selectedUserId && (
-        <UserProfileModal 
+        <UserProfileModal
           userId={selectedUserId}
           isOpen={isProfileModalOpen}
           onClose={handleCloseProfileModal}
@@ -614,7 +707,7 @@ const UsersList = () => {
       )}
 
       {selectedUser && (
-        <UserSubscriptionModal 
+        <UserSubscriptionModal
           userId={selectedUser.id}
           userName={selectedUser.name}
           userEmail={selectedUser.email}
@@ -628,4 +721,4 @@ const UsersList = () => {
   );
 };
 
-export default UsersList; 
+export default UsersList;

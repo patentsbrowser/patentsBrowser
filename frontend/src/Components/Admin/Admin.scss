@@ -2208,4 +2208,202 @@
       color: var(--text-color, #333);
     }
   }
+}
+
+.reference-matcher-modal {
+  max-width: 650px !important;
+  
+  .reference-matches-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    
+    p {
+      margin: 0;
+      color: var(--text-color, #2d3748);
+    }
+    
+    .select-all-container {
+      label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        color: var(--text-color, #2d3748);
+        
+        input[type="checkbox"] {
+          width: 18px;
+          height: 18px;
+        }
+      }
+    }
+  }
+  
+  .reference-matches-list {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 1.5rem;
+    
+    .reference-match-item {
+      background-color: var(--primary-bg, #f7fafc);
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+      overflow: hidden;
+      
+      .reference-match-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background-color: rgba(var(--accent-rgb), 0.05);
+        border-bottom: 1px solid var(--border-color, #e2e8f0);
+        
+        .reference-checkbox {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          cursor: pointer;
+          
+          input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+          }
+          
+          .reference-number {
+            font-family: monospace;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent-color, #4a6fa5);
+          }
+        }
+        
+        .reference-meta {
+          display: flex;
+          gap: 1rem;
+          
+          .reference-date, .reference-amount {
+            font-size: 0.9rem;
+            padding: 0.25rem 0.5rem;
+            background-color: var(--secondary-bg, white);
+            border-radius: 0.25rem;
+            color: var(--text-secondary, #4a5568);
+          }
+          
+          .reference-amount {
+            font-weight: 600;
+            color: #5a2ac2;
+          }
+        }
+      }
+      
+      .matched-payments {
+        padding: 1rem;
+        
+        h4 {
+          margin-top: 0;
+          margin-bottom: 0.75rem;
+          font-size: 0.95rem;
+          color: var(--text-secondary, #4a5568);
+        }
+        
+        ul {
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        
+        .matched-payment {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.75rem;
+          border-radius: 0.25rem;
+          background-color: var(--secondary-bg, white);
+          margin-bottom: 0.5rem;
+          
+          &:last-child {
+            margin-bottom: 0;
+          }
+          
+          .user-info {
+            display: flex;
+            flex-direction: column;
+            
+            strong {
+              font-size: 0.95rem;
+              color: var(--text-color, #2d3748);
+              margin-bottom: 0.25rem;
+            }
+            
+            span {
+              font-size: 0.85rem;
+              color: var(--text-secondary, #4a5568);
+            }
+          }
+          
+          .payment-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            
+            .payment-amount {
+              font-weight: 600;
+              color: #5a2ac2;
+              margin-bottom: 0.25rem;
+            }
+            
+            .payment-plan {
+              font-size: 0.85rem;
+              color: var(--text-secondary, #4a5568);
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color, #e2e8f0);
+    
+    button {
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.5rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      
+      &.cancel-button {
+        background-color: var(--primary-bg, #f7fafc);
+        color: var(--text-color, #2d3748);
+        border: 1px solid var(--border-color, #e2e8f0);
+        
+        &:hover {
+          background-color: var(--hover-bg, #e2e8f0);
+        }
+      }
+      
+      &.verify-all-button {
+        background-color: #2c7a7b;
+        color: white;
+        border: none;
+        
+        &:hover:not(:disabled) {
+          background-color: #285e61;
+        }
+        
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
 } 
