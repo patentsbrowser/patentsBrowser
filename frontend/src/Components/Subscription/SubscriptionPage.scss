@@ -125,6 +125,13 @@
           font-weight: bold;
         }
       }
+      
+      h3 {
+        font-size: 1.1rem;
+        color: #28a745;
+        margin-bottom: 1rem;
+        font-weight: 600;
+      }
     }
     
     .start-trial-btn {
@@ -146,6 +153,20 @@
       &:disabled {
         opacity: 0.7;
         cursor: not-allowed;
+      }
+    }
+    
+    .trial-upgrade-message {
+      padding: 0.75rem;
+      background-color: rgba(220, 53, 69, 0.1);
+      border-radius: 0.5rem;
+      text-align: center;
+      margin-top: 1rem;
+      
+      p {
+        color: #dc3545;
+        font-weight: 500;
+        margin: 0;
       }
     }
   }
@@ -666,6 +687,31 @@
       }
     }
     
+    .trial-carryover-notice {
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background-color: rgba(40, 167, 69, 0.08);
+      border-radius: 0.5rem;
+      border: 1px dashed rgba(40, 167, 69, 0.3);
+      
+      h3 {
+        color: #28a745;
+        font-size: 1.1rem;
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+      }
+      
+      p {
+        margin: 0;
+        font-size: 0.95rem;
+        color: var(--text-secondary, #64748b);
+        
+        strong {
+          color: #28a745;
+        }
+      }
+    }
+    
     @keyframes scaleIn {
       from {
         transform: scale(0);
@@ -755,6 +801,11 @@
         background-color: rgba(255, 193, 7, 0.15);
         color: #ffc107;
       }
+      
+      &.trial {
+        background-color: #28a745;
+        color: white;
+      }
     }
   }
   
@@ -825,6 +876,49 @@
         color: #64748b;
       }
     }
+  }
+
+  .trial-note {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: rgba(40, 167, 69, 0.05);
+    border-radius: 0.5rem;
+    border: 1px dashed rgba(40, 167, 69, 0.3);
+    
+    p {
+      color: var(--text-secondary, #64748b);
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+}
+
+// Trial upgrade note for subscription cards
+.trial-upgrade-note {
+  font-size: 0.85rem;
+  color: #28a745;
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background-color: rgba(40, 167, 69, 0.05);
+  border-radius: 0.25rem;
+  text-align: center;
+  font-weight: 500;
+}
+
+.trial-active-message {
+  padding: 0.75rem;
+  background-color: rgba(40, 167, 69, 0.1);
+  border-radius: 0.5rem;
+  text-align: center;
+  
+  p {
+    color: #28a745;
+    font-weight: 500;
+    margin: 0;
   }
 }
 

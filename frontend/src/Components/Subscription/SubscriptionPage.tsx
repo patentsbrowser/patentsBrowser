@@ -16,11 +16,13 @@ interface Plan {
 
 interface Subscription {
   _id: string;
-  status: 'active' | 'expired' | 'pending';
+  status: 'active' | 'expired' | 'pending' | 'trial';
   plan: Plan;
   startDate: string;
   endDate: string;
   userId: string;
+  trialEndsAt?: string;
+  trialDaysRemaining?: number;
 }
 
 interface PaymentModalProps {
@@ -28,10 +30,12 @@ interface PaymentModalProps {
   onClose: () => void;
   plan: Plan;
   onPaymentComplete: () => void;
+  isTrialActive: boolean;
+  trialDaysRemaining: number;
 }
 
 // UPI Payment Modal Component
-const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPaymentComplete }) => {
+const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPaymentComplete, isTrialActive, trialDaysRemaining }) => {
   const [transactionId, setTransactionId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [upiOrderId, setUpiOrderId] = useState('');
@@ -218,7 +222,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
         setIsSubmitting(false);
         setPaymentStep('ready');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error verifying payment:', error);
       
       // Display the specific error message from the backend if available
@@ -257,7 +261,18 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
           <div className="pending-icon">⏳</div>
           <h3>Verification in Progress</h3>
           <p>{verificationStatus || 'Your payment reference has been submitted to the admin for verification. This usually takes 10-15 minutes.'}</p>
-          <p className="free-trial-notice">You can continue to use the free trial version until verification is complete.</p>
+          
+          {isTrialActive ? (
+            <p className="free-trial-notice">
+              You can continue to use your free trial until verification is complete. 
+              Once verified, your trial days will be added to your subscription.
+            </p>
+          ) : (
+            <p className="free-trial-notice">
+              You can use the free trial version until verification is complete.
+            </p>
+          )}
+          
           <p className="pending-note">You can close this window. Your subscription will be activated automatically once verified.</p>
         </div>
       );
@@ -326,6 +341,20 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
           )}
         </div>
         <div className="payment-modal-body">
+          {isTrialActive && trialDaysRemaining > 0 && (
+            <div className="trial-carryover-notice">
+              <h3>Good news! Trial days will be added</h3>
+              <p>You have <strong>{trialDaysRemaining} days</strong> remaining in your free trial. 
+                 These days will be added to your {plan.type === 'monthly' ? 'month' : 
+                   plan.type === 'quarterly' ? '3 months' : 
+                   plan.type === 'half_yearly' ? '6 months' : 'year'} subscription, giving you a total of
+                 <strong> {trialDaysRemaining + (
+                   plan.type === 'monthly' ? 30 : 
+                   plan.type === 'quarterly' ? 90 : 
+                   plan.type === 'half_yearly' ? 180 : 365
+                 )} days</strong> of access!</p>
+            </div>
+          )}
           {renderContent()}
         </div>
       </div>
@@ -365,18 +394,21 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
       <div className="status-header">
         <h2>Your Subscription</h2>
         <span className={`status-badge ${subscription.status}`}>
-          {subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1)}
+          {subscription.status === 'trial' ? 'Free Trial' : 
+           subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1)}
         </span>
       </div>
       
       <div className="subscription-details">
         <div className="plan-name">
-          <h3>{subscription.plan.name} Plan</h3>
-          <div className="plan-type">
-            {subscription.plan.type === 'monthly' ? 'Monthly' : 
-              subscription.plan.type === 'quarterly' ? 'Quarterly' : 
-              subscription.plan.type === 'half_yearly' ? 'Half Yearly' : 'Yearly'} Plan
-          </div>
+          <h3>{subscription.status === 'trial' ? 'Free Trial' : subscription.plan.name} Plan</h3>
+          {subscription.status !== 'trial' && (
+            <div className="plan-type">
+              {subscription.plan.type === 'monthly' ? 'Monthly' : 
+                subscription.plan.type === 'quarterly' ? 'Quarterly' : 
+                subscription.plan.type === 'half_yearly' ? 'Half Yearly' : 'Yearly'} Plan
+            </div>
+          )}
         </div>
         
         <div className="date-info">
@@ -390,13 +422,64 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
           </div>
         </div>
         
-        {subscription.status === 'active' && (
+        {(subscription.status === 'active' || subscription.status === 'trial') && (
           <div className="time-remaining">
             <div className="days-left">{daysLeft}</div>
             <div className="days-label">days remaining</div>
           </div>
         )}
+        
+        {subscription.status === 'trial' && (
+          <div className="trial-note">
+            <p>Your free trial gives you full access to all premium features for 14 days.</p>
+            <p>Subscribe to a paid plan to continue using premium features after your trial ends.</p>
+          </div>
+        )}
       </div>
+    </div>
+  );
+};
+
+// Free Trial Section Component - updated to show automatically activated trial
+const FreeTrialSection: React.FC<{ isTrialActive: boolean, trialDaysRemaining: number }> = ({ isTrialActive, trialDaysRemaining }) => {
+  return (
+    <div className="free-trial-card">
+      {isTrialActive ? (
+        <>
+          <h2>Your 14-Day Free Trial is Active!</h2>
+          <p>You have <strong>{trialDaysRemaining} days</strong> remaining in your free trial period.</p>
+          
+          <div className="trial-features">
+            <h3>Your trial includes:</h3>
+            <ul>
+              <li>Full access to premium search features</li>
+              <li>Unlimited searches during trial period</li>
+              <li>Access to all patent databases</li>
+              <li>Export and save search results</li>
+            </ul>
+          </div>
+          
+          <div className="trial-active-message">
+            <p>Subscribe to a paid plan below to keep your access. Any remaining trial days will be added to your subscription!</p>
+          </div>
+        </>
+      ) : (
+        <>
+          <h2>Get Premium Access</h2>
+          <p>New accounts automatically receive a 14-day free trial with full access to premium features.</p>
+          
+          <ul className="trial-features">
+            <li>Full access to premium search features</li>
+            <li>Unlimited searches during trial period</li>
+            <li>Access to all patent databases</li>
+            <li>Export and save search results</li>
+          </ul>
+          
+          <div className="trial-upgrade-message">
+            <p>Subscribe now to get access to premium features.</p>
+          </div>
+        </>
+      )}
     </div>
   );
 };
@@ -408,6 +491,7 @@ const SubscriptionPage: React.FC = () => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [userSubscription, setUserSubscription] = useState<Subscription | null>(null);
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
+  const [isTrialActive, setIsTrialActive] = useState(false);
   
   // Use ref to track if data has been fetched to prevent duplicate calls
   const dataFetchedRef = useRef(false);
@@ -420,13 +504,23 @@ const SubscriptionPage: React.FC = () => {
       if (result.success && result.data) {
         console.log('Fetched user subscription:', result.data);
         setUserSubscription(result.data);
+        // A user has an active trial if they're in trial status OR they have trialDaysRemaining
+        setIsTrialActive(
+          result.data.status === 'trial' || 
+          (result.data.trialDaysRemaining !== undefined && result.data.trialDaysRemaining > 0)
+        );
       } else {
         console.log('No active subscription found');
+        // For new users, we should set trial as active by default
         setUserSubscription(null);
+        // Default to trial active for new users
+        setIsTrialActive(true);
       }
     } catch (error) {
       console.error('Error fetching user subscription:', error);
       setUserSubscription(null);
+      // Default to trial active for new users
+      setIsTrialActive(true);
     } finally {
       setIsLoadingSubscription(false);
     }
@@ -512,14 +606,36 @@ const SubscriptionPage: React.FC = () => {
 
       {isLoadingSubscription ? (
         <div className="loading-subscription">Loading your subscription details...</div>
-      ) : userSubscription && userSubscription.status === 'active' ? (
-        <SubscriptionStatus subscription={userSubscription} />
+      ) : userSubscription ? (
+        userSubscription.status === 'trial' || userSubscription.status === 'active' ? (
+          <SubscriptionStatus subscription={userSubscription} />
+        ) : (
+          // Show expired/pending subscription message and free trial section if applicable
+          <>
+            <div className="no-subscription-message">
+              {userSubscription.status === 'expired' ? 
+                "Your subscription has expired. Subscribe now to regain access to premium features." : 
+                "Your subscription is pending approval."}
+            </div>
+            <FreeTrialSection 
+              isTrialActive={false}
+              trialDaysRemaining={0} 
+            />
+          </>
+        )
       ) : (
-        <div className="no-subscription-message">
-          {userSubscription && userSubscription.status === 'expired' ? 
-            "Your subscription has expired. Please renew to continue using premium features." : 
-            "You don't have an active subscription. Subscribe now to access premium features."}
-        </div>
+        // No subscription at all - but new users should have an active trial
+        <>
+          <div className="no-subscription-message">
+            {isTrialActive ? 
+              "You're currently on a free trial. Subscribe to maintain access after your trial ends." : 
+              "You don't have an active subscription. Subscribe now to access premium features."}
+          </div>
+          <FreeTrialSection 
+            isTrialActive={isTrialActive} 
+            trialDaysRemaining={14} /* Default for new users */
+          />
+        </>
       )}
 
       <div className="subscription-plans">
@@ -549,8 +665,14 @@ const SubscriptionPage: React.FC = () => {
               className="subscribe-btn"
               onClick={() => handleSubscribeClick(plan)}
             >
-              {userSubscription && userSubscription.status === 'active' ? 'Upgrade' : 'Subscribe Now'}
+              {userSubscription?.status === 'trial' ? 'Upgrade Now' :
+                userSubscription?.status === 'active' ? 'Change Plan' : 'Subscribe Now'}
             </button>
+            {isTrialActive && (
+              <div className="trial-upgrade-note">
+                {userSubscription?.trialDaysRemaining} trial days will be added to your subscription
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -561,6 +683,8 @@ const SubscriptionPage: React.FC = () => {
           onClose={closePaymentModal} 
           plan={selectedPlan}
           onPaymentComplete={handlePaymentComplete}
+          isTrialActive={isTrialActive}
+          trialDaysRemaining={userSubscription?.trialDaysRemaining || 0}
         />
       )}
     </div>
