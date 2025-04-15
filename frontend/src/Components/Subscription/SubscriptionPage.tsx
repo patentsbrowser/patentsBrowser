@@ -454,6 +454,7 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
         <h2>Your Subscription</h2>
         <span className={`status-badge ${subscription.status}`}>
           {subscription.status === 'trial' ? 'Free Trial' : 
+           subscription.status === 'pending' ? 'Pending Approval' :
            subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1)}
         </span>
       </div>
@@ -485,6 +486,16 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
           <div className="time-remaining">
             <div className="days-left">{daysLeft}</div>
             <div className="days-label">days remaining</div>
+          </div>
+        )}
+        
+        {subscription.status === 'pending' && (
+          <div className="pending-approval-note">
+            <div className="pending-icon">⏳</div>
+            <div className="pending-message">
+              <p>Your payment has been received. Waiting for admin approval.</p>
+              <p>This usually takes 10-15 minutes. You can continue using the free trial until then.</p>
+            </div>
           </div>
         )}
         
@@ -666,10 +677,10 @@ const SubscriptionPage: React.FC = () => {
       {isLoadingSubscription ? (
         <div className="loading-subscription">Loading your subscription details...</div>
       ) : userSubscription ? (
-        userSubscription.status === 'trial' || userSubscription.status === 'active' ? (
+        userSubscription.status === 'trial' || userSubscription.status === 'active' || userSubscription.status === 'pending' ? (
           <SubscriptionStatus subscription={userSubscription} />
         ) : (
-          // Show expired/pending subscription message and free trial section if applicable
+          // Show expired subscription message and free trial section if applicable
           <>
             <div className="no-subscription-message">
               {userSubscription.status === 'expired' ? 

@@ -75,7 +75,7 @@ const PaymentHistory: React.FC = () => {
       case 'active':
         return 'Active';
       case 'payment_pending':
-        return 'Payment Pending';
+        return 'approval_pending';
       case 'rejected':
         return 'Rejected';
       case 'cancelled':

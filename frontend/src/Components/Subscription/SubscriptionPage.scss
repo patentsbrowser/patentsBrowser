@@ -931,6 +931,36 @@
       }
     }
   }
+
+  .pending-approval-note {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: rgba(255, 193, 7, 0.1);
+    border-radius: 0.5rem;
+    border: 1px dashed rgba(255, 193, 7, 0.4);
+    display: flex;
+    align-items: center;
+    
+    .pending-icon {
+      font-size: 1.8rem;
+      margin-right: 1rem;
+      color: #ffc107;
+    }
+    
+    .pending-message {
+      flex: 1;
+      
+      p {
+        color: var(--text-secondary, #64748b);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
 }
 
 // Trial upgrade note for subscription cards
