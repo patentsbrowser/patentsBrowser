@@ -617,6 +617,54 @@
         font-size: 1.1rem;
       }
     }
+
+    .payment-pending {
+      padding: 2rem;
+      text-align: center;
+      
+      .pending-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background-color: #ffc107;
+        color: #592e83;
+        font-size: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+      }
+      
+      h3 {
+        color: #592e83;
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+      }
+      
+      p {
+        color: #666;
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+      }
+      
+      .free-trial-notice {
+        color: #28a745;
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin: 1rem 0;
+        padding: 0.5rem;
+        background-color: rgba(40, 167, 69, 0.1);
+        border-radius: 5px;
+        display: inline-block;
+      }
+      
+      .pending-note {
+        font-size: 0.9rem;
+        color: #888;
+        margin-top: 1rem;
+        font-style: italic;
+      }
+    }
     
     @keyframes scaleIn {
       from {

@@ -217,61 +217,26 @@ export const verifyUpiPayment = async (req: Request, res: Response) => {
       });
     }
     
-    // Make an API call to your payment gateway to verify the transaction
-    // This is a placeholder - you need to replace with actual payment gateway API call
-    try {
-      // In production, you would call your payment gateway API here:
-      // const verificationResult = await paymentGateway.verifyTransaction(transactionId, subscription.upiOrderId);
-      
-      // For now, we'll simulate a successful verification
-      const verificationResult = {
-        success: true,
-        verified: true,
-        amount: 0, // In production, you would verify this matches the plan price
-        // Add other verification fields as needed
-      };
-      
-      if (!verificationResult.verified) {
-        return res.status(400).json({
-          success: false,
-          message: 'Payment verification failed. Transaction ID is invalid.'
-        });
+    // Store transaction reference ID without verifying immediately
+    // Admin will verify this payment manually
+    subscription.upiTransactionRef = transactionId;
+    await subscription.save();
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Payment reference submitted. Admin will verify your payment shortly.',
+      data: {
+        subscriptionId: subscription._id,
+        plan: subscription.plan,
+        status: subscription.status,
+        transactionId: transactionId
       }
-      
-      // Update subscription status
-      subscription.status = SubscriptionStatus.ACTIVE;
-      subscription.upiTransactionRef = transactionId;
-      await subscription.save();
-      
-      // Update user's subscription status
-      await User.findByIdAndUpdate(userId, { 
-        subscriptionStatus: 'paid',
-        subscriptionEnd: subscription.endDate
-      });
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Subscription activated successfully',
-        data: {
-          subscriptionId: subscription._id,
-          plan: subscription.plan,
-          status: subscription.status,
-          startDate: subscription.startDate,
-          endDate: subscription.endDate
-        }
-      });
-    } catch (verificationError) {
-      console.error('Error verifying payment with gateway:', verificationError);
-      return res.status(400).json({
-        success: false,
-        message: 'Failed to verify payment with payment gateway'
-      });
-    }
+    });
   } catch (error) {
-    console.error('Error verifying UPI payment:', error);
+    console.error('Error processing payment reference:', error);
     return res.status(500).json({
       success: false,
-      message: 'Error verifying payment'
+      message: 'Error processing payment reference'
     });
   }
 };
@@ -327,10 +292,185 @@ export const getUserSubscription = async (req: Request, res: Response) => {
   }
 };
 
+// Check payment status by transaction ID
+export const getPaymentStatus = async (req: Request, res: Response) => {
+  try {
+    const { transactionId } = req.params;
+    
+    if (!transactionId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Transaction ID is required'
+      });
+    }
+    
+    // @ts-ignore - User ID is added by auth middleware
+    const userId = req.user._id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+    
+    // Find subscription with this transaction reference AND for this specific user
+    const subscription = await Subscription.findOne({ 
+      upiTransactionRef: transactionId,
+      userId: userId 
+    });
+    
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: 'No payment found with this transaction ID for your account'
+      });
+    }
+    
+    return res.status(200).json({
+      success: true,
+      data: {
+        status: subscription.status,
+        verifiedAt: subscription.updatedAt
+      }
+    });
+  } catch (error) {
+    console.error('Error checking payment status:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error checking payment status'
+    });
+  }
+};
+
+// Get all pending payments (admin only)
+export const getPendingPayments = async (req: Request, res: Response) => {
+  try {
+    // Find all subscriptions with status PAYMENT_PENDING or equivalent unverified status
+    const pendingSubscriptions = await Subscription.find({ 
+      status: SubscriptionStatus.PAYMENT_PENDING 
+    }).populate('userId', 'name email');
+    
+    // Transform to the expected format
+    const payments = await Promise.all(pendingSubscriptions.map(async (sub) => {
+      const user = await User.findById(sub.userId);
+      const plan = await PricingPlan.findOne({ type: sub.plan });
+      
+      return {
+        id: sub._id,
+        userId: sub.userId,
+        userName: user?.name || 'Unknown User',
+        userEmail: user?.email || 'No Email',
+        referenceNumber: sub.upiTransactionRef || 'No Reference',
+        amount: plan?.price || 0,
+        planName: `${sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1)} Plan`,
+        status: 'unverified',
+        screenshotUrl: sub.paymentScreenshotUrl,
+        createdAt: sub.createdAt,
+        orderDetails: {
+          orderId: sub.upiOrderId || 'No Order ID',
+          planId: plan?._id.toString() || 'Unknown Plan'
+        }
+      };
+    }));
+    
+    return res.status(200).json({
+      success: true,
+      data: {
+        payments
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching pending payments:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching pending payments'
+    });
+  }
+};
+
+// Update payment verification status (admin only)
+export const updatePaymentVerification = async (req: Request, res: Response) => {
+  try {
+    const { paymentId } = req.params;
+    const { status, notes } = req.body;
+    
+    if (!paymentId || !status) {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment ID and status are required'
+      });
+    }
+    
+    if (!['verified', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status must be either "verified" or "rejected"'
+      });
+    }
+    
+    // Find the subscription
+    const subscription = await Subscription.findById(paymentId);
+    
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: 'Payment not found'
+      });
+    }
+    
+    // Update status based on admin decision
+    if (status === 'verified') {
+      subscription.status = SubscriptionStatus.ACTIVE;
+      
+      // Update user's subscription status
+      await User.findByIdAndUpdate(subscription.userId, { 
+        subscriptionStatus: 'paid',
+        subscriptionEnd: subscription.endDate,
+        notes: notes || undefined
+      });
+    } else {
+      subscription.status = SubscriptionStatus.REJECTED;
+      
+      // Update user's subscription status - change 'free' to 'trial'
+      await User.findByIdAndUpdate(subscription.userId, { 
+        subscriptionStatus: 'trial',
+        notes: notes || undefined
+      });
+    }
+    
+    // Save verification notes if provided
+    if (notes) {
+      subscription.notes = notes;
+    }
+    
+    // Save the updated subscription
+    await subscription.save();
+    
+    return res.status(200).json({
+      success: true,
+      message: `Payment ${status === 'verified' ? 'verified' : 'rejected'} successfully`,
+      data: {
+        paymentId,
+        status: subscription.status
+      }
+    });
+  } catch (error) {
+    console.error('Error updating payment verification:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error updating payment verification'
+    });
+  }
+};
+
 // Export all controller methods
 export default {
   getPricingPlans,
   createPendingSubscription,
   verifyUpiPayment,
-  getUserSubscription
+  getUserSubscription,
+  getPaymentStatus,
+  getPendingPayments,
+  updatePaymentVerification
 }; 

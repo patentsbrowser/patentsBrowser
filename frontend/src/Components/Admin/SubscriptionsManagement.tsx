@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import './Admin.scss';
+import toast from 'react-hot-toast';
+import { format } from 'date-fns';
 
 interface Payment {
   id: string;
@@ -10,128 +12,246 @@ interface Payment {
   userEmail: string;
   referenceNumber: string;
   amount: number;
+  planName: string;
   status: 'verified' | 'unverified' | 'rejected';
   screenshotUrl?: string;
   createdAt: string;
   verifiedAt?: string;
+  notes?: string;
+  orderDetails?: {
+    orderId: string;
+    planId: string;
+  }
 }
 
-interface ExtractedUTR {
-  number: string;
-  date?: string;
-  amount?: number;
-}
+// Payment details modal component - Read-only view
+const PaymentDetailsModal = ({ payment, onClose }: {
+  payment: Payment | null;
+  onClose: () => void;
+}) => {
+  if (!payment) return null;
+  
+  const paymentDate = new Date(payment.createdAt);
+  const formattedDate = format(paymentDate, 'MMM dd, yyyy - hh:mm a');
+  
+  return (
+    <div className="payment-details-modal-backdrop">
+      <div className="payment-details-modal">
+        <button className="close-button" onClick={onClose}>×</button>
+        <h2>Payment Details</h2>
+        
+        <div className="payment-info-grid">
+          <div className="info-row">
+            <div className="info-label">User:</div>
+            <div className="info-value">{payment.userName} ({payment.userEmail})</div>
+          </div>
+          
+          <div className="info-row">
+            <div className="info-label">Reference Number:</div>
+            <div className="info-value highlight">{payment.referenceNumber}</div>
+          </div>
+          
+          <div className="info-row">
+            <div className="info-label">Amount:</div>
+            <div className="info-value">₹{payment.amount}</div>
+          </div>
+          
+          <div className="info-row">
+            <div className="info-label">Plan:</div>
+            <div className="info-value">{payment.planName || 'N/A'}</div>
+          </div>
+          
+          <div className="info-row">
+            <div className="info-label">Order ID:</div>
+            <div className="info-value">{payment.orderDetails?.orderId || 'N/A'}</div>
+          </div>
+          
+          <div className="info-row">
+            <div className="info-label">Date:</div>
+            <div className="info-value">{formattedDate}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Verification modal component
+const VerificationModal = ({ payment, onClose, onVerify }: {
+  payment: Payment | null;
+  onClose: () => void;
+  onVerify: (id: string, note: string) => void;
+}) => {
+  const [note, setNote] = useState('');
+  
+  if (!payment) return null;
+  
+  const handleVerify = () => {
+    onVerify(payment.id, note);
+    onClose();
+  };
+  
+  return (
+    <div className="payment-details-modal-backdrop">
+      <div className="payment-details-modal verification-modal">
+        <button className="close-button" onClick={onClose}>×</button>
+        <h2>Verify Payment</h2>
+        
+        <div className="verification-info-banner">
+          <p><strong>Important:</strong> The user currently has free trial access. Verifying this payment will activate their paid subscription, changing their status from 'trial' to 'active'.</p>
+        </div>
+        
+        <div className="user-payment-info">
+          <p><strong>User:</strong> {payment.userName} ({payment.userEmail})</p>
+          <p><strong>Reference Number:</strong> {payment.referenceNumber}</p>
+          <p><strong>Amount:</strong> ₹{payment.amount}</p>
+          <p><strong>Plan:</strong> {payment.planName || 'N/A'}</p>
+        </div>
+        
+        <div className="verification-actions">
+          <div className="notes-field">
+            <label>Admin Notes (Optional):</label>
+            <textarea 
+              value={note} 
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Add verification notes..."
+            ></textarea>
+          </div>
+          
+          <div className="action-buttons">
+            <button 
+              className="verify-button" 
+              onClick={handleVerify}
+            >
+              Verify & Activate Subscription
+            </button>
+            <button 
+              className="cancel-button" 
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Rejection modal component
+const RejectionModal = ({ payment, onClose, onReject }: {
+  payment: Payment | null;
+  onClose: () => void;
+  onReject: (id: string, note: string) => void;
+}) => {
+  const [note, setNote] = useState('');
+  const [error, setError] = useState('');
+  
+  if (!payment) return null;
+  
+  const handleReject = () => {
+    if (!note.trim()) {
+      setError('Please provide a reason for rejecting this payment');
+      return;
+    }
+    
+    onReject(payment.id, note);
+    onClose();
+  };
+  
+  return (
+    <div className="payment-details-modal-backdrop">
+      <div className="payment-details-modal rejection-modal">
+        <button className="close-button" onClick={onClose}>×</button>
+        <h2>Reject Payment</h2>
+        
+        <div className="rejection-warning-banner">
+          <p><strong>Warning:</strong> Rejecting this payment will deny the user's subscription request. The user will remain on free tier.</p>
+        </div>
+        
+        <div className="user-payment-info">
+          <p><strong>User:</strong> {payment.userName} ({payment.userEmail})</p>
+          <p><strong>Reference Number:</strong> {payment.referenceNumber}</p>
+          <p><strong>Amount:</strong> ₹{payment.amount}</p>
+          <p><strong>Plan:</strong> {payment.planName || 'N/A'}</p>
+        </div>
+        
+        <div className="rejection-actions">
+          <div className="notes-field">
+            <label>Rejection Reason (Required):</label>
+            <textarea 
+              value={note} 
+              onChange={(e) => {
+                setNote(e.target.value);
+                setError('');
+              }}
+              placeholder="Provide reason for rejection (will be shown to user)"
+              className={error ? 'error' : ''}
+            ></textarea>
+            {error && <div className="error-message">{error}</div>}
+          </div>
+          
+          <div className="action-buttons">
+            <button 
+              className="reject-button" 
+              onClick={handleReject}
+            >
+              Reject Payment
+            </button>
+            <button 
+              className="cancel-button" 
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const SubscriptionsManagement = () => {
   const queryClient = useQueryClient();
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [extractedUtrs, setExtractedUtrs] = useState<ExtractedUTR[]>([]);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'verified' | 'unverified' | 'rejected'>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processingResult, setProcessingResult] = useState<{success: number, failed: number} | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
 
-  // Fetch payments data
+  // Fetch pending payments data
   const { data: payments = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['adminPayments'],
+    queryKey: ['pendingPayments'],
     queryFn: async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/admin/subscription/payments`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/subscriptions/pending-payments`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
         });
         return response.data.data.payments || [];
       } catch (error) {
-        console.error('Error fetching payments:', error);
+        console.error('Error fetching pending payments:', error);
         return [];
       }
     }
   });
 
-  // Handle file selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
-    }
-  };
-
-  // Upload and process PDF
-  const handleUploadPDF = async () => {
-    if (!selectedFile) return;
-    
-    setIsUploading(true);
-    
-    try {
-      const formData = new FormData();
-      formData.append('pdfFile', selectedFile);
-      
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/admin/subscription/upload-utr-pdf`, 
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          }
-        }
-      );
-      
-      if (response.data.success) {
-        setExtractedUtrs(response.data.data.utrs);
-      }
-    } catch (error) {
-      console.error('Error uploading PDF:', error);
-      alert('Failed to upload PDF. Please try again.');
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  // Process UTR matching
-  const handleProcessUTRs = async () => {
-    if (extractedUtrs.length === 0) return;
-    
-    setIsProcessing(true);
-    
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/admin/subscription/process-utrs`,
-        { utrs: extractedUtrs },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-      
-      if (response.data.success) {
-        setProcessingResult({
-          success: response.data.data.matched,
-          failed: response.data.data.unmatched
-        });
-        // Refresh payments data after processing
-        refetch();
-      }
-    } catch (error) {
-      console.error('Error processing UTRs:', error);
-      alert('Failed to process UTRs. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Status update mutation
+  // Status update mutation with notes
   const updatePaymentStatus = useMutation({
-    mutationFn: async ({ paymentId, status }: { paymentId: string; status: 'verified' | 'rejected' | 'unverified' }) => {
+    mutationFn: async ({ 
+      paymentId, 
+      status, 
+      notes 
+    }: { 
+      paymentId: string; 
+      status: 'verified' | 'rejected'; 
+      notes?: string;
+    }) => {
       const token = localStorage.getItem('token');
       const response = await axios.put(
-        `${import.meta.env.VITE_API_URL}/admin/subscription/payments/${paymentId}/status`,
-        { status },
+        `${import.meta.env.VITE_API_URL}/subscriptions/payment-verification/${paymentId}`,
+        { status, notes },
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -140,241 +260,194 @@ const SubscriptionsManagement = () => {
       );
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       // Invalidate and refetch payments data
-      queryClient.invalidateQueries({ queryKey: ['adminPayments'] });
+      queryClient.invalidateQueries({ queryKey: ['pendingPayments'] });
+      toast.success(data.message || 'Payment status updated successfully');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error updating payment status:', error);
-      alert('Failed to update payment status. Please try again.');
+      toast.error(error.response?.data?.message || 'Failed to update payment status');
     }
   });
 
   // Handle payment verification
-  const handleVerifyPayment = (paymentId: string, status: 'verified' | 'rejected') => {
-    updatePaymentStatus.mutate({ paymentId, status });
+  const handleVerifyPayment = (paymentId: string, notes: string = '') => {
+    updatePaymentStatus.mutate({ paymentId, status: 'verified', notes });
   };
 
-  // Filter payments based on status and search term
-  const filteredPayments = payments && payments.length ? payments.filter((payment: Payment) => {
-    // Filter by status
-    const matchesStatus = filterStatus === 'all' || payment.status === filterStatus;
-    
-    // Filter by search term (user name, email, or reference number)
-    const matchesSearch = 
-      payment.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.userEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.referenceNumber?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesStatus && matchesSearch;
-  }) : [];
+  // Handle payment rejection
+  const handleRejectPayment = (paymentId: string, notes: string = '') => {
+    updatePaymentStatus.mutate({ paymentId, status: 'rejected', notes });
+  };
+
+  // View payment details
+  const handleViewDetails = (payment: Payment) => {
+    setSelectedPayment(payment);
+  };
+
+  // Open verification modal
+  const handleOpenVerificationModal = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setShowVerificationModal(true);
+  };
+
+  // Open rejection modal
+  const handleOpenRejectionModal = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setShowRejectionModal(true);
+  };
+
+  // Close all modals
+  const handleCloseModals = () => {
+    setSelectedPayment(null);
+    setShowVerificationModal(false);
+    setShowRejectionModal(false);
+  };
+
+  // Filter payments based on search term
+  const filteredPayments = useMemo(() => {
+    return payments && payments.length ? payments.filter((payment: Payment) => {
+      const matchesSearch = 
+        payment.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        payment.userEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        payment.referenceNumber?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      return matchesSearch;
+    }) : [];
+  }, [payments, searchTerm]);
 
   return (
     <div className="admin-subscriptions-container">
       <div className="admin-header">
-        <h1>Subscriptions Management</h1>
+        <h1>Payment Verifications</h1>
         <div className="admin-filters">
           <div className="search-box">
             <input
               type="text"
-              placeholder="Search payments..."
+              placeholder="Search by name, email or reference..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="status-filter">
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as any)}
-            >
-              <option value="all">All Status</option>
-              <option value="verified">Verified</option>
-              <option value="unverified">Unverified</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
         </div>
-      </div>
-
-      <div className="utr-uploader-section">
-        <h2>UTR PDF Processor</h2>
-        <p>Upload bank statement PDF to extract UTRs and automatically verify payments</p>
-        
-        <div className="utr-upload-container">
-          <div className="file-input-wrapper">
-            <input
-              type="file"
-              accept=".pdf"
-              onChange={handleFileChange}
-              disabled={isUploading}
-            />
-            <span className="selected-file">
-              {selectedFile ? selectedFile.name : 'No file selected'}
-            </span>
-          </div>
-          
-          <button
-            className="upload-btn"
-            onClick={handleUploadPDF}
-            disabled={!selectedFile || isUploading}
-          >
-            {isUploading ? 'Uploading...' : 'Upload & Extract UTRs'}
-          </button>
-        </div>
-        
-        {extractedUtrs.length > 0 && (
-          <div className="extracted-utrs-container">
-            <h3>Extracted UTRs ({extractedUtrs.length})</h3>
-            <div className="utrs-table-container">
-              <table className="utrs-table">
-                <thead>
-                  <tr>
-                    <th>UTR Number</th>
-                    <th>Date</th>
-                    <th>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {extractedUtrs.map((utr, index) => (
-                    <tr key={index}>
-                      <td>{utr.number}</td>
-                      <td>{utr.date || 'N/A'}</td>
-                      <td>{utr.amount ? `₹${utr.amount}` : 'N/A'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            
-            <div className="process-utr-actions">
-              <button
-                className="process-btn"
-                onClick={handleProcessUTRs}
-                disabled={isProcessing}
-              >
-                {isProcessing ? 'Processing...' : 'Process UTR Matching'}
-              </button>
-              
-              {processingResult && (
-                <div className="processing-result">
-                  <span className="success-count">✅ {processingResult.success} matched</span>
-                  <span className="failed-count">❌ {processingResult.failed} unmatched</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="payments-section">
-        <h2>Payment Verifications</h2>
+        <h2>
+          <span className="payment-icon">💰</span> 
+          Pending Verifications
+          {filteredPayments.length > 0 && (
+            <span className="pending-count">{filteredPayments.length}</span>
+          )}
+        </h2>
         
         {isLoading ? (
           <div className="loading-state">Loading payments...</div>
         ) : error ? (
           <div className="error-state">Error loading payments. Please try again.</div>
-        ) : filteredPayments.length === 0 && !searchTerm && filterStatus === 'all' ? (
+        ) : filteredPayments.length === 0 ? (
           <div className="no-data-state">
             <div className="no-data-message">
               <span className="no-data-icon">📋</span>
-              <h3>No payment data available</h3>
-              <p>There are no payment records to display. New payments will appear here once users make payments.</p>
+              <h3>No pending payments</h3>
+              <p>There are no payment records that require verification at this time.</p>
             </div>
           </div>
         ) : (
           <div className="payments-table-container">
+            <div className="pending-verification-banner">
+              <div className="banner-icon">⚠️</div>
+              <div className="banner-content">
+                <h3>Pending Verifications</h3>
+                <p>You have {filteredPayments.length} payment(s) pending verification. Users are on free trial until you verify their payments.</p>
+              </div>
+            </div>
+            
             <table className="payments-table">
               <thead>
                 <tr>
                   <th>User</th>
-                  <th>Reference Number</th>
+                  <th>Reference</th>
                   <th>Amount</th>
-                  <th>Screenshot</th>
-                  <th>Status</th>
+                  <th>Plan</th>
                   <th>Date</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredPayments.length > 0 ? (
-                  filteredPayments.map((payment: Payment) => (
-                    <tr key={payment.id} className={`status-${payment.status}`}>
-                      <td>
-                        <div className="user-info">
-                          <strong>{payment.userName}</strong>
-                          <span>{payment.userEmail}</span>
-                        </div>
-                      </td>
-                      <td className="reference-number">{payment.referenceNumber}</td>
-                      <td>₹{payment.amount}</td>
-                      <td>
-                        {payment.screenshotUrl ? (
-                          <div className="screenshot-thumbnail">
-                            <img
-                              src={`${import.meta.env.VITE_API_URL}${payment.screenshotUrl}`}
-                              alt="Payment screenshot"
-                              onClick={() => window.open(`${import.meta.env.VITE_API_URL}${payment.screenshotUrl}`, '_blank')}
-                            />
-                          </div>
-                        ) : (
-                          <span className="no-screenshot">No screenshot</span>
-                        )}
-                      </td>
-                      <td>
-                        <span className={`payment-status status-${payment.status}`}>
-                          {payment.status === 'verified' && '✅ Verified'}
-                          {payment.status === 'unverified' && '⏳ Unverified'}
-                          {payment.status === 'rejected' && '❌ Rejected'}
-                        </span>
-                      </td>
-                      <td>{new Date(payment.createdAt).toLocaleDateString()}</td>
-                      <td className="actions-cell">
-                        {payment.status === 'unverified' && (
-                          <>
-                            <button
-                              className="action-btn verify-btn"
-                              onClick={() => handleVerifyPayment(payment.id, 'verified')}
-                              disabled={updatePaymentStatus.isPending}
-                            >
-                              Verify
-                            </button>
-                            <button
-                              className="action-btn reject-btn"
-                              onClick={() => handleVerifyPayment(payment.id, 'rejected')}
-                              disabled={updatePaymentStatus.isPending}
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-                        {payment.status !== 'unverified' && (
-                          <button
-                            className="action-btn reset-btn"
-                            onClick={() => handleVerifyPayment(payment.id, 'unverified')}
-                            disabled={updatePaymentStatus.isPending}
-                          >
-                            Reset
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={7} className="no-payments-message">
-                      {searchTerm || filterStatus !== 'all' 
-                        ? 'No payments match your search or filter.' 
-                        : 'No payments found.'}
+                {filteredPayments.map((payment: Payment) => (
+                  <tr key={payment.id}>
+                    <td className="user-cell">
+                      <div className="user-name">{payment.userName}</div>
+                      <div className="user-email">{payment.userEmail}</div>
+                    </td>
+                    <td className="reference-cell">{payment.referenceNumber}</td>
+                    <td className="amount-cell">₹{payment.amount}</td>
+                    <td className="plan-cell">{payment.planName || 'N/A'}</td>
+                    <td className="date-cell">
+                      {format(new Date(payment.createdAt), 'MMM dd, yyyy')}
+                    </td>
+                    <td className="actions-cell">
+                      <button 
+                        className="view-details-btn"
+                        onClick={() => handleViewDetails(payment)}
+                      >
+                        View Details
+                      </button>
+                      
+                      <div className="quick-actions">
+                        <button 
+                          className="verify-btn" 
+                          onClick={() => handleOpenVerificationModal(payment)}
+                          title="Verify Payment"
+                        >
+                          ✓
+                        </button>
+                        <button 
+                          className="reject-btn" 
+                          onClick={() => handleOpenRejectionModal(payment)}
+                          title="Reject Payment"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                )}
+                ))}
               </tbody>
             </table>
           </div>
         )}
       </div>
+      
+      {/* View-only details modal */}
+      {selectedPayment && !showVerificationModal && !showRejectionModal && (
+        <PaymentDetailsModal 
+          payment={selectedPayment}
+          onClose={handleCloseModals}
+        />
+      )}
+
+      {/* Verification modal */}
+      {selectedPayment && showVerificationModal && (
+        <VerificationModal 
+          payment={selectedPayment}
+          onClose={handleCloseModals}
+          onVerify={handleVerifyPayment}
+        />
+      )}
+
+      {/* Rejection modal */}
+      {selectedPayment && showRejectionModal && (
+        <RejectionModal 
+          payment={selectedPayment}
+          onClose={handleCloseModals}
+          onReject={handleRejectPayment}
+        />
+      )}
     </div>
   );
 };
 
-export default SubscriptionsManagement; 
+export default SubscriptionsManagement;

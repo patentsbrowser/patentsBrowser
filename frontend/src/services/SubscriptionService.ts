@@ -153,6 +153,9 @@ export const verifyUpiPayment = async (transactionId: string) => {
     });
     
     debugLog('Payment verification response:', response.data);
+    
+    // Always return the data as is - the backend now sets the status as 'pending'
+    // and requires admin verification for all payments
     return response.data;
   } catch (error: any) {
     console.error('Error verifying UPI payment:', error);
@@ -186,9 +189,34 @@ export const getUserSubscription = async () => {
   }
 };
 
+/**
+ * Check the status of a payment verification
+ * @param transactionId - UPI transaction reference ID
+ */
+export const checkPaymentVerificationStatus = async (transactionId: string) => {
+  try {
+    // First check if user is logged in
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('User not authenticated');
+    }
+    
+    debugLog('Checking payment verification status', { transactionId });
+    
+    const response = await axiosInstance.get(`/subscriptions/payment-status/${transactionId}`);
+    
+    debugLog('Payment verification status response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error checking payment verification status:', error);
+    throw error;
+  }
+};
+
 export default {
   getSubscriptionPlans,
   createPendingSubscription,
   verifyUpiPayment,
-  getUserSubscription
+  getUserSubscription,
+  checkPaymentVerificationStatus
 }; 

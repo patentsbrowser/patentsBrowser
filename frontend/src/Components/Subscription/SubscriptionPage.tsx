@@ -35,9 +35,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
   const [transactionId, setTransactionId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [upiOrderId, setUpiOrderId] = useState('');
-  const [paymentStep, setPaymentStep] = useState<'creating' | 'ready' | 'verifying' | 'complete'>('creating');
+  const [paymentStep, setPaymentStep] = useState<'creating' | 'ready' | 'verifying' | 'pending' | 'complete'>('creating');
   const requestInProgressRef = useRef(false);
   const hasInitializedRef = useRef(false);
+  const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
+  const [statusCheckInterval, setStatusCheckInterval] = useState<number | null>(null);
+  const [submittedTransactionId, setSubmittedTransactionId] = useState<string | null>(null);
 
   // Generate a unique order ID only once when the modal opens
   useEffect(() => {
@@ -50,8 +53,39 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
     // Cleanup when modal closes
     if (!isOpen) {
       hasInitializedRef.current = false;
+      // Clear any status check intervals
+      if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+        setStatusCheckInterval(null);
+      }
+      // Clear submitted transaction ID
+      setSubmittedTransactionId(null);
     }
-  }, [isOpen]);
+
+    // Cleanup function to clear interval when component unmounts
+    return () => {
+      if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+      }
+    };
+  }, [isOpen, statusCheckInterval]);
+
+  // Handle authentication state changes
+  useEffect(() => {
+    // Check if user is still logged in periodically
+    const checkAuthInterval = setInterval(() => {
+      const token = localStorage.getItem('token');
+      if (!token && statusCheckInterval) {
+        // If token is gone (user logged out) but interval is still running, clear it
+        clearInterval(statusCheckInterval);
+        setStatusCheckInterval(null);
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => {
+      clearInterval(checkAuthInterval);
+    };
+  }, [statusCheckInterval]);
   
   // Create pending subscription in backend after we have an order ID
   useEffect(() => {
@@ -119,23 +153,77 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
       const result = await SubscriptionService.verifyUpiPayment(transactionId);
       
       if (result.success) {
-        setPaymentStep('complete');
-        toast.success('Payment verified! Your subscription is now active.');
-        setTimeout(() => {
-          onPaymentComplete(); // Call this to refresh subscription data
-          onClose();
-        }, 2000);
+        // Store the transaction ID for status checks
+        setSubmittedTransactionId(transactionId);
+        
+        // All payments now require admin verification
+        setPaymentStep('pending');
+        setVerificationStatus('Your payment reference has been submitted to the admin for verification. This usually takes 10-15 minutes. Until verification is complete, you can continue to use the free trial version.');
+        
+        // Start polling for status updates
+        const intervalId = window.setInterval(async () => {
+          // Check if user is still logged in
+          const token = localStorage.getItem('token');
+          if (!token) {
+            clearInterval(intervalId);
+            setStatusCheckInterval(null);
+            return;
+          }
+
+          // Check if transaction ID is still available
+          if (!submittedTransactionId) {
+            clearInterval(intervalId);
+            setStatusCheckInterval(null);
+            return;
+          }
+
+          try {
+            const statusResult = await SubscriptionService.checkPaymentVerificationStatus(submittedTransactionId);
+            
+            if (statusResult.success) {
+              if (statusResult.data.status === 'active') {
+                // Payment has been verified by admin
+                clearInterval(intervalId);
+                setStatusCheckInterval(null);
+                setPaymentStep('complete');
+                toast.success('Payment verified! Your subscription is now active.');
+                setTimeout(() => {
+                  if (onPaymentComplete) {
+                    onPaymentComplete();
+                  }
+                  if (onClose) {
+                    onClose();
+                  }
+                }, 2000);
+              } else if (statusResult.data.status === 'rejected') {
+                // Payment has been rejected by admin
+                clearInterval(intervalId);
+                setStatusCheckInterval(null);
+                setVerificationStatus('Your payment was rejected. Please contact support for assistance.');
+                toast.error('Payment verification failed. Please contact support.');
+                setIsSubmitting(false);
+                setPaymentStep('ready');
+              }
+              // Otherwise keep polling (pending/unverified)
+            }
+          } catch (error) {
+            console.error('Error checking payment status:', error);
+            // Don't stop polling on error, just log it
+          }
+        }, 20000); // Check every 20 seconds
+        
+        setStatusCheckInterval(intervalId);
       } else {
         toast.error(result.message || 'Payment verification failed. Please try again.');
         setIsSubmitting(false);
         setPaymentStep('ready');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error verifying payment:', error);
       
       // Display the specific error message from the backend if available
       const errorMessage = error.response?.data?.message || 
-                           'Failed to verify payment. Please try again or contact support.';
+                         'Failed to verify payment. Please try again or contact support.';
       
       toast.error(errorMessage);
       setIsSubmitting(false);
@@ -159,6 +247,18 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
           <div className="success-icon">✓</div>
           <h3>Payment Successful!</h3>
           <p>Your subscription is now active.</p>
+        </div>
+      );
+    }
+
+    if (paymentStep === 'pending') {
+      return (
+        <div className="payment-pending">
+          <div className="pending-icon">⏳</div>
+          <h3>Verification in Progress</h3>
+          <p>{verificationStatus || 'Your payment reference has been submitted to the admin for verification. This usually takes 10-15 minutes.'}</p>
+          <p className="free-trial-notice">You can continue to use the free trial version until verification is complete.</p>
+          <p className="pending-note">You can close this window. Your subscription will be activated automatically once verified.</p>
         </div>
       );
     }
