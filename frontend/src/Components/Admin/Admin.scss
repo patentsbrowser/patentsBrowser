@@ -1,3 +1,5 @@
+@use "sass:color";
+
 .admin-dashboard {
   display: flex;
   flex-direction: column;
@@ -1636,7 +1638,7 @@
               color: white;
               
               &:hover:not(:disabled) {
-                background-color: darken(#4caf50, 10%);
+                background-color: color.scale(#4caf50, $lightness: -10%);
                 transform: translateY(-2px);
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
               }
@@ -1651,7 +1653,7 @@
               color: white;
               
               &:hover:not(:disabled) {
-                background-color: darken(#f44336, 10%);
+                background-color: color.scale(#f44336, $lightness: -10%);
                 transform: translateY(-2px);
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
               }
