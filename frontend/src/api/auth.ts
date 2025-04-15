@@ -36,6 +36,9 @@ export interface SignupCredentials extends LoginCredentials {
 // Flag to prevent multiple logout calls
 let isLoggingOut = false;
 
+// Add a request lock
+let isVerifyingOTP = false;
+
 // Auth API functions
 export const authApi = {
   // Login function
@@ -173,7 +176,14 @@ export const authApi = {
   },
 
   verifyOTP: async (email: string, otp: string) => {
+    // Prevent duplicate verifyOTP requests
+    if (isVerifyingOTP) {
+      console.log('Verify OTP request already in progress, skipping duplicate request');
+      return { statusCode: 100, message: 'Request in progress' };
+    }
+    
     try {
+      isVerifyingOTP = true;
       console.log('Verifying OTP for email:', email);
       const { data } = await api.post(`/auth/verify-otp`, { email, otp });
       console.log('OTP verification response:', data);
@@ -189,6 +199,11 @@ export const authApi = {
         status: error.response?.status
       });
       throw error;
+    } finally {
+      // Reset the lock regardless of success or failure
+      setTimeout(() => {
+        isVerifyingOTP = false;
+      }, 500);
     }
   },
 

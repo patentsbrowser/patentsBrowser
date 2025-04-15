@@ -36,13 +36,18 @@ const SubscriptionsManagement = () => {
   const { data: payments = [], isLoading, error, refetch } = useQuery({
     queryKey: ['adminPayments'],
     queryFn: async () => {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/admin/payments`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      return response.data.data.payments;
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/admin/subscription/payments`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        return response.data.data.payments || [];
+      } catch (error) {
+        console.error('Error fetching payments:', error);
+        return [];
+      }
     }
   });
 
@@ -65,7 +70,7 @@ const SubscriptionsManagement = () => {
       
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/admin/upload-utr-pdf`, 
+        `${import.meta.env.VITE_API_URL}/admin/subscription/upload-utr-pdf`, 
         formData,
         {
           headers: {
@@ -80,6 +85,7 @@ const SubscriptionsManagement = () => {
       }
     } catch (error) {
       console.error('Error uploading PDF:', error);
+      alert('Failed to upload PDF. Please try again.');
     } finally {
       setIsUploading(false);
     }
@@ -94,7 +100,7 @@ const SubscriptionsManagement = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/admin/process-utrs`,
+        `${import.meta.env.VITE_API_URL}/admin/subscription/process-utrs`,
         { utrs: extractedUtrs },
         {
           headers: {
@@ -113,6 +119,7 @@ const SubscriptionsManagement = () => {
       }
     } catch (error) {
       console.error('Error processing UTRs:', error);
+      alert('Failed to process UTRs. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -120,10 +127,10 @@ const SubscriptionsManagement = () => {
 
   // Status update mutation
   const updatePaymentStatus = useMutation({
-    mutationFn: async ({ paymentId, status }: { paymentId: string; status: 'verified' | 'rejected' }) => {
+    mutationFn: async ({ paymentId, status }: { paymentId: string; status: 'verified' | 'rejected' | 'unverified' }) => {
       const token = localStorage.getItem('token');
       const response = await axios.put(
-        `${import.meta.env.VITE_API_URL}/admin/payments/${paymentId}/status`,
+        `${import.meta.env.VITE_API_URL}/admin/subscription/payments/${paymentId}/status`,
         { status },
         {
           headers: {
@@ -136,6 +143,10 @@ const SubscriptionsManagement = () => {
     onSuccess: () => {
       // Invalidate and refetch payments data
       queryClient.invalidateQueries({ queryKey: ['adminPayments'] });
+    },
+    onError: (error) => {
+      console.error('Error updating payment status:', error);
+      alert('Failed to update payment status. Please try again.');
     }
   });
 
@@ -145,7 +156,7 @@ const SubscriptionsManagement = () => {
   };
 
   // Filter payments based on status and search term
-  const filteredPayments = payments.filter((payment: Payment) => {
+  const filteredPayments = payments && payments.length ? payments.filter((payment: Payment) => {
     // Filter by status
     const matchesStatus = filterStatus === 'all' || payment.status === filterStatus;
     
@@ -156,7 +167,7 @@ const SubscriptionsManagement = () => {
       payment.referenceNumber?.toLowerCase().includes(searchTerm.toLowerCase());
     
     return matchesStatus && matchesSearch;
-  });
+  }) : [];
 
   return (
     <div className="admin-subscriptions-container">
@@ -262,6 +273,14 @@ const SubscriptionsManagement = () => {
           <div className="loading-state">Loading payments...</div>
         ) : error ? (
           <div className="error-state">Error loading payments. Please try again.</div>
+        ) : filteredPayments.length === 0 && !searchTerm && filterStatus === 'all' ? (
+          <div className="no-data-state">
+            <div className="no-data-message">
+              <span className="no-data-icon">📋</span>
+              <h3>No payment data available</h3>
+              <p>There are no payment records to display. New payments will appear here once users make payments.</p>
+            </div>
+          </div>
         ) : (
           <div className="payments-table-container">
             <table className="payments-table">

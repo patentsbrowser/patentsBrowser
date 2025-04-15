@@ -24,7 +24,7 @@ const getCountryFlagEmoji = (countryCode: string): string => {
 // Format payment status for display
 const formatPaymentStatus = (status?: string) => {
   if (!status) return "Free Trial";
-  return status === 'paid' ? "Paid Version" : "Free Trial";
+  return status === 'active' ? "Paid Subscription" : "Free Trial";
 };
 
 const UpdateProfile = () => {
@@ -91,15 +91,15 @@ const UpdateProfile = () => {
     }
 
     // Set payment status if it exists
-    if (profile?.paymentStatus) {
-      setPaymentStatus(profile.paymentStatus);
+    if (profile?.subscriptionStatus) {
+      setPaymentStatus(profile.subscriptionStatus);
     }
     
     // Set profile image URL if it exists
     if (profile?.imageUrl) {
       setProfileUrl(profile.imageUrl);
     }
-  }, [profile?.nationality, profile?.number, profile?.phoneCode, profile?.paymentStatus, profile?.imageUrl, countries]);
+  }, [profile?.nationality, profile?.number, profile?.phoneCode, profile?.subscriptionStatus, profile?.imageUrl, countries]);
 
   // Add this mutation for image upload
   const uploadImageMutation = useMutation({
@@ -136,7 +136,7 @@ const UpdateProfile = () => {
         }
       }
       // Preserve the existing payment status
-      values.paymentStatus = paymentStatus;
+      values.subscriptionStatus = paymentStatus;
       return authApi.updateProfile(values);
     },
     onSuccess: (data) => {
@@ -287,7 +287,7 @@ const UpdateProfile = () => {
         {/* Display current subscription status */}
         <div className="subscription-banner">
           <span className="subscription-label">Current Subscription:</span>
-          <span className={`payment-status ${paymentStatus === 'paid' ? 'paid' : 'free'}`}>
+          <span className={`payment-status ${paymentStatus === 'active' ? 'paid' : 'free'}`}>
             {formatPaymentStatus(paymentStatus)}
           </span>
         </div>

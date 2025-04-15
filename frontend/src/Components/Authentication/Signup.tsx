@@ -48,6 +48,7 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
         if (user) {
           setUser(user);
         }
+        setShowOTPModal(false); // Close the modal after successful verification
         switchToLogin();
       } else if (response.message) {
         toast.error(response.message);
@@ -76,7 +77,12 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
   };
 
   const handleVerifyOTP = async (otp: string) => {
-    await verifyOTPMutation.mutateAsync(otp);
+    try {
+      await verifyOTPMutation.mutateAsync(otp);
+    } catch (error) {
+      // Error is already handled in mutation's onError
+      console.error('OTP verification failed:', error);
+    }
   };
 
   const handleResendOTP = async () => {

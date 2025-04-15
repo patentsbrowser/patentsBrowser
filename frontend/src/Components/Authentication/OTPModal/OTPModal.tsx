@@ -24,6 +24,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
 }) => {
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [isVerifying, setIsVerifying] = useState(false);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const { value } = e.target;
@@ -67,6 +68,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setOtp(Array(6).fill(''));
+      setIsVerifying(false);
       setTimeout(() => {
         inputRefs.current[0]?.focus();
       }, 300);
@@ -75,15 +77,16 @@ const OTPModal: React.FC<OTPModalProps> = ({
   
   // Submit OTP when all digits are filled
   useEffect(() => {
-    if (otp.every(digit => digit !== '')) {
-      // All digits filled
+    if (otp.every(digit => digit !== '') && !isVerifying) {
+      // All digits filled and not already verifying
       const otpString = otp.join('');
       // Submit after a small delay to let the user see the last digit
+      setIsVerifying(true);
       setTimeout(() => {
         onVerify(otpString);
       }, 300);
     }
-  }, [otp, onVerify]);
+  }, [otp, onVerify, isVerifying]);
   
   // Close modal on ESC key
   useEffect(() => {
