@@ -21,6 +21,9 @@ const PaymentHistory: React.FC = () => {
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
 
   useEffect(() => {
     fetchPaymentHistory();
@@ -75,7 +78,8 @@ const PaymentHistory: React.FC = () => {
       case 'active':
         return 'Active';
       case 'payment_pending':
-        return 'approval_pending';
+      case 'pending':
+        return 'Approval Pending';
       case 'rejected':
         return 'Rejected';
       case 'cancelled':
@@ -87,8 +91,103 @@ const PaymentHistory: React.FC = () => {
       case 'trial':
         return 'Trial';
       default:
-        return status;
+        return status.charAt(0).toUpperCase() + status.slice(1);
     }
+  };
+
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = paymentHistory.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(paymentHistory.length / itemsPerPage);
+
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    // Function to generate page numbers with ellipsis for large numbers of pages
+    const getPageNumbers = () => {
+      let pages = [];
+      const maxPagesToShow = 5;
+      
+      if (totalPages <= maxPagesToShow) {
+        // If we have 5 or fewer pages, show all of them
+        for (let i = 1; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        // Always show first page
+        pages.push(1);
+        
+        // Calculate start and end of current window
+        let start = Math.max(2, currentPage - 1);
+        let end = Math.min(totalPages - 1, currentPage + 1);
+        
+        // Adjust window to always show 3 pages when possible
+        if (currentPage <= 2) {
+          end = 3;
+        } else if (currentPage >= totalPages - 1) {
+          start = totalPages - 2;
+        }
+        
+        // Add ellipsis before current window if needed
+        if (start > 2) {
+          pages.push('...');
+        }
+        
+        // Add pages in current window
+        for (let i = start; i <= end; i++) {
+          pages.push(i);
+        }
+        
+        // Add ellipsis after current window if needed
+        if (end < totalPages - 1) {
+          pages.push('...');
+        }
+        
+        // Always show last page
+        pages.push(totalPages);
+      }
+      
+      return pages;
+    };
+
+    return (
+      <div className="pagination">
+        <button 
+          onClick={() => paginate(currentPage - 1)} 
+          disabled={currentPage === 1}
+          className="pagination-button"
+        >
+          &laquo; Prev
+        </button>
+        
+        <div className="page-numbers">
+          {getPageNumbers().map((number, index) => 
+            typeof number === 'number' ? (
+              <button
+                key={index}
+                onClick={() => paginate(number)}
+                className={`page-number ${currentPage === number ? 'active' : ''}`}
+              >
+                {number}
+              </button>
+            ) : (
+              <span key={index} className="ellipsis">...</span>
+            )
+          )}
+        </div>
+        
+        <button 
+          onClick={() => paginate(currentPage + 1)} 
+          disabled={currentPage === totalPages}
+          className="pagination-button"
+        >
+          Next &raquo;
+        </button>
+      </div>
+    );
   };
 
   return (
@@ -104,44 +203,50 @@ const PaymentHistory: React.FC = () => {
       ) : paymentHistory.length === 0 ? (
         <div className="empty-message">No payment history available.</div>
       ) : (
-        <div className="payment-list">
-          <table className="payment-table">
-            <thead>
-              <tr>
-                <th>Plan</th>
-                <th>Amount</th>
-                <th>Transaction ID</th>
-                <th>Date</th>
-                <th>Valid Until</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paymentHistory.map((payment) => (
-                <tr key={payment.id}>
-                  <td className="plan-info">
-                    <span className="plan-name">{payment.planName}</span>
-                  </td>
-                  <td className="amount">
-                    {payment.currency} {payment.amount}
-                  </td>
-                  <td className="reference-number">
-                    {payment.referenceNumber}
-                  </td>
-                  <td className="transaction-date">
-                    {formatDate(payment.transactionDate)}
-                  </td>
-                  <td className="end-date">
-                    {formatDate(payment.endDate)}
-                  </td>
-                  <td className={`status ${getStatusClass(payment.status)}`}>
-                    {getDisplayStatus(payment.status)}
-                  </td>
+        <>
+          <div className="payment-list">
+            <table className="payment-table">
+              <thead>
+                <tr>
+                  <th>Sr No</th>
+                  <th>Plan</th>
+                  <th>Amount</th>
+                  <th>Transaction ID</th>
+                  <th>Date</th>
+                  <th>Valid Until</th>
+                  <th>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {currentItems.map((payment, index) => (
+                  <tr key={payment.id}>
+                    <td className="sr-no">{indexOfFirstItem + index + 1}</td>
+                    <td className="plan-info">
+                      <span className="plan-name">{payment.planName}</span>
+                    </td>
+                    <td className="amount">
+                      {payment.currency} {payment.amount}
+                    </td>
+                    <td className="reference-number">
+                      {payment.referenceNumber}
+                    </td>
+                    <td className="transaction-date">
+                      {formatDate(payment.transactionDate)}
+                    </td>
+                    <td className="end-date">
+                      {formatDate(payment.endDate)}
+                    </td>
+                    <td className={`status ${getStatusClass(payment.status)}`}>
+                      {getDisplayStatus(payment.status)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          {renderPagination()}
+        </>
       )}
     </div>
   );
