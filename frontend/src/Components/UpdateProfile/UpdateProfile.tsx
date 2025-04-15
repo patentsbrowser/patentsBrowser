@@ -24,7 +24,19 @@ const getCountryFlagEmoji = (countryCode: string): string => {
 // Format payment status for display
 const formatPaymentStatus = (status?: string) => {
   if (!status) return "Free Trial";
-  return status === 'active' ? "Paid Subscription" : "Free Trial";
+  
+  switch(status) {
+    case 'active':
+      return "Paid Subscription";
+    case 'pending':
+      return "Payment Pending";
+    case 'trial':
+      return "Free Trial";
+    case 'expired':
+      return "Expired";
+    default:
+      return status.charAt(0).toUpperCase() + status.slice(1);
+  }
 };
 
 const UpdateProfile = () => {
@@ -287,7 +299,10 @@ const UpdateProfile = () => {
         {/* Display current subscription status */}
         <div className="subscription-banner">
           <span className="subscription-label">Current Subscription:</span>
-          <span className={`payment-status ${paymentStatus === 'active' ? 'paid' : 'free'}`}>
+          <span className={`payment-status ${
+            paymentStatus === 'active' ? 'paid' : 
+            paymentStatus === 'pending' ? 'pending' : 'free'
+          }`}>
             {formatPaymentStatus(paymentStatus)}
           </span>
         </div>

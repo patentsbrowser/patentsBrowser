@@ -60,7 +60,7 @@ const ProfilePage = () => {
     email: profileData?.email || "No Record",
     number: formatPhoneNumber(profileData?.number, profileData?.phoneCode),
     address: profileData?.address || "No Record",
-    paymentStatus: formatPaymentStatus(profileData?.paymentStatus),
+    paymentStatus: formatPaymentStatus(profileData?.subscriptionStatus),
     gender: formatGender(profileData?.gender),
     nationality: profileData?.nationality || "No Record",
     imageUrl: profileData?.imageUrl || undefined

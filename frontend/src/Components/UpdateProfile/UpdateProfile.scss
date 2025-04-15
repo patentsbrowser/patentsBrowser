@@ -58,6 +58,11 @@
         color: #2ecc71;
       }
       
+      &.pending {
+        background-color: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+      }
+      
       &.free {
         background-color: rgba(52, 152, 219, 0.2);
         color: #3498db;
