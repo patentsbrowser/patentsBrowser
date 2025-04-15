@@ -40,7 +40,7 @@ const Header = () => {
     refetchOnMount: true,
     enabled: true, // Always enabled, but we control refetching manually
   });
-  
+  console.log('profileResponse', profileResponse);
   // Update Redux when profile data changes from API
   useEffect(() => {
     if (profileResponse?.statusCode === 200 && profileResponse?.data) {
