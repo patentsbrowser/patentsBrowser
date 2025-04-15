@@ -233,6 +233,11 @@ const RejectionModal = ({
               }}
               placeholder="Provide reason for rejection (will be shown to user)"
               className={error ? "error" : ""}
+              style={{
+                backgroundColor: "var(--input-bg, #f1f5f9)",
+                color: "var(--text-color, #1e293b)",
+                border: "1px solid var(--border-color, #cbd5e1)"
+              }}
             ></textarea>
             {error && <div className="error-message">{error}</div>}
           </div>
