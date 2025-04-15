@@ -541,28 +541,49 @@
       text-align: left;
       
       .input-group {
-        margin-bottom: 0.75rem;
+        margin-bottom: 20px;
+        width: 100%;
         
         label {
           display: block;
-          margin-bottom: 0.4rem;
-          color: #592e83;
-          font-weight: 600;
-          font-size: 0.95rem;
+          margin-bottom: 5px;
+          font-weight: 500;
         }
         
         input {
           width: 100%;
-          padding: 0.7rem;
-          border: 1px solid #ddd;
+          padding: 10px;
           border-radius: 4px;
-          font-size: 0.95rem;
+          border: 1px solid #ddd;
+          font-size: 1rem;
           
           &:focus {
             outline: none;
-            border-color: #592e83;
-            box-shadow: 0 0 0 2px rgba(89, 46, 131, 0.2);
+            border-color: #6772e5;
+            box-shadow: 0 0 0 1px #6772e5;
           }
+          
+          &:disabled {
+            background-color: #f5f5f5;
+            cursor: not-allowed;
+          }
+          
+          &.error {
+            border-color: #e53e3e;
+            box-shadow: 0 0 0 1px #e53e3e;
+          }
+        }
+        
+        .validation-error {
+          color: #e53e3e;
+          font-size: 0.875rem;
+          margin-top: 5px;
+        }
+        
+        .input-hint {
+          color: #718096;
+          font-size: 0.75rem;
+          margin-top: 5px;
         }
       }
       

@@ -34,6 +34,37 @@ interface PaymentModalProps {
   trialDaysRemaining: number;
 }
 
+// UPI Reference validation function
+export function validateUPIReference(refNumber: string) {
+  // Trim and normalize the input
+  const ref = refNumber.trim();
+
+  // Case 1: Only digits, 12 to 18 length (most common)
+  const digitOnlyPattern = /^\d{12,18}$/;
+
+  // Case 2: Optional bank code prefix (e.g., HDFC, ICICI), followed by digits
+  const alphaNumericPattern = /^[A-Z]{3,6}\d{9,15}$/;
+
+  // Case 3: Some UPI IDs include `@` like '324123456789@icici'
+  const upiStylePattern = /^\d{6,18}@\w{3,10}$/;
+
+  if (
+    digitOnlyPattern.test(ref) ||
+    alphaNumericPattern.test(ref) ||
+    upiStylePattern.test(ref)
+  ) {
+    return {
+      isValid: true,
+      message: "Valid UPI Reference/UTR Number.",
+    };
+  }
+
+  return {
+    isValid: false,
+    message: "Invalid UPI Reference/UTR format.",
+  };
+}
+
 // UPI Payment Modal Component
 const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPaymentComplete, isTrialActive, trialDaysRemaining }) => {
   const [transactionId, setTransactionId] = useState('');
@@ -45,6 +76,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
   const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
   const [statusCheckInterval, setStatusCheckInterval] = useState<number | null>(null);
   const [submittedTransactionId, setSubmittedTransactionId] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // Generate a unique order ID only once when the modal opens
   useEffect(() => {
@@ -138,15 +170,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!transactionId.trim()) {
+    const trimmedId = transactionId.trim();
+    if (!trimmedId) {
       toast.error('Please enter your UPI Transaction ID');
       return;
     }
 
-    // Basic validation for transaction ID format
-    const transactionIdRegex = /^[A-Za-z0-9]{10,25}$/;
-    if (!transactionIdRegex.test(transactionId.trim())) {
-      toast.error('Please enter a valid UPI transaction reference ID (10-25 alphanumeric characters)');
+    // Validate the transaction ID using our regex patterns
+    const validation = validateUPIReference(trimmedId);
+    if (!validation.isValid) {
+      setValidationError(validation.message);
+      toast.error(validation.message);
       return;
     }
     
@@ -154,11 +188,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
     setPaymentStep('verifying');
     
     try {
-      const result = await SubscriptionService.verifyUpiPayment(transactionId);
+      const result = await SubscriptionService.verifyUpiPayment(trimmedId);
       
       if (result.success) {
         // Store the transaction ID for status checks
-        setSubmittedTransactionId(transactionId);
+        setSubmittedTransactionId(trimmedId);
         
         // All payments now require admin verification
         setPaymentStep('pending');
@@ -232,6 +266,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
       toast.error(errorMessage);
       setIsSubmitting(false);
       setPaymentStep('ready');
+    }
+  };
+
+  // Add a function to handle input change with validation
+  const handleTransactionIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setTransactionId(value);
+    
+    // Clear validation error when user starts typing again
+    if (validationError) {
+      setValidationError(null);
     }
   };
 
@@ -313,11 +358,18 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
               id="transaction-id"
               type="text" 
               value={transactionId}
-              onChange={(e) => setTransactionId(e.target.value)}
+              onChange={handleTransactionIdChange}
               placeholder="e.g. 123456789012"
               required
               disabled={paymentStep === 'verifying'}
+              className={validationError ? "error" : ""}
             />
+            {validationError && (
+              <div className="validation-error">{validationError}</div>
+            )}
+            <div className="input-hint">
+              Enter the UTR or reference number from your UPI payment app (12-18 digits)
+            </div>
           </div>
           <button 
             type="submit" 
