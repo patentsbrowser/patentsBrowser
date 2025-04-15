@@ -24,6 +24,7 @@ interface Payment {
   rejectionDate?: string;
   createdAt: string;
   planName: string;
+  userSubscriptionStatus?: string;
   orderDetails?: {
     orderId: string;
     planId: string;
@@ -101,14 +102,17 @@ const VerificationModal = ({
 }: {
   payment: Payment | null;
   onClose: () => void;
-  onVerify: (id: string, note: string) => void;
+  onVerify: (id: string, note: string, subscriptionStatus?: string) => void;
 }) => {
   const [note, setNote] = useState("");
 
   if (!payment) return null;
 
+  // Check if user already has an active subscription based on payment object
+  const hasActiveSubscription = payment.userSubscriptionStatus === 'active';
+
   const handleVerify = () => {
-    onVerify(payment.id, note);
+    onVerify(payment.id, note, payment.userSubscriptionStatus);
     onClose();
   };
 
@@ -122,9 +126,10 @@ const VerificationModal = ({
 
         <div className="verification-info-banner">
           <p>
-            <strong>Important:</strong> The user currently has free trial
-            access. Verifying this payment will activate their paid
-            subscription, changing their status from 'trial' to 'active'.
+            <strong>Important:</strong> {hasActiveSubscription 
+              ? "The user already has an active subscription. Verifying this payment will add the new plan to their account."
+              : "The user currently has free trial access. Verifying this payment will activate their paid subscription, changing their status from 'trial' to 'active'."
+            }
           </p>
         </div>
 
@@ -141,6 +146,11 @@ const VerificationModal = ({
           <p>
             <strong>Plan:</strong> {payment.planName || "N/A"}
           </p>
+          {hasActiveSubscription && (
+            <p>
+              <strong>Current Status:</strong> <span className="active-status">Active Subscription</span>
+            </p>
+          )}
         </div>
 
         <div className="verification-actions">
@@ -155,7 +165,7 @@ const VerificationModal = ({
 
           <div className="action-buttons">
             <button className="verify-button" onClick={handleVerify}>
-              Verify & Activate Subscription
+              {hasActiveSubscription ? "Verify & Add New Plan" : "Verify & Activate Subscription"}
             </button>
             <button className="cancel-button" onClick={onClose}>
               Cancel
@@ -299,13 +309,14 @@ const SubscriptionsManagement = () => {
       try {
         const token = localStorage.getItem("token");
         const response = await axios.get(
-          `${import.meta.env.VITE_API_URL}/subscriptions/pending-payments`,
+          `${import.meta.env.VITE_API_URL}/subscriptions/pending-payments?includeUserStatus=true`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           }
         );
+        // The response should now include userSubscriptionStatus for each payment
         return response.data.data.payments || [];
       } catch (error) {
         console.error("Error fetching pending payments:", error);
@@ -335,17 +346,19 @@ const SubscriptionsManagement = () => {
       paymentId,
       status,
       notes,
+      subscriptionStatus,
     }: {
       paymentId: string;
       status: "verified" | "rejected";
       notes?: string;
+      subscriptionStatus?: string;
     }) => {
       const token = localStorage.getItem("token");
       const response = await axios.put(
         `${
           import.meta.env.VITE_API_URL
         }/subscriptions/payment-verification/${paymentId}`,
-        { status, notes },
+        { status, notes, subscriptionStatus },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -368,8 +381,8 @@ const SubscriptionsManagement = () => {
   });
 
   // Handle payment verification
-  const handleVerifyPayment = (paymentId: string, notes: string = "") => {
-    updatePaymentStatus.mutate({ paymentId, status: "verified", notes });
+  const handleVerifyPayment = (paymentId: string, notes: string = "", subscriptionStatus?: string) => {
+    updatePaymentStatus.mutate({ paymentId, status: "verified", notes, subscriptionStatus });
   };
 
   // Handle payment rejection
@@ -502,29 +515,31 @@ const SubscriptionsManagement = () => {
       );
       
       // Here you would call your backend API to verify these payments
-      // For demonstration, I'll simulate the process
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Simulate successful verification for all payments
-      const updatedPayments = payments.map(payment => {
-        if (paymentsToVerify.some(p => p.id === payment.id)) {
+      for (const payment of paymentsToVerify) {
+        try {
+          await updatePaymentStatus.mutateAsync({
+            paymentId: payment.id,
+            status: 'verified',
+            notes: 'Verified via bank statement reference matching',
+            subscriptionStatus: payment.userSubscriptionStatus
+          });
           successCount++;
-          return {
-            ...payment,
-            status: 'verified' as const,
-            verificationDate: new Date().toISOString(),
-            verifiedBy: 'Admin', // This would be the current admin user
-            verificationNotes: 'Verified via bank statement reference matching'
-          };
+        } catch (error) {
+          console.error(`Error verifying payment ${payment.id}:`, error);
+          failedCount++;
         }
-        return payment;
-      });
+      }
       
-      setPayments(updatedPayments);
       setProcessingResults({ success: successCount, failed: failedCount });
       
       toast.success(`Successfully verified ${successCount} payments.`);
+      if (failedCount > 0) {
+        toast.error(`Failed to verify ${failedCount} payments.`);
+      }
       setIsReferenceMatcherModalOpen(false);
+      
+      // Refresh the payment list
+      refetch();
     } catch (err) {
       console.error('Error verifying payments:', err);
       toast.error('Failed to verify payments. Please try again.');
@@ -841,10 +856,13 @@ const ReferenceMatcherModal: React.FC<ReferenceMatcherModalProps> = ({
                       <div className="user-info">
                         <strong>{payment.userName}</strong>
                         <span>{payment.userEmail}</span>
+                        {payment.userSubscriptionStatus === 'active' && (
+                          <span className="user-status active-status">Active Subscription</span>
+                        )}
                       </div>
                       <div className="payment-info">
                         <span className="payment-amount">{payment.currency} {payment.amount}</span>
-                        <span className="payment-plan">{payment.plan}</span>
+                        <span className="payment-plan">{payment.planName}</span>
                       </div>
                     </li>
                   ))}
