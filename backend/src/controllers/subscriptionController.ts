@@ -55,7 +55,7 @@ export const getPricingPlans = async (req: Request, res: Response) => {
 };
 
 // Calculate subscription end date based on plan
-const calculateEndDate = (plan: SubscriptionPlan): Date => {
+const calculateEndDate = (plan: SubscriptionPlan, trialDaysRemaining: number = 0): Date => {
   const endDate = new Date();
   
   switch(plan) {
@@ -73,6 +73,11 @@ const calculateEndDate = (plan: SubscriptionPlan): Date => {
       break;
     default:
       endDate.setMonth(endDate.getMonth() + 1);
+  }
+  
+  // Add remaining trial days to subscription duration
+  if (trialDaysRemaining > 0) {
+    endDate.setDate(endDate.getDate() + trialDaysRemaining);
   }
   
   return endDate;
@@ -110,8 +115,32 @@ export const createPendingSubscription = async (req: Request, res: Response) => 
       });
     }
     
-    // Calculate end date based on plan type
-    const endDate = calculateEndDate(plan.type as SubscriptionPlan);
+    // Get user to check trial status
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Calculate remaining trial days if user is on trial
+    let trialDaysRemaining = 0;
+    if (user.subscriptionStatus === SubscriptionStatus.TRIAL && user.trialEndDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const trialEndDate = new Date(user.trialEndDate);
+      trialEndDate.setHours(0, 0, 0, 0);
+      
+      if (trialEndDate > today) {
+        const diffTime = trialEndDate.getTime() - today.getTime();
+        trialDaysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+    }
+    
+    // Calculate end date based on plan type, including any remaining trial days
+    const endDate = calculateEndDate(plan.type as SubscriptionPlan, trialDaysRemaining);
     
     // Check if user already has a subscription
     let subscription = await Subscription.findOne({ userId });
@@ -146,7 +175,8 @@ export const createPendingSubscription = async (req: Request, res: Response) => 
         plan: plan.name,
         status: subscription.status,
         startDate: subscription.startDate,
-        endDate: subscription.endDate
+        endDate: subscription.endDate,
+        trialDaysAdded: trialDaysRemaining
       }
     });
   } catch (error) {
@@ -423,16 +453,24 @@ export const updatePaymentVerification = async (req: Request, res: Response) => 
     if (status === 'verified') {
       subscription.status = SubscriptionStatus.ACTIVE;
       
-      // Update user's subscription status
-      await User.findByIdAndUpdate(subscription.userId, { 
+      // Update user's subscription status and always set the most recent reference number
+      const updateData: any = { 
         subscriptionStatus: 'paid',
         subscriptionEnd: subscription.endDate,
         notes: notes || undefined
-      });
+      };
+      
+      // Only update reference number if it exists in the subscription
+      if (subscription.upiTransactionRef) {
+        updateData.referenceNumber = subscription.upiTransactionRef;
+      }
+      
+      await User.findByIdAndUpdate(subscription.userId, updateData);
+      
     } else {
       subscription.status = SubscriptionStatus.REJECTED;
       
-      // Update user's subscription status - change 'free' to 'trial'
+      // Update user's subscription status - change to 'trial'
       await User.findByIdAndUpdate(subscription.userId, { 
         subscriptionStatus: 'trial',
         notes: notes || undefined

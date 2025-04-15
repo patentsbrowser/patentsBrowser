@@ -21,6 +21,7 @@ interface IUser extends mongoose.Document {
   subscriptionStatus: SubscriptionStatus;
   trialEndDate: Date;
   googlePayCustomerId?: string;
+  referenceNumber?: string;
   isAdmin: boolean;
 }
 
@@ -78,6 +79,10 @@ const userSchema = new mongoose.Schema({
   },
   googlePayCustomerId: {
     type: String
+  },
+  referenceNumber: {
+    type: String,
+    default: ''
   },
   address:{
     type: String,

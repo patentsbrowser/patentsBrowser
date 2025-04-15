@@ -14,7 +14,8 @@ export enum SubscriptionStatus {
   TRIAL = 'trial',
   CANCELLED = 'cancelled',
   PAYMENT_PENDING = 'payment_pending',
-  PAID = 'paid'
+  PAID = 'paid',
+  REJECTED = 'rejected'
 }
 
 export interface ISubscription extends Document {
@@ -27,6 +28,7 @@ export interface ISubscription extends Document {
   upiTransactionRef?: string;
   trialEndsAt?: Date;
   cancelledAt?: Date;
+  notes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -68,6 +70,9 @@ const subscriptionSchema = new Schema<ISubscription>(
     },
     cancelledAt: {
       type: Date
+    },
+    notes: {
+      type: String
     }
   },
   { timestamps: true }

@@ -77,6 +77,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
   const [statusCheckInterval, setStatusCheckInterval] = useState<number | null>(null);
   const [submittedTransactionId, setSubmittedTransactionId] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [trialDaysAddedMessage, setTrialDaysAddedMessage] = useState<string | null>(null);
 
   // Generate a unique order ID only once when the modal opens
   useEffect(() => {
@@ -233,6 +234,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
                     onClose();
                   }
                 }, 2000);
+                setTrialDaysAddedMessage(`${trialDaysRemaining} trial days will be added to your subscription`);
               } else if (statusResult.data.status === 'rejected') {
                 // Payment has been rejected by admin
                 clearInterval(intervalId);
@@ -296,6 +298,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
           <div className="success-icon">✓</div>
           <h3>Payment Successful!</h3>
           <p>Your subscription is now active.</p>
+          {trialDaysAddedMessage && (
+            <div className="trial-days-added">
+              <p>{trialDaysAddedMessage}</p>
+            </div>
+          )}
         </div>
       );
     }
@@ -307,10 +314,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
           <h3>Verification in Progress</h3>
           <p>{verificationStatus || 'Your payment reference has been submitted to the admin for verification. This usually takes 10-15 minutes.'}</p>
           
-          {isTrialActive ? (
+          {isTrialActive && trialDaysRemaining > 0 ? (
             <p className="free-trial-notice">
               You can continue to use your free trial until verification is complete. 
-              Once verified, your trial days will be added to your subscription.
+              Once verified, your {trialDaysRemaining} trial days will be added to your subscription.
             </p>
           ) : (
             <p className="free-trial-notice">

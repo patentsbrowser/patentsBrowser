@@ -658,6 +658,21 @@
         color: #666;
         font-size: 1.1rem;
       }
+      
+      .trial-days-added {
+        margin-top: 1rem;
+        padding: 0.75rem;
+        background-color: rgba(40, 167, 69, 0.1);
+        border-radius: 0.5rem;
+        text-align: center;
+        animation: fadeIn 0.5s ease-out;
+        
+        p {
+          color: #28a745;
+          font-weight: 500;
+          margin: 0;
+        }
+      }
     }
 
     .payment-pending {
@@ -977,4 +992,15 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 } 
