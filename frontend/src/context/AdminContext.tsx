@@ -8,7 +8,7 @@ interface AdminContextType {
 }
 
 const AdminContext = createContext<AdminContextType | null>(null);
-
+console.log('hello')
 export const AdminProvider = ({ children }: { children: ReactNode }) => {
   const { user, adminCheckPerformed } = useAuth();
   // Initialize isAdminMode to true for admin users, false for regular users
