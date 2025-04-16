@@ -143,19 +143,42 @@ export const createPendingSubscription = async (req: Request, res: Response) => 
     const endDate = calculateEndDate(plan.type as SubscriptionPlan, trialDaysRemaining);
     
     // Check if user already has a subscription
-    let subscription = await Subscription.findOne({ userId });
+    let existingSubscription = await Subscription.findOne({ 
+      userId,
+      status: SubscriptionStatus.ACTIVE 
+    });
     
-    if (subscription) {
-      // Update existing subscription
-      subscription.plan = plan.type as SubscriptionPlan;
-      subscription.startDate = new Date();
-      subscription.endDate = endDate;
-      subscription.status = SubscriptionStatus.PAYMENT_PENDING;
-      subscription.upiOrderId = upiOrderId;
-      subscription.upiTransactionRef = undefined;
+    if (existingSubscription) {
+      // Create a new subscription for the additional plan
+      const newSubscription = new Subscription({
+        userId,
+        plan: plan.type,
+        startDate: new Date(),
+        endDate,
+        status: SubscriptionStatus.PAYMENT_PENDING,
+        upiOrderId,
+        // Store reference to the original subscription
+        parentSubscriptionId: existingSubscription._id
+      });
+      
+      await newSubscription.save();
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Pending additional plan subscription created',
+        data: {
+          subscriptionId: newSubscription._id,
+          plan: plan.name,
+          status: newSubscription.status,
+          startDate: newSubscription.startDate,
+          endDate: newSubscription.endDate,
+          trialDaysAdded: trialDaysRemaining,
+          isAdditionalPlan: true
+        }
+      });
     } else {
-      // Create new subscription
-      subscription = new Subscription({
+      // Create new subscription (first time subscription)
+      const subscription = new Subscription({
         userId,
         plan: plan.type,
         startDate: new Date(),
@@ -163,22 +186,23 @@ export const createPendingSubscription = async (req: Request, res: Response) => 
         status: SubscriptionStatus.PAYMENT_PENDING,
         upiOrderId
       });
+      
+      await subscription.save();
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Pending subscription created',
+        data: {
+          subscriptionId: subscription._id,
+          plan: plan.name,
+          status: subscription.status,
+          startDate: subscription.startDate,
+          endDate: subscription.endDate,
+          trialDaysAdded: trialDaysRemaining,
+          isAdditionalPlan: false
+        }
+      });
     }
-    
-    await subscription.save();
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Pending subscription created',
-      data: {
-        subscriptionId: subscription._id,
-        plan: plan.name,
-        status: subscription.status,
-        startDate: subscription.startDate,
-        endDate: subscription.endDate,
-        trialDaysAdded: trialDaysRemaining
-      }
-    });
   } catch (error) {
     console.error('Error creating pending subscription:', error);
     return res.status(500).json({
@@ -553,6 +577,48 @@ export const getUserPaymentHistory = async (req: Request, res: Response) => {
   }
 };
 
+// Get additional plans for a subscription
+export const getAdditionalPlans = async (req: Request, res: Response) => {
+  try {
+    const { subscriptionId } = req.params;
+    
+    if (!subscriptionId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Subscription ID is required'
+      });
+    }
+    
+    // @ts-ignore - User ID is added by auth middleware
+    const userId = req.user._id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+    
+    // Find all additional plans for this subscription
+    const additionalPlans = await Subscription.find({
+      parentSubscriptionId: subscriptionId,
+      userId,
+      status: SubscriptionStatus.ACTIVE
+    }).populate('plan');
+    
+    return res.status(200).json({
+      success: true,
+      data: additionalPlans
+    });
+  } catch (error) {
+    console.error('Error fetching additional plans:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching additional plans'
+    });
+  }
+};
+
 // Export all controller methods
 export default {
   getPricingPlans,
@@ -562,5 +628,6 @@ export default {
   getPaymentStatus,
   getPendingPayments,
   updatePaymentVerification,
-  getUserPaymentHistory
+  getUserPaymentHistory,
+  getAdditionalPlans
 }; 

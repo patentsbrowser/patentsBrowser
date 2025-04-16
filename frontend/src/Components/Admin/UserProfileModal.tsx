@@ -32,7 +32,15 @@ interface UserProfile {
     startDate?: string;
     endDate?: string;
     status?: string;
+    _id?: string;
   };
+  additionalPlans?: Array<{
+    plan?: string;
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+    _id?: string;
+  }>;
 }
 
 const UserProfileModal = ({ userId, isOpen, onClose }: UserProfileModalProps) => {
@@ -246,7 +254,7 @@ const UserProfileModal = ({ userId, isOpen, onClose }: UserProfileModalProps) =>
                   {userProfile.subscription && (
                     <>
                       <div className="detail-row">
-                        <span className="detail-label">Plan:</span>
+                        <span className="detail-label">Main Plan:</span>
                         <span className="detail-value">{userProfile.subscription.plan || 'None'}</span>
                       </div>
                       {userProfile.subscription.startDate && (
@@ -266,6 +274,36 @@ const UserProfileModal = ({ userId, isOpen, onClose }: UserProfileModalProps) =>
                         </div>
                       )}
                     </>
+                  )}
+                  
+                  {userProfile.additionalPlans && userProfile.additionalPlans.length > 0 && (
+                    <div className="additional-plans-section">
+                      <h5>Additional Plans</h5>
+                      {userProfile.additionalPlans.map((plan, index) => (
+                        <div key={plan._id || index} className="additional-plan">
+                          <div className="detail-row">
+                            <span className="detail-label">Plan:</span>
+                            <span className="detail-value">{plan.plan || 'None'}</span>
+                          </div>
+                          {plan.startDate && (
+                            <div className="detail-row">
+                              <span className="detail-label">Started:</span>
+                              <span className="detail-value">
+                                {new Date(plan.startDate).toLocaleDateString()}
+                              </span>
+                            </div>
+                          )}
+                          {plan.endDate && (
+                            <div className="detail-row">
+                              <span className="detail-label">Expires:</span>
+                              <span className="detail-value">
+                                {new Date(plan.endDate).toLocaleDateString()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>

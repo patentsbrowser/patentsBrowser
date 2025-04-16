@@ -29,6 +29,7 @@ export interface ISubscription extends Document {
   trialEndsAt?: Date;
   cancelledAt?: Date;
   notes?: string;
+  parentSubscriptionId?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -73,6 +74,10 @@ const subscriptionSchema = new Schema<ISubscription>(
     },
     notes: {
       type: String
+    },
+    parentSubscriptionId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Subscription'
     }
   },
   { timestamps: true }

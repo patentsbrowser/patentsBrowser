@@ -785,6 +785,38 @@
       line-height: 1.5;
     }
   }
+
+  .additional-plans-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+
+    h5 {
+      font-size: 1rem;
+      color: #592e83;
+      margin-bottom: 0.5rem;
+    }
+
+    .additional-plan {
+      background-color: #f8f9fa;
+      padding: 0.75rem;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      border: 1px solid #eee;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .detail-row {
+        margin-bottom: 0.25rem;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
 }
 
 .btn {

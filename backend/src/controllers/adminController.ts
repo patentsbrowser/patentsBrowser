@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { User } from '../models/User.js';
 import mongoose from 'mongoose';
 import Subscription from '../models/Subscription.js';
+import { SubscriptionStatus } from '../models/Subscription.js';
 
 // Get all users
 export const getAllUsers = async (req: Request, res: Response) => {
@@ -22,7 +23,6 @@ export const getAllUsers = async (req: Request, res: Response) => {
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
       isEmailVerified: user.isEmailVerified,
-      paymentStatus: user.paymentStatus,
       isAdmin: user.isAdmin,
       address: user.address,
       number: user.number,
@@ -92,7 +92,6 @@ export const getUserById = async (req: Request, res: Response) => {
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
       isEmailVerified: user.isEmailVerified,
-      paymentStatus: user.paymentStatus,
       isAdmin: user.isAdmin,
       address: user.address,
       number: user.number,
@@ -166,7 +165,6 @@ export const updateUserById = async (req: Request, res: Response) => {
       email: user.email,
       subscriptionStatus: user.subscriptionStatus,
       isEmailVerified: user.isEmailVerified,
-      paymentStatus: user.paymentStatus,
       isAdmin: user.isAdmin
     };
 
@@ -393,28 +391,27 @@ export const manageUserSubscription = async (req: Request, res: Response) => {
       });
     }
 
-    // Find existing subscription or create new one
-    let subscription = await Subscription.findOne({ userId });
-    
-    if (subscription) {
-      // Update existing subscription
-      subscription.plan = plan || 'paid';
-      subscription.startDate = new Date(startDate);
-      subscription.endDate = new Date(endDate);
-      subscription.status = status;
-      subscription.updatedAt = new Date();
-      await subscription.save();
-    } else {
-      // Create new subscription
-      subscription = new Subscription({
-        userId,
-        plan: plan || 'paid',
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        status
-      });
-      await subscription.save();
+    // Find existing active subscriptions
+    const existingSubscriptions = await Subscription.find({ 
+      userId,
+      status: SubscriptionStatus.ACTIVE 
+    }).sort({ endDate: -1 });
+
+    // Create new subscription
+    const newSubscription = new Subscription({
+      userId,
+      plan: plan || 'paid',
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      status: status
+    });
+
+    // If there are existing active subscriptions, mark this as an additional plan
+    if (existingSubscriptions.length > 0) {
+      newSubscription.parentSubscriptionId = existingSubscriptions[0]._id;
     }
+
+    await newSubscription.save();
 
     // Update user's subscription status
     await User.findByIdAndUpdate(userId, {
@@ -422,17 +419,32 @@ export const manageUserSubscription = async (req: Request, res: Response) => {
       updatedAt: new Date()
     });
 
+    // Get all active subscriptions after update
+    const updatedSubscriptions = await Subscription.find({
+      userId,
+      status: SubscriptionStatus.ACTIVE
+    }).sort({ endDate: -1 });
+
+    // Determine if this is a custom plan
+    const isCustomPlan = updatedSubscriptions.length > 1;
+
     res.status(200).json({
       statusCode: 200,
       message: 'Subscription updated successfully',
       data: {
         subscription: {
           userId,
-          plan: subscription.plan,
-          startDate: subscription.startDate,
-          endDate: subscription.endDate,
-          status: subscription.status
-        }
+          plan: isCustomPlan ? 'custom' : newSubscription.plan,
+          startDate: newSubscription.startDate,
+          endDate: newSubscription.endDate,
+          status: newSubscription.status
+        },
+        additionalPlans: updatedSubscriptions.slice(1).map(sub => ({
+          plan: sub.plan,
+          startDate: sub.startDate,
+          endDate: sub.endDate,
+          status: sub.status
+        }))
       }
     });
   } catch (error: any) {
@@ -441,6 +453,83 @@ export const manageUserSubscription = async (req: Request, res: Response) => {
       statusCode: 500,
       message: 'Failed to update subscription: ' + error.message,
       data: null
+    });
+  }
+};
+
+export const getUserProfile = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    
+    // Find the user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'User not found'
+      });
+    }
+
+    // Find all active subscriptions for the user
+    const subscriptions = await Subscription.find({
+      userId,
+      status: SubscriptionStatus.ACTIVE
+    }).sort({ endDate: -1 }); // Sort by endDate to get the latest subscription first
+
+    // Get the main subscription (the one with the latest end date)
+    const mainSubscription = subscriptions[0];
+
+    // Get additional plans (all other active subscriptions)
+    const additionalPlans = subscriptions.slice(1);
+
+    // Determine if this is a custom plan (multiple active subscriptions)
+    const isCustomPlan = subscriptions.length > 1;
+
+    // Transform the user data
+    const userProfile = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      number: user.number,
+      phoneCode: user.phoneCode,
+      imageUrl: user.imageUrl,
+      subscriptionStatus: user.subscriptionStatus,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin,
+      address: user.address,
+      gender: user.gender,
+      nationality: user.nationality,
+      isAdmin: user.isAdmin,
+      isEmailVerified: user.isEmailVerified,
+      timeSpent: user.timeSpent,
+      loginCount: user.loginCount,
+      avgSessionDuration: user.avgSessionDuration,
+      lastSessionDuration: user.lastSessionDuration,
+      subscription: mainSubscription ? {
+        plan: isCustomPlan ? 'custom' : mainSubscription.plan,
+        startDate: mainSubscription.startDate,
+        endDate: mainSubscription.endDate,
+        status: mainSubscription.status,
+        _id: mainSubscription._id
+      } : undefined,
+      additionalPlans: additionalPlans.length > 0 ? additionalPlans.map(plan => ({
+        plan: plan.plan,
+        startDate: plan.startDate,
+        endDate: plan.endDate,
+        status: plan.status,
+        _id: plan._id
+      })) : undefined
+    };
+
+    return res.status(200).json({
+      statusCode: 200,
+      data: userProfile
+    });
+  } catch (error) {
+    console.error('Error getting user profile:', error);
+    return res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to get user profile'
     });
   }
 }; 

@@ -23,6 +23,7 @@ interface Subscription {
   userId: string;
   trialEndsAt?: string;
   trialDaysRemaining?: number;
+  parentSubscriptionId?: string;
 }
 
 interface PaymentModalProps {
@@ -423,6 +424,43 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
 
 // Subscription Status Component
 const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscription }) => {
+  const [additionalPlans, setAdditionalPlans] = useState<Subscription[]>([]);
+  const [loadingAdditionalPlans, setLoadingAdditionalPlans] = useState(false);
+  const [totalDaysRemaining, setTotalDaysRemaining] = useState(0);
+
+  useEffect(() => {
+    const fetchAdditionalPlans = async () => {
+      try {
+        setLoadingAdditionalPlans(true);
+        const result: any = await SubscriptionService.getAdditionalPlans(subscription._id);
+        if (result.success) {
+          setAdditionalPlans(result.data);
+        }
+      } catch (error) {
+        console.error('Error fetching additional plans:', error);
+      } finally {
+        setLoadingAdditionalPlans(false);
+      }
+    };
+
+    if (subscription.status === 'active') {
+      fetchAdditionalPlans();
+    }
+  }, [subscription._id, subscription.status]);
+
+  // Calculate total days remaining across all plans
+  useEffect(() => {
+    if (subscription.status === 'active') {
+      const mainPlanDays = calculateDaysLeft(subscription.endDate);
+      const additionalDays = additionalPlans.reduce((total, plan) => {
+        return total + calculateDaysLeft(plan.endDate);
+      }, 0);
+      setTotalDaysRemaining(mainPlanDays + additionalDays);
+    } else {
+      setTotalDaysRemaining(calculateDaysLeft(subscription.endDate));
+    }
+  }, [subscription, additionalPlans]);
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-IN', { 
@@ -445,8 +483,6 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
     
     return diffDays;
   };
-
-  const daysLeft = calculateDaysLeft(subscription.endDate);
 
   return (
     <div className="subscription-status">
@@ -484,8 +520,8 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
         
         {(subscription.status === 'active' || subscription.status === 'trial') && (
           <div className="time-remaining">
-            <div className="days-left">{daysLeft}</div>
-            <div className="days-label">days remaining</div>
+            <div className="days-left">{totalDaysRemaining}</div>
+            <div className="days-label">total days remaining</div>
           </div>
         )}
         
@@ -503,6 +539,43 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
           <div className="trial-note">
             <p>Your free trial gives you full access to all premium features for 14 days.</p>
             <p>Subscribe to a paid plan to continue using premium features after your trial ends.</p>
+          </div>
+        )}
+
+        {/* Additional Plans Section */}
+        {subscription.status === 'active' && additionalPlans.length > 0 && (
+          <div className="additional-plans">
+            <h3>Additional Plans</h3>
+            {loadingAdditionalPlans ? (
+              <div className="loading">Loading additional plans...</div>
+            ) : (
+              <div className="additional-plans-list">
+                {additionalPlans.map((plan) => (
+                  <div key={plan._id} className="additional-plan-card">
+                    <h4>{plan.plan.name} Plan</h4>
+                    <div className="plan-type">
+                      {plan.plan.type === 'monthly' ? 'Monthly' : 
+                        plan.plan.type === 'quarterly' ? 'Quarterly' : 
+                        plan.plan.type === 'half_yearly' ? 'Half Yearly' : 'Yearly'}
+                    </div>
+                    <div className="date-info">
+                      <div className="date-item">
+                        <span className="date-label">Started:</span>
+                        <span className="date-value">{formatDate(plan.startDate)}</span>
+                      </div>
+                      <div className="date-item">
+                        <span className="date-label">Expires:</span>
+                        <span className="date-value">{formatDate(plan.endDate)}</span>
+                      </div>
+                    </div>
+                    <div className="time-remaining">
+                      <div className="days-left">{calculateDaysLeft(plan.endDate)}</div>
+                      <div className="days-label">days remaining</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -574,6 +647,7 @@ const SubscriptionPage: React.FC = () => {
       if (result.success && result.data) {
         console.log('Fetched user subscription:', result.data);
         setUserSubscription(result.data);
+        console.log('12321321', result.data)
         // A user has an active trial if they're in trial status OR they have trialDaysRemaining
         setIsTrialActive(
           result.data.status === 'trial' || 

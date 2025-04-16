@@ -143,7 +143,7 @@ export const authApi = {
   // Update user profile
   updateProfile: async (data: any) => {
     try {
-      const response = await api.put('/auth/profile', data);
+      const response = await api.post('/auth/update-profile', data);
       return response.data;
     } catch (error: any) {
       return {

@@ -31,4 +31,7 @@ router.get('/pending-payments', auth, adminAuth, subscriptionController.getPendi
 // Update payment verification status (admin only)
 router.put('/payment-verification/:paymentId', auth, adminAuth, subscriptionController.updatePaymentVerification);
 
+// Get additional plans for a subscription (requires auth)
+router.get('/additional-plans/:subscriptionId', auth, subscriptionController.getAdditionalPlans);
+
 export default router; 

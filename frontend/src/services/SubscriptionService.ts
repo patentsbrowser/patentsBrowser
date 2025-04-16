@@ -236,11 +236,30 @@ export const getUserPaymentHistory = async () => {
   }
 };
 
+/**
+ * Get additional plans for a subscription
+ * @param subscriptionId - The ID of the parent subscription
+ */
+export const getAdditionalPlans = async (subscriptionId: string) => {
+  try {
+    debugLog('Fetching additional plans for subscription', { subscriptionId });
+    
+    const response = await axiosInstance.get(`/subscriptions/additional-plans/${subscriptionId}`);
+    
+    debugLog('Additional plans fetched successfully', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching additional plans:', error);
+    throw error;
+  }
+};
+
 export default {
   getSubscriptionPlans,
   createPendingSubscription,
   verifyUpiPayment,
   getUserSubscription,
   checkPaymentVerificationStatus,
-  getUserPaymentHistory
+  getUserPaymentHistory,
+  getAdditionalPlans
 }; 
