@@ -17,7 +17,7 @@ const LandingPage = () => {
   };
 
   const handleSubscriptionClick = () => {
-    navigate('/subscription');
+    navigate('/auth/signup');
   };
 
   const subscriptionPlans = [
