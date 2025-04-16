@@ -15,6 +15,7 @@ interface PaymentHistoryItem {
   endDate: string;
   transactionDate: string;
   orderId: string;
+  adminMessage?: string;
 }
 
 const PaymentHistory: React.FC = () => {
@@ -213,8 +214,9 @@ const PaymentHistory: React.FC = () => {
                   <th>Amount</th>
                   <th>Transaction ID</th>
                   <th>Date</th>
-                  <th>Valid Until</th>
+                  <th>Expiry</th>
                   <th>Status</th>
+                  <th>Admin Message</th>
                 </tr>
               </thead>
               <tbody>
@@ -234,10 +236,22 @@ const PaymentHistory: React.FC = () => {
                       {formatDate(payment.transactionDate)}
                     </td>
                     <td className="end-date">
-                      {formatDate(payment.endDate)}
+                      {payment.status.toLowerCase() === 'rejected' ? '-' : formatDate(payment.endDate)}
                     </td>
                     <td className={`status ${getStatusClass(payment.status)}`}>
                       {getDisplayStatus(payment.status)}
+                    </td>
+                    <td className="admin-message">
+                      {payment.adminMessage ? (
+                        <div className="message-tooltip">
+                          <span className="message-icon">ℹ️</span>
+                          <div className="tooltip-content">
+                            {payment.adminMessage}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="no-message">-</span>
+                      )}
                     </td>
                   </tr>
                 ))}

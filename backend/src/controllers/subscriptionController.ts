@@ -308,6 +308,39 @@ export const getUserSubscription = async (req: Request, res: Response) => {
       });
     }
     
+    // Get user to check trial status
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Check for pending payments first
+    const pendingSubscription = await Subscription.findOne({ 
+      userId,
+      status: SubscriptionStatus.PAYMENT_PENDING 
+    });
+
+    // If there's a pending payment, return trial data
+    if (pendingSubscription) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          subscriptionId: pendingSubscription._id,
+          plan: 'trial',
+          planName: 'Trial',
+          status: 'trial',
+          startDate: user.createdAt,
+          endDate: user.trialEndDate,
+          isActive: new Date() <= user.trialEndDate,
+          isPendingPayment: true
+        }
+      });
+    }
+    
+    // If no pending payment, get active subscription
     const subscription = await Subscription.findOne({ 
       userId,
       status: { $in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] }
@@ -489,6 +522,7 @@ export const updatePaymentVerification = async (req: Request, res: Response) => 
         updateData.referenceNumber = subscription.upiTransactionRef;
       }
       
+      // Only update user's subscription status if the payment is verified
       await User.findByIdAndUpdate(subscription.userId, updateData);
       
     } else {
@@ -561,6 +595,7 @@ export const getUserPaymentHistory = async (req: Request, res: Response) => {
         endDate: sub.endDate,
         transactionDate: sub.createdAt,
         orderId: sub.upiOrderId || 'No Order ID',
+        adminMessage: sub.notes || (sub.status === SubscriptionStatus.REJECTED ? 'Payment was rejected by admin' : undefined)
       };
     }));
     

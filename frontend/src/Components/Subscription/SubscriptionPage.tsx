@@ -24,6 +24,7 @@ interface Subscription {
   trialEndsAt?: string;
   trialDaysRemaining?: number;
   parentSubscriptionId?: string;
+  isPendingPayment?: boolean;
 }
 
 interface PaymentModalProps {
@@ -456,7 +457,7 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
         return total + calculateDaysLeft(plan.endDate);
       }, 0);
       setTotalDaysRemaining(mainPlanDays + additionalDays);
-    } else {
+    } else if (subscription.status === 'trial') {
       setTotalDaysRemaining(calculateDaysLeft(subscription.endDate));
     }
   }, [subscription, additionalPlans]);
@@ -484,99 +485,124 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
     return diffDays;
   };
 
+  // Check if there's a pending payment
+  const isPendingPayment = subscription.isPendingPayment || subscription.status === 'pending';
+
   return (
     <div className="subscription-status">
       <div className="status-header">
         <h2>Your Subscription</h2>
-        <span className={`status-badge ${subscription.status}`}>
-          {subscription.status === 'trial' ? 'Free Trial' : 
-           subscription.status === 'pending' ? 'Pending Approval' :
+        <span className={`status-badge ${isPendingPayment ? 'pending' : subscription.status}`}>
+          {isPendingPayment ? 'Payment Pending' :
+           subscription.status === 'trial' ? 'Free Trial' :
            subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1)}
         </span>
       </div>
       
       <div className="subscription-details">
-        <div className="plan-name">
-          <h3>{subscription.status === 'trial' ? 'Free Trial' : subscription.plan.name} Plan</h3>
-          {subscription.status !== 'trial' && (
-            <div className="plan-type">
-              {subscription.plan.type === 'monthly' ? 'Monthly' : 
-                subscription.plan.type === 'quarterly' ? 'Quarterly' : 
-                subscription.plan.type === 'half_yearly' ? 'Half Yearly' : 'Yearly'} Plan
-            </div>
-          )}
-        </div>
-        
-        <div className="date-info">
-          <div className="date-item">
-            <span className="date-label">Started on:</span>
-            <span className="date-value">{formatDate(subscription.startDate)}</span>
-          </div>
-          <div className="date-item">
-            <span className="date-label">Expires on:</span>
-            <span className="date-value">{formatDate(subscription.endDate)}</span>
-          </div>
-        </div>
-        
-        {(subscription.status === 'active' || subscription.status === 'trial') && (
-          <div className="time-remaining">
-            <div className="days-left">{totalDaysRemaining}</div>
-            <div className="days-label">total days remaining</div>
-          </div>
-        )}
-        
-        {subscription.status === 'pending' && (
-          <div className="pending-approval-note">
+        {isPendingPayment ? (
+          // Show pending payment status
+          <div className="pending-payment-status">
             <div className="pending-icon">⏳</div>
             <div className="pending-message">
-              <p>Your payment has been received. Waiting for admin approval.</p>
-              <p>This usually takes 10-15 minutes. You can continue using the free trial until then.</p>
+              <h3>Payment Verification in Progress</h3>
+              <p>Your payment is being verified by our admin team.</p>
+              <p>You can continue using your trial access until verification is complete.</p>
+              <div className="trial-info">
+                <p><strong>Trial Status:</strong></p>
+                <div className="date-info">
+                  <div className="date-item">
+                    <span className="date-label">Started on:</span>
+                    <span className="date-value">{formatDate(subscription.startDate)}</span>
+                  </div>
+                  <div className="date-item">
+                    <span className="date-label">Valid until:</span>
+                    <span className="date-value">{formatDate(subscription.endDate)}</span>
+                  </div>
+                </div>
+                <div className="time-remaining">
+                  <div className="days-left">{calculateDaysLeft(subscription.endDate)}</div>
+                  <div className="days-label">trial days remaining</div>
+                </div>
+              </div>
             </div>
           </div>
-        )}
-        
-        {subscription.status === 'trial' && (
-          <div className="trial-note">
-            <p>Your free trial gives you full access to all premium features for 14 days.</p>
-            <p>Subscribe to a paid plan to continue using premium features after your trial ends.</p>
-          </div>
-        )}
-
-        {/* Additional Plans Section */}
-        {subscription.status === 'active' && additionalPlans.length > 0 && (
-          <div className="additional-plans">
-            <h3>Additional Plans</h3>
-            {loadingAdditionalPlans ? (
-              <div className="loading">Loading additional plans...</div>
-            ) : (
-              <div className="additional-plans-list">
-                {additionalPlans.map((plan) => (
-                  <div key={plan._id} className="additional-plan-card">
-                    <h4>{plan.plan.name} Plan</h4>
-                    <div className="plan-type">
-                      {plan.plan.type === 'monthly' ? 'Monthly' : 
-                        plan.plan.type === 'quarterly' ? 'Quarterly' : 
-                        plan.plan.type === 'half_yearly' ? 'Half Yearly' : 'Yearly'}
-                    </div>
-                    <div className="date-info">
-                      <div className="date-item">
-                        <span className="date-label">Started:</span>
-                        <span className="date-value">{formatDate(plan.startDate)}</span>
-                      </div>
-                      <div className="date-item">
-                        <span className="date-label">Expires:</span>
-                        <span className="date-value">{formatDate(plan.endDate)}</span>
-                      </div>
-                    </div>
-                    <div className="time-remaining">
-                      <div className="days-left">{calculateDaysLeft(plan.endDate)}</div>
-                      <div className="days-label">days remaining</div>
-                    </div>
-                  </div>
-                ))}
+        ) : (
+          // Show regular subscription details
+          <>
+            <div className="plan-name">
+              <h3>{subscription.status === 'trial' ? 'Free Trial' : subscription.plan.name} Plan</h3>
+              {subscription.status !== 'trial' && (
+                <div className="plan-type">
+                  {subscription.plan.type === 'monthly' ? 'Monthly' : 
+                    subscription.plan.type === 'quarterly' ? 'Quarterly' : 
+                    subscription.plan.type === 'half_yearly' ? 'Half Yearly' : 'Yearly'} Plan
+                </div>
+              )}
+            </div>
+            
+            <div className="date-info">
+              <div className="date-item">
+                <span className="date-label">Started on:</span>
+                <span className="date-value">{formatDate(subscription.startDate)}</span>
+              </div>
+              <div className="date-item">
+                <span className="date-label">Expires on:</span>
+                <span className="date-value">{formatDate(subscription.endDate)}</span>
+              </div>
+            </div>
+            
+            {(subscription.status === 'active' || subscription.status === 'trial') && (
+              <div className="time-remaining">
+                <div className="days-left">{totalDaysRemaining}</div>
+                <div className="days-label">total days remaining</div>
               </div>
             )}
-          </div>
+            
+            {subscription.status === 'trial' && (
+              <div className="trial-note">
+                <p>Your free trial gives you full access to all premium features for 14 days.</p>
+                <p>Subscribe to a paid plan to continue using premium features after your trial ends.</p>
+              </div>
+            )}
+
+            {/* Additional Plans Section */}
+            {subscription.status === 'active' && additionalPlans.length > 0 && (
+              <div className="additional-plans">
+                <h3>Additional Plans</h3>
+                {loadingAdditionalPlans ? (
+                  <div className="loading">Loading additional plans...</div>
+                ) : (
+                  <div className="additional-plans-list">
+                    {additionalPlans.map((plan) => (
+                      <div key={plan._id} className="additional-plan-card">
+                        <h4>{plan.plan.name} Plan</h4>
+                        <div className="plan-type">
+                          {plan.plan.type === 'monthly' ? 'Monthly' : 
+                            plan.plan.type === 'quarterly' ? 'Quarterly' : 
+                            plan.plan.type === 'half_yearly' ? 'Half Yearly' : 'Yearly'}
+                        </div>
+                        <div className="date-info">
+                          <div className="date-item">
+                            <span className="date-label">Started:</span>
+                            <span className="date-value">{formatDate(plan.startDate)}</span>
+                          </div>
+                          <div className="date-item">
+                            <span className="date-label">Expires:</span>
+                            <span className="date-value">{formatDate(plan.endDate)}</span>
+                          </div>
+                        </div>
+                        <div className="time-remaining">
+                          <div className="days-left">{calculateDaysLeft(plan.endDate)}</div>
+                          <div className="days-label">days remaining</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -635,6 +661,7 @@ const SubscriptionPage: React.FC = () => {
   const [userSubscription, setUserSubscription] = useState<Subscription | null>(null);
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
   const [isTrialActive, setIsTrialActive] = useState(false);
+  const [hasPendingPayment, setHasPendingPayment] = useState(false);
   
   // Use ref to track if data has been fetched to prevent duplicate calls
   const dataFetchedRef = useRef(false);
@@ -647,7 +674,10 @@ const SubscriptionPage: React.FC = () => {
       if (result.success && result.data) {
         console.log('Fetched user subscription:', result.data);
         setUserSubscription(result.data);
-        console.log('12321321', result.data)
+        
+        // Check if there's a pending payment
+        setHasPendingPayment(result.data.isPendingPayment || false);
+        
         // A user has an active trial if they're in trial status OR they have trialDaysRemaining
         setIsTrialActive(
           result.data.status === 'trial' || 
@@ -782,6 +812,13 @@ const SubscriptionPage: React.FC = () => {
         </>
       )}
 
+      {hasPendingPayment && (
+        <div className="pending-payment-banner">
+          <p>You have a pending payment. Your subscription will be activated once the admin verifies your payment.</p>
+          <p>You can continue using the trial version until then.</p>
+        </div>
+      )}
+
       <div className="subscription-plans">
         {plans.map((plan) => (
           <div 
@@ -808,11 +845,13 @@ const SubscriptionPage: React.FC = () => {
             <button 
               className="subscribe-btn"
               onClick={() => handleSubscribeClick(plan)}
+              disabled={hasPendingPayment}
             >
-              {userSubscription?.status === 'trial' ? 'Upgrade Now' :
+              {hasPendingPayment ? 'Payment Pending' :
+                userSubscription?.status === 'trial' ? 'Upgrade Now' :
                 userSubscription?.status === 'active' ? 'Change Plan' : 'Subscribe Now'}
             </button>
-            {isTrialActive && (
+            {isTrialActive && !hasPendingPayment && (
               <div className="trial-upgrade-note">
                 {userSubscription?.trialDaysRemaining} trial days will be added to your subscription
               </div>
