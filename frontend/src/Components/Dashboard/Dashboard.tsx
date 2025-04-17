@@ -22,7 +22,8 @@ interface RecentSearch {
 const STORAGE_KEYS = {
   PATENT_FOLDERS: 'patent_folders',
   RECENT_SEARCHES: 'recent_searches',
-  SIDEBAR_BEHAVIOR: 'sidebarBehavior'
+  SIDEBAR_BEHAVIOR: 'sidebarBehavior',
+  SIDEBAR_EXPANDED: 'sidebarExpanded'
 };
 
 const Dashboard = () => {
@@ -50,7 +51,10 @@ const Dashboard = () => {
   const [currentPatentId, setCurrentPatentId] = useState<string>("");
   
   // Track sidebar expanded state
-  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.SIDEBAR_EXPANDED);
+    return saved ? JSON.parse(saved) : false;
+  });
 
   // Track the selected folder for current patent IDs
   const [currentFolderInfo, setCurrentFolderInfo] = useState<{folderName: string, patentIds: string[]} | null>(null);
@@ -107,6 +111,11 @@ const Dashboard = () => {
       window.patentSearchPopulateWithFolderCallback = undefined;
     };
   }, []);
+
+  // Save sidebar expanded state to localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SIDEBAR_EXPANDED, JSON.stringify(sidebarExpanded));
+  }, [sidebarExpanded]);
 
   const handlePatentSearch = (patentIds: string[]) => {
     // Create a new folder for the batch of patent IDs

@@ -59,8 +59,14 @@ const DashboardSidebar = ({
   onAddCustomFolder,
   sidebarBehavior = 'auto',
 }: DashboardSidebarProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isPinned, setIsPinned] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(() => {
+    const saved = localStorage.getItem('sidebarExpanded');
+    return saved ? JSON.parse(saved) : false;
+  });
+  const [isPinned, setIsPinned] = useState(() => {
+    const saved = localStorage.getItem('sidebarPinned');
+    return saved ? JSON.parse(saved) : false;
+  });
   const [customPatentLists, setCustomPatentLists] = useState<CustomPatentList[]>([]);
   const [importedLists, setImportedLists] = useState<CustomPatentList[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -102,6 +108,7 @@ const DashboardSidebar = ({
       const newPinnedState = !isPinned;
       setIsPinned(newPinnedState);
       setIsExpanded(newPinnedState);
+      localStorage.setItem('sidebarPinned', JSON.stringify(newPinnedState));
       
       if (onExpandChange) {
         onExpandChange(newPinnedState);
@@ -118,6 +125,7 @@ const DashboardSidebar = ({
   const handleSidebarClick = () => {
     if (sidebarBehavior === 'manual' && !isExpanded) {
       setIsExpanded(true);
+      localStorage.setItem('sidebarExpanded', JSON.stringify(true));
       if (onExpandChange) {
         onExpandChange(true);
       }
@@ -158,8 +166,14 @@ const DashboardSidebar = ({
   useEffect(() => {
     if (sidebarBehavior === 'auto') {
       setIsPinned(false);
+      localStorage.setItem('sidebarPinned', JSON.stringify(false));
     }
   }, [sidebarBehavior]);
+
+  // Save expanded state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('sidebarExpanded', JSON.stringify(isExpanded));
+  }, [isExpanded]);
 
   const fetchCustomPatentLists = async () => {
     try {
