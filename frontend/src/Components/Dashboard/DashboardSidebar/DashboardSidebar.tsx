@@ -18,14 +18,22 @@ interface RecentSearch {
   timestamp: number;
 }
 
-interface CustomPatentList {
-  id: string;
+interface WorkFile {
   name: string;
   patentIds: string[];
   timestamp: number;
-  isSubfolder?: boolean;
-  parentFolderId?: string | null;
+}
+
+interface CustomPatentList {
+  _id: string;
+  name: string;
+  patentIds: string[];
+  timestamp: number;
+  workFiles: WorkFile[];
+  createdAt: string;
   source: string;
+  userId: string;
+  __v: number;
 }
 
 interface DashboardSidebarProps {
@@ -170,23 +178,27 @@ const DashboardSidebar = ({
       
       // Transform the data to match the CustomPatentList interface
       const transformedCustomLists = (customListsResponse.data || []).map((list: any) => ({
-        id: list._id,
+        _id: list._id,
         name: list.name,
         patentIds: list.patentIds,
         timestamp: list.timestamp,
-        isSubfolder: list.isSubfolder || false,
-        parentFolderId: list.parentFolderId || null,
-        source: list.source || 'folderName'
+        workFiles: list.workFiles || [],
+        createdAt: list.createdAt,
+        source: list.source || 'folderName',
+        userId: list.userId,
+        __v: list.__v
       }));
 
       const transformedImportedLists = (importedListsResponse.data || []).map((list: any) => ({
-        id: list._id,
+        _id: list._id,
         name: list.name,
         patentIds: list.patentIds,
         timestamp: list.timestamp,
-        isSubfolder: list.isSubfolder || false,
-        parentFolderId: list.parentFolderId || null,
-        source: list.source || 'importedList'
+        workFiles: list.workFiles || [],
+        createdAt: list.createdAt,
+        source: list.source || 'importedList',
+        userId: list.userId,
+        __v: list.__v
       }));
       
       setCustomPatentLists(transformedCustomLists);
@@ -320,11 +332,11 @@ const DashboardSidebar = ({
           customPatentLists={customPatentLists
             .filter(list => list.source === 'folderName')
             .map(list => ({
-              _id: list.id,
+              _id: list._id,
               name: list.name,
               patentIds: list.patentIds,
-              isSubfolder: list.isSubfolder,
-              parentFolderId: list.parentFolderId
+              isSubfolder: false,
+              parentFolderId: null
             }))}
           onAddCustomFolder={async (name, patentIds) => {
             if (onAddCustomFolder) {

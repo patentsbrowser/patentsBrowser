@@ -1,28 +1,175 @@
-import React, { useState, useRef } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import React, { useState, useRef, useEffect } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { authApi } from '../../api/auth';
 import toast from 'react-hot-toast';
 import './savedPatentList.scss';
+
+interface WorkFile {
+  name: string;
+  patentIds: string[];
+  timestamp: number;
+}
+
+interface CustomFolder {
+  _id: string;
+  id: string;
+  name: string;
+  patentIds: string[];
+  timestamp: number;
+  workFiles?: WorkFile[];
+}
+
+interface FolderSelectionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (folderName: string, workfileName: string) => void;
+  existingFolders: CustomFolder[];
+  patentIds: string[];
+}
+
+const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  existingFolders,
+  patentIds
+}) => {
+  const [folderName, setFolderName] = useState('workfile');
+  const [workfileName, setWorkfileName] = useState('workfile');
+  const [selectedFolder, setSelectedFolder] = useState<CustomFolder | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setFolderName('workfile');
+      setWorkfileName('workfile');
+      setSelectedFolder(null);
+    }
+  }, [isOpen]);
+
+  const handleSubmit = () => {
+    if (selectedFolder) {
+      // Find the next workfile number for the selected folder
+      const workfileCount = selectedFolder.workFiles?.length || 0;
+      const nextWorkfileName = `workfile${workfileCount + 1}`;
+      onSubmit(selectedFolder.name, nextWorkfileName);
+    } else if (folderName.trim()) {
+      onSubmit(folderName, workfileName);
+    }
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="folder-selection-modal-overlay">
+      <div className="folder-selection-modal">
+        <div className="modal-header">
+          <h3>Select Folder</h3>
+          <button className="close-button" onClick={onClose}>×</button>
+        </div>
+        
+        <div className="modal-body">
+          <div className="patent-ids-summary">
+            <p>Found {patentIds.length} patent IDs to save</p>
+          </div>
+
+          {existingFolders.length > 0 && (
+            <div className="existing-folders-section">
+              <label htmlFor="existing-folders">Add to Existing Folder:</label>
+              <select
+                id="existing-folders"
+                value={selectedFolder?._id || ''}
+                onChange={(e) => {
+                  const folder = existingFolders.find(f => f._id === e.target.value);
+                  setSelectedFolder(folder || null);
+                  setFolderName('');
+                }}
+                className="folder-select"
+              >
+                <option value="">Select a folder...</option>
+                {existingFolders.map((folder) => (
+                  <option key={folder._id} value={folder._id}>
+                    {folder.name} ({folder.patentIds.length})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          
+          <div className="new-folder-section">
+            <label htmlFor="folder-name">Or Create New Folder:</label>
+            <input
+              id="folder-name"
+              type="text"
+              value={folderName}
+              onChange={(e) => {
+                setFolderName(e.target.value);
+                setSelectedFolder(null);
+              }}
+              placeholder="Enter new folder name"
+              disabled={!!selectedFolder}
+            />
+          </div>
+
+          <div className="workfile-section">
+            <label htmlFor="workfile-name">Workfile Name:</label>
+            <input
+              id="workfile-name"
+              type="text"
+              value={workfileName}
+              onChange={(e) => setWorkfileName(e.target.value)}
+              placeholder="Enter workfile name"
+              disabled={!!selectedFolder}
+            />
+          </div>
+        </div>
+        
+        <div className="modal-actions">
+          <button 
+            className="cancel-button" 
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+          <button 
+            className="submit-button" 
+            onClick={handleSubmit}
+            disabled={!selectedFolder && !folderName.trim()}
+          >
+            {selectedFolder ? 'Add to Folder' : 'Create Workfile'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const SavedPatentList = () => {
   const [inputValue, setInputValue] = useState('');
   const [patentIds, setPatentIds] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [folderName, setFolderName] = useState('');
+  const [showFolderModal, setShowFolderModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch existing folders
+  const { data: existingFolders = [], isLoading: isLoadingFolders } = useQuery<CustomFolder[]>({
+    queryKey: ['importedLists'],
+    queryFn: async () => {
+      const response = await authApi.getImportedLists();
+      return response.data || [];
+    },
+  });
 
   const savePatentMutation = useMutation({
     mutationFn: (payload: { ids: string[], folderName?: string }) => 
       authApi.savePatent(payload.ids, payload.folderName),
     onSuccess: (response) => {
-      // Display success message from API response
       toast.success(response.message || 'Patents saved successfully!');
       setInputValue('');
       setPatentIds([]);
-      setFolderName('');
+      setShowFolderModal(false);
     },
     onError: (error: any) => {
-      // Display error message from API response if available
       const errorMessage = error.response?.data?.message || 'Failed to save patents. Please try again.';
       toast.error(errorMessage);
       console.error('Error saving patents:', error);
@@ -34,7 +181,6 @@ const SavedPatentList = () => {
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // If user presses Enter or comma, add the patent ID
     if ((e.key === 'Enter' || e.key === ',') && inputValue.trim()) {
       e.preventDefault();
       addPatentId();
@@ -44,24 +190,17 @@ const SavedPatentList = () => {
   const addPatentId = () => {
     if (!inputValue.trim()) return;
     
-    // Process input - could be a single ID or multiple IDs separated by commas
     const newIds = inputValue
       .split(',')
       .map(id => id.trim())
       .filter(id => id && !patentIds.includes(id));
     
-    if (newIds.length > 0) {
-      setPatentIds([...patentIds, ...newIds]);
-      setInputValue('');
-    }
+    setPatentIds([...patentIds, ...newIds]);
+    setInputValue('');
   };
 
   const removePatentId = (idToRemove: string) => {
     setPatentIds(patentIds.filter(id => id !== idToRemove));
-  };
-
-  const handleFolderNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFolderName(e.target.value);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,8 +221,7 @@ const SavedPatentList = () => {
     setIsUploading(true);
 
     try {
-      // Upload the file to the server for processing
-      const response = await authApi.uploadPatentFile(file, folderName);
+      const response = await authApi.uploadPatentFile(file);
       
       if (response.data && Array.isArray(response.data.patentIds)) {
         const extractedIds: string[] = response.data.patentIds;
@@ -97,7 +235,6 @@ const SavedPatentList = () => {
           const kindCodesCount = response.data.kindCodes?.length || 0;
           
           if (extractedIds.length === 0 && pubNumbersCount > 0) {
-            // If no patent IDs were extracted but publication numbers exist
             toast.success(`No patent IDs were found, but ${pubNumbersCount} publication numbers were found. These have been added as potential patent IDs.`);
           } else {
             let message = `${extractedIds.length} patent IDs extracted from file.`;
@@ -110,15 +247,13 @@ const SavedPatentList = () => {
             
             toast.success(message);
             
-            // If there's a note about kind code selection, show it
             if (response.data.note) {
               setTimeout(() => {
                 toast.success(response.data.note);
-              }, 500); // Show after a short delay
+              }, 500);
             }
           }
         } else {
-          // For non-Excel files
           toast.success(`${extractedIds.length} patent IDs extracted from file`);
         }
         
@@ -127,11 +262,10 @@ const SavedPatentList = () => {
         
         if (newIds.length > 0) {
           setPatentIds([...patentIds, ...newIds]);
+          setShowFolderModal(true);
         } else {
           toast.success('No new patent IDs found in the file');
         }
-      } else {
-        toast.error('Failed to extract patent IDs from file');
       }
     } catch (error: any) {
       console.error('Error processing file:', error);
@@ -147,19 +281,20 @@ const SavedPatentList = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Add the current input value if it's not empty
     if (inputValue.trim()) {
       addPatentId();
     }
     
-    // Submit all patent IDs if there are any
-    if (patentIds.length > 0) {
-      savePatentMutation.mutate({ ids: patentIds, folderName: folderName || undefined });
-    } else if (inputValue.trim()) {
-      // If input is not empty but not yet added to the list
-      savePatentMutation.mutate({ ids: [inputValue.trim()], folderName: folderName || undefined });
-      setInputValue('');
+    if (patentIds.length > 0 || inputValue.trim()) {
+      setShowFolderModal(true);
     }
+  };
+
+  const handleFolderSelection = (folderName: string, workfileName: string) => {
+    const idsToSave = patentIds.length > 0 ? patentIds : [inputValue.trim()];
+    // Combine folder name and workfile name with a slash to create a subfolder
+    const combinedFolderName = `${folderName}/${workfileName}`;
+    savePatentMutation.mutate({ ids: idsToSave, folderName: combinedFolderName });
   };
 
   const triggerFileInput = () => {
@@ -185,22 +320,9 @@ const SavedPatentList = () => {
             type="button" 
             onClick={addPatentId}
             className="add-button"
-            disabled={!inputValue.trim()}
           >
             Add
           </button>
-        </div>
-        
-        <div className="folder-name-container">
-          <label htmlFor="folder-name">Folder Name (optional):</label>
-          <input
-            id="folder-name"
-            type="text"
-            value={folderName}
-            onChange={handleFolderNameChange}
-            placeholder="Enter a name for this patent list"
-            className="folder-name-input"
-          />
         </div>
         
         <div className="file-upload-container">
@@ -255,6 +377,45 @@ const SavedPatentList = () => {
           {savePatentMutation.isPending ? 'Saving...' : 'Save Patents'}
         </button>
       </form>
+
+      {/* Display existing folders and workfiles */}
+      <div className="folders-list">
+        <h3>Your Folders</h3>
+        {isLoadingFolders ? (
+          <p>Loading folders...</p>
+        ) : existingFolders.length === 0 ? (
+          <p>No folders yet. Create your first folder by saving patents!</p>
+        ) : (
+          <div className="folders-grid">
+            {existingFolders.map((folder) => (
+              <div key={folder._id} className="folder-card">
+                <h4>{folder.name}</h4>
+                <div className="workfiles-list">
+                  {folder.workFiles?.map((workfile, index) => (
+                    <div key={index} className="workfile-item">
+                      <h5>{workfile.name}</h5>
+                      <p>{workfile.patentIds.length} patents</p>
+                      <ul className="patent-list">
+                        {workfile.patentIds.map((patentId, idx) => (
+                          <li key={idx}>{patentId}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <FolderSelectionModal
+        isOpen={showFolderModal}
+        onClose={() => setShowFolderModal(false)}
+        onSubmit={handleFolderSelection}
+        existingFolders={existingFolders}
+        patentIds={patentIds}
+      />
     </div>
   );
 };

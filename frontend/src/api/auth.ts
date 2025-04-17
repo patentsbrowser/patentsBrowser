@@ -383,7 +383,7 @@ export const authApi = {
 
   getImportedLists: async () => {
     try {
-      const response = await api.get(`${baseURL}/saved-patents/get-imported-lists`);
+      const response = await api.get(`/saved-patents/get-imported-lists`);
       return response.data;
     } catch (error) {
       console.error('Error fetching imported lists:', error);

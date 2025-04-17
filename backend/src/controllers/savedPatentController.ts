@@ -8,6 +8,7 @@ import xlsx from 'xlsx';
 import { Readable } from 'stream';
 import { standardizePatentNumber } from '../utils/patentUtils.js';
 import { SearchHistory } from '../models/SearchHistory.js';
+import { WorkFile } from '../models/WorkFile.js';
 
 // Create a complete FileType that includes all properties
 interface FileType {
@@ -88,15 +89,42 @@ export const savePatent = async (req: AuthRequest, res: Response) => {
     let customList = null;
     if (folderName && patentIds.length > 0) {
       console.log(`Creating custom list "${folderName}" with ${standardizedPatentIds.length} patents`);
-      customList = new CustomPatentList({
-        userId,
-        name: folderName,
-        patentIds: standardizedPatentIds,
-        timestamp: Date.now(),
-        source: 'importedList'
+      
+      // Split folderName into main folder and workfile name
+      const [mainFolderName, workfileName] = folderName.split('/');
+      
+      // Find or create the main folder
+      let mainFolder = await CustomPatentList.findOne({ 
+        userId, 
+        name: mainFolderName 
       });
 
-      await customList.save();
+      if (!mainFolder) {
+        // Create the main folder if it doesn't exist
+        mainFolder = new CustomPatentList({
+          userId,
+          name: mainFolderName,
+          patentIds: [], // We'll store patentIds in the workfile instead
+          timestamp: Date.now(),
+          source: 'importedList'
+        });
+        await mainFolder.save();
+      }
+
+      // Create a workfile under the folder
+      const workFile = {
+        name: workfileName || 'workfile1',
+        patentIds: standardizedPatentIds,
+        timestamp: Date.now()
+      };
+
+      // Add the workfile to the folder's workFiles array
+      mainFolder.workFiles.push(workFile);
+      await mainFolder.save();
+
+      // Update the customList object to include the workfile
+      customList = await CustomPatentList.findById(mainFolder._id)
+        .lean();
     }
 
     res.status(201).json({
@@ -492,10 +520,6 @@ export const extractPatentIdsFromFile = async (req: AuthRequest, res: Response) 
       });
     }
 
-    // Check if a folder name was provided
-    const folderName = req.body.folderName;
-    console.log('Folder name provided:', folderName);
-    
     const filePath = req.file.path;
     let fileContent = '';
     
@@ -503,317 +527,91 @@ export const extractPatentIdsFromFile = async (req: AuthRequest, res: Response) 
     const publicationNumbers: string[] = [];
     const kindCodes: string[] = [];
 
-    try {
-      // Extract text based on file type
-      const fileExtension = path.extname(req.file.originalname).toLowerCase();
-      console.log('File extension:', fileExtension);
-      
-      // Flag to identify Excel and CSV files for later processing
-      const isExcelFile = fileExtension === '.xls' || fileExtension === '.xlsx' || fileExtension === '.csv';
+    // Read file content based on file type
+    const fileExtension = path.extname(filePath).toLowerCase();
       
       if (fileExtension === '.txt') {
-        // For text files, read directly
-        console.log('Processing TXT file');
-        fileContent = await fs.readFile(filePath, 'utf8');
-      } else if (fileExtension === '.doc' || fileExtension === '.docx') {
-        // For Word documents, use mammoth to extract text
-        console.log('Processing DOC/DOCX file');
-        const result = await mammoth.extractRawText({
-          path: filePath
-        });
-        fileContent = result.value;
-      } else if (isExcelFile) {
-        // For Excel files (including CSV) - find and extract headers
-        console.log(`Processing ${fileExtension.toUpperCase().substring(1)} file:`, req.file.originalname);
-        const workbook = xlsx.readFile(filePath);
-        const sheetNames = workbook.SheetNames;
-        console.log('Sheets found:', sheetNames);
-        
-        // Process each sheet in the workbook
-        for (const sheetName of sheetNames) {
-          console.log(`Processing sheet: ${sheetName}`);
-          const worksheet = workbook.Sheets[sheetName];
-          
-          // First, convert the entire sheet to an array including headers
-          const sheetData = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-          
-          if (sheetData.length === 0) {
-            console.log(`Sheet ${sheetName} is empty`);
-            continue;
+      fileContent = await fs.readFile(filePath, 'utf-8');
+      // Extract patent IDs from text file
+      const lines = fileContent.split('\n');
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (trimmedLine) {
+          // Try to extract patent ID from the line
+          const patentId = extractPatentId(trimmedLine);
+          if (patentId) {
+            publicationNumbers.push(patentId);
           }
-          
-          // Try to find the column indices with our target headers
-          const headerRow = sheetData[0] as any[];
-          console.log(`Headers in sheet ${sheetName}:`, headerRow);
-          
-          let pubNumberColumnIndex = -1;
-          let kindCodeColumnIndex = -1;
-          
-          // Look for the "Earliest publication number" header (case insensitive)
-          for (let i = 0; i < headerRow.length; i++) {
-            const header = String(headerRow[i] || '').toLowerCase();
-            
-            // Check for publication number
-            if (header.includes('earliest') && header.includes('publication') && header.includes('number')) {
-              pubNumberColumnIndex = i;
-              console.log(`Found "Earliest publication number" column at index ${i}`);
-            }
-            
-            // Check for publication kind codes
-            if (header.includes('publication') && header.includes('kind') && header.includes('code')) {
-              kindCodeColumnIndex = i;
-              console.log(`Found "Publication kind codes" column at index ${i}`);
-            }
-          }
-          
-          // If we couldn't find the exact headers, try a more flexible search
-          if (pubNumberColumnIndex === -1) {
-            for (let i = 0; i < headerRow.length; i++) {
-              const header = String(headerRow[i] || '').toLowerCase();
-              if ((header.includes('publication') && header.includes('number')) || 
-                  header.includes('patent') || 
-                  header.includes('pub')) {
-                pubNumberColumnIndex = i;
-                console.log(`Found possible publication number column with header "${headerRow[i]}" at index ${i}`);
-                break;
-              }
-            }
-          }
-          
-          if (kindCodeColumnIndex === -1) {
-            for (let i = 0; i < headerRow.length; i++) {
-              const header = String(headerRow[i] || '').toLowerCase();
-              if ((header.includes('kind') && header.includes('code')) || 
-                  header.includes('pub') && header.includes('kind')) {
-                kindCodeColumnIndex = i;
-                console.log(`Found possible kind code column with header "${headerRow[i]}" at index ${i}`);
-                break;
-              }
-            }
-          }
-          
-          // Extract data from the publication number column if found
-          if (pubNumberColumnIndex !== -1) {
-            console.log(`Extracting data from publication number column at index ${pubNumberColumnIndex}`);
-            
-            // Extract data from the found column (skip header row)
-            for (let i = 1; i < sheetData.length; i++) {
-              const row = sheetData[i];
-              if (row && row[pubNumberColumnIndex] !== undefined && row[pubNumberColumnIndex] !== null) {
-                const value = String(row[pubNumberColumnIndex]).trim();
-                if (value.length > 0) {
-                  publicationNumbers.push(value);
-                }
-              }
-            }
-          } else {
-            console.log(`Could not find "Earliest publication number" column in sheet ${sheetName}`);
-            
-            // Fallback: If we couldn't find the target header but have data, assume first column might contain publication numbers
-            if (sheetData.length > 1) {
-              console.log('Falling back to first column as potential publication numbers');
-              for (let i = 1; i < sheetData.length; i++) {
-                const row = sheetData[i];
-                if (row && row[0] !== undefined && row[0] !== null) {
-                  const value = String(row[0]).trim();
-                  if (value.length > 0) {
-                    publicationNumbers.push(value);
-                  }
-                }
-              }
-            }
-          }
-          
-          // Extract data from the kind code column if found
-          if (kindCodeColumnIndex !== -1) {
-            console.log(`Extracting data from kind code column at index ${kindCodeColumnIndex}`);
-            
-            // Extract data from the found column (skip header row)
-            for (let i = 1; i < sheetData.length; i++) {
-              const row = sheetData[i];
-              if (row && row[kindCodeColumnIndex] !== undefined && row[kindCodeColumnIndex] !== null) {
-                const value = String(row[kindCodeColumnIndex]).trim();
-                if (value.length > 0) {
-                  // Check if this value contains multiple kind codes
-                  if (/[A-Z\d][,;\s|][A-Z\d]/.test(value)) {
-                    console.log(`Row ${i} has multiple kind codes: "${value}" - will use first one only`);
-                  }
-                  kindCodes.push(value);
-                }
-              }
-            }
-          } else {
-            console.log(`Could not find "Publication kind codes" column in sheet ${sheetName}`);
-            // No fallback for kind codes, as they're optional
-          }
-        }
-        
-        console.log('All extracted publication numbers:', publicationNumbers);
-        console.log('All extracted kind codes:', kindCodes);
-      } else {
-        console.log('Unsupported file type:', fileExtension);
-        // We'll still try to extract content from unsupported files
-        try {
-          fileContent = await fs.readFile(filePath, 'utf8');
-        } catch (err) {
-          console.log('Could not read file as text:', err);
         }
       }
+    } else if (fileExtension === '.doc' || fileExtension === '.docx') {
+      // Handle Word documents
+      const result = await mammoth.extractRawText({ path: filePath });
+      fileContent = result.value;
+      const lines = fileContent.split('\n');
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (trimmedLine) {
+          const patentId = extractPatentId(trimmedLine);
+          if (patentId) {
+            publicationNumbers.push(patentId);
+          }
+        }
+      }
+    } else if (fileExtension === '.xls' || fileExtension === '.xlsx' || fileExtension === '.csv') {
+      // Handle Excel and CSV files
+      const workbook = xlsx.readFile(filePath);
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+      
+      // Find the column indices for publication numbers and kind codes
+      let pubNumIndex = -1;
+      let kindCodeIndex = -1;
+      
+      if (data.length > 0) {
+        const headers = data[0] as string[];
+        pubNumIndex = headers.findIndex(header => 
+          header.toLowerCase().includes('publication') || 
+          header.toLowerCase().includes('patent')
+        );
+        kindCodeIndex = headers.findIndex(header => 
+          header.toLowerCase().includes('kind') || 
+          header.toLowerCase().includes('code')
+        );
+      }
+      
+      // Extract data from rows
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i] as any[];
+        if (pubNumIndex !== -1 && row[pubNumIndex]) {
+          publicationNumbers.push(row[pubNumIndex].toString());
+        }
+        if (kindCodeIndex !== -1 && row[kindCodeIndex]) {
+          kindCodes.push(row[kindCodeIndex].toString());
+        }
+      }
+    }
 
-      let extractedPatentIds: string[] = [];
-      
-      if (isExcelFile) {
-        // Get unique publication numbers (in case of duplicates)
-        const uniquePubNumbers = [...new Set(publicationNumbers)];
-        console.log(`Found ${uniquePubNumbers.length} unique publication numbers`);
-        
-        // For each unique publication number, find the first kind code
-        extractedPatentIds = uniquePubNumbers.map(pubNumber => {
-          // Find the index of this publication number in the original array
-          // (to match it with the corresponding kind code)
-          const firstIndex = publicationNumbers.indexOf(pubNumber);
-          
-          // Get the kind code at the same index, if available
-          const kindCode = firstIndex >= 0 && firstIndex < kindCodes.length ? kindCodes[firstIndex] : '';
-          
-          // If both publication number and kind code are available, combine them
-          if (pubNumber && kindCode) {
-            // When kind code contains multiple codes, take only the first one
-            // Split by common delimiters (commas, spaces, semicolons, vertical bars)
-            const kindCodeParts = kindCode.split(/[\s,;|]+/).filter(Boolean);
-            
-            // If we have multiple kind codes, log them
-            if (kindCodeParts.length > 1) {
-              console.log(`Publication ${pubNumber} has multiple kind codes: ${kindCodeParts.join(', ')}`);
-            }
-            
-            // Choose the first kind code, prioritizing certain codes if available
-            let selectedKindCode = '';
-            
-            // Priority order: A1, B1, B2, A, B - look for these patterns first
-            const priorityOrder = ['A1', 'B1', 'B2', 'A', 'B'];
-            for (const code of priorityOrder) {
-              const found = kindCodeParts.find(part => part === code);
-              if (found) {
-                selectedKindCode = found;
-                console.log(`For ${pubNumber}, found priority kind code: ${selectedKindCode}`);
-                break;
-              }
-            }
-            
-            // If we didn't find a priority code, just use the first one
-            if (!selectedKindCode && kindCodeParts.length > 0) {
-              selectedKindCode = kindCodeParts[0];
-              console.log(`For ${pubNumber}, using first available kind code: ${selectedKindCode}`);
-            }
-            
-            // Return the combined publication number and kind code
-            if (selectedKindCode) {
-              // Combine publication number and kind code WITHOUT space between them
-              const combined = `${pubNumber}${selectedKindCode}`;
-              console.log(`Combined without space: ${pubNumber} + ${selectedKindCode} → ${combined}`);
-              // Standardize the patent ID format
-              const standardized = standardizePatentNumber(combined);
-              console.log(`Standardized format: ${combined} → ${standardized}`);
-              return standardized;
-            }
-            
-            return standardizePatentNumber(pubNumber);
-          } else {
-            // If no kind code is available, just use the publication number
-            return standardizePatentNumber(pubNumber);
-          }
-        });
-        
-        console.log('Final combined publication numbers with first kind codes:', extractedPatentIds);
-      } else {
-        // For non-Excel files, use regex to extract patent IDs
-        const patentIdPattern = /(?:US|EP|WO|JP|CN|KR|DE|FR|GB|CA)[\s-]?\d{5,10}[\s-]?[A-Z]\d?/g;
-        const matchedIds = fileContent.match(patentIdPattern) || [];
-        // Standardize each extracted patent ID
-        extractedPatentIds = [...new Set(matchedIds.map(id => standardizePatentNumber(id)))];
-        console.log('Patent IDs extracted from text content:', extractedPatentIds);
-      }
-      
-      // Clean up the temporary file
+    // Clean up the uploaded file
       await fs.remove(filePath);
 
-      // Create a response object
-      const responseData: {
-        patentIds: string[];
-        count: number;
-        publicationNumbers: string[];
-        kindCodes: string[];
-        note?: string;
-        savedFolder?: {
-          id: string;
-          name: string;
-          patentCount: number;
-        };
-        folderError?: string;
-      } = {
-        patentIds: extractedPatentIds,
-        count: extractedPatentIds.length,
-        publicationNumbers: isExcelFile ? publicationNumbers : [],
-        kindCodes: isExcelFile ? kindCodes : [],
-        note: isExcelFile && kindCodes.some(code => /[A-Z\d][,;\s|][A-Z\d]/.test(code)) 
-          ? 'Some kind codes contained multiple values. The first one or a priority code (A1, B1, B2, A, B) was selected and combined without spaces.'
-          : undefined
-      };
+    // Process the extracted patent IDs using standardizePatentNumber
+    const processedPatentIds = publicationNumbers.map(id => standardizePatentNumber(id.trim()));
 
-      // If a folder name was provided, create a custom patent list
-      if (folderName && extractedPatentIds.length > 0) {
-        try {
-          // Create and save the custom patent list
-          const customList = new CustomPatentList({
-            userId,
-            name: folderName,
-            patentIds: extractedPatentIds,
-            timestamp: Date.now(),
-            source: 'folderName'
-          });
-
-          const savedList = await customList.save();
-          console.log('Created custom patent list from file upload:', savedList);
-          
-          // Add the saved list info to the response
-          responseData.savedFolder = {
-            id: savedList._id.toString(),
-            name: savedList.name,
-            patentCount: savedList.patentIds.length
-          };
-        } catch (folderError) {
-          console.error('Error saving custom patent list:', folderError);
-          responseData.folderError = 'Failed to create custom patent list, but patents were extracted successfully';
-        }
+    // Return the extracted patent IDs
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Patent IDs extracted successfully',
+      data: {
+        patentIds: processedPatentIds
       }
-
-      return res.status(200).json({
-        statusCode: 200,
-        message: folderName && responseData.savedFolder 
-          ? `Patents extracted and saved to folder "${folderName}" successfully` 
-          : 'Publication numbers and kind codes extracted successfully',
-        data: responseData
-      });
-    } catch (error) {
-      console.error('Error processing file content:', error);
-      
-      // Clean up the temporary file
-      if (fs.existsSync(filePath)) {
-        await fs.remove(filePath);
-      }
-      
-      return res.status(500).json({
-        statusCode: 500,
-        message: 'Error processing file content',
-        data: null
-      });
-    }
+    });
   } catch (error) {
-    console.error('Error extracting patent IDs from file:', error);
-    return res.status(500).json({
+    console.error('Error extracting patent IDs:', error);
+    res.status(500).json({
       statusCode: 500,
-      message: 'Failed to process file',
+      message: 'Failed to extract patent IDs',
       data: null
     });
   }
@@ -882,16 +680,18 @@ export const getImportedLists = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Find all custom patent lists with source 'importedList'
-    const importedLists = await CustomPatentList.find({ 
-      userId,
-      source: 'importedList'
-    }).sort({ timestamp: -1 }); // Most recent first
+    // Find all custom patent lists for this user and populate workfiles
+    const customLists = await CustomPatentList.find({ userId })
+      .populate({
+        path: 'workFiles',
+        select: 'name patentIds timestamp createdAt'
+      })
+      .sort({ timestamp: -1 }); // Most recent first
 
     res.status(200).json({
       statusCode: 200,
       message: 'Imported lists retrieved successfully',
-      data: importedLists
+      data: customLists
     });
   } catch (error) {
     console.error('Error fetching imported lists:', error);
@@ -1073,6 +873,138 @@ export const addToSearchHistory = async (req: AuthRequest, res: Response) => {
       message: error.message || 'Failed to add to search history',
       data: null,
       code: 'SERVER_ERROR'
+    });
+  }
+};
+
+export const createWorkFile = async (req: AuthRequest, res: Response) => {
+  try {
+    const { folderId, fileName } = req.body;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'User not authenticated',
+        data: null
+      });
+    }
+
+    if (!folderId || !fileName) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Folder ID and file name are required',
+        data: null
+      });
+    }
+
+    // Find the folder
+    const folder = await CustomPatentList.findOne({ _id: folderId, userId });
+    if (!folder) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'Folder not found',
+        data: null
+      });
+    }
+
+    // Create a new work file
+    const workFile = {
+      fileName,
+      patentIds: folder.patentIds,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    // Add the work file to the folder
+    folder.workFiles = folder.workFiles || [];
+    folder.workFiles.push(workFile);
+    await folder.save();
+
+    res.status(201).json({
+      statusCode: 201,
+      message: 'Work file created successfully',
+      data: workFile
+    });
+  } catch (error) {
+    console.error('Error creating work file:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to create work file',
+      data: null
+    });
+  }
+};
+
+export const mergeWorkFiles = async (req: AuthRequest, res: Response) => {
+  try {
+    const { folderId, fileIds, mergedFileName } = req.body;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'User not authenticated',
+        data: null
+      });
+    }
+
+    if (!folderId || !fileIds || !Array.isArray(fileIds) || fileIds.length < 2 || !mergedFileName) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Folder ID, file IDs array (minimum 2 files), and merged file name are required',
+        data: null
+      });
+    }
+
+    // Find the folder
+    const folder = await CustomPatentList.findOne({ _id: folderId, userId });
+    if (!folder) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'Folder not found',
+        data: null
+      });
+    }
+
+    // Get all work files to merge
+    const workFilesToMerge = folder.workFiles?.filter(file => fileIds.includes(file._id.toString()));
+    if (!workFilesToMerge || workFilesToMerge.length < 2) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Invalid file IDs or not enough files to merge',
+        data: null
+      });
+    }
+
+    // Merge patent IDs from all files, removing duplicates
+    const mergedPatentIds = [...new Set(workFilesToMerge.flatMap(file => file.patentIds))];
+
+    // Create new merged work file
+    const mergedWorkFile = {
+      fileName: mergedFileName,
+      patentIds: mergedPatentIds,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      mergedFrom: fileIds
+    };
+
+    // Add the merged work file to the folder
+    folder.workFiles = folder.workFiles || [];
+    folder.workFiles.push(mergedWorkFile);
+    await folder.save();
+
+    res.status(201).json({
+      statusCode: 201,
+      message: 'Work files merged successfully',
+      data: mergedWorkFile
+    });
+  } catch (error) {
+    console.error('Error merging work files:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to merge work files',
+      data: null
     });
   }
 };

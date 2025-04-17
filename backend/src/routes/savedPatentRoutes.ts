@@ -13,8 +13,10 @@ import {
   clearSearchHistory,
   addToSearchHistory,
   addPatentToFolder,
-  addPatentsToFolder
-} from '../controllers/savedPatentController.js';
+  addPatentsToFolder,
+  createWorkFile,
+  mergeWorkFiles
+} from '../controllers/savedPatentController.ts';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -91,5 +93,9 @@ router.post(
   upload.single('patentFile'),
   extractPatentIdsFromFile as any
 );
+
+// New routes for work file operations
+router.post('/create-work-file', auth, createWorkFile as any);
+router.post('/merge-work-files', auth, mergeWorkFiles as any);
 
 export default router; 

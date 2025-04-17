@@ -14,6 +14,20 @@ const customPatentListSchema = new mongoose.Schema({
     type: [String],
     required: true
   },
+  workFiles: [{
+    name: {
+      type: String,
+      required: true
+    },
+    patentIds: {
+      type: [String],
+      required: true
+    },
+    timestamp: {
+      type: Number,
+      default: () => Date.now()
+    }
+  }],
   timestamp: {
     type: Number,
     default: () => Date.now()
@@ -27,5 +41,9 @@ const customPatentListSchema = new mongoose.Schema({
     default: null
   }
 });
+
+// Add indexes for faster queries
+customPatentListSchema.index({ userId: 1 });
+customPatentListSchema.index({ patentIds: 1 });
 
 export const CustomPatentList = mongoose.model('CustomPatentList', customPatentListSchema); 
