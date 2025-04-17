@@ -9,6 +9,15 @@ interface WorkFile {
   isCombined?: boolean;
 }
 
+interface Patent {
+  _source: {
+    publication_number: string;
+    country: string;
+    family_id?: string;
+  };
+  _id: string;
+}
+
 interface CombineWorkfilesModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -26,7 +35,7 @@ const CombineWorkfilesModal: React.FC<CombineWorkfilesModalProps> = ({
   const [invalidPatentIds, setInvalidPatentIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [validPatentsByFamily, setValidPatentsByFamily] = useState<Map<string, string[]>>(new Map());
+  const [validPatentsByFamily, setValidPatentsByFamily] = useState<Map<string, Patent[]>>(new Map());
   const [finalPatentIds, setFinalPatentIds] = useState<string[]>([]);
 
   // Default patent authority preference with US first
@@ -71,11 +80,37 @@ const CombineWorkfilesModal: React.FC<CombineWorkfilesModalProps> = ({
         },
         body: JSON.stringify({
           query: {
-            terms: {
-              patent_id: Array.from(uniqueIds)
+            bool: {
+              must: [{
+                terms: {
+                  ucid_spif: Array.from(uniqueIds)
+                }
+              }]
             }
           },
-          size: uniqueIds.size
+          size: uniqueIds.size,
+          sort: [
+            { portfolio_score: "desc" }
+          ],
+          track_total_hits: true,
+          _source: {
+            exclude: [
+              "created_at",
+              "updated_at",
+              "id",
+              "*.created_at",
+              "*.updated_at",
+              "*.id",
+              "patent_id",
+              "patent.title",
+              "*.full_text",
+              "citations_npl",
+              "citations_pat",
+              "family_members",
+              "abstract_fulltext",
+              "non_patent_citations"
+            ]
+          }
         })
       });
 
@@ -87,7 +122,7 @@ const CombineWorkfilesModal: React.FC<CombineWorkfilesModalProps> = ({
       
       // Get all valid patent IDs from the response
       const validHits = data.hits.hits;
-      const validPatentIds = new Set(validHits.map((hit: any) => hit._source.patent_id));
+      const validPatentIds = new Set(validHits.map((hit: any) => hit._source.ucid_spif));
       
       // Find invalid patent IDs (those not found in the API response)
       const invalidIds = Array.from(uniqueIds).filter(id => !validPatentIds.has(id));
@@ -116,7 +151,7 @@ const CombineWorkfilesModal: React.FC<CombineWorkfilesModalProps> = ({
       validHits
         .filter((hit: any) => !hit._source.family_id)
         .forEach((hit: any) => {
-          selectedPatents.push(hit._source.publication_number || hit._id);
+          selectedPatents.push(hit._source.ucid_spif || hit._id);
         });
 
       setValidPatentsByFamily(familyGroups);
@@ -159,7 +194,7 @@ const CombineWorkfilesModal: React.FC<CombineWorkfilesModalProps> = ({
   };
 
   if (!isOpen) return null;
-
+// console.log('first', first)
   const modalContent = (
     <div className="combine-workfiles-modal-overlay">
       <div className="combine-workfiles-modal fullscreen">
@@ -211,7 +246,7 @@ const CombineWorkfilesModal: React.FC<CombineWorkfilesModalProps> = ({
                   <h3>Patent Families</h3>
                   <p>Patents have been grouped by family. One patent per family will be selected (preferring US patents when available).</p>
                   <div className="family-list">
-                    {Array.from(validPatentsByFamily).map(([familyId, patents], index) => (
+                    {Array.from(validPatentsByFamily).map(([familyId, patents]: [string, Patent[]], index) => (
                       <div key={index} className="family-group">
                         <div className="family-header">Family {familyId}</div>
                         <div className="family-patents">
