@@ -378,37 +378,6 @@ const SavedPatentList = () => {
         </button>
       </form>
 
-      {/* Display existing folders and workfiles */}
-      <div className="folders-list">
-        <h3>Your Folders</h3>
-        {isLoadingFolders ? (
-          <p>Loading folders...</p>
-        ) : existingFolders.length === 0 ? (
-          <p>No folders yet. Create your first folder by saving patents!</p>
-        ) : (
-          <div className="folders-grid">
-            {existingFolders.map((folder) => (
-              <div key={folder._id} className="folder-card">
-                <h4>{folder.name}</h4>
-                <div className="workfiles-list">
-                  {folder.workFiles?.map((workfile, index) => (
-                    <div key={index} className="workfile-item">
-                      <h5>{workfile.name}</h5>
-                      <p>{workfile.patentIds.length} patents</p>
-                      <ul className="patent-list">
-                        {workfile.patentIds.map((patentId, idx) => (
-                          <li key={idx}>{patentId}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
       <FolderSelectionModal
         isOpen={showFolderModal}
         onClose={() => setShowFolderModal(false)}
