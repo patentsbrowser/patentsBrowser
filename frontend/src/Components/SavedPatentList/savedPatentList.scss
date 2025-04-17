@@ -189,6 +189,35 @@
     }
   }
 
+  .unsaved-patents-notice {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    p {
+      margin: 0;
+      color: #6c757d;
+    }
+
+    .clear-button {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+
+      &:hover {
+        background-color: #c82333;
+      }
+    }
+  }
+
   .patent-ids-list {
     padding: 1.25rem;
     background: var(--secondary-bg);
@@ -232,6 +261,19 @@
         font-size: 0.95rem;
         color: var(--text-color);
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+
+        &.read {
+          background-color: #e9ecef;
+          color: #6c757d;
+          border-color: #dee2e6;
+
+          &::after {
+            content: '(viewed)';
+            font-size: 0.8em;
+            margin-left: 0.5rem;
+            color: #6c757d;
+          }
+        }
 
         .remove-button {
           background: none;
@@ -432,6 +474,23 @@
           }
         }
       }
+    }
+  }
+
+  .login-notice {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    p {
+      margin: 0;
+      color: #856404;
+      font-size: 0.95rem;
     }
   }
 }

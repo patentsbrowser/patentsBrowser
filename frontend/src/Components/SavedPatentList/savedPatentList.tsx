@@ -3,6 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { authApi } from '../../api/auth';
 import toast from 'react-hot-toast';
 import './savedPatentList.scss';
+import { useAuth } from '../../AuthContext';
 
 interface WorkFile {
   name: string;
@@ -144,12 +145,74 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
   );
 };
 
+// Update storage keys to be user-specific
+const getUserStorageKey = (userId: string) => `savedPatentList_${userId}`;
+const getUserReadPatentsKey = (userId: string) => `readPatents_${userId}`;
+
+// Function to get read patents from localStorage with user ID
+const getReadPatents = (userId: string): Set<string> => {
+  const stored = localStorage.getItem(getUserReadPatentsKey(userId));
+  return stored ? new Set(JSON.parse(stored)) : new Set();
+};
+
+// Function to add a patent to read list with user ID
+const addToReadPatents = (userId: string, patentId: string) => {
+  const readPatents = getReadPatents(userId);
+  readPatents.add(patentId);
+  localStorage.setItem(getUserReadPatentsKey(userId), JSON.stringify([...readPatents]));
+};
+
 const SavedPatentList = () => {
+  const { user } = useAuth();
   const [inputValue, setInputValue] = useState('');
-  const [patentIds, setPatentIds] = useState<string[]>([]);
+  const [patentIds, setPatentIds] = useState<string[]>(() => {
+    // Initialize from localStorage only if user exists
+    if (user?.id) {
+      const stored = localStorage.getItem(getUserStorageKey(user.id));
+      return stored ? JSON.parse(stored) : [];
+    }
+    return [];
+  });
   const [isUploading, setIsUploading] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [readPatents, setReadPatents] = useState<Set<string>>(user?.id ? getReadPatents(user.id) : new Set());
+
+  // Update state when user changes (e.g., after login)
+  useEffect(() => {
+    if (user?.id) {
+      const storedPatents = localStorage.getItem(getUserStorageKey(user.id));
+      setPatentIds(storedPatents ? JSON.parse(storedPatents) : []);
+      setReadPatents(getReadPatents(user.id));
+    } else {
+      // Clear state if no user
+      setPatentIds([]);
+      setReadPatents(new Set());
+    }
+  }, [user?.id]);
+
+  // Save patentIds to localStorage whenever it changes
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(getUserStorageKey(user.id), JSON.stringify(patentIds));
+    }
+  }, [patentIds, user?.id]);
+
+  // Listen for patent view events
+  useEffect(() => {
+    const handlePatentView = (event: CustomEvent) => {
+      if (user?.id) {
+        const viewedPatentId = event.detail.patentId;
+        addToReadPatents(user.id, viewedPatentId);
+        setReadPatents(getReadPatents(user.id));
+      }
+    };
+
+    window.addEventListener('patent-viewed' as any, handlePatentView);
+    return () => {
+      window.removeEventListener('patent-viewed' as any, handlePatentView);
+    };
+  }, [user?.id]);
 
   // Fetch existing folders
   const { data: existingFolders = [], isLoading: isLoadingFolders } = useQuery<CustomFolder[]>({
@@ -226,45 +289,24 @@ const SavedPatentList = () => {
       if (response.data && Array.isArray(response.data.patentIds)) {
         const extractedIds: string[] = response.data.patentIds;
         
-        // For Excel/CSV files, check if we have publication numbers and kind codes
-        if (fileExtension === 'xls' || fileExtension === 'xlsx' || fileExtension === 'csv') {
-          console.log('Publication numbers from spreadsheet:', response.data.publicationNumbers);
-          console.log('Kind codes from spreadsheet:', response.data.kindCodes);
-          
-          const pubNumbersCount = response.data.publicationNumbers?.length || 0;
-          const kindCodesCount = response.data.kindCodes?.length || 0;
-          
-          if (extractedIds.length === 0 && pubNumbersCount > 0) {
-            toast.success(`No patent IDs were found, but ${pubNumbersCount} publication numbers were found. These have been added as potential patent IDs.`);
-          } else {
-            let message = `${extractedIds.length} patent IDs extracted from file.`;
-            
-            if (pubNumbersCount > 0 && kindCodesCount > 0) {
-              message += ` Combined ${pubNumbersCount} publication numbers with ${kindCodesCount} kind codes.`;
-            } else if (pubNumbersCount > 0) {
-              message += ` Found ${pubNumbersCount} publication numbers.`;
-            }
-            
-            toast.success(message);
-            
-            if (response.data.note) {
-              setTimeout(() => {
-                toast.success(response.data.note);
-              }, 500);
-            }
-          }
-        } else {
-          toast.success(`${extractedIds.length} patent IDs extracted from file`);
-        }
-        
-        // Filter out duplicates
-        const newIds = extractedIds.filter(id => !patentIds.includes(id));
+        // Filter out already read patents and duplicates
+        const newIds = extractedIds.filter(id => {
+          const standardizedId = id.trim().toUpperCase();
+          return !readPatents.has(standardizedId) && !patentIds.includes(standardizedId);
+        });
         
         if (newIds.length > 0) {
-          setPatentIds([...patentIds, ...newIds]);
+          setPatentIds(prevIds => [...prevIds, ...newIds]);
           setShowFolderModal(true);
+          
+          if (extractedIds.length !== newIds.length) {
+            const skippedCount = extractedIds.length - newIds.length;
+            toast.success(`Added ${newIds.length} new patents. Skipped ${skippedCount} previously read patents.`);
+          } else {
+            toast.success(`Added ${newIds.length} new patents`);
+          }
         } else {
-          toast.success('No new patent IDs found in the file');
+          toast.success('All patents from this file have already been read or added');
         }
       }
     } catch (error: any) {
@@ -292,9 +334,29 @@ const SavedPatentList = () => {
 
   const handleFolderSelection = (folderName: string, workfileName: string) => {
     const idsToSave = patentIds.length > 0 ? patentIds : [inputValue.trim()];
-    // Combine folder name and workfile name with a slash to create a subfolder
     const combinedFolderName = `${folderName}/${workfileName}`;
-    savePatentMutation.mutate({ ids: idsToSave, folderName: combinedFolderName });
+    
+    savePatentMutation.mutate(
+      { ids: idsToSave, folderName: combinedFolderName },
+      {
+        onSuccess: () => {
+          // Clear the saved state after successful save
+          localStorage.removeItem(getUserStorageKey(user?.id || ''));
+          setPatentIds([]);
+          setInputValue('');
+        }
+      }
+    );
+  };
+
+  // Function to clear all unsaved patents
+  const clearUnsavedPatents = () => {
+    if (user?.id) {
+      localStorage.removeItem(getUserStorageKey(user.id));
+    }
+    setPatentIds([]);
+    setInputValue('');
+    toast.success('Cleared all unsaved patents');
   };
 
   const triggerFileInput = () => {
@@ -306,6 +368,22 @@ const SavedPatentList = () => {
   return (
     <div className="saved-patent-list">
       <h2>Save Patents</h2>
+      {!user?.id && (
+        <div className="login-notice">
+          <p>Please log in to save your patent list across devices</p>
+        </div>
+      )}
+      {user?.id && patentIds.length > 0 && (
+        <div className="unsaved-patents-notice">
+          <p>You have {patentIds.length} unsaved patents from your previous session</p>
+          <button 
+            onClick={clearUnsavedPatents}
+            className="clear-button"
+          >
+            Clear All
+          </button>
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="save-patent-form">
         <div className="input-container">
           <input
@@ -354,7 +432,7 @@ const SavedPatentList = () => {
             <p>Patents to save: <span className="count">({patentIds.length})</span></p>
             <ul>
               {patentIds.map((id, index) => (
-                <li key={index}>
+                <li key={index} className={readPatents.has(id.toUpperCase()) ? 'read' : ''}>
                   {id}
                   <button 
                     type="button" 
