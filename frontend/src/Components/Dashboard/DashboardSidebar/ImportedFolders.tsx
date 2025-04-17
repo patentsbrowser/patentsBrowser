@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './DashboardSidebar.scss';
+import CombineWorkfilesModal from './CombineWorkfilesModal';
 
 interface WorkFile {
   name: string;
@@ -38,6 +39,8 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [expandedWorkFiles, setExpandedWorkFiles] = useState<Set<string>>(new Set());
   const [selectedWorkFiles, setSelectedWorkFiles] = useState<Map<string, Set<number>>>(new Map());
+  const [showCombineModal, setShowCombineModal] = useState(false);
+  const [selectedFolderForCombine, setSelectedFolderForCombine] = useState<CustomFolder | null>(null);
 
   const handleFolderClick = (folderId: string) => {
     setExpandedFolder(expandedFolder === folderId ? null : folderId);
@@ -85,15 +88,47 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
     // Get selected workfiles
     const selectedWorkFiles = Array.from(selectedIndices).map(index => folder.workFiles[index]);
     
-    // Get all unique patent IDs
-    const uniquePatentIds = Array.from(
-      new Set(
-        selectedWorkFiles.flatMap(workFile => workFile.patentIds)
-      )
-    );
+    // Process patent IDs to find duplicates
+    const allPatentIds = selectedWorkFiles.flatMap(workFile => workFile.patentIds);
+    const uniqueIds = new Set<string>();
+    const duplicates = new Set<string>();
+
+    allPatentIds.forEach(id => {
+      if (uniqueIds.has(id)) {
+        duplicates.add(id);
+      } else {
+        uniqueIds.add(id);
+      }
+    });
+
+    // Log the results
+    console.log('Selected Workfiles:', selectedWorkFiles);
+    console.log('All Patent IDs:', allPatentIds);
+    console.log('Unique Patent IDs:', Array.from(uniqueIds));
+    console.log('Duplicate Patent IDs:', Array.from(duplicates));
+    console.log('Total Unique IDs:', uniqueIds.size);
+    console.log('Total Duplicates:', duplicates.size);
+
+    setSelectedFolderForCombine(folder);
+    setShowCombineModal(true);
+    if (onModalStateChange) {
+      onModalStateChange(true);
+    }
+  };
+
+  const handleModalClose = () => {
+    setShowCombineModal(false);
+    setSelectedFolderForCombine(null);
+    if (onModalStateChange) {
+      onModalStateChange(false);
+    }
+  };
+
+  const handleCombineConfirm = (uniquePatentIds: string[], duplicateIds: string[]) => {
+    if (!selectedFolderForCombine) return;
 
     // Create new workfile name based on existing workfiles count
-    const newWorkFileName = `Workfile ${folder.workFiles.length + 1}`;
+    const newWorkFileName = `Workfile ${selectedFolderForCombine.workFiles.length + 1}`;
 
     const newWorkFile: WorkFile = {
       name: newWorkFileName,
@@ -105,7 +140,7 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
     // Here you would typically make an API call to save the new workfile
     // For now, we'll just update the local state
     const updatedLists = customPatentLists.map(f => {
-      if (f._id === folder._id) {
+      if (f._id === selectedFolderForCombine._id) {
         return {
           ...f,
           workFiles: [...f.workFiles, newWorkFile]
@@ -117,8 +152,9 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
     // You would typically have a prop to update the parent state
     // onUpdateCustomPatentLists(updatedLists);
     
-    // Clear selections
+    // Clear selections and close modal
     setSelectedWorkFiles(new Map());
+    handleModalClose();
   };
 
   const handlePatentClick = (patentId: string, folderName: string) => {
@@ -187,7 +223,10 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
                       {canCompare && (
                         <button 
                           className="combine-button"
-                          onClick={() => handleCombineWorkFiles(folder, selectedWorkFileIndices)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCombineWorkFiles(folder, selectedWorkFileIndices);
+                          }}
                         >
                           Combine Selected
                         </button>
@@ -249,6 +288,19 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
             );
           })}
         </div>
+      )}
+      
+      {showCombineModal && selectedFolderForCombine && (
+        <CombineWorkfilesModal
+          isOpen={showCombineModal}
+          onClose={handleModalClose}
+          selectedWorkFiles={(() => {
+            const indices = selectedWorkFiles.get(selectedFolderForCombine._id);
+            if (!indices) return [];
+            return Array.from(indices).map(index => selectedFolderForCombine.workFiles[index]);
+          })()}
+          onCombine={handleCombineConfirm}
+        />
       )}
     </div>
   );
