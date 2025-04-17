@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import Loader from '../../../Components/Loader/Loader';
 import './DashboardSidebar.scss';
 
 interface WorkFile {
@@ -218,8 +219,7 @@ const CombineWorkfilesModal: React.FC<CombineWorkfilesModalProps> = ({
 
           {isLoading ? (
             <div className="loading-section">
-              <div className="loading-spinner"></div>
-              <p>Validating patent IDs and checking families...</p>
+              <Loader isLoading={true} />
             </div>
           ) : (
             <>
