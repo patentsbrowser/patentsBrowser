@@ -1070,39 +1070,42 @@ export const addPatentsToWorkFile = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Find the work file
-    const workFile = folder.workFiles.find(file => file.name === workFileName);
-    if (!workFile) {
-      return res.status(404).json({
-        statusCode: 404,
-        message: 'Work file not found',
-        data: null
-      });
-    }
-
     // Standardize the patent IDs
     const standardizedPatentIds = patentIds.map(id => standardizePatentNumber(id.trim()));
 
-    // Filter out patents that are already in the work file
-    const newPatentIds = standardizedPatentIds.filter(id => !workFile.patentIds.includes(id));
+    // Find or create the work file
+    let workFile = folder.workFiles.find(file => file.name === workFileName);
+    
+    if (!workFile) {
+      // Create a new work file if it doesn't exist
+      workFile = {
+        name: workFileName,
+        patentIds: standardizedPatentIds,
+        timestamp: Date.now()
+      };
+      folder.workFiles.push(workFile);
+    } else {
+      // Filter out patents that are already in the work file
+      const newPatentIds = standardizedPatentIds.filter(id => !workFile.patentIds.includes(id));
+      
+      if (newPatentIds.length === 0) {
+        return res.status(400).json({
+          statusCode: 400,
+          message: 'All patents are already in this work file',
+          data: workFile
+        });
+      }
 
-    if (newPatentIds.length === 0) {
-      return res.status(400).json({
-        statusCode: 400,
-        message: 'All patents are already in this work file',
-        data: workFile
-      });
+      // Add the new patent IDs to the work file
+      workFile.patentIds.push(...newPatentIds);
+      workFile.timestamp = Date.now();
     }
-
-    // Add the new patent IDs to the work file
-    workFile.patentIds.push(...newPatentIds);
-    workFile.timestamp = Date.now();
 
     // Save the updated folder
     await folder.save();
 
     // Also save the patents to the SavedPatent collection if they don't exist
-    for (const patentId of newPatentIds) {
+    for (const patentId of standardizedPatentIds) {
       let savedPatent = await SavedPatent.findOne({ userId, patentId });
       
       if (!savedPatent) {
@@ -1116,10 +1119,10 @@ export const addPatentsToWorkFile = async (req: AuthRequest, res: Response) => {
 
     res.status(200).json({
       statusCode: 200,
-      message: `${newPatentIds.length} patents added to work file successfully`,
+      message: `${standardizedPatentIds.length} patents added to work file successfully`,
       data: {
         workFile,
-        addedCount: newPatentIds.length,
+        addedCount: standardizedPatentIds.length,
         totalCount: standardizedPatentIds.length
       }
     });

@@ -74,6 +74,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
   const [selectedPatentIds, setSelectedPatentIds] = useState<string[]>([]);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [folderName, setFolderName] = useState('');
+  const [workFileName, setWorkFileName] = useState('workfile1');
   const [showSaveToCustomFolder, setShowSaveToCustomFolder] = useState(false);
   const [showAddToExistingFolder, setShowAddToExistingFolder] = useState(false);
   const [showWorkFileSelector, setShowWorkFileSelector] = useState(false);
@@ -191,10 +192,33 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
       return;
     }
 
+    if (!workFileName.trim()) {
+      toast.error('Please enter a workfile name');
+      return;
+    }
+
     try {
-      // Save the patents directly to the Custom folder with 'folderName' source
-      await authApi.saveCustomPatentList(folderName, selectedPatentIds, 'folderName');
-      toast.success(`Saved ${selectedPatentIds.length} patents to "${folderName}" in Custom folder`);
+      // Create a new folder in Import Lists with the selected patents
+      console.log('Creating folder:', folderName, 'with patents:', selectedPatentIds);
+      const response = await authApi.saveCustomPatentList(folderName, selectedPatentIds, 'importedList');
+      
+      if (!response.data || !response.data._id) {
+        throw new Error('Failed to create folder: No folder ID returned');
+      }
+      
+      console.log('Folder created with ID:', response.data._id);
+      
+      // Create a workfile in the new folder with user-provided name
+      console.log('Creating workfile:', workFileName, 'in folder:', response.data._id);
+      const workFileResponse = await authApi.addPatentsToWorkFile(response.data._id, workFileName, selectedPatentIds);
+      
+      console.log('Workfile creation response:', workFileResponse);
+      
+      if (!workFileResponse.data) {
+        throw new Error('Failed to create workfile: No response data');
+      }
+      
+      toast.success(`Created folder "${folderName}" with ${selectedPatentIds.length} patents and added them to workfile "${workFileName}"`);
       
       // Dispatch a custom event to notify the DashboardSidebar to refresh
       const refreshEvent = new CustomEvent('refresh-custom-folders');
@@ -202,10 +226,12 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
       
       setShowSaveToCustomFolder(false);
       setFolderName('');
+      setWorkFileName('workfile1'); // Reset workfile name
       setSelectedPatentIds([]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving to Custom folder:', error);
-      toast.error('Failed to save to Custom folder. Please try again.');
+      console.error('Error details:', error.response?.data || error.message);
+      toast.error(`Failed to save to Custom folder: ${error.response?.data?.message || error.message}`);
     }
   };
 
@@ -340,21 +366,31 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
           <div className="save-to-custom-button">
             <input
               type="text"
-              placeholder="Enter Custom folder name"
+              placeholder="Enter folder name"
               value={folderName}
               onChange={(e) => setFolderName(e.target.value)}
+              className="custom-folder-input"
+            />
+            <input
+              type="text"
+              placeholder="Enter workfile name"
+              value={workFileName}
+              onChange={(e) => setWorkFileName(e.target.value)}
               className="custom-folder-input"
             />
             <button 
               className="save-to-custom-btn" 
               onClick={handleSaveToCustomFolder}
-              disabled={!folderName.trim() || selectedPatentIds.length === 0}
+              disabled={!folderName.trim() || !workFileName.trim() || selectedPatentIds.length === 0}
             >
               <FontAwesomeIcon icon={faSave} /> Save to Custom
             </button>
             <button 
               className="cancel-action-btn"
-              onClick={() => setShowSaveToCustomFolder(false)}
+              onClick={() => {
+                setShowSaveToCustomFolder(false);
+                setWorkFileName('workfile1'); // Reset workfile name when canceling
+              }}
             >
               Cancel
             </button>
