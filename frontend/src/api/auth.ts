@@ -391,6 +391,21 @@ export const authApi = {
     }
   },
 
+  addPatentsToWorkFile: async (folderId: string, workFileName: string, patentIds: string[]) => {
+    try {
+      const response = await api.post(
+        `/saved-patents/add-patents-to-workfile`,
+        { folderId, workFileName, patentIds }
+      );
+      
+      console.log('Patents added to work file response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error adding patents to work file:', error);
+      throw error;
+    }
+  },
+
   // Patent search history methods
   getSearchHistory: async (params?: {
     limit?: number;

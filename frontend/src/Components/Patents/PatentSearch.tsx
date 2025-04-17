@@ -567,25 +567,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     updateRecentSearches(cleanedId, Date.now());
   };
 
-  // Add a function to add a custom folder with selected patents
-  const handleAddCustomFolder = async (name: string, patentIds: string[]) => {
-    try {
-      const response = await authApi.saveCustomPatentList(name, patentIds, 'folderName');
-      console.log('Custom folder created:', response);
-      toast.success(`Folder "${name}" created with ${patentIds.length} patents.`);
-      
-      // Dispatch a custom event to notify the DashboardSidebar to refresh
-      const refreshEvent = new CustomEvent('refresh-custom-folders');
-      window.dispatchEvent(refreshEvent);
-      
-      return response;
-    } catch (error) {
-      console.error('Error creating custom folder:', error);
-      toast.error('Failed to create custom folder.');
-      throw error;
-    }
-  };
-
   const handleViewDetails = async (summary: PatentSummary) => {
     // Mark patent as viewed
     dispatch(markPatentAsViewed(summary.patentId));

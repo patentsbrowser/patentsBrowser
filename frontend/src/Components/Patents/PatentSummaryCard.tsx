@@ -6,8 +6,10 @@ import { useAppDispatch, useAppSelector } from '../../Redux/hooks';
 import { markPatentAsViewed } from '../../Redux/slices/patentSlice';
 import { RootState } from '../../Redux/store';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFolderPlus } from '@fortawesome/free-solid-svg-icons';
-import PatentFolderSelector from './PatentFolderSelector';
+import { faFileImport } from '@fortawesome/free-solid-svg-icons';
+import WorkFileSelector from './WorkFileSelector';
+import { authApi } from '../../api/auth';
+import toast from 'react-hot-toast';
 
 interface PatentSummaryCardProps {
   summary: PatentSummary;
@@ -31,7 +33,7 @@ const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
   const dispatch = useAppDispatch();
   const viewedPatents = useAppSelector((state: RootState) => state.patents.viewedPatents);
   const isViewed = viewedPatents.includes(summary.patentId);
-  const [showFolderSelector, setShowFolderSelector] = useState(false);
+  const [showWorkFileSelector, setShowWorkFileSelector] = useState(false);
   
   const handleViewDetails = () => {
     // Make sure we have a valid patentId
@@ -53,11 +55,27 @@ const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
     }
   };
 
-  const handleAddToFolder = (e: React.MouseEvent) => {
+  const handleAddToWorkFile = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowFolderSelector(true);
+    setShowWorkFileSelector(true);
   };
-  
+
+  const handleWorkFileSelect = async (folderId: string, workFileName: string) => {
+    try {
+      const response = await authApi.addPatentsToWorkFile(folderId, workFileName, [summary.patentId]);
+      toast.success(`Added patent to work file "${workFileName}"`);
+      
+      // Dispatch event to refresh the folder list
+      const refreshEvent = new CustomEvent('refresh-custom-folders');
+      window.dispatchEvent(refreshEvent);
+      
+      setShowWorkFileSelector(false);
+    } catch (error) {
+      console.error('Error adding patent to work file:', error);
+      toast.error('Failed to add patent to work file');
+    }
+  };
+
   return (
     <>
       <div 
@@ -125,10 +143,10 @@ const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
                   View Details
                 </button>
                 <button
-                  onClick={handleAddToFolder}
-                  className="add-to-folder"
+                  onClick={handleAddToWorkFile}
+                  className="add-to-workfile"
                 >
-                  <FontAwesomeIcon icon={faFolderPlus} /> Add to Folder
+                  <FontAwesomeIcon icon={faFileImport} /> Workfile Addition
                 </button>
               </div>
             </div>
@@ -140,12 +158,12 @@ const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
         </div>
       </div>
       
-      {/* Folder Selector Modal */}
-      {showFolderSelector && (
-        <PatentFolderSelector
-          isOpen={showFolderSelector}
-          onClose={() => setShowFolderSelector(false)}
-          patentId={summary.patentId}
+      {/* WorkFile Selector Modal */}
+      {showWorkFileSelector && (
+        <WorkFileSelector
+          isOpen={showWorkFileSelector}
+          onClose={() => setShowWorkFileSelector(false)}
+          onSelect={handleWorkFileSelect}
         />
       )}
     </>

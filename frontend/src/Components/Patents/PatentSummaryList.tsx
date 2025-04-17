@@ -6,12 +6,13 @@ import PatentSummaryCard from './PatentSummaryCard';
 import { ApiSource } from '../../api/patents';
 import { useAppSelector } from '../../Redux/hooks';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faChevronLeft, faChevronRight, faFolderPlus, faCheck, faSave, faCog, faFilter } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faChevronLeft, faChevronRight, faFolderPlus, faCheck, faSave, faCog, faFilter, faFileImport } from '@fortawesome/free-solid-svg-icons';
 import { authApi } from '../../api/auth';
 import toast from 'react-hot-toast';
 import PatentHighlighter from './PatentHighlighter';
 import './PatentSummaryList.scss';
 import MultiFolderSelector from './MultiFolderSelector';
+import WorkFileSelector from './WorkFileSelector';
 
 interface PatentSummaryListProps {
   patentSummaries: PatentSummary[];
@@ -75,6 +76,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
   const [folderName, setFolderName] = useState('');
   const [showSaveToCustomFolder, setShowSaveToCustomFolder] = useState(false);
   const [showAddToExistingFolder, setShowAddToExistingFolder] = useState(false);
+  const [showWorkFileSelector, setShowWorkFileSelector] = useState(false);
   
   // Add state for highlighter
   const [isHighlighterOpen, setIsHighlighterOpen] = useState(() => {
@@ -217,6 +219,16 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
     setShowAddToExistingFolder(true);
   };
 
+  // New handler for adding to workfile
+  const handleAddToWorkFile = () => {
+    if (selectedPatentIds.length === 0) {
+      toast.error('Please select at least one patent');
+      return;
+    }
+    
+    setShowWorkFileSelector(true);
+  };
+
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
     onPageChange(newPage);
@@ -263,12 +275,19 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
               >
                 <FontAwesomeIcon icon={faSave} /> New Folder
               </button>
-              <button 
+              {/* <button 
                 className="folder-action-btn existing-folder-btn"
                 onClick={handleAddToExistingFolder}
                 title="Add to existing folder"
               >
                 <FontAwesomeIcon icon={faFolderPlus} /> Add to Folder
+              </button> */}
+              <button 
+                className="folder-action-btn workfile-btn"
+                onClick={handleAddToWorkFile}
+                title="Add to workfile"
+              >
+                <FontAwesomeIcon icon={faFileImport} /> Workfile Addition
               </button>
             </div>
           )}
@@ -349,6 +368,29 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
           isOpen={showAddToExistingFolder}
           onClose={() => setShowAddToExistingFolder(false)}
           patentIds={selectedPatentIds}
+        />
+      )}
+
+      {/* Add the WorkFileSelector component */}
+      {showWorkFileSelector && (
+        <WorkFileSelector
+          isOpen={showWorkFileSelector}
+          onClose={() => setShowWorkFileSelector(false)}
+          onSelect={async (folderId: string, workFileName: string) => {
+            try {
+              const response = await authApi.addPatentsToWorkFile(folderId, workFileName, selectedPatentIds);
+              toast.success(`Added ${selectedPatentIds.length} patents to work file "${workFileName}"`);
+              
+              // Dispatch event to refresh the folder list
+              const refreshEvent = new CustomEvent('refresh-custom-folders');
+              window.dispatchEvent(refreshEvent);
+              
+              setShowWorkFileSelector(false);
+            } catch (error) {
+              console.error('Error adding patents to work file:', error);
+              toast.error('Failed to add patents to work file');
+            }
+          }}
         />
       )}
 

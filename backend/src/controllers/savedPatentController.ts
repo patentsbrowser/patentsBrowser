@@ -1038,3 +1038,97 @@ export const mergeWorkFiles = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
+export const addPatentsToWorkFile = async (req: AuthRequest, res: Response) => {
+  try {
+    const { folderId, workFileName, patentIds } = req.body;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'User not authenticated',
+        data: null
+      });
+    }
+
+    if (!folderId || !workFileName || !patentIds || !Array.isArray(patentIds) || patentIds.length === 0) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Folder ID, work file name, and at least one patent ID are required',
+        data: null
+      });
+    }
+
+    // Find the folder
+    const folder = await CustomPatentList.findOne({ _id: folderId, userId });
+    if (!folder) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'Folder not found',
+        data: null
+      });
+    }
+
+    // Find the work file
+    const workFile = folder.workFiles.find(file => file.name === workFileName);
+    if (!workFile) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'Work file not found',
+        data: null
+      });
+    }
+
+    // Standardize the patent IDs
+    const standardizedPatentIds = patentIds.map(id => standardizePatentNumber(id.trim()));
+
+    // Filter out patents that are already in the work file
+    const newPatentIds = standardizedPatentIds.filter(id => !workFile.patentIds.includes(id));
+
+    if (newPatentIds.length === 0) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'All patents are already in this work file',
+        data: workFile
+      });
+    }
+
+    // Add the new patent IDs to the work file
+    workFile.patentIds.push(...newPatentIds);
+    workFile.timestamp = Date.now();
+
+    // Save the updated folder
+    await folder.save();
+
+    // Also save the patents to the SavedPatent collection if they don't exist
+    for (const patentId of newPatentIds) {
+      let savedPatent = await SavedPatent.findOne({ userId, patentId });
+      
+      if (!savedPatent) {
+        savedPatent = new SavedPatent({
+          userId,
+          patentId
+        });
+        await savedPatent.save();
+      }
+    }
+
+    res.status(200).json({
+      statusCode: 200,
+      message: `${newPatentIds.length} patents added to work file successfully`,
+      data: {
+        workFile,
+        addedCount: newPatentIds.length,
+        totalCount: standardizedPatentIds.length
+      }
+    });
+  } catch (error) {
+    console.error('Error adding patents to work file:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to add patents to work file',
+      data: null
+    });
+  }
+};
