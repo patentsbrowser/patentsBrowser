@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import './DashboardSidebar.scss';
 import CombineWorkfilesModal from './CombineWorkfilesModal';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEllipsisVertical, faTrash, faSearch } from '@fortawesome/free-solid-svg-icons';
+// import { authApi } from '../../../../api/auth';
+import toast from 'react-hot-toast';
+import { authApi } from '../../../api/auth';
 
 interface WorkFile {
+  _id: string;
   name: string;
   patentIds: string[];
   timestamp: number;
@@ -41,6 +47,22 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
   const [selectedWorkFiles, setSelectedWorkFiles] = useState<Map<string, Set<number>>>(new Map());
   const [showCombineModal, setShowCombineModal] = useState(false);
   const [selectedFolderForCombine, setSelectedFolderForCombine] = useState<CustomFolder | null>(null);
+
+  // Add new state variables for menu functionality
+  const [showMenu, setShowMenu] = useState<{
+    type: 'folder' | 'workfile' | 'patent' | null;
+    id: string;
+    parentId?: string;
+    name?: string;
+    position?: { x: number; y: number };
+  } | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{
+    type: 'folder' | 'workfile' | 'patent';
+    id: string;
+    parentId?: string;
+    name?: string;
+  } | null>(null);
 
   const handleFolderClick = (folderId: string) => {
     setExpandedFolder(expandedFolder === folderId ? null : folderId);
@@ -124,13 +146,18 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
     }
   };
 
-  const handleCombineConfirm = (uniquePatentIds: string[], duplicateIds: string[]) => {
+  const handleCombineConfirm = async (uniquePatentIds: string[], duplicateIds: string[], invalidIds: string[]) => {
     if (!selectedFolderForCombine) return;
+
+    // Get all selected workfiles
+    const selectedIndices = selectedWorkFiles.get(selectedFolderForCombine._id) || new Set();
+    const selectedWorkFilesList = Array.from(selectedIndices).map(index => selectedFolderForCombine.workFiles[index]);
 
     // Create new workfile name based on existing workfiles count
     const newWorkFileName = `Workfile ${selectedFolderForCombine.workFiles.length + 1}`;
 
     const newWorkFile: WorkFile = {
+      _id: new Date().getTime().toString(), // Generate a temporary ID
       name: newWorkFileName,
       patentIds: uniquePatentIds,
       timestamp: Date.now(),
@@ -171,6 +198,107 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
     }
   };
 
+  // Update handleDelete function to handle workfile deletion correctly
+  const handleDelete = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      switch (itemToDelete.type) {
+        case 'folder':
+          await authApi.deleteItem({
+            itemType: 'folder',
+            folderId: itemToDelete.id
+          });
+          toast.success('Folder deleted successfully');
+          break;
+        case 'workfile':
+          // Delete specific workfile using workFileId
+          await authApi.deleteItem({
+            itemType: 'workfile',
+            folderId: itemToDelete.parentId!,
+            workFileId: itemToDelete.id  // Use workFileId instead of workFileName
+          });
+          toast.success(`Workfile "${itemToDelete.name}" deleted successfully`);
+          break;
+        case 'patent':
+          await authApi.deleteItem({
+            itemType: 'patent',
+            folderId: itemToDelete.parentId!,
+            patentId: itemToDelete.id
+          });
+          toast.success('Patent removed successfully');
+          break;
+      }
+
+      // Dispatch event to refresh the folder list
+      const refreshEvent = new CustomEvent('refresh-custom-folders');
+      window.dispatchEvent(refreshEvent);
+      
+      setShowDeleteModal(false);
+      setItemToDelete(null);
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      toast.error('Failed to delete item');
+    }
+  };
+
+  // Add workfile delete button handler
+  const handleWorkfileDelete = (e: React.MouseEvent, folderId: string, workFile: WorkFile) => {
+    e.stopPropagation();
+    setItemToDelete({
+      type: 'workfile',
+      id: workFile._id,
+      parentId: folderId,
+      name: workFile.name
+    });
+    setShowDeleteModal(true);
+  };
+
+  // Add search handlers
+  const handleSearch = (type: 'folder' | 'workfile' | 'patent', id: string, parentId?: string, name?: string) => {
+    switch (type) {
+      case 'folder':
+        // Search all patents in the folder
+        const folder = customPatentLists.find(f => f._id === id);
+        if (folder) {
+          const event = new CustomEvent('search-patents', {
+            detail: {
+              patentIds: folder.patentIds,
+              source: `folder/${folder.name}`
+            }
+          });
+          window.dispatchEvent(event);
+        }
+        break;
+      case 'workfile':
+        // Search patents in the workfile
+        const parentFolder = customPatentLists.find(f => f._id === parentId);
+        if (parentFolder) {
+          const workfile = parentFolder.workFiles.find(w => w.name === name);
+          if (workfile) {
+            const event = new CustomEvent('search-patents', {
+              detail: {
+                patentIds: workfile.patentIds,
+                source: `workfile/${name}`
+              }
+            });
+            window.dispatchEvent(event);
+          }
+        }
+        break;
+      case 'patent':
+        // Search single patent
+        const event = new CustomEvent('search-patents', {
+          detail: {
+            patentIds: [id],
+            source: 'patent'
+          }
+        });
+        window.dispatchEvent(event);
+        break;
+    }
+  };
+
   return (
     <div className="imported-folders-section">
       <div className="folders-header">
@@ -201,15 +329,26 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
                   <div className="folder-info">
                     <span className="folder-icon">📁</span>
                     <span className="folder-name">{folder.name}</span>
+                    <div className="folder-actions">
+                      <button 
+                        className="action-button delete-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setItemToDelete({
+                            type: 'folder',
+                            id: folder._id,
+                            name: folder.name
+                          });
+                          setShowDeleteModal(true);
+                        }}
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="folder-meta">
-                    <span className="folder-count">
-                      {folder.workFiles?.length || 0} workfiles
-                    </span>
-                    <span className="expand-icon">
-                      {expandedFolder === folder._id ? '▼' : '▶'}
-                    </span>
-                  </div>
+                  <span className="expand-icon">
+                    {expandedFolder === folder._id ? '▼' : '▶'}
+                  </span>
                 </div>
                 
                 {expandedFolder === folder._id && folder.workFiles && folder.workFiles.length > 0 && (
@@ -260,10 +399,24 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
                               <span className="workfile-name">
                                 {workfile.name}
                               </span>
+                              <div className="workfile-actions">
+                                <button 
+                                  className="action-button search-button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSearch('workfile', workfile.name, folder._id, workfile.name);
+                                  }}
+                                >
+                                  <FontAwesomeIcon icon={faSearch} />
+                                </button>
+                                <button 
+                                  className="action-button delete-button"
+                                  onClick={(e) => handleWorkfileDelete(e, folder._id, workfile)}
+                                >
+                                  <FontAwesomeIcon icon={faTrash} />
+                                </button>
+                              </div>
                             </div>
-                            <span className="workfile-count">
-                              {workfile.patentIds?.length || 0} patents
-                            </span>
                           </div>
                           
                           {isWorkFileExpanded && workfile.patentIds && (
@@ -275,6 +428,22 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
                                   onClick={() => handlePatentClick(patentId, folder.name)}
                                 >
                                   <span className="patent-id">{patentId}</span>
+                                  <div className="patent-actions">
+                                    <button 
+                                      className="action-button delete-button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setItemToDelete({
+                                          type: 'patent',
+                                          id: patentId,
+                                          parentId: folder._id
+                                        });
+                                        setShowDeleteModal(true);
+                                      }}
+                                    >
+                                      <FontAwesomeIcon icon={faTrash} />
+                                    </button>
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -287,6 +456,72 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
               </div>
             );
           })}
+        </div>
+      )}
+      
+      {/* Menu Popup */}
+      {showMenu && (
+        <div 
+          className="menu-popup"
+          style={{
+            position: 'absolute',
+            left: showMenu.position?.x + 'px',
+            top: showMenu.position?.y + 'px'
+          }}
+        >
+          <div className="menu-options">
+            <button 
+              className="menu-option"
+              onClick={() => {
+                handleSearch(showMenu.type!, showMenu.id, showMenu.parentId, showMenu.name);
+                setShowMenu(null);
+              }}
+            >
+              <FontAwesomeIcon icon={faSearch} /> Search
+            </button>
+            <button 
+              className="menu-option delete"
+              onClick={() => {
+                setItemToDelete({
+                  type: showMenu.type!,
+                  id: showMenu.id,
+                  parentId: showMenu.parentId,
+                  name: showMenu.name
+                });
+                setShowDeleteModal(true);
+                setShowMenu(null);
+              }}
+            >
+              <FontAwesomeIcon icon={faTrash} /> Delete
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && itemToDelete && (
+        <div className="delete-modal">
+          <div className="modal-content">
+            <h3>Confirm Delete</h3>
+            <p>Are you sure you want to delete this {itemToDelete.type}?</p>
+            <div className="modal-actions">
+              <button 
+                className="cancel-button"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setItemToDelete(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="delete-button"
+                onClick={handleDelete}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
       

@@ -1,5 +1,25 @@
 import mongoose from 'mongoose';
 
+const workFileSchema = new mongoose.Schema({
+  _id: {
+    type: String,
+    default: () => new mongoose.Types.ObjectId().toString(),
+    required: true
+  },
+  name: {
+    type: String,
+    required: true
+  },
+  patentIds: {
+    type: [String],
+    required: true
+  },
+  timestamp: {
+    type: Number,
+    default: () => Date.now()
+  }
+});
+
 const customPatentListSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -14,20 +34,7 @@ const customPatentListSchema = new mongoose.Schema({
     type: [String],
     required: true
   },
-  workFiles: [{
-    name: {
-      type: String,
-      required: true
-    },
-    patentIds: {
-      type: [String],
-      required: true
-    },
-    timestamp: {
-      type: Number,
-      default: () => Date.now()
-    }
-  }],
+  workFiles: [workFileSchema],
   timestamp: {
     type: Number,
     default: () => Date.now()

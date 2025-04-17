@@ -1,18 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PatentSummary } from './types';
 import PatentDetails from './PatentDetails';
 import Loader from '../Common/Loader';
 import PatentSummaryCard from './PatentSummaryCard';
 import { ApiSource } from '../../api/patents';
-import { useAppSelector } from '../../Redux/hooks';
+import { useAppSelector, useAppDispatch } from '../../Redux/hooks';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faChevronLeft, faChevronRight, faFolderPlus, faCheck, faSave, faCog, faFilter, faFileImport } from '@fortawesome/free-solid-svg-icons';
 import { authApi } from '../../api/auth';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import PatentHighlighter from './PatentHighlighter';
 import './PatentSummaryList.scss';
 import MultiFolderSelector from './MultiFolderSelector';
 import WorkFileSelector from './WorkFileSelector';
+import { setSearchResults } from '../../Redux/slices/patentSlice';
+import { patentApi } from '../../api/patents';
 
 interface PatentSummaryListProps {
   patentSummaries: PatentSummary[];
@@ -64,6 +66,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
   onPageChange,
   pagination
 }) => {
+  const dispatch = useAppDispatch();
   const { isLoading } = useAppSelector((state) => state.patents);
   const [currentPage, setCurrentPage] = useState(pagination?.currentPage || 1);
   const [itemsPerPage, setItemsPerPage] = useState(() => {
@@ -267,6 +270,182 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
     setItemsPerPage(parseInt(newValue, 10));
     setCurrentPage(1); // Reset to first page
     onPageChange(1);
+  };
+
+  // Add new state for delete operations
+  const [showDeleteOptions, setShowDeleteOptions] = useState(false);
+  const [deleteType, setDeleteType] = useState<'folder' | 'workfile' | 'patent' | null>(null);
+  const [selectedFolderForDelete, setSelectedFolderForDelete] = useState<string | null>(null);
+  const [selectedWorkFileForDelete, setSelectedWorkFileForDelete] = useState<string | null>(null);
+  const [selectedPatentForDelete, setSelectedPatentForDelete] = useState<string | null>(null);
+
+  // Add delete handlers
+  const handleDeleteFolder = async (folderId: string) => {
+    try {
+      await authApi.deleteFolder(folderId);
+      toast.success('Folder deleted successfully');
+      
+      // Dispatch event to refresh the folder list
+      const refreshEvent = new CustomEvent('refresh-custom-folders');
+      window.dispatchEvent(refreshEvent);
+      
+      setShowDeleteOptions(false);
+      setDeleteType(null);
+      setSelectedFolderForDelete(null);
+    } catch (error) {
+      console.error('Error deleting folder:', error);
+      toast.error('Failed to delete folder');
+    }
+  };
+
+  const handleDeleteWorkFile = async (folderId: string, workFileName: string) => {
+    try {
+      // First get the folder
+      const response = await authApi.getImportedLists();
+      const folder = response.data.find((f: any) => f._id === folderId);
+      
+      if (!folder) {
+        throw new Error('Folder not found');
+      }
+      
+      // Remove the workfile from the folder's workFiles array
+      folder.workFiles = folder.workFiles.filter((wf: any) => wf.name !== workFileName);
+      
+      // Update the folder
+      await authApi.saveCustomPatentList(folder.name, folder.patentIds, 'importedList');
+      
+      toast.success(`Workfile "${workFileName}" deleted successfully`);
+      
+      // Dispatch event to refresh the folder list
+      const refreshEvent = new CustomEvent('refresh-custom-folders');
+      window.dispatchEvent(refreshEvent);
+      
+      setShowDeleteOptions(false);
+      setDeleteType(null);
+      setSelectedFolderForDelete(null);
+      setSelectedWorkFileForDelete(null);
+    } catch (error) {
+      console.error('Error deleting workfile:', error);
+      toast.error('Failed to delete workfile');
+    }
+  };
+
+  const handleDeletePatent = async (folderId: string, patentId: string) => {
+    try {
+      await authApi.removePatentFromFolder(folderId, patentId);
+      toast.success('Patent removed successfully');
+      
+      // Dispatch event to refresh the folder list
+      const refreshEvent = new CustomEvent('refresh-custom-folders');
+      window.dispatchEvent(refreshEvent);
+      
+      setShowDeleteOptions(false);
+      setDeleteType(null);
+      setSelectedFolderForDelete(null);
+      setSelectedPatentForDelete(null);
+    } catch (error) {
+      console.error('Error removing patent:', error);
+      toast.error('Failed to remove patent');
+    }
+  };
+
+  // Add search handler
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleSearchPatents = async (folderId: string, workFileName: string, patentIds: string[]) => {
+    try {
+      setIsSearching(true);
+      console.log('Searching patents:', { folderId, workFileName, patentIds });
+      
+      // Use patentApi to search for patents
+      const result = await patentApi.searchMultiplePatentsUnified(patentIds, 'direct');
+      console.log('Search results:', result);
+      
+      if (result?.hits?.hits) {
+        const patents = result.hits.hits.map((hit: any) => {
+          const source = hit._source;
+          return {
+            patentId: source?.ucid_spif?.[0] || source?.publication_number || hit._id || '',
+            status: 'success' as const,
+            title: source?.title || '',
+            abstract: source?.abstract || '',
+            details: {
+              assignee_current: source?.assignee_current || [],
+              assignee_original: source?.assignee_original || [],
+              assignee_parent: source?.assignee_parent || [],
+              priority_date: source?.priority_date || '',
+              publication_date: source?.publication_date || '',
+              grant_date: source?.grant_date || '',
+              expiration_date: source?.expiration_date || '',
+              application_date: source?.application_date || '',
+              application_number: source?.application_number || '',
+              grant_number: source?.grant_number || '',
+              publication_number: source?.publication_number || '',
+              publication_status: source?.publication_status || '',
+              publication_type: source?.publication_type || '',
+              type: source?.type || '',
+              country: source?.country || '',
+              kind_code: source?.kind_code || '',
+              inventors: source?.inventors || [],
+              examiner: source?.examiner || [],
+              law_firm: source?.law_firm || '',
+              cpc_codes: source?.cpc_codes || [],
+              uspc_codes: source?.uspc_codes || [],
+              num_cit_pat: source?.num_cit_pat || 0,
+              num_cit_npl: source?.num_cit_npl || 0,
+              num_cit_pat_forward: source?.num_cit_pat_forward || 0,
+              citations_pat_forward: source?.citations_pat_forward || [],
+              portfolio_score: source?.portfolio_score || 0,
+              litigation_score: source?.litigation_score || 0,
+              rating_broadness: source?.rating_broadness || '',
+              rating_citation: source?.rating_citation || '',
+              rating_litigation: source?.rating_litigation || '',
+              rating_validity: source?.rating_validity || '',
+            }
+          };
+        });
+        
+        // Update Redux state with search results
+        dispatch(setSearchResults(patents));
+        
+        // Add to search history
+        for (const patentId of patentIds) {
+          await authApi.addToSearchHistory(patentId, 'folder-search');
+        }
+        
+        // Dispatch event to notify history component
+        window.dispatchEvent(new CustomEvent('patent-searched'));
+        
+        toast.success('Patents searched successfully');
+      } else {
+        toast.error('No results found');
+      }
+    } catch (error) {
+      console.error('Error searching patents:', error);
+      toast.error('Failed to search patents');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    try {
+      setIsSearching(true);
+      const response = await patentApi.searchPatents(searchQuery, 'unified' as ApiSource);
+      if (response?.data) {
+        dispatch(setSearchResults(response.data));
+      }
+      setSearchQuery('');
+    } catch (error: any) {
+      console.error('Error searching patents:', error);
+      toast.error(error?.message || 'Failed to search patents');
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   if (patentSummaries.length === 0) return null;
@@ -542,6 +721,80 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
                 initialFetch={selectedPatent.initialFetch || false}
               />
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Add delete options modal */}
+      {showDeleteOptions && (
+        <div className="delete-options-modal">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Delete Options</h3>
+              <button className="close-button" onClick={() => setShowDeleteOptions(false)}>×</button>
+            </div>
+            
+            <div className="modal-body">
+              {deleteType === 'folder' && (
+                <div className="delete-folder-form">
+                  <p>Are you sure you want to delete this folder and all its contents?</p>
+                  <div className="form-actions">
+                    <button 
+                      className="delete-btn"
+                      onClick={() => handleDeleteFolder(selectedFolderForDelete!)}
+                    >
+                      Delete Folder
+                    </button>
+                    <button 
+                      className="cancel-btn"
+                      onClick={() => setShowDeleteOptions(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {deleteType === 'workfile' && (
+                <div className="delete-workfile-form">
+                  <p>Are you sure you want to delete this workfile?</p>
+                  <div className="form-actions">
+                    <button 
+                      className="delete-btn"
+                      onClick={() => handleDeleteWorkFile(selectedFolderForDelete!, selectedWorkFileForDelete!)}
+                    >
+                      Delete Workfile
+                    </button>
+                    <button 
+                      className="cancel-btn"
+                      onClick={() => setShowDeleteOptions(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {deleteType === 'patent' && (
+                <div className="delete-patent-form">
+                  <p>Are you sure you want to remove this patent from the workfile?</p>
+                  <div className="form-actions">
+                    <button 
+                      className="delete-btn"
+                      onClick={() => handleDeletePatent(selectedFolderForDelete!, selectedPatentForDelete!)}
+                    >
+                      Remove Patent
+                    </button>
+                    <button 
+                      className="cancel-btn"
+                      onClick={() => setShowDeleteOptions(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

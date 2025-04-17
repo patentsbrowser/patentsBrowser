@@ -484,5 +484,14 @@ export const authApi = {
       });
       throw error;
     }
+  },
+
+  deleteItem: async (params: { itemType: 'folder' | 'workfile' | 'patent', folderId: string, workFileId?: string, patentId?: string }) => {
+    const response = await axios.post(`${baseURL}/saved-patents/delete-item`, params, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    return response;
   }
 }; 

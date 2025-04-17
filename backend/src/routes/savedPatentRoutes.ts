@@ -16,7 +16,8 @@ import {
   addPatentsToFolder,
   createWorkFile,
   mergeWorkFiles,
-  addPatentsToWorkFile
+  addPatentsToWorkFile,
+  deleteItem
 } from '../controllers/savedPatentController.js';
 import multer from 'multer';
 import path from 'path';
@@ -101,5 +102,8 @@ router.post('/merge-work-files', auth, mergeWorkFiles as any);
 
 // New route for adding patents to a work file
 router.post('/add-patents-to-workfile', auth, addPatentsToWorkFile as any);
+
+// New route for deleting an item
+router.post('/delete-item', auth, deleteItem as any);
 
 export default router; 

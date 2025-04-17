@@ -9,6 +9,7 @@ import { Readable } from 'stream';
 import { standardizePatentNumber } from '../utils/patentUtils.js';
 import { SearchHistory } from '../models/SearchHistory.js';
 import { WorkFile } from '../models/WorkFile.js';
+import mongoose from 'mongoose';
 
 function extractPatentId(trimmedLine: string): string | null {
   // Basic pattern for patent numbers (can be enhanced based on requirements)
@@ -117,8 +118,9 @@ export const savePatent = async (req: AuthRequest, res: Response) => {
         await mainFolder.save();
       }
 
-      // Create a workfile under the folder
+      // Create a workfile under the folder with a unique ID
       const workFile = {
+        _id: new mongoose.Types.ObjectId().toString(), // Generate a unique ID
         name: workfileName || 'workfile1',
         patentIds: standardizedPatentIds,
         timestamp: Date.now()
@@ -1079,6 +1081,7 @@ export const addPatentsToWorkFile = async (req: AuthRequest, res: Response) => {
     if (!workFile) {
       // Create a new work file if it doesn't exist
       workFile = {
+        _id: new mongoose.Types.ObjectId().toString(), // Generate unique ID
         name: workFileName,
         patentIds: standardizedPatentIds,
         timestamp: Date.now()
@@ -1131,6 +1134,101 @@ export const addPatentsToWorkFile = async (req: AuthRequest, res: Response) => {
     res.status(500).json({
       statusCode: 500,
       message: 'Failed to add patents to work file',
+      data: null
+    });
+  }
+};
+
+export const deleteItem = async (req: AuthRequest, res: Response) => {
+  try {
+    const { itemType, folderId, workFileId, patentId } = req.body;
+    const userId = req.user?.userId;
+
+    // Validate required fields
+    if (!userId) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'User not authenticated',
+        data: null
+      });
+    }
+
+    if (!itemType || !folderId) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Item type and folder ID are required',
+        data: null
+      });
+    }
+
+    // Find the folder
+    const folder = await CustomPatentList.findOne({ 
+      _id: folderId,
+      userId 
+    });
+
+    if (!folder) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'Folder not found',
+        data: null
+      });
+    }
+
+    switch (itemType) {
+      case 'folder':
+        // Delete the entire folder
+        await CustomPatentList.findByIdAndDelete(folderId);
+        break;
+
+      case 'workfile':
+        if (!workFileId) {
+          return res.status(400).json({
+            statusCode: 400,
+            message: 'Workfile ID is required',
+            data: null
+          });
+        }
+        // Remove the workfile from the folder's workFiles array using _id
+        folder.workFiles = folder.workFiles.filter(wf => wf._id !== workFileId);
+        await folder.save();
+        break;
+
+      case 'patent':
+        if (!patentId) {
+          return res.status(400).json({
+            statusCode: 400,
+            message: 'Patent ID is required',
+            data: null
+          });
+        }
+        // Remove the patent from all workfiles in the folder
+        folder.workFiles = folder.workFiles.map(wf => ({
+          ...wf,
+          patentIds: wf.patentIds.filter(id => id !== patentId)
+        }));
+        await folder.save();
+        break;
+
+      default:
+        return res.status(400).json({
+          statusCode: 400,
+          message: 'Invalid item type',
+          data: null
+        });
+    }
+
+    res.status(200).json({
+      statusCode: 200,
+      message: `${itemType} deleted successfully`,
+      data: null
+    });
+  } catch (error) {
+    const errorType = req.body.itemType || 'item';
+    console.error(`Error deleting ${errorType}:`, error);
+    res.status(500).json({
+      statusCode: 500,
+      message: `Failed to delete ${errorType}`,
       data: null
     });
   }
