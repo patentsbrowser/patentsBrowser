@@ -16,7 +16,7 @@ import {
   addPatentsToFolder,
   createWorkFile,
   mergeWorkFiles
-} from '../controllers/savedPatentController.ts';
+} from '../controllers/savedPatentController.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';

@@ -10,6 +10,12 @@ import { standardizePatentNumber } from '../utils/patentUtils.js';
 import { SearchHistory } from '../models/SearchHistory.js';
 import { WorkFile } from '../models/WorkFile.js';
 
+function extractPatentId(trimmedLine: string): string | null {
+  // Basic pattern for patent numbers (can be enhanced based on requirements)
+  const match = trimmedLine.match(/[A-Z]{2}\d+[A-Z]\d*/);
+  return match ? match[0] : null;
+}
+
 // Create a complete FileType that includes all properties
 interface FileType {
   fieldname: string;
@@ -597,14 +603,38 @@ export const extractPatentIdsFromFile = async (req: AuthRequest, res: Response) 
       await fs.remove(filePath);
 
     // Process the extracted patent IDs using standardizePatentNumber
-    const processedPatentIds = publicationNumbers.map(id => standardizePatentNumber(id.trim()));
+    const kindCodePriority = ['A1', 'B1', 'B2', 'A', 'B', 'C1', 'C2', 'C'];
+    
+    const processedPatentIds = publicationNumbers.map((pubNum, index) => {
+      let patentId = pubNum.trim();
+      // If we have a kind code for this publication number, append it
+      if (kindCodes[index]) {
+        // Split multiple kind codes and remove spaces
+        const availableKindCodes = kindCodes[index].split(/[,\s]+/).filter(Boolean);
+        // Find the highest priority kind code
+        const selectedKindCode = availableKindCodes.sort((a, b) => {
+          const indexA = kindCodePriority.indexOf(a.toUpperCase());
+          const indexB = kindCodePriority.indexOf(b.toUpperCase());
+          // If kind code isn't in priority list, give it lowest priority
+          return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+        })[0];
+        
+        if (selectedKindCode) {
+          patentId = `${patentId}-${selectedKindCode}`;
+        }
+      }
+      return standardizePatentNumber(patentId);
+    });
 
-    // Return the extracted patent IDs
+    // Return the extracted patent IDs along with raw data for reference
     res.status(200).json({
       statusCode: 200,
       message: 'Patent IDs extracted successfully',
       data: {
-        patentIds: processedPatentIds
+        patentIds: processedPatentIds,
+        publicationNumbers,
+        kindCodes,
+        note: kindCodes.length > 0 ? 'Publication numbers were combined with highest priority kind codes (A1 > B1 > B2 > A > B).' : undefined
       }
     });
   } catch (error) {
