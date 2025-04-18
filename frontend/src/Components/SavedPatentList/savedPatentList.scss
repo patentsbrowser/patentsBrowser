@@ -262,16 +262,23 @@
         color: var(--text-color);
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 
+        .status-icon {
+          margin-left: 0.5rem;
+          font-size: 1rem;
+          opacity: 0.7;
+        }
+
         &.read {
           background-color: #e9ecef;
           color: #6c757d;
           border-color: #dee2e6;
 
+          .status-icon {
+            color: #28a745;
+          }
+
           &::after {
-            content: '(viewed)';
-            font-size: 0.8em;
-            margin-left: 0.5rem;
-            color: #6c757d;
+            content: none;
           }
         }
 
@@ -386,6 +393,41 @@
           margin: 0;
           color: var(--text-color);
           font-size: 0.95rem;
+        }
+
+        .read-patents-info {
+          margin-top: 0.5rem;
+          font-size: 0.9rem;
+          color: #6c757d;
+        }
+      }
+
+      .filter-section {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 6px;
+        margin: 1rem 0;
+
+        .filter-label {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: #495057;
+          font-size: 0.95rem;
+
+          .filter-checkbox {
+            width: 1rem;
+            height: 1rem;
+          }
+        }
+
+        .filter-info {
+          margin: 0.5rem 0 0;
+          font-size: 0.9rem;
+          color: #28a745;
+          padding: 0.5rem;
+          background: #d4edda;
+          border-radius: 4px;
         }
       }
 

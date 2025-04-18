@@ -23,9 +23,10 @@ interface CustomFolder {
 interface FolderSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (folderName: string, workfileName: string) => void;
+  onSubmit: (folderName: string, workfileName: string, filterReadPatents: boolean) => void;
   existingFolders: CustomFolder[];
   patentIds: string[];
+  readPatents: Set<string>;
 }
 
 const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
@@ -33,28 +34,46 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
   onClose,
   onSubmit,
   existingFolders,
-  patentIds
+  patentIds,
+  readPatents
 }) => {
   const [folderName, setFolderName] = useState('workfile');
   const [workfileName, setWorkfileName] = useState('workfile');
   const [selectedFolder, setSelectedFolder] = useState<CustomFolder | null>(null);
+  const [filterReadPatents, setFilterReadPatents] = useState(true);
+  const [filteredPatentIds, setFilteredPatentIds] = useState<string[]>(patentIds);
 
   useEffect(() => {
     if (isOpen) {
       setFolderName('workfile');
       setWorkfileName('workfile');
       setSelectedFolder(null);
+      setFilterReadPatents(true);
+      updateFilteredPatents(true);
     }
-  }, [isOpen]);
+  }, [isOpen, patentIds, readPatents]);
+
+  const updateFilteredPatents = (shouldFilter: boolean) => {
+    if (shouldFilter) {
+      setFilteredPatentIds(patentIds.filter(id => !readPatents.has(id.toUpperCase())));
+    } else {
+      setFilteredPatentIds(patentIds);
+    }
+  };
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const shouldFilter = e.target.checked;
+    setFilterReadPatents(shouldFilter);
+    updateFilteredPatents(shouldFilter);
+  };
 
   const handleSubmit = () => {
     if (selectedFolder) {
-      // Find the next workfile number for the selected folder
       const workfileCount = selectedFolder.workFiles?.length || 0;
       const nextWorkfileName = `workfile${workfileCount + 1}`;
-      onSubmit(selectedFolder.name, nextWorkfileName);
+      onSubmit(selectedFolder.name, nextWorkfileName, filterReadPatents);
     } else if (folderName.trim()) {
-      onSubmit(folderName, workfileName);
+      onSubmit(folderName, workfileName, filterReadPatents);
     }
     onClose();
   };
@@ -72,6 +91,28 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
         <div className="modal-body">
           <div className="patent-ids-summary">
             <p>Found {patentIds.length} patent IDs to save</p>
+            {readPatents.size > 0 && (
+              <p className="read-patents-info">
+                ({patentIds.filter(id => readPatents.has(id.toUpperCase())).length} already read)
+              </p>
+            )}
+          </div>
+
+          <div className="filter-section">
+            <label className="filter-label">
+              <input
+                type="checkbox"
+                checked={filterReadPatents}
+                onChange={handleFilterChange}
+                className="filter-checkbox"
+              />
+              Filter out already read patents
+            </label>
+            {filterReadPatents && filteredPatentIds.length !== patentIds.length && (
+              <p className="filter-info">
+                Will save {filteredPatentIds.length} unread patents
+              </p>
+            )}
           </div>
 
           {existingFolders.length > 0 && (
@@ -145,28 +186,13 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
   );
 };
 
-// Update storage keys to be user-specific
+// Remove the localStorage keys and functions
 const getUserStorageKey = (userId: string) => `savedPatentList_${userId}`;
-const getUserReadPatentsKey = (userId: string) => `readPatents_${userId}`;
-
-// Function to get read patents from localStorage with user ID
-const getReadPatents = (userId: string): Set<string> => {
-  const stored = localStorage.getItem(getUserReadPatentsKey(userId));
-  return stored ? new Set(JSON.parse(stored)) : new Set();
-};
-
-// Function to add a patent to read list with user ID
-const addToReadPatents = (userId: string, patentId: string) => {
-  const readPatents = getReadPatents(userId);
-  readPatents.add(patentId);
-  localStorage.setItem(getUserReadPatentsKey(userId), JSON.stringify([...readPatents]));
-};
 
 const SavedPatentList = () => {
   const { user } = useAuth();
   const [inputValue, setInputValue] = useState('');
   const [patentIds, setPatentIds] = useState<string[]>(() => {
-    // Initialize from localStorage only if user exists
     if (user?.id) {
       const stored = localStorage.getItem(getUserStorageKey(user.id));
       return stored ? JSON.parse(stored) : [];
@@ -176,35 +202,33 @@ const SavedPatentList = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [readPatents, setReadPatents] = useState<Set<string>>(user?.id ? getReadPatents(user.id) : new Set());
+  const [readPatents, setReadPatents] = useState<Set<string>>(new Set());
 
-  // Update state when user changes (e.g., after login)
-  useEffect(() => {
-    if (user?.id) {
-      const storedPatents = localStorage.getItem(getUserStorageKey(user.id));
-      setPatentIds(storedPatents ? JSON.parse(storedPatents) : []);
-      setReadPatents(getReadPatents(user.id));
-    } else {
-      // Clear state if no user
-      setPatentIds([]);
-      setReadPatents(new Set());
-    }
-  }, [user?.id]);
+  // Fetch read patents from backend
+  const { data: readPatentsResponse } = useQuery({
+    queryKey: ['readPatents', user?.id],
+    queryFn: authApi.getReadPatents,
+    enabled: !!user?.id
+  });
 
-  // Save patentIds to localStorage whenever it changes
+  // Update read patents when data changes
   useEffect(() => {
-    if (user?.id) {
-      localStorage.setItem(getUserStorageKey(user.id), JSON.stringify(patentIds));
+    if (readPatentsResponse?.statusCode === 200 && readPatentsResponse.data) {
+      setReadPatents(new Set(readPatentsResponse.data.map((id: string) => id.toUpperCase())));
     }
-  }, [patentIds, user?.id]);
+  }, [readPatentsResponse]);
 
   // Listen for patent view events
   useEffect(() => {
-    const handlePatentView = (event: CustomEvent) => {
+    const handlePatentView = async (event: CustomEvent) => {
       if (user?.id) {
         const viewedPatentId = event.detail.patentId;
-        addToReadPatents(user.id, viewedPatentId);
-        setReadPatents(getReadPatents(user.id));
+        try {
+          await authApi.markPatentAsRead(viewedPatentId);
+          setReadPatents(prev => new Set([...prev, viewedPatentId.toUpperCase()]));
+        } catch (error) {
+          console.error('Error marking patent as read:', error);
+        }
       }
     };
 
@@ -332,21 +356,50 @@ const SavedPatentList = () => {
     }
   };
 
-  const handleFolderSelection = (folderName: string, workfileName: string) => {
+  const handleFolderSelection = async (folderName: string, workfileName: string, filterReadPatents: boolean) => {
     const idsToSave = patentIds.length > 0 ? patentIds : [inputValue.trim()];
-    const combinedFolderName = `${folderName}/${workfileName}`;
     
-    savePatentMutation.mutate(
-      { ids: idsToSave, folderName: combinedFolderName },
-      {
-        onSuccess: () => {
-          // Clear the saved state after successful save
-          localStorage.removeItem(getUserStorageKey(user?.id || ''));
-          setPatentIds([]);
-          setInputValue('');
+    if (filterReadPatents) {
+      // Check read status for all patents
+      const response = await authApi.checkPatentsReadStatus(idsToSave);
+      if (response.statusCode === 200) {
+        const unreadPatents = idsToSave.filter(id => {
+          const status = response.data.find((s: any) => s.patentId === id.toUpperCase());
+          return !status?.isRead;
+        });
+        
+        if (unreadPatents.length === 0) {
+          toast.error('No unread patents to save after filtering');
+          return;
         }
+        
+        const combinedFolderName = `${folderName}/${workfileName}`;
+        savePatentMutation.mutate(
+          { ids: unreadPatents, folderName: combinedFolderName },
+          {
+            onSuccess: () => {
+              localStorage.removeItem(getUserStorageKey(user?.id || ''));
+              setPatentIds([]);
+              setInputValue('');
+              toast.success(`Saved ${unreadPatents.length} patents to ${folderName}`);
+            }
+          }
+        );
       }
-    );
+    } else {
+      const combinedFolderName = `${folderName}/${workfileName}`;
+      savePatentMutation.mutate(
+        { ids: idsToSave, folderName: combinedFolderName },
+        {
+          onSuccess: () => {
+            localStorage.removeItem(getUserStorageKey(user?.id || ''));
+            setPatentIds([]);
+            setInputValue('');
+            toast.success(`Saved ${idsToSave.length} patents to ${folderName}`);
+          }
+        }
+      );
+    }
   };
 
   // Function to clear all unsaved patents
@@ -434,6 +487,9 @@ const SavedPatentList = () => {
               {patentIds.map((id, index) => (
                 <li key={index} className={readPatents.has(id.toUpperCase()) ? 'read' : ''}>
                   {id}
+                  <span className="status-icon">
+                    {readPatents.has(id.toUpperCase()) ? '👁️' : '✓'}
+                  </span>
                   <button 
                     type="button" 
                     onClick={() => removePatentId(id)}
@@ -462,6 +518,7 @@ const SavedPatentList = () => {
         onSubmit={handleFolderSelection}
         existingFolders={existingFolders}
         patentIds={patentIds}
+        readPatents={readPatents}
       />
     </div>
   );
