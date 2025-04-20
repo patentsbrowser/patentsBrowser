@@ -140,7 +140,6 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
 }) => {
   // Use location data attribute to track which instance this is for debugging
   const location = props['data-location'] || 'unknown';
-  console.log(`PatentHighlighter init (${location}): isOpen=${isOpen}`);
 
   // Load state from localStorage if available
   const [searchTerms, setSearchTerms] = useState<TermColor[]>(() => {
@@ -314,8 +313,6 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
   const addFormulaSearch = () => {
     if (!formulaInput.trim()) return;
 
-    console.log("Adding formula search:", formulaInput.trim());
-
     const newFormulaSearch = {
       formula: formulaInput.trim(),
       color: colorOptions[formulaSearches.length % colorOptions.length],
@@ -337,8 +334,6 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
 
   // Parse formula input
   const parseFormula = (input: string) => {
-    console.log("Parsing formula:", input);
-
     const escapeRegex = (str: string) =>
       str
         .replace(/([.*+?^${}()|\[\]\\])/g, "\\$1")
@@ -349,7 +344,6 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     // Try proximity match first
     const proximityMatch = input.match(/\(\((.*?)\)\s+(\d+)D\s+\((.*?)\)\)/i);
     if (proximityMatch) {
-      console.log("Found proximity match:", proximityMatch);
       const group1 = proximityMatch[1]
         .split(/\s+or\s+/i)
         .map((w) => new RegExp(`^${escapeRegex(w.trim())}$`, "i"));
@@ -363,14 +357,12 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     // Try single term match
     const groupMatch = input.match(/^\((.*?)\)$/);
     if (groupMatch) {
-      console.log("Found single term match:", groupMatch);
       const group = groupMatch[1]
         .split(/\s+or\s+/i)
         .map((w) => new RegExp(`^${escapeRegex(w.trim())}$`, "i"));
       return { type: "single", group };
     }
 
-    console.log("No valid formula pattern found");
     return null;
   };
 
@@ -500,11 +492,6 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     // Split the text into words
     const words = text.split(/\s+/);
 
-    // For debugging
-    console.log("Proximity search terms:", proximitySearch.terms);
-    console.log("Text to search in:", text);
-    console.log("Words array:", words);
-
     // Create arrays of positions for each term
     const termPositions: number[][] = [];
 
@@ -519,13 +506,11 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
         }
       });
 
-      console.log(`Positions for term "${term}":`, positions);
       termPositions.push(positions);
     });
 
     // If any term has no occurrences, return empty matches
     if (termPositions.some((positions) => positions.length === 0)) {
-      console.log("Some terms not found in text");
       return matches;
     }
 
@@ -577,12 +562,6 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
             }
           }
 
-          console.log("Found valid match span:", startCharIndex, endCharIndex);
-          console.log(
-            "Match text:",
-            text.substring(startCharIndex, endCharIndex)
-          );
-
           matches.push({ start: startCharIndex, end: endCharIndex });
         }
         return;
@@ -606,7 +585,6 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
       findValidCombinations(1, [position]);
     }
 
-    console.log("Final matches:", matches);
     return matches;
   };
 
@@ -627,7 +605,6 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     try {
       // Get all elements matching the selector
       const elements = document.querySelectorAll(targetSelector);
-      console.log("Elements to highlight:", elements.length);
 
       // Counter for matches - collect all matches before updating state
       const matchCounts: { term: string; count: number; color: string }[] = [];
@@ -637,21 +614,16 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
         try {
         // Skip elements that are not safe to modify
         if (!isSafeToModify(element)) {
-          console.log("Skipping unsafe element");
+
           return;
         }
 
           // Get the element's text and nodes using our improved function
           const { text: elementText, nodes } = getTextWithOffsets(element);
           if (!elementText.trim()) {
-          console.log("Skipping empty element");
+
           return; // Skip empty elements
         }
-
-        console.log(
-          "Processing element text:",
-            elementText.substring(0, 50) + "..."
-          );
 
           // Process each search term
           let matches: Match[] = [];
@@ -1118,8 +1090,6 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
       return;
     }
     
-    console.log(`[PatentHighlighter] (${location}) Applying highlights to ${targetSelector}`);
-    
     try {
       // Apply all types of highlights
       if (searchTerms.length > 0) {
@@ -1143,11 +1113,7 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
 
   // Update the document when isOpen state changes
   useEffect(() => {
-    if (isOpen) {
-      console.log(`[PatentHighlighter] (${location}) Modal opened`);
-    } else {
-      console.log(`[PatentHighlighter] (${location}) Modal closed - highlights remain active`);
-    }
+    // No action needed
   }, [isOpen, location]);
   
   // Fix the mutation observer effect to prevent unnecessary updates
@@ -1175,8 +1141,6 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
       timeoutId = setTimeout(() => {
         // Check if we actually need to reapply highlights
         if (needsHighlighting()) {
-          console.log("DOM changed, reapplying highlights");
-          
           // Set flags to prevent recursive updates
           skipNextUpdate = true;
           isUpdating = true;
@@ -1221,8 +1185,6 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
         characterData: true,  // Watch for text changes
         attributes: false     // Don't need to watch attributes
       });
-      
-      console.log("MutationObserver attached to patent details container");
     } else {
       // Fallback to observing individual sections
       const highlightableElements = document.querySelectorAll(targetSelector);
@@ -1233,8 +1195,6 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
           characterData: true 
         });
       });
-      
-      console.log("MutationObserver attached to individual highlightable elements");
     }
 
     // Clean up observer and any pending timeouts

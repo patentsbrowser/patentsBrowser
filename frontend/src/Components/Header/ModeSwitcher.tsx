@@ -7,15 +7,8 @@ const ModeSwitcher = () => {
   const { user, adminCheckPerformed } = useAuth();
   const { isAdminMode, toggleAdminMode, setAdminMode } = useAdmin();
 
-  // Add debugging logs
-  console.log('ModeSwitcher - User:', user);
-  console.log('ModeSwitcher - Is admin from user:', user?.isAdmin);
-  console.log('ModeSwitcher - Admin mode:', isAdminMode);
-  console.log('ModeSwitcher - Admin check performed:', adminCheckPerformed);
-
   // Only show the switcher if the user has admin privileges
   if (!user?.isAdmin) {
-    console.log('ModeSwitcher - Not showing switcher (not admin)');
     return null;
   }
 

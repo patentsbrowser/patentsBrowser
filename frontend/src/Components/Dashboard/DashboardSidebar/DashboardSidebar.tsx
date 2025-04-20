@@ -19,9 +19,11 @@ interface RecentSearch {
 }
 
 interface WorkFile {
+  _id: string;
   name: string;
   patentIds: string[];
   timestamp: number;
+  isCombined?: boolean;
 }
 
 interface CustomPatentList {
@@ -151,7 +153,6 @@ const DashboardSidebar = ({
   // Add event listener for refreshing custom folders
   useEffect(() => {
     const handleRefreshCustomFolders = () => {
-      console.log('Refreshing custom folders from event');
       fetchCustomPatentLists();
     };
 
@@ -179,16 +180,12 @@ const DashboardSidebar = ({
     try {
       if (isLoading) return; // Prevent duplicate calls
       setIsLoading(true);
-      console.log("Fetching custom patent lists...");
       
       // Fetch both custom lists and imported lists
       const [customListsResponse, importedListsResponse] = await Promise.all([
         authApi.getCustomPatentList(),
         authApi.getImportedLists()
       ]);
-      
-      console.log("Custom patent lists fetched:", customListsResponse.data);
-      console.log("Imported lists fetched:", importedListsResponse.data);
       
       // Transform the data to match the CustomPatentList interface
       const transformedCustomLists = (customListsResponse.data || []).map((list: any) => ({
@@ -227,12 +224,11 @@ const DashboardSidebar = ({
 
   async function handleRemovePatentFromFolder(folderId: string, patentId: string): Promise<void> {
     try {
-      console.log(`Removing patent ${patentId} from folder ${folderId}`);
       const response = await authApi.removePatentFromFolder(folderId, patentId);
       
       // If the folder was automatically deleted (all patents removed)
       if (response.folderDeleted) {
-        console.log(`Folder ${folderId} was automatically deleted as it's now empty`);
+        // Folder was automatically deleted
       }
       
       // Refresh the list after successful removal
@@ -244,7 +240,6 @@ const DashboardSidebar = ({
 
   async function handleDeleteFolder(folderId: string): Promise<void> {
     try {
-      console.log(`Deleting folder ${folderId}`);
       await authApi.deleteFolder(folderId);
       // Refresh the list after successful deletion
       await refreshCustomPatentLists();
@@ -255,7 +250,6 @@ const DashboardSidebar = ({
 
   async function handleCreateSubfolder(name: string, parentFolderId: string, patentIds: string[]): Promise<void> {
     try {
-      console.log(`Creating subfolder ${name} under folder ${parentFolderId}`);
       await authApi.createSubfolder(name, parentFolderId, patentIds);
       // Refresh the list after successful creation
       await refreshCustomPatentLists();
@@ -266,7 +260,6 @@ const DashboardSidebar = ({
 
   async function handleAddPatentToSubfolder(subfolderId: string, patentId: string): Promise<void> {
     try {
-      console.log(`Adding patent ${patentId} to subfolder ${subfolderId}`);
       await authApi.addPatentToSubfolder(subfolderId, patentId);
       // Refresh the list after successful addition
       await refreshCustomPatentLists();

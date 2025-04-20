@@ -50,19 +50,9 @@ export const authApi = {
       if (response.data.statusCode === 200) {
         localStorage.setItem('token', response.data.data.token);
         const user = response.data.data.user;
-        
-        // Debug logs
-        console.log('Login response raw:', response.data);
-        console.log('User object from login response:', user);
-        console.log('Is admin from login response:', user?.isAdmin);
-        
         // Set the user in localStorage (for persistence)
         localStorage.setItem('user', JSON.stringify(user));
         
-        // Debug: Verify what's in localStorage
-        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-        console.log('User stored in localStorage:', storedUser);
-        console.log('Is admin in localStorage:', storedUser?.isAdmin);
       }
       
       return {
@@ -157,16 +147,13 @@ export const authApi = {
   // Check admin status - a helper function to check if user is admin
   checkAdminStatus: async () => {
     try {
-      console.log('Checking admin status from API...');
       const response = await api.get('/auth/check-admin');
-      console.log('Admin status response:', response.data);
       return {
         isAdmin: response.data.isAdmin,
         statusCode: response.data.statusCode
       };
     } catch (error: any) {
       console.error('Error checking admin status:', error);
-      console.log('Error response:', error.response);
       return {
         isAdmin: false,
         statusCode: error.response?.status || 500,
@@ -178,15 +165,12 @@ export const authApi = {
   verifyOTP: async (email: string, otp: string) => {
     // Prevent duplicate verifyOTP requests
     if (isVerifyingOTP) {
-      console.log('Verify OTP request already in progress, skipping duplicate request');
       return { statusCode: 100, message: 'Request in progress' };
     }
     
     try {
       isVerifyingOTP = true;
-      console.log('Verifying OTP for email:', email);
       const { data } = await api.post(`/auth/verify-otp`, { email, otp });
-      console.log('OTP verification response:', data);
       if (data.statusCode === 200) {
         localStorage.setItem('token', data.data.token);
         localStorage.setItem('user', JSON.stringify(data.data.user));
@@ -209,9 +193,7 @@ export const authApi = {
 
   resendOTP: async (email: string) => {
     try {
-      console.log('Resending OTP for email:', email);
       const { data } = await api.post(`/auth/resend-otp`, { email });
-      console.log('Resend OTP response:', data);
       return data;
     } catch (error: any) {
       console.error('Resend OTP error:', {
@@ -237,14 +219,10 @@ export const authApi = {
   
   saveCustomPatentList: async (name: string, patentIds: string[], source?: string) => {
     try {
-      console.log('Saving custom patent list:', { name, patentIds, source });
-      
       const response = await api.post(
         `/saved-patents/save-custom-list`, 
         { name, patentIds, source }
       );
-      
-      console.log('Custom patent list saved response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error in saveCustomPatentList:', error);
@@ -263,8 +241,6 @@ export const authApi = {
         `/saved-patents/remove-from-folder`, 
         { folderId, patentId }
       );
-      
-      console.log('Patent removed from folder response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error removing patent from folder:', error);
@@ -278,8 +254,6 @@ export const authApi = {
         `/saved-patents/delete-folder`, 
         { folderId }
       );
-      
-      console.log('Folder deletion response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error deleting folder:', error);
@@ -293,8 +267,6 @@ export const authApi = {
         `/saved-patents/create-subfolder`,
         { name, parentFolderId, patentIds }
       );
-      
-      console.log('Subfolder creation response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error creating subfolder:', error);
@@ -308,8 +280,6 @@ export const authApi = {
         `/saved-patents/add-to-subfolder`,
         { subfolderId, patentId }
       );
-      
-      console.log('Patent added to subfolder response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error adding patent to subfolder:', error);
@@ -323,8 +293,6 @@ export const authApi = {
         `/saved-patents/add-to-folder`,
         { folderId, patentId }
       );
-      
-      console.log('Patent added to folder response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error adding patent to folder:', error);
@@ -338,8 +306,6 @@ export const authApi = {
         `/saved-patents/add-patents-to-folder`,
         { folderId, patentIds }
       );
-      
-      console.log('Patents added to folder response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error adding patents to folder:', error);
@@ -397,8 +363,6 @@ export const authApi = {
         `/saved-patents/add-patents-to-workfile`,
         { folderId, workFileName, patentIds }
       );
-      
-      console.log('Patents added to work file response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error adding patents to work file:', error);
@@ -430,11 +394,7 @@ export const authApi = {
       
       const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
       
-      console.log('Getting search history with params:', queryString);
-      
       const response = await api.get(`/saved-patents/search-history${queryString}`);
-      console.log('Search history response:', response.data);
-      
       return response.data;
     } catch (error: any) {
       console.error('Error getting search history:', {
@@ -458,18 +418,10 @@ export const authApi = {
 
   addToSearchHistory: async (patentId: string, source?: string) => {
     try {
-      console.log('Adding to search history:', {
-        patentId,
-        source,
-        token: localStorage.getItem('token')
-      });
-      
       const response = await api.post(`/saved-patents/search-history`, { 
         patentId, 
         source 
       });
-      
-      console.log('Search history response:', response.data);
       return response.data;
     } catch (error: any) {
       console.error('Error adding to search history:', {

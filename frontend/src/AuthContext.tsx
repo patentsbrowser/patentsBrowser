@@ -39,8 +39,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const savedUser = localStorage.getItem('user');
       // Only parse if savedUser exists and is not "undefined"
       const parsedUser = savedUser && savedUser !== "undefined" ? JSON.parse(savedUser) : null;
-      console.log('AuthContext - Initial user from localStorage:', parsedUser);
-      console.log('AuthContext - Initial isAdmin from localStorage:', parsedUser?.isAdmin);
       return parsedUser;
     } catch (error) {
       // Clear potentially corrupted data
@@ -77,12 +75,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Skip if already checked or no user
     if (adminCheckPerformed || !user) return;
     
-    console.log('AuthContext - Performing single admin status check');
-    
     try {
       const { authApi } = await import('./api/auth');
       const result = await authApi.checkAdminStatus();
-      console.log('AuthContext - Admin status check result:', result);
       
       if (result.isAdmin) {
         // Update user object with admin status
@@ -91,7 +86,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         // Update localStorage
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        console.log('AuthContext - Updated user with admin status');
       }
     } catch (error) {
       console.error('AuthContext - Error checking admin status:', error);
@@ -109,10 +103,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginMutation = useMutation({
     mutationFn: (credentials: { email: string; password: string }) => authApi.login(credentials),
     onSuccess: (data) => {
-      console.log('AuthContext login mutation - Response data:', data);
-      console.log('AuthContext login mutation - User object:', data.user);
-      console.log('AuthContext login mutation - isAdmin:', data.user?.isAdmin);
-      
       localStorage.setItem('token', data.data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       setUser(data.user);
@@ -159,9 +149,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user,
         setUser,
         isAuthenticated: !!user,
-        login: (email: string, password: string) => loginMutation.mutateAsync({ email, password }),
-        signup: (credentials) => signupMutation.mutateAsync(credentials),
-        logout: () => logoutMutation.mutateAsync(),
+        login: (email: string, password: string) => loginMutation.mutateAsync({ email, password }).then(() => {}),
+        signup: (credentials) => signupMutation.mutateAsync(credentials).then(() => {}),
+        logout: () => logoutMutation.mutateAsync().then(() => {}),
         checkAuth,
         checkAdminStatus,
         forceAdminCheck,

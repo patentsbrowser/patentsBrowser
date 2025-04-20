@@ -31,10 +31,8 @@ const PatentFigureSearch: React.FC<PatentFigureSearchProps> = ({ patentIds }) =>
       
       if (nextIndex < patentIds.length) {
         setCurrentPatentIndex(nextIndex);
-        console.log(`Moving to next patent: ${patentIds[nextIndex]} (${nextIndex + 1}/${patentIds.length})`);
       } else {
         // We've reached the end of the patent list
-        console.log('Reached the end of patent list, closing viewer');
         setShowFigureViewer(false);
         // Optional: Show a toast or message indicating completion
       }

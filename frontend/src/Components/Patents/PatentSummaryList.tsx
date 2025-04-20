@@ -202,20 +202,14 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
 
     try {
       // Create a new folder in Import Lists with the selected patents
-      console.log('Creating folder:', folderName, 'with patents:', selectedPatentIds);
       const response = await authApi.saveCustomPatentList(folderName, selectedPatentIds, 'importedList');
       
       if (!response.data || !response.data._id) {
         throw new Error('Failed to create folder: No folder ID returned');
       }
       
-      console.log('Folder created with ID:', response.data._id);
-      
       // Create a workfile in the new folder with user-provided name
-      console.log('Creating workfile:', workFileName, 'in folder:', response.data._id);
       const workFileResponse = await authApi.addPatentsToWorkFile(response.data._id, workFileName, selectedPatentIds);
-      
-      console.log('Workfile creation response:', workFileResponse);
       
       if (!workFileResponse.data) {
         throw new Error('Failed to create workfile: No response data');
@@ -356,11 +350,9 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
   const handleSearchPatents = async (folderId: string, workFileName: string, patentIds: string[]) => {
     try {
       setIsSearching(true);
-      console.log('Searching patents:', { folderId, workFileName, patentIds });
       
       // Use patentApi to search for patents
       const result = await patentApi.searchMultiplePatentsUnified(patentIds, 'direct');
-      console.log('Search results:', result);
       
       if (result?.hits?.hits) {
         const patents = result.hits.hits.map((hit: any) => {

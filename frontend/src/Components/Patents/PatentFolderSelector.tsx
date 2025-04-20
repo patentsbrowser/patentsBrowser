@@ -38,7 +38,6 @@ const PatentFolderSelector: React.FC<PatentFolderSelectorProps> = ({
     setIsLoading(true);
     try {
       const response = await authApi.getCustomPatentList();
-      console.log('Fetched folders:', response.data);
       setFolders(response.data || []);
       
       // Auto-select first folder if available
@@ -77,7 +76,7 @@ const PatentFolderSelector: React.FC<PatentFolderSelectorProps> = ({
     } catch (error: any) {
       console.error('Error adding patent to folder:', error);
       if (error.response?.data?.message === 'Patent is already in this folder') {
-        toast.info('Patent is already in this folder');
+        toast('Patent is already in this folder');
       } else {
         toast.error('Failed to add patent to folder. Please try again.');
       }

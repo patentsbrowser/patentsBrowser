@@ -158,10 +158,6 @@ const CombineWorkfilesModal: React.FC<CombineWorkfilesModalProps> = ({
       setValidPatentsByFamily(familyGroups);
       setFinalPatentIds(selectedPatents);
 
-      console.log('Invalid/Not found patent IDs:', invalidIds);
-      console.log('Valid patents by family:', familyGroups);
-      console.log('Final selected patents:', selectedPatents);
-
     } catch (error) {
       console.error('Error validating patent IDs:', error);
       setError('Failed to validate patent IDs. Please try again.');
@@ -195,7 +191,6 @@ const CombineWorkfilesModal: React.FC<CombineWorkfilesModalProps> = ({
   };
 
   if (!isOpen) return null;
-// console.log('first', first)
   const modalContent = (
     <div className="combine-workfiles-modal-overlay">
       <div className="combine-workfiles-modal fullscreen">

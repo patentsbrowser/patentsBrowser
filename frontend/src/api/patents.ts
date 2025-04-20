@@ -72,12 +72,9 @@ interface FullLanguageResponse {
  * of which API returned the data, allowing the same component structure to be used.
  */
 export const normalizePatentResponse = (response: any, apiSource: ApiSource) => {
-  console.log(`Normalizing ${apiSource} response:`, response);
-  
   // Handle nested data structure (common in API responses)
   const data = response?.data || response;
   if (!data) {
-    console.log('No data found in response');
     return null;
   }
   
@@ -86,12 +83,9 @@ export const normalizePatentResponse = (response: any, apiSource: ApiSource) => 
       (data.organic_results || response.organic_results) && 
       (typeof data.search_metadata === 'object' || typeof response.search_metadata === 'object')) {
     
-    console.log('Detected SerpAPI response format with search_metadata structure');
-    
     // Get the organic results array, handling nested structure
     const organicResults = data.organic_results || response.organic_results || [];
     if (!Array.isArray(organicResults) || organicResults.length === 0) {
-      console.log('No organic results found in SerpAPI response');
       return null;
     }
     
@@ -116,7 +110,6 @@ export const normalizePatentResponse = (response: any, apiSource: ApiSource) => 
         raw_patent_data: patent
       }
     };
-    console.log('Normalized special SerpAPI response:', normalized);
     return normalized;
   }
   
@@ -125,7 +118,6 @@ export const normalizePatentResponse = (response: any, apiSource: ApiSource) => 
     const source = data._source || (data.data && data.data._source);
     
     if (!source) {
-      console.log('Invalid Unified response format - no _source found:', data);
       return null;
     }
     
@@ -147,18 +139,15 @@ export const normalizePatentResponse = (response: any, apiSource: ApiSource) => 
         num_cit_pat: source.num_cit_pat || 0
       }
     };
-    console.log('Normalized Unified response:', normalized);
     return normalized;
   } else if (apiSource === 'serpapi') {
     // Handle SerpAPI response
     if (!data) {
-      console.log('Invalid SerpAPI response - response is null or undefined');
       return null;
     }
     
     // Check if this is a search result with organic_results
     if (data.organic_results && Array.isArray(data.organic_results)) {
-      console.log('SerpAPI response has organic_results:', data.organic_results.length);
       // Return the first result by default
       const patent = data.organic_results[0] || {};
       
@@ -177,7 +166,6 @@ export const normalizePatentResponse = (response: any, apiSource: ApiSource) => 
           raw_patent_data: patent
         }
       };
-      console.log('Normalized SerpAPI search response:', normalized);
       return normalized;
     } else {
       // Direct patent details
@@ -200,12 +188,10 @@ export const normalizePatentResponse = (response: any, apiSource: ApiSource) => 
           raw_patent_data: data
         }
       };
-      console.log('Normalized SerpAPI direct response:', normalized);
       return normalized;
     }
   }
   
-  console.log('Unknown API source:', apiSource);
   return null;
 };
 

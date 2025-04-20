@@ -29,8 +29,6 @@ const Figures = ({ initialFigures, noDataMessage = "No figures available for thi
     // If passed as { figures: Array }
     figuresArray = initialFigures.figures;
   }
-  
-  console.log('figuresArray extracted:', figuresArray);
 
   const getImageSource = (figure: Figure) => {
     if (figure.imgStr) {

@@ -40,7 +40,6 @@ const Header = () => {
     refetchOnMount: true,
     enabled: true, // Always enabled, but we control refetching manually
   });
-  console.log('profileResponse', profileResponse);
   // Update Redux when profile data changes from API
   useEffect(() => {
     if (profileResponse?.statusCode === 200 && profileResponse?.data) {
@@ -58,10 +57,6 @@ const Header = () => {
   // Get profile image URL
   const profileImage = profile?.imageUrl;
   const profileName = profile?.name || '';
-
-  // Debug logs
-  console.log('Header - Profile data:', profile);
-  console.log('Header - Is admin from profile:', profile?.isAdmin);
   
   // Check for admin status - direct access for debugging
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -69,14 +64,12 @@ const Header = () => {
   useEffect(() => {
     // Check if the profile indicates admin status
     if (profile?.isAdmin) {
-      console.log('Header - Setting admin status from profile:', profile.isAdmin);
       setIsAdmin(true);
     } else {
       // Fallback to localStorage
       try {
         const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
         if (storedUser?.isAdmin) {
-          console.log('Header - Setting admin status from localStorage:', storedUser.isAdmin);
           setIsAdmin(true);
         }
       } catch (error) {

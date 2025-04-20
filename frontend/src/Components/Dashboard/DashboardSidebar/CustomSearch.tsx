@@ -281,7 +281,6 @@ const CustomSearch: React.FC<CustomSearchProps> = ({
       // For subfolder
       if (folder.isSubfolder && folder.parentFolderId && onAddPatentToSubfolder) {
         await onAddPatentToSubfolder(folder._id, patentIdToAdd);
-        console.log(`Added patent ${patentIdToAdd} to subfolder ${folder.name}`);
       } 
       // For regular folder - use workaround with saveCustomPatentList
       else if (onAddCustomFolder) {
@@ -294,7 +293,6 @@ const CustomSearch: React.FC<CustomSearchProps> = ({
           await onDeleteFolder(folder._id);
           // Then recreate with updated patent IDs
           await onAddCustomFolder(folder.name, updatedPatentIds);
-          console.log(`Added patent ${patentIdToAdd} to folder ${folder.name}`);
         }
       }
 
@@ -368,8 +366,6 @@ const CustomSearch: React.FC<CustomSearchProps> = ({
         if (onRemovePatentFromFolder) {
           await onRemovePatentFromFolder(folderId, patentId);
         }
-        
-        console.log(`Moved patent ${patentId} from folder ${folderId} to subfolder ${targetFolderId}`);
       } 
       // Handle folder-to-folder move using existing APIs
       else if (onAddCustomFolder && onDeleteFolder && onRemovePatentFromFolder) {
@@ -389,8 +385,6 @@ const CustomSearch: React.FC<CustomSearchProps> = ({
         // Delete and recreate target folder with the updated patent IDs
         await onDeleteFolder(targetFolderId);
         await onAddCustomFolder(targetFolder.name, updatedTargetPatentIds);
-        
-        console.log(`Moved patent ${patentId} from folder ${folderId} to folder ${targetFolderId}`);
       }
     } catch (error) {
       console.error("Error moving patent:", error);

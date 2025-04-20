@@ -8,19 +8,14 @@ const Sidebar = () => {
   const { user } = useAuth();
   const location = useLocation();
   
-  // Debug logs
-  console.log('Sidebar - User:', user);
-  console.log('Sidebar - Is user admin?', !!user?.isAdmin);
-  console.log('Sidebar - Is admin mode active?', isAdminMode);
-  
   const userMenuItems = [
-    { path: '/auth/dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/auth/patent-history', label: 'Patent History', icon: '🕒' },
-    { path: '/auth/payment-history', label: 'Payment History', icon: '💳' },
-    { path: '/auth/patentSaver', label: 'Saved Patents', icon: '📑' },
-    { path: '/auth/subscription', label: 'Subscription', icon: '💎' },
-    { path: '/auth/settings', label: 'Settings', icon: '📝' },
-    { path: '/auth/update-profile', label: 'Update Profile', icon: '👤' },
+    { path: '/auth/dashboard', label: 'Dashboard', icon: '📊', exact: false },
+    { path: '/auth/patent-history', label: 'Patent History', icon: '🕒', exact: false },
+    { path: '/auth/payment-history', label: 'Payment History', icon: '💳', exact: false },
+    { path: '/auth/patentSaver', label: 'Saved Patents', icon: '📑', exact: false },
+    { path: '/auth/subscription', label: 'Subscription', icon: '💎', exact: false },
+    { path: '/auth/settings', label: 'Settings', icon: '📝', exact: false },
+    { path: '/auth/update-profile', label: 'Update Profile', icon: '👤', exact: false },
   ];
 
   const adminMenuItems = [
@@ -33,9 +28,7 @@ const Sidebar = () => {
   // Only show admin menu items if both conditions are true:
   // 1. User has admin role
   // 2. Admin mode is explicitly toggled on
-  const shouldShowAdminMenu = user?.isAdmin === true && isAdminMode === true;
-  console.log('Sidebar - Should show admin menu?', shouldShowAdminMenu);
-  
+  const shouldShowAdminMenu = user?.isAdmin && isAdminMode;
   // Always default to user menu items unless explicitly in admin mode
   const menuItems = shouldShowAdminMenu ? adminMenuItems : userMenuItems;
 

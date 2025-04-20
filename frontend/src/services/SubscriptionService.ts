@@ -40,7 +40,6 @@ axiosInstance.interceptors.request.use(
       
       if (token && token !== "undefined") {
         config.headers['Authorization'] = `Bearer ${token}`;
-        console.log('Setting auth token:', `Bearer ${token.substring(0, 10)}...`);
       } else {
         console.warn('No valid auth token found for subscription request');
       }
@@ -57,7 +56,6 @@ axiosInstance.interceptors.request.use(
 
 // Add custom debugging to help troubleshoot
 const debugLog = (message: string, data: any): void => {
-  console.log(`[Subscription Service] ${message}`, data);
 };
 
 /**

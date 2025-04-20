@@ -31,7 +31,6 @@ const PatentHistory: React.FC = () => {
     
     // Listen for patent-searched events
     const handlePatentSearched = () => {
-      console.log('Patent searched event received, refreshing history');
       fetchSearchHistory();
     };
     

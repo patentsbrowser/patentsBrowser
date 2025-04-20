@@ -21,7 +21,6 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
   const signupMutation = useMutation({
     mutationFn: authApi.signup,
     onSuccess: (response: any) => {
-      console.log('Signup response:', response);
       if (response.statusCode === 200 || response.statusCode === 201) {
         toast.success('Account created! Please verify your email.');
         setIsOTPSent(true);

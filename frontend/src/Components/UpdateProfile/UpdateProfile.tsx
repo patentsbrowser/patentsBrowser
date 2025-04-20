@@ -259,9 +259,7 @@ const UpdateProfile = () => {
 
   if (profileLoading) {
     return <div className="update-profile loading">Loading profile data...</div>;
-  }
-  console.log('formik.values.imageUrl', formik.values.imageUrl,profile?.imageUrl)
-  
+  }  
 
   return (
     <div className="update-profile">

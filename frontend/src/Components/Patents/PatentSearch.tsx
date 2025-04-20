@@ -295,7 +295,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
           
           // Call patent API directly instead of handleSearch
           const result = await patentApi.searchMultiplePatentsUnified(formattedIds, 'smart');
-          console.log("Smart search completed with results:", result);
           dispatch(setSmartSearchResults(result));
           // Set loading to false after successful API call
           setIsLoading(false);
@@ -308,11 +307,9 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
       }
       else if (searchType === 'full' && selectedApi === 'unified') {
         // For full search with unified API - use direct search
-        console.log("Making unified API full search call with", formattedIds);
         try {
           // Make specific call to patentApi.searchMultiplePatentsUnified with direct type
           const result = await patentApi.searchMultiplePatentsUnified(formattedIds, 'direct');
-          console.log("Unified API full search results received:", result);
           
           // Process the results directly without waiting for a modal
           if (result && result.hits && result.hits.hits) {
@@ -372,7 +369,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
             
             if (notFound.length > 0) {
               setNotFoundPatents(notFound);
-              console.log("Patents not found:", notFound);
               toast.error(`${notFound.length} patents not found: ${notFound.join(', ')}`);
             }
             
@@ -397,7 +393,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
       }
       else {
         // For SerpAPI search or other cases
-        console.log("Making SerpAPI or individual unified API calls with", formattedIds);
         
         // Create an array of promises for each patent ID
         const searchPromises = formattedIds.map(async (id) => {
@@ -419,7 +414,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         
         // Execute all promises in parallel
         const searchResults = await Promise.all(searchPromises);
-        console.log("Search results:", searchResults);
         
         // Filter out errors and set results
         results = searchResults.filter(result => {
@@ -441,7 +435,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
             return typedResult.patentId || '';
           }).filter(Boolean);
           setNotFoundPatents(notFoundIds);
-          console.log("Patents not found:", notFoundIds);
           toast.error(`${notFoundIds.length} patents not found: ${notFoundIds.join(', ')}`);
         }
         
@@ -473,7 +466,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
           }
           // Dispatch event to notify history component
           emitPatentSearchedEvent();
-          console.log(`Added ${successfulIds.length} patents to search history`);
         } catch (error) {
           console.error("Error adding patents to search history:", error);
         }
@@ -502,8 +494,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
 
   // Update the handlePatentSelect function to trigger a direct search when a patent is selected from a folder
   const handlePatentSelect = async (patentId: string) => {
-    console.log(`Patent selected: ${patentId}`);
-    
     // Clean up the patent ID if needed
     const cleanedId = patentId.trim();
     if (!cleanedId) return;
@@ -523,7 +513,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
       await authApi.addToSearchHistory(cleanedId, 'direct-selection');
       // Dispatch an event to notify that a patent has been searched
       emitPatentSearchedEvent();
-      console.log(`Added patent ${cleanedId} to search history from selection`);
     } catch (error) {
       console.error('Error adding patent to search history:', error);
     }
@@ -534,8 +523,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
 
   // Define the function to handle patent selection with folder context
   const handlePatentWithFolderClick = async (patentId: string, folderName: string) => {
-    console.log(`Patent selected from folder "${folderName}": ${patentId}`);
-    
     // Clean up the patent ID if needed
     const cleanedId = patentId.trim();
     if (!cleanedId) return;
@@ -555,7 +542,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
       await authApi.addToSearchHistory(cleanedId, 'folder-selection');
       // Dispatch an event to notify that a patent has been searched
       emitPatentSearchedEvent();
-      console.log(`Added patent ${cleanedId} to search history from folder selection`);
     } catch (error) {
       console.error('Error adding patent to search history:', error);
     }
@@ -578,7 +564,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
       await authApi.addToSearchHistory(summary.patentId, 'view-details');
       // Dispatch an event to notify that a patent has been searched
       window.dispatchEvent(new CustomEvent('patent-searched'));
-      console.log(`Added patent ${summary.patentId} to search history from view details`);
     } catch (error) {
       console.error('Error adding patent to search history:', error);
     }
@@ -609,11 +594,9 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     if (smartSearchResults && smartSearchResults.hits && smartSearchResults.hits.hits) {
       // For smart search, we only want to update patentSummaries when the Apply Filter button is clicked
       // This logic is now in the handleApplyFilter function
-      console.log("Smart search results are available. Waiting for user to apply filter.");
       
       // For full search (not smart search), we can immediately process and display results
       if (!showSmartSearchModal && searchType === 'full') {
-        console.log("Processing results for full search");
         try {
           // Process the results and update UI
           const hitsArray = smartSearchResults.hits.hits;
@@ -704,8 +687,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         // Get the filtered patent IDs directly from Redux
         const filteredPatentIds = filters.filteredPatentIds || [];
         
-        console.log(`Found ${filteredPatentIds.length} patents matching the filter criteria`);
-        
         // Find the full patent data from the IDs
         const filteredHits = smartSearchResults.hits.hits.filter((hit: any) => {
           const hitId = hit._source.publication_number || hit._id;
@@ -795,7 +776,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
             for (const patentId of patentIds) {
               await authApi.addToSearchHistory(patentId, 'search');
             }
-            console.log(`Added ${patentIds.length} patents to search history`);
             
             // If there are multiple patents, create a folder to contain them
             if (patentIds.length > 1) {
@@ -804,8 +784,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
               
               // Create a custom patent list for multiple patents
               await authApi.saveCustomPatentList(folderName, patentIds, 'search');
-              
-              console.log(`Created folder "${folderName}" with ${patentIds.length} patents`);
               
               // Show success message about folder creation
               toast.success(
@@ -837,7 +815,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
 
   // Add a handler for when the SmartSearchModal is closed without applying a filter
   const handleSmartSearchModalClose = () => {
-    console.log("SmartSearchModal closed without applying filter");
     // Reset loading state
     setIsLoading(false);
     // Clear patent summaries to prevent showing lingering loading indicators
@@ -876,9 +853,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     });
 
     try {
-      console.log("Making API call for corrected patents:", formattedIds);
       const result = await patentApi.searchMultiplePatentsUnified(formattedIds, 'smart');
-      console.log("Corrected patents search result:", result);
       
       if (result?.hits?.hits) {
         // Get existing results from Redux
@@ -1032,8 +1007,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
       
       if (!patentIds || patentIds.length === 0) return;
       
-      console.log(`Searching for ${patentIds.length} patents from ${source}`);
-      
       // Set the search query to show all patent IDs
       setSearchQuery(patentIds.join(', '));
       
@@ -1088,19 +1061,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
       )}
 
       {isLoading && <Loader fullScreen text="Searching patents..." />}
-
-      {/* Debug logging */}
-      {(() => {
-        console.log("Debug - PatentSearch render state:", {
-          patentSummariesLength: patentSummaries.length,
-          isLoading,
-          selectedPatent: !!selectedPatent,
-          showSmartSearchModal,
-          smartSearchResults: !!smartSearchResults,
-          filteredPatentsInRedux: filters.filteredPatents?.length
-        });
-        return null;
-      })()}
       
       {patentSummaries.length > 0 && !isLoading && (
         <PatentSummaryList

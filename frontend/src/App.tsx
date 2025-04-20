@@ -93,7 +93,6 @@ const DashboardSelector = () => {
 };
 
 const App = () => {
-  console.log('STAGE', import.meta.env.VITE_API_URL || 'No API URL defined');
   // Get the sidebar behavior from localStorage
   const [sidebarBehavior, setSidebarBehavior] = useState<'auto' | 'manual'>(() => {
     const saved = localStorage.getItem('sidebarBehavior');
@@ -104,7 +103,6 @@ const App = () => {
   const handleSidebarBehaviorChange = (behavior: 'auto' | 'manual') => {
     setSidebarBehavior(behavior);
   };
-  console.log('first');
   return (
     <ErrorBoundary>
       <Provider store={store}>

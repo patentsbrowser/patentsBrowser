@@ -51,8 +51,6 @@ const FigureViewer: React.FC<FigureViewerProps> = ({
       
       try {
         const response = await patentApi.getFigures(patentId);
-        console.log('Figures response:', response);
-        
         // Extract figures from the response
         let figures: Figure[] = [];
         if (response && response.figures && Array.isArray(response.figures)) {

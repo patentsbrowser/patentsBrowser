@@ -136,7 +136,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
       
       try {
         setPaymentStep('creating');
-        console.log('Creating pending subscription with order ID:', upiOrderId);
         await SubscriptionService.createPendingSubscription(plan._id, upiOrderId);
         setPaymentStep('ready');
       } catch (error) {
@@ -672,7 +671,6 @@ const SubscriptionPage: React.FC = () => {
       const result = await SubscriptionService.getUserSubscription();
       
       if (result.success && result.data) {
-        console.log('Fetched user subscription:', result.data);
         setUserSubscription(result.data);
         
         // Check if there's a pending payment
@@ -684,7 +682,6 @@ const SubscriptionPage: React.FC = () => {
           (result.data.trialDaysRemaining !== undefined && result.data.trialDaysRemaining > 0)
         );
       } else {
-        console.log('No active subscription found');
         // For new users, we should set trial as active by default
         setUserSubscription(null);
         // Default to trial active for new users
@@ -705,7 +702,6 @@ const SubscriptionPage: React.FC = () => {
     
     // Set up interval to check subscription status (every 5 minutes)
     const intervalId = setInterval(() => {
-      console.log('Checking subscription status...');
       fetchUserSubscription();
     }, 5 * 60 * 1000);
     
@@ -715,17 +711,14 @@ const SubscriptionPage: React.FC = () => {
   useEffect(() => {
     // Only fetch if we haven't already done so
     if (dataFetchedRef.current) {
-      console.log("Plans already fetched, skipping API call");
       return;
     }
 
     const fetchPlans = async () => {
       try {
-        console.log("Fetching subscription plans...");
         const result = await SubscriptionService.getSubscriptionPlans();
         
         if (result.success) {
-          console.log(`Successfully fetched ${result.data.length} plans`);
           setPlans(result.data);
         } else {
           console.error('Failed to load plans:', result.message);
@@ -744,7 +737,6 @@ const SubscriptionPage: React.FC = () => {
     
     // Cleanup function
     return () => {
-      console.log("SubscriptionPage unmounting");
     };
   }, []); // Empty dependency array ensures this runs only once on mount
 

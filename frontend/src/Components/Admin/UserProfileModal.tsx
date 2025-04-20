@@ -60,7 +60,6 @@ const UserProfileModal = ({ userId, isOpen, onClose }: UserProfileModalProps) =>
     
     try {
       const token = localStorage.getItem('token');
-      console.log('Fetching user profile for ID:', userId);
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/admin/users/${userId}`,
         {
@@ -70,10 +69,7 @@ const UserProfileModal = ({ userId, isOpen, onClose }: UserProfileModalProps) =>
         }
       );
       
-      console.log('API Response:', response.data);
-      
       if (response.data.statusCode === 200) {
-        console.log('User data from API:', response.data.data);
         setUserProfile(response.data.data);
       } else {
         console.error('API Error:', response.data.message);
@@ -105,9 +101,9 @@ const UserProfileModal = ({ userId, isOpen, onClose }: UserProfileModalProps) =>
   };
 
   // Debug current state
-  console.log('Current state - isLoading:', isLoading);
-  console.log('Current state - error:', error);
-  console.log('Current state - userProfile:', userProfile);
+  console.error('Current state - isLoading:', isLoading);
+  console.error('Current state - error:', error);
+  console.error('Current state - userProfile:', userProfile);
 
   if (!isOpen) return null;
 

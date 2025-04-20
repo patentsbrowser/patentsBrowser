@@ -38,7 +38,6 @@ const MultiFolderSelector: React.FC<MultiFolderSelectorProps> = ({
     setIsLoading(true);
     try {
       const response = await authApi.getCustomPatentList();
-      console.log('Fetched folders:', response.data);
       setFolders(response.data || []);
       
       // Auto-select first folder if available
@@ -79,21 +78,21 @@ const MultiFolderSelector: React.FC<MultiFolderSelectorProps> = ({
         
         // If some patents were already in the folder
         if (response.data.addedCount < response.data.totalCount) {
-          toast.info(`${response.data.totalCount - response.data.addedCount} patents were already in the folder`);
+          toast(`${response.data.totalCount - response.data.addedCount} patents were already in the folder`);
         }
         
         // Refresh folders in the sidebar
         const refreshEvent = new CustomEvent('refresh-custom-folders');
         window.dispatchEvent(refreshEvent);
       } else {
-        toast.info('All patents were already in this folder');
+        toast('All patents were already in this folder');
       }
       
       onClose();
     } catch (error: any) {
       console.error('Error adding patents to folder:', error);
       if (error.response?.data?.message === 'All patents are already in this folder') {
-        toast.info('All patents are already in this folder');
+        toast('All patents are already in this folder');
       } else if (error.response?.status === 404) {
         toast.error('Folder not found. Please try again or create a new folder.');
       } else {

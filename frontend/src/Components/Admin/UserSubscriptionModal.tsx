@@ -52,8 +52,6 @@ const UserSubscriptionModal = ({
     
     try {
       const token = localStorage.getItem('token');
-      console.log('Sending subscription update for user:', userId);
-      console.log('Request data:', { plan: 'paid', startDate, endDate, status: 'active' });
       
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/admin/users/${userId}/subscription`,
@@ -69,8 +67,6 @@ const UserSubscriptionModal = ({
           }
         }
       );
-      
-      console.log('Subscription update response:', response.data);
       
       if (response.data.statusCode === 200) {
         setSuccess(true);

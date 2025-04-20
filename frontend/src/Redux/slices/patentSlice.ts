@@ -228,7 +228,6 @@ export const fetchFullPatentDetails = createAsyncThunk(
           existingSelectedPatent.details.claims && 
           existingSelectedPatent.details.claims.length) {
         
-        console.log('Using existing selected patent details from state, skipping API call:', patentId);
         return existingSelectedPatent;
       }
       
@@ -244,12 +243,10 @@ export const fetchFullPatentDetails = createAsyncThunk(
           existingPatent.details.claims && 
           existingPatent.details.claims.length) {
         
-        console.log('Using existing patent details from state, skipping API call:', patentId);
         return existingPatent;
       }
 
       // For Unified Patents API, fetch all required data in parallel
-      console.log('Fetching Unified API patent details:', patentId);
       try {
         // First get the basic patent data
         const patentData = await patentApi.searchPatentsUnified(patentId);
@@ -326,8 +323,6 @@ export const searchPatents = createAsyncThunk(
       
       if (api === 'serpapi') {
         result = await patentApi.searchPatentsSerpApi(query);
-        console.log('SerpAPI search response:', result);
-        
         // Normalize the result
         const normalizedResult = normalizePatentResponse(result.data || result, 'serpapi');
         if (!normalizedResult) {

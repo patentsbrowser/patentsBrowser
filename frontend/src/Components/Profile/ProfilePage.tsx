@@ -30,8 +30,6 @@ const ProfilePage = () => {
   });
 
   const profileData = profileResponse?.data;
-  console.log(profileData);
-
   // Format phone number with country code if available
   const formatPhoneNumber = (number?: string, phoneCode?: string) => {
     if (!number) return "No Record";

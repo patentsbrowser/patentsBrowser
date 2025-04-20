@@ -18,11 +18,9 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
 
   const loginMutation = useMutation({
     mutationFn: () => {
-      console.log("Attempting login with:", { email, password });
       return authApi.login({ email, password });
     },
     onSuccess: (response) => {
-      console.log("Login response:", response);
       if (response.statusCode === 200) {
         toast.success("Login successful!");
         // Store token and user data from the response
@@ -32,7 +30,6 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
         setUser(response.data.user);
         
         // Use the centralized admin check method instead of making a direct API call
-        console.log("Triggering centralized admin check after login");
         setTimeout(() => {
           forceAdminCheck();
         }, 500);

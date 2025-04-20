@@ -123,14 +123,6 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
       }
     });
 
-    // Log the results
-    console.log('Selected Workfiles:', selectedWorkFiles);
-    console.log('All Patent IDs:', allPatentIds);
-    console.log('Unique Patent IDs:', Array.from(uniqueIds));
-    console.log('Duplicate Patent IDs:', Array.from(duplicates));
-    console.log('Total Unique IDs:', uniqueIds.size);
-    console.log('Total Duplicates:', duplicates.size);
-
     setSelectedFolderForCombine(folder);
     setShowCombineModal(true);
     if (onModalStateChange) {

@@ -106,7 +106,6 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
       !isHighlighterOpen; // Don't fetch when highlighter is open
 
     if (shouldFetch) {
-      console.log('Fetching additional patent details for Unified API patent:', patentId);
       setLocalFetchStatus('fetching');
       hasFetchedRef.current = true;
       
@@ -147,12 +146,6 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
     description,
     figures,
   };
-
-  console.log('Patent data being used in details:', {
-    apiSource,
-    usingProps: patentData === selectedPatent ? false : true,
-    figures: patentData.figures
-  });
 
   // Count the number of figures properly
   let figuresCount = 0;
