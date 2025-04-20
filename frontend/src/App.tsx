@@ -104,7 +104,7 @@ const App = () => {
   const handleSidebarBehaviorChange = (behavior: 'auto' | 'manual') => {
     setSidebarBehavior(behavior);
   };
-
+  console.log('first');
   return (
     <ErrorBoundary>
       <Provider store={store}>
