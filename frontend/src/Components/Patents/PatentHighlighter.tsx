@@ -9,14 +9,12 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
   faTimes,
-  faChevronDown,
-  faChevronUp,
   faLayerGroup,
   faListAlt,
   faPlus,
   faSlidersH,
   faCode,
-  faCog,
+
 } from "@fortawesome/free-solid-svg-icons";
 import "./PatentHighlighter.scss";
 
@@ -46,11 +44,6 @@ interface PredefinedSet {
 
 interface PredefinedSets {
   [key: string]: PredefinedSet;
-}
-
-interface Offset {
-  word: string;
-  start: number;
 }
 
 // Track all matches (either simple term or proximity matches)
@@ -199,28 +192,8 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     "#7D33FF", // Purple
     "#FF7D33", // Orange
   ];
-  const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const proximityFirstTermRef = useRef<HTMLInputElement>(null);
-
-  // Add a new term to search
-  // const addSearchTerm = () => {
-  //   if (!inputTerm.trim()) return;
-
-  //   // Add the term with a color
-  //   const newTerm: TermColor = {
-  //     term: inputTerm.trim(),
-  //     color: colorOptions[searchTerms.length % colorOptions.length],
-  //   };
-
-  //   setSearchTerms((prevTerms) => [...prevTerms, newTerm]);
-  //   setInputTerm("");
-
-  //   // Focus input for next term
-  //   if (inputRef.current) {
-  //     inputRef.current.focus();
-  //   }
-  // };
 
   // Add a term to the proximity search list
   const addTermToProximitySearch = () => {
@@ -257,13 +230,6 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     const updatedTerms = [...searchTerms];
     updatedTerms.splice(index, 1);
     setSearchTerms(updatedTerms);
-  };
-
-  // Remove a proximity search
-  const removeProximitySearch = (index: number) => {
-    const updatedSearches = [...proximitySearches];
-    updatedSearches.splice(index, 1);
-    setProximitySearches(updatedSearches);
   };
 
   // Remove a term from proximity search list
@@ -323,13 +289,6 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
 
     // Force a highlight update
     setHighlightId((prev) => prev + 1);
-  };
-
-  // Remove formula search
-  const removeFormulaSearch = (index: number) => {
-    const updatedSearches = [...formulaSearches];
-    updatedSearches.splice(index, 1);
-    setFormulaSearches(updatedSearches);
   };
 
   // Parse formula input

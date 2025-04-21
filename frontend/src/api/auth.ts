@@ -32,10 +32,6 @@ export interface LoginCredentials {
 export interface SignupCredentials extends LoginCredentials {
   name: string;
 }
-
-// Flag to prevent multiple logout calls
-let isLoggingOut = false;
-
 // Add a request lock
 let isVerifyingOTP = false;
 

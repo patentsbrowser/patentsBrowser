@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Loader from '../../../Components/Loader/Loader';
+import { patentApi } from '../../../api/patents';
 import './DashboardSidebar.scss';
 
 interface WorkFile {
@@ -74,52 +75,7 @@ const CombineWorkfilesModal: React.FC<CombineWorkfilesModalProps> = ({
     const { uniqueIds } = processPatentIds();
     
     try {
-      const response = await fetch('https://api.unifiedpatents.com/patents/v6/_search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: {
-            bool: {
-              must: [{
-                terms: {
-                  ucid_spif: Array.from(uniqueIds)
-                }
-              }]
-            }
-          },
-          size: uniqueIds.size,
-          sort: [
-            { portfolio_score: "desc" }
-          ],
-          track_total_hits: true,
-          _source: {
-            exclude: [
-              "created_at",
-              "updated_at",
-              "id",
-              "*.created_at",
-              "*.updated_at",
-              "*.id",
-              "patent_id",
-              "patent.title",
-              "*.full_text",
-              "citations_npl",
-              "citations_pat",
-              "family_members",
-              "abstract_fulltext",
-              "non_patent_citations"
-            ]
-          }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to validate patent IDs');
-      }
-
-      const data = await response.json();
+      const data = await patentApi.searchPatentsByUcidSpif(Array.from(uniqueIds));
       
       // Get all valid patent IDs from the response
       const validHits = data.hits.hits;
@@ -143,7 +99,7 @@ const CombineWorkfilesModal: React.FC<CombineWorkfilesModalProps> = ({
 
       // Select preferred patent from each family
       const selectedPatents: string[] = [];
-      familyGroups.forEach((patents, familyId) => {
+      familyGroups.forEach((patents) => {
         const preferredPatent = selectPreferredPatentFromFamily(patents);
         selectedPatents.push(preferredPatent);
       });

@@ -521,37 +521,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     handlePerformSearch([cleanedId]);
   };
 
-  // Define the function to handle patent selection with folder context
-  const handlePatentWithFolderClick = async (patentId: string, folderName: string) => {
-    // Clean up the patent ID if needed
-    const cleanedId = patentId.trim();
-    if (!cleanedId) return;
-    
-    // Detect API type for this patent ID
-    const apiType = detectApiType(cleanedId);
-    setSelectedApi(apiType);
-    
-    // Set the search query to this patent ID
-    setSearchQuery(cleanedId);
-    
-    // Set patent IDs array
-    setPatentIds([cleanedId]);
-    
-    // Add to search history when selecting from folder
-    try {
-      await authApi.addToSearchHistory(cleanedId, 'folder-selection');
-      // Dispatch an event to notify that a patent has been searched
-      emitPatentSearchedEvent();
-    } catch (error) {
-      console.error('Error adding patent to search history:', error);
-    }
-    
-    // Perform a direct search for this patent ID
-    handlePerformSearch([cleanedId]);
-    
-    // Add this patent to recent searches
-    updateRecentSearches(cleanedId, Date.now());
-  };
 
   const handleViewDetails = async (summary: PatentSummary) => {
     // Mark patent as viewed
