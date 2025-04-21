@@ -4,6 +4,7 @@ import { authApi } from '../../api/auth';
 import toast from 'react-hot-toast';
 import './savedPatentList.scss';
 import { useAuth } from '../../AuthContext';
+import Loader from '../Common/Loader';
 
 interface WorkFile {
   name: string;
@@ -352,6 +353,12 @@ const SavedPatentList = () => {
 
   return (
     <div className="saved-patent-list">
+      {(savePatentMutation.isPending || isUploading) && (
+        <Loader 
+          fullScreen={true} 
+          text={isUploading ? "Processing file..." : "Saving patents..."} 
+        />
+      )}
       <h2>Save Patents</h2>
       {!user?.id && (
         <div className="login-notice">
@@ -403,7 +410,7 @@ const SavedPatentList = () => {
             className="file-upload-button"
             disabled={isUploading}
           >
-            {isUploading ? 'Processing...' : 'Upload File (.txt, .doc, .docx, .xls, .xlsx, .csv)'}
+            Upload File (.txt, .doc, .docx, .xls, .xlsx, .csv)
           </button>
           <div className="file-upload-info">
             <p>The system will extract patent IDs from the uploaded file</p>
@@ -437,7 +444,7 @@ const SavedPatentList = () => {
           disabled={savePatentMutation.isPending || (!inputValue.trim() && patentIds.length === 0)}
           className="submit-button"
         >
-          {savePatentMutation.isPending ? 'Saving...' : 'Save Patents'}
+          Save Patents
         </button>
       </form>
 
