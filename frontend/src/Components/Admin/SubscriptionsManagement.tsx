@@ -297,6 +297,37 @@ const SubscriptionsManagement = () => {
   const [isReferenceMatcherModalOpen, setIsReferenceMatcherModalOpen] = useState(false);
   const [processingResults, setProcessingResults] = useState<{success: number, failed: number}>({ success: 0, failed: 0 });
 
+  // Filter payments based on search term and reference number
+  const filteredPayments = useMemo(() => {
+    return payments && payments.length
+      ? payments.filter((payment: Payment) => {
+          // First check if payment has a valid reference number
+          if (!payment.referenceNumber || payment.referenceNumber === 'No Reference' || payment.referenceNumber.trim() === '') {
+            return false;
+          }
+
+          // Then apply status filter
+          if (statusFilter !== 'all' && payment.status !== statusFilter) {
+            return false;
+          }
+
+          // Finally apply search filter
+          const matchesSearch =
+            payment.userName
+              ?.toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            payment.userEmail
+              ?.toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            payment.referenceNumber
+              ?.toLowerCase()
+              .includes(searchTerm.toLowerCase());
+
+          return matchesSearch;
+        })
+      : [];
+  }, [payments, searchTerm, statusFilter]);
+
   // Fetch pending payments data
   const {
     data: paymentsData = [],
@@ -316,18 +347,22 @@ const SubscriptionsManagement = () => {
             },
           }
         );
-        // The response should now include userSubscriptionStatus for each payment
+        // Log the response to debug
+        console.log('Payments API Response:', response.data);
         return response.data.data.payments || [];
       } catch (error) {
         console.error("Error fetching pending payments:", error);
         return [];
       }
     },
+    // Add refetch interval to keep data fresh
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
 
   // Sync the API data with our local state
   useEffect(() => {
     if (paymentsData) {
+      console.log('Setting payments data:', paymentsData);
       setPayments(paymentsData);
     }
   }, [paymentsData]);
@@ -336,9 +371,20 @@ const SubscriptionsManagement = () => {
   useEffect(() => {
     setIsLoading(paymentsLoading);
     if (paymentsError) {
+      console.error('Payments loading error:', paymentsError);
       setError(String(paymentsError));
     }
   }, [paymentsLoading, paymentsError]);
+
+  // Add debug logging for filtered payments
+  useEffect(() => {
+    console.log('Filtered payments:', {
+      totalPayments: payments.length,
+      filteredCount: filteredPayments.length,
+      searchTerm,
+      statusFilter
+    });
+  }, [filteredPayments, payments, searchTerm, statusFilter]);
 
   // Status update mutation with notes
   const updatePaymentStatus = useMutation({
@@ -411,31 +457,6 @@ const SubscriptionsManagement = () => {
     setShowVerificationModal(false);
     setShowRejectionModal(false);
   };
-
-  // Filter payments based on search term and reference number
-  const filteredPayments = useMemo(() => {
-    return payments && payments.length
-      ? payments.filter((payment: Payment) => {
-          // Only include payments with a reference number
-          if (!payment.referenceNumber || payment.referenceNumber === 'No Reference') {
-            return false;
-          }
-
-          const matchesSearch =
-            payment.userName
-              ?.toLowerCase()
-              .includes(searchTerm.toLowerCase()) ||
-            payment.userEmail
-              ?.toLowerCase()
-              .includes(searchTerm.toLowerCase()) ||
-            payment.referenceNumber
-              ?.toLowerCase()
-              .includes(searchTerm.toLowerCase());
-
-          return matchesSearch;
-        })
-      : [];
-  }, [payments, searchTerm]);
 
   // Add this function to extract references from a bank statement
   const extractReferencesFromFile = async () => {

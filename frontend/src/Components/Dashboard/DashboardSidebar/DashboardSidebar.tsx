@@ -334,7 +334,7 @@ const DashboardSidebar = ({
           onModalStateChange={handleModalStateChange}
         />
 
-        <CustomSearch
+        {/* <CustomSearch
           recentSearches={recentSearches}
           customPatentLists={customPatentLists
             .filter(list => list.source === 'folderName')
@@ -357,7 +357,7 @@ const DashboardSidebar = ({
           onDeleteFolder={handleDeleteFolder}
           onCreateSubfolder={handleCreateSubfolder}
           onAddPatentToSubfolder={handleAddPatentToSubfolder}
-        />
+        /> */}
 
         <div className="patent-history-link-section">
           <Link to="/auth/patent-history" className="patent-history-link">
