@@ -204,40 +204,6 @@ const SavedPatentList = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [readPatents, setReadPatents] = useState<Set<string>>(new Set());
 
-  // Fetch read patents from backend
-  const { data: readPatentsResponse } = useQuery({
-    queryKey: ['readPatents', user?.id],
-    queryFn: authApi.getReadPatents,
-    enabled: !!user?.id
-  });
-
-  // Update read patents when data changes
-  useEffect(() => {
-    if (readPatentsResponse?.statusCode === 200 && readPatentsResponse.data) {
-      setReadPatents(new Set(readPatentsResponse.data.map((id: string) => id.toUpperCase())));
-    }
-  }, [readPatentsResponse]);
-
-  // Listen for patent view events
-  useEffect(() => {
-    const handlePatentView = async (event: CustomEvent) => {
-      if (user?.id) {
-        const viewedPatentId = event.detail.patentId;
-        try {
-          await authApi.markPatentAsRead(viewedPatentId);
-          setReadPatents(prev => new Set([...prev, viewedPatentId.toUpperCase()]));
-        } catch (error) {
-          console.error('Error marking patent as read:', error);
-        }
-      }
-    };
-
-    window.addEventListener('patent-viewed' as any, handlePatentView);
-    return () => {
-      window.removeEventListener('patent-viewed' as any, handlePatentView);
-    };
-  }, [user?.id]);
-
   // Fetch existing folders
   const { data: existingFolders = [], isLoading: isLoadingFolders } = useQuery<CustomFolder[]>({
     queryKey: ['importedLists'],
@@ -313,24 +279,18 @@ const SavedPatentList = () => {
       if (response.data && Array.isArray(response.data.patentIds)) {
         const extractedIds: string[] = response.data.patentIds;
         
-        // Filter out already read patents and duplicates
+        // Remove read patents filtering
         const newIds = extractedIds.filter(id => {
           const standardizedId = id.trim().toUpperCase();
-          return !readPatents.has(standardizedId) && !patentIds.includes(standardizedId);
+          return !patentIds.includes(standardizedId);
         });
         
         if (newIds.length > 0) {
           setPatentIds(prevIds => [...prevIds, ...newIds]);
           setShowFolderModal(true);
-          
-          if (extractedIds.length !== newIds.length) {
-            const skippedCount = extractedIds.length - newIds.length;
-            toast.success(`Added ${newIds.length} new patents. Skipped ${skippedCount} previously read patents.`);
-          } else {
-            toast.success(`Added ${newIds.length} new patents`);
-          }
+          toast.success(`Added ${newIds.length} new patents`);
         } else {
-          toast.success('All patents from this file have already been read or added');
+          toast.success('All patents from this file have already been added');
         }
       }
     } catch (error: any) {
@@ -359,47 +319,19 @@ const SavedPatentList = () => {
   const handleFolderSelection = async (folderName: string, workfileName: string, filterReadPatents: boolean) => {
     const idsToSave = patentIds.length > 0 ? patentIds : [inputValue.trim()];
     
-    if (filterReadPatents) {
-      // Check read status for all patents
-      const response = await authApi.checkPatentsReadStatus(idsToSave);
-      if (response.statusCode === 200) {
-        const unreadPatents = idsToSave.filter(id => {
-          const status = response.data.find((s: any) => s.patentId === id.toUpperCase());
-          return !status?.isRead;
-        });
-        
-        if (unreadPatents.length === 0) {
-          toast.error('No unread patents to save after filtering');
-          return;
+    // Remove read status check
+    const combinedFolderName = `${folderName}/${workfileName}`;
+    savePatentMutation.mutate(
+      { ids: idsToSave, folderName: combinedFolderName },
+      {
+        onSuccess: () => {
+          localStorage.removeItem(getUserStorageKey(user?.id || ''));
+          setPatentIds([]);
+          setInputValue('');
+          toast.success(`Saved ${idsToSave.length} patents to ${folderName}`);
         }
-        
-        const combinedFolderName = `${folderName}/${workfileName}`;
-        savePatentMutation.mutate(
-          { ids: unreadPatents, folderName: combinedFolderName },
-          {
-            onSuccess: () => {
-              localStorage.removeItem(getUserStorageKey(user?.id || ''));
-              setPatentIds([]);
-              setInputValue('');
-              toast.success(`Saved ${unreadPatents.length} patents to ${folderName}`);
-            }
-          }
-        );
       }
-    } else {
-      const combinedFolderName = `${folderName}/${workfileName}`;
-      savePatentMutation.mutate(
-        { ids: idsToSave, folderName: combinedFolderName },
-        {
-          onSuccess: () => {
-            localStorage.removeItem(getUserStorageKey(user?.id || ''));
-            setPatentIds([]);
-            setInputValue('');
-            toast.success(`Saved ${idsToSave.length} patents to ${folderName}`);
-          }
-        }
-      );
-    }
+    );
   };
 
   // Function to clear all unsaved patents
@@ -485,11 +417,8 @@ const SavedPatentList = () => {
             <p>Patents to save: <span className="count">({patentIds.length})</span></p>
             <ul>
               {patentIds.map((id, index) => (
-                <li key={index} className={readPatents.has(id.toUpperCase()) ? 'read' : ''}>
+                <li key={index}>
                   {id}
-                  <span className="status-icon">
-                    {readPatents.has(id.toUpperCase()) ? '👁️' : '✓'}
-                  </span>
                   <button 
                     type="button" 
                     onClick={() => removePatentId(id)}

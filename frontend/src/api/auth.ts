@@ -443,45 +443,8 @@ export const authApi = {
     return response;
   },
 
-  // Mark a patent as read
-  markPatentAsRead: async (patentId: string) => {
-    try {
-      const response = await api.post('/patent-read-status/mark-read', { patentId });
-      return response.data;
-    } catch (error: any) {
-      return {
-        statusCode: error.response?.status || 500,
-        message: error.response?.data?.message || 'Failed to mark patent as read',
-        data: null
-      };
-    }
-  },
-
-  // Get all read patents for the current user
-  getReadPatents: async () => {
-    try {
-      const response = await api.get('/patent-read-status/list');
-      return response.data;
-    } catch (error: any) {
-      return {
-        statusCode: error.response?.status || 500,
-        message: error.response?.data?.message || 'Failed to fetch read patents',
-        data: []
-      };
-    }
-  },
-
-  // Check read status for multiple patents
-  checkPatentsReadStatus: async (patentIds: string[]) => {
-    try {
-      const response = await api.post('/patent-read-status/check-status', { patentIds });
-      return response.data;
-    } catch (error: any) {
-      return {
-        statusCode: error.response?.status || 500,
-        message: error.response?.data?.message || 'Failed to check patents read status',
-        data: []
-      };
-    }
-  }
+  // Remove patent read status APIs
+  // getReadPatents: () => axios.get(`${API_URL}/patent-read-status/list`),
+  // markPatentAsRead: (patentId: string) => axios.post(`${API_URL}/patent-read-status/mark-read`, { patentId }),
+  // checkPatentsReadStatus: (patentIds: string[]) => axios.post(`${API_URL}/patent-read-status/check-status`, { patentIds }),
 }; 
