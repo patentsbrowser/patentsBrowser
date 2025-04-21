@@ -317,6 +317,21 @@ export const getUserSubscription = async (req: Request, res: Response) => {
       });
     }
 
+    // Calculate remaining trial days if user is on trial
+    let trialDaysRemaining = 0;
+    if (user.subscriptionStatus === SubscriptionStatus.TRIAL && user.trialEndDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const trialEndDate = new Date(user.trialEndDate);
+      trialEndDate.setHours(0, 0, 0, 0);
+      
+      if (trialEndDate > today) {
+        const diffTime = trialEndDate.getTime() - today.getTime();
+        trialDaysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+    }
+
     // Check for pending payments first
     const pendingSubscription = await Subscription.findOne({ 
       userId,
@@ -335,7 +350,8 @@ export const getUserSubscription = async (req: Request, res: Response) => {
           startDate: user.createdAt,
           endDate: user.trialEndDate,
           isActive: new Date() <= user.trialEndDate,
-          isPendingPayment: true
+          isPendingPayment: true,
+          trialDaysRemaining
         }
       });
     }
@@ -345,6 +361,24 @@ export const getUserSubscription = async (req: Request, res: Response) => {
       userId,
       status: { $in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] }
     }).sort({ createdAt: -1 });
+    
+    // If no active subscription but user is on trial, return trial data
+    if (!subscription && user.subscriptionStatus === SubscriptionStatus.TRIAL) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          subscriptionId: user._id,
+          plan: 'trial',
+          planName: 'Trial',
+          status: 'trial',
+          startDate: user.createdAt,
+          endDate: user.trialEndDate,
+          isActive: new Date() <= user.trialEndDate,
+          isPendingPayment: false,
+          trialDaysRemaining
+        }
+      });
+    }
     
     if (!subscription) {
       return res.status(200).json({
@@ -367,7 +401,8 @@ export const getUserSubscription = async (req: Request, res: Response) => {
         endDate: subscription.endDate,
         isActive: new Date() <= subscription.endDate && 
                   (subscription.status === SubscriptionStatus.ACTIVE || 
-                   subscription.status === SubscriptionStatus.TRIAL)
+                   subscription.status === SubscriptionStatus.TRIAL),
+        trialDaysRemaining: subscription.status === SubscriptionStatus.TRIAL ? trialDaysRemaining : 0
       }
     });
   } catch (error) {
@@ -528,9 +563,10 @@ export const updatePaymentVerification = async (req: Request, res: Response) => 
     } else {
       subscription.status = SubscriptionStatus.REJECTED;
       
-      // Update user's subscription status - change to 'trial'
+      // Update user's subscription status - change to 'trial' and explicitly set isPendingPayment to false
       await User.findByIdAndUpdate(subscription.userId, { 
         subscriptionStatus: 'trial',
+        isPendingPayment: false,
         notes: notes || undefined
       });
     }

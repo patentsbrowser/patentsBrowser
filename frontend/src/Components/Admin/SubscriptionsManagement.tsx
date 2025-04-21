@@ -414,10 +414,15 @@ const SubscriptionsManagement = () => {
     setShowRejectionModal(false);
   };
 
-  // Filter payments based on search term
+  // Filter payments based on search term and reference number
   const filteredPayments = useMemo(() => {
     return payments && payments.length
       ? payments.filter((payment: Payment) => {
+          // Only include payments with a reference number
+          if (!payment.referenceNumber || payment.referenceNumber === 'No Reference') {
+            return false;
+          }
+
           const matchesSearch =
             payment.userName
               ?.toLowerCase()
@@ -641,7 +646,7 @@ const SubscriptionsManagement = () => {
             <div className="no-data-message">
               <span className="no-data-icon">🔍</span>
               <h3>No matching records</h3>
-              <p>No payments match your current filters. Try adjusting your search or filter criteria.</p>
+              <p>No payments with reference numbers match your current filters. Try adjusting your search or filter criteria.</p>
             </div>
           </div>
         ) : (

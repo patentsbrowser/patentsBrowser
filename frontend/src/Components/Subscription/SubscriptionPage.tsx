@@ -3,6 +3,7 @@ import * as SubscriptionService from '../../services/SubscriptionService';
 import './SubscriptionPage.scss';
 import { toast } from 'react-toastify';
 import { QRCodeSVG } from 'qrcode.react';
+import { Link } from 'react-router-dom';
 
 interface Plan {
   _id: string;
@@ -240,10 +241,21 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
                 // Payment has been rejected by admin
                 clearInterval(intervalId);
                 setStatusCheckInterval(null);
-                setVerificationStatus('Your payment was rejected. Please contact support for assistance.');
-                toast.error('Payment verification failed. Please contact support.');
+                setVerificationStatus('Your payment was rejected. Please check your payment history for details.');
+                toast.error('Payment was rejected by admin. Please check payment history for details.');
                 setIsSubmitting(false);
                 setPaymentStep('ready');
+                // Reset the form
+                setTransactionId('');
+                // Close modal after a delay
+                setTimeout(() => {
+                  if (onPaymentComplete) {
+                    onPaymentComplete(); // This will trigger a subscription state refresh
+                  }
+                  if (onClose) {
+                    onClose();
+                  }
+                }, 3000);
               }
               // Otherwise keep polling (pending/unverified)
             }
@@ -327,6 +339,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
           )}
           
           <p className="pending-note">You can close this window. Your subscription will be activated automatically once verified.</p>
+          
+          <div className="payment-history-link">
+            <Link to="/auth/payment-history" className="view-history-link">
+              View Payment History
+            </Link>
+          </div>
         </div>
       );
     }
@@ -661,6 +679,7 @@ const SubscriptionPage: React.FC = () => {
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
   const [isTrialActive, setIsTrialActive] = useState(false);
   const [hasPendingPayment, setHasPendingPayment] = useState(false);
+  const [trialDaysRemaining, setTrialDaysRemaining] = useState(0);
   
   // Use ref to track if data has been fetched to prevent duplicate calls
   const dataFetchedRef = useRef(false);
@@ -671,27 +690,36 @@ const SubscriptionPage: React.FC = () => {
       const result = await SubscriptionService.getUserSubscription();
       
       if (result.success && result.data) {
-        setUserSubscription(result.data);
+        const subscriptionData = result.data;
+        setUserSubscription(subscriptionData);
         
         // Check if there's a pending payment
-        setHasPendingPayment(result.data.isPendingPayment || false);
+        const isPending = subscriptionData.isPendingPayment || subscriptionData.status === 'payment_pending';
+        setHasPendingPayment(isPending);
+        
+        // Set trial days remaining
+        if (subscriptionData.trialDaysRemaining !== undefined) {
+          setTrialDaysRemaining(subscriptionData.trialDaysRemaining);
+        }
         
         // A user has an active trial if they're in trial status OR they have trialDaysRemaining
         setIsTrialActive(
-          result.data.status === 'trial' || 
-          (result.data.trialDaysRemaining !== undefined && result.data.trialDaysRemaining > 0)
+          subscriptionData.status === 'trial' || 
+          (subscriptionData.trialDaysRemaining !== undefined && subscriptionData.trialDaysRemaining > 0)
         );
       } else {
-        // For new users, we should set trial as active by default
+        // For new users or after payment rejection, reset to initial state
         setUserSubscription(null);
-        // Default to trial active for new users
-        setIsTrialActive(true);
+        setHasPendingPayment(false);
+        setTrialDaysRemaining(0);
+        setIsTrialActive(false);
       }
     } catch (error) {
       console.error('Error fetching user subscription:', error);
       setUserSubscription(null);
-      // Default to trial active for new users
-      setIsTrialActive(true);
+      setHasPendingPayment(false);
+      setTrialDaysRemaining(0);
+      setIsTrialActive(false);
     } finally {
       setIsLoadingSubscription(false);
     }
@@ -745,6 +773,11 @@ const SubscriptionPage: React.FC = () => {
   };
   
   const handleSubscribeClick = (plan: Plan) => {
+    // Don't allow new subscription if there's a pending payment
+    if (hasPendingPayment) {
+      toast.error('You have a pending payment. Please wait for verification or check payment history.');
+      return;
+    }
     setSelectedPlan(plan);
     setIsPaymentModalOpen(true);
   };
@@ -755,7 +788,7 @@ const SubscriptionPage: React.FC = () => {
   };
 
   const handlePaymentComplete = () => {
-    // Refetch subscription data after payment is complete
+    // Refetch subscription data after payment completion or rejection
     fetchUserSubscription();
   };
 
@@ -772,85 +805,71 @@ const SubscriptionPage: React.FC = () => {
 
       {isLoadingSubscription ? (
         <div className="loading-subscription">Loading your subscription details...</div>
-      ) : userSubscription ? (
-        userSubscription.status === 'trial' || userSubscription.status === 'active' || userSubscription.status === 'pending' ? (
-          <SubscriptionStatus subscription={userSubscription} />
-        ) : (
-          // Show expired subscription message and free trial section if applicable
-          <>
-            <div className="no-subscription-message">
-              {userSubscription.status === 'expired' ? 
-                "Your subscription has expired. Subscribe now to regain access to premium features." : 
-                "Your subscription is pending approval."}
-            </div>
-            <FreeTrialSection 
-              isTrialActive={false}
-              trialDaysRemaining={0} 
-            />
-          </>
-        )
       ) : (
-        // No subscription at all - but new users should have an active trial
         <>
-          <div className="no-subscription-message">
-            {isTrialActive ? 
-              "You're currently on a free trial. Subscribe to maintain access after your trial ends." : 
-              "You don't have an active subscription. Subscribe now to access premium features."}
+          {/* Always show subscription status if user has any subscription data */}
+          {userSubscription && (
+            <SubscriptionStatus subscription={userSubscription} />
+          )}
+
+          {/* Show free trial section if user is on trial or has no subscription */}
+          {(!userSubscription || userSubscription.status === 'trial') && (
+            <FreeTrialSection 
+              isTrialActive={isTrialActive} 
+              trialDaysRemaining={trialDaysRemaining} 
+            />
+          )}
+
+          {/* Show pending payment banner if applicable */}
+          {hasPendingPayment && (
+            <div className="pending-payment-banner">
+              <p>You have a pending payment. Your subscription will be activated once the admin verifies your payment.</p>
+              <p>You can continue using the trial version until then.</p>
+            </div>
+          )}
+
+          <div className="subscription-plans">
+            {plans.map((plan) => (
+              <div 
+                key={plan._id} 
+                className={`plan-card ${plan.popular ? 'popular' : ''}`}
+              >
+                {plan.popular && <div className="popular-badge">Most Popular</div>}
+                <h3>{plan.name}</h3>
+                <div className="price">
+                  <span className="currency">₹</span>
+                  <span className="amount">{formatIndianPrice(plan.price)}</span>
+                  <span className="period">/{plan.type === 'monthly' ? 'month' : 
+                    plan.type === 'quarterly' ? '3 months' : 
+                    plan.type === 'half_yearly' ? '6 months' : 'year'}</span>
+                </div>
+                {plan.discountPercentage > 0 && (
+                  <div className="discount">{plan.discountPercentage}% discount</div>
+                )}
+                <ul className="features">
+                  {plan.features.map((feature, index) => (
+                    <li key={index}>{feature}</li>
+                  ))}
+                </ul>
+                <button 
+                  className="subscribe-btn"
+                  onClick={() => handleSubscribeClick(plan)}
+                  disabled={hasPendingPayment}
+                >
+                  {hasPendingPayment ? 'Payment Pending' :
+                    userSubscription?.status === 'trial' ? 'Upgrade Now' :
+                    userSubscription?.status === 'active' ? 'Change Plan' : 'Subscribe Now'}
+                </button>
+                {isTrialActive && !hasPendingPayment && trialDaysRemaining > 0 && (
+                  <div className="trial-upgrade-note">
+                    {trialDaysRemaining} trial days will be added to your subscription
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-          <FreeTrialSection 
-            isTrialActive={isTrialActive} 
-            trialDaysRemaining={14} /* Default for new users */
-          />
         </>
       )}
-
-      {hasPendingPayment && (
-        <div className="pending-payment-banner">
-          <p>You have a pending payment. Your subscription will be activated once the admin verifies your payment.</p>
-          <p>You can continue using the trial version until then.</p>
-        </div>
-      )}
-
-      <div className="subscription-plans">
-        {plans.map((plan) => (
-          <div 
-            key={plan._id} 
-            className={`plan-card ${plan.popular ? 'popular' : ''}`}
-          >
-            {plan.popular && <div className="popular-badge">Most Popular</div>}
-            <h3>{plan.name}</h3>
-            <div className="price">
-              <span className="currency">₹</span>
-              <span className="amount">{formatIndianPrice(plan.price)}</span>
-              <span className="period">/{plan.type === 'monthly' ? 'month' : 
-                plan.type === 'quarterly' ? '3 months' : 
-                plan.type === 'half_yearly' ? '6 months' : 'year'}</span>
-            </div>
-            {plan.discountPercentage > 0 && (
-              <div className="discount">{plan.discountPercentage}% discount</div>
-            )}
-            <ul className="features">
-              {plan.features.map((feature, index) => (
-                <li key={index}>{feature}</li>
-              ))}
-            </ul>
-            <button 
-              className="subscribe-btn"
-              onClick={() => handleSubscribeClick(plan)}
-              disabled={hasPendingPayment}
-            >
-              {hasPendingPayment ? 'Payment Pending' :
-                userSubscription?.status === 'trial' ? 'Upgrade Now' :
-                userSubscription?.status === 'active' ? 'Change Plan' : 'Subscribe Now'}
-            </button>
-            {isTrialActive && !hasPendingPayment && (
-              <div className="trial-upgrade-note">
-                {userSubscription?.trialDaysRemaining} trial days will be added to your subscription
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
       
       {selectedPlan && (
         <PaymentModal 
@@ -859,7 +878,7 @@ const SubscriptionPage: React.FC = () => {
           plan={selectedPlan}
           onPaymentComplete={handlePaymentComplete}
           isTrialActive={isTrialActive}
-          trialDaysRemaining={userSubscription?.trialDaysRemaining || 0}
+          trialDaysRemaining={trialDaysRemaining}
         />
       )}
     </div>
