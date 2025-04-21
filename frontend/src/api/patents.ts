@@ -355,6 +355,45 @@ export const patentApi = {
       }
     }
   },
+
+  // New method to search patents by UCID SPIF IDs
+  searchPatentsByUcidSpif: async (ucidSpifIds: string[]) => {
+    const response = await axios.post('https://api.unifiedpatents.com/patents/v6/_search', {
+      query: {
+        bool: {
+          must: [{
+            terms: {
+              ucid_spif: ucidSpifIds
+            }
+          }]
+        }
+      },
+      size: ucidSpifIds.length,
+      sort: [
+        { portfolio_score: "desc" }
+      ],
+      track_total_hits: true,
+      _source: {
+        exclude: [
+          "created_at",
+          "updated_at",
+          "id",
+          "*.created_at",
+          "*.updated_at",
+          "*.id",
+          "patent_id",
+          "patent.title",
+          "*.full_text",
+          "citations_npl",
+          "citations_pat",
+          "family_members",
+          "abstract_fulltext",
+          "non_patent_citations"
+        ]
+      }
+    });
+    return response.data;
+  },
 };
 
 export type ApiSource = 'serpapi' | 'unified'; 

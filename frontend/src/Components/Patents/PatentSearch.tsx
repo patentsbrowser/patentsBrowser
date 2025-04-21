@@ -295,6 +295,19 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
           
           // Call patent API directly instead of handleSearch
           const result = await patentApi.searchMultiplePatentsUnified(formattedIds, 'smart');
+          
+          // Check for patents that weren't found
+          if (result?.hits?.hits) {
+            const foundPatentIds = new Set(result.hits.hits.map((hit: any) => 
+              hit._source?.publication_number || hit._id
+            ));
+            
+            const notFound = formattedIds.filter(id => !foundPatentIds.has(id));
+            if (notFound.length > 0) {
+              setNotFoundPatents(notFound);
+            }
+          }
+          
           dispatch(setSmartSearchResults(result));
           // Set loading to false after successful API call
           setIsLoading(false);
@@ -369,7 +382,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
             
             if (notFound.length > 0) {
               setNotFoundPatents(notFound);
-              toast.error(`${notFound.length} patents not found: ${notFound.join(', ')}`);
             }
             
             setPatentSummaries(results);
@@ -435,7 +447,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
             return typedResult.patentId || '';
           }).filter(Boolean);
           setNotFoundPatents(notFoundIds);
-          toast.error(`${notFoundIds.length} patents not found: ${notFoundIds.join(', ')}`);
         }
         
         setPatentSummaries(results);
@@ -521,37 +532,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     handlePerformSearch([cleanedId]);
   };
 
-  // Define the function to handle patent selection with folder context
-  const handlePatentWithFolderClick = async (patentId: string, folderName: string) => {
-    // Clean up the patent ID if needed
-    const cleanedId = patentId.trim();
-    if (!cleanedId) return;
-    
-    // Detect API type for this patent ID
-    const apiType = detectApiType(cleanedId);
-    setSelectedApi(apiType);
-    
-    // Set the search query to this patent ID
-    setSearchQuery(cleanedId);
-    
-    // Set patent IDs array
-    setPatentIds([cleanedId]);
-    
-    // Add to search history when selecting from folder
-    try {
-      await authApi.addToSearchHistory(cleanedId, 'folder-selection');
-      // Dispatch an event to notify that a patent has been searched
-      emitPatentSearchedEvent();
-    } catch (error) {
-      console.error('Error adding patent to search history:', error);
-    }
-    
-    // Perform a direct search for this patent ID
-    handlePerformSearch([cleanedId]);
-    
-    // Add this patent to recent searches
-    updateRecentSearches(cleanedId, Date.now());
-  };
 
   const handleViewDetails = async (summary: PatentSummary) => {
     // Mark patent as viewed
@@ -783,7 +763,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
               const folderName = `Patent Search ${new Date().toLocaleString()}`;
               
               // Create a custom patent list for multiple patents
-              await authApi.saveCustomPatentList(folderName, patentIds, 'search');
+              // await authApi.saveCustomPatentList(folderName, patentIds, 'search');
               
               // Show success message about folder creation
               toast.success(
@@ -819,6 +799,8 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     setIsLoading(false);
     // Clear patent summaries to prevent showing lingering loading indicators
     setPatentSummaries([]);
+    // Clear not found patents
+    setNotFoundPatents([]);
     // Close the modal
     setShowSmartSearchModal(false);
   };

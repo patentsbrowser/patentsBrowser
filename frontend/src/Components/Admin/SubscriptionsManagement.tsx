@@ -12,7 +12,7 @@ interface Payment {
   userEmail: string;
   amount: number;
   currency: string;
-  status: 'verified' | 'unverified' | 'rejected';
+  status: 'verified' | 'unverified' | 'rejected' | 'cancelled' | 'inactive' | 'active' | 'paid';
   referenceNumber: string;
   plan: string;
   paymentDate: string;
@@ -297,6 +297,37 @@ const SubscriptionsManagement = () => {
   const [isReferenceMatcherModalOpen, setIsReferenceMatcherModalOpen] = useState(false);
   const [processingResults, setProcessingResults] = useState<{success: number, failed: number}>({ success: 0, failed: 0 });
 
+  // Filter payments based on search term and reference number
+  const filteredPayments = useMemo(() => {
+    return payments && payments.length
+      ? payments.filter((payment: Payment) => {
+          // First check if payment has a valid reference number
+          if (!payment.referenceNumber || payment.referenceNumber === 'No Reference' || payment.referenceNumber.trim() === '') {
+            return false;
+          }
+
+          // Then apply status filter
+          if (statusFilter !== 'all' && payment.status !== statusFilter) {
+            return false;
+          }
+
+          // Finally apply search filter
+          const matchesSearch =
+            payment.userName
+              ?.toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            payment.userEmail
+              ?.toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            payment.referenceNumber
+              ?.toLowerCase()
+              .includes(searchTerm.toLowerCase());
+
+          return matchesSearch;
+        })
+      : [];
+  }, [payments, searchTerm, statusFilter]);
+
   // Fetch pending payments data
   const {
     data: paymentsData = [],
@@ -316,18 +347,22 @@ const SubscriptionsManagement = () => {
             },
           }
         );
-        // The response should now include userSubscriptionStatus for each payment
+        // Log the response to debug
+        console.log('Payments API Response:', response.data);
         return response.data.data.payments || [];
       } catch (error) {
         console.error("Error fetching pending payments:", error);
         return [];
       }
     },
+    // Add refetch interval to keep data fresh
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
 
   // Sync the API data with our local state
   useEffect(() => {
     if (paymentsData) {
+      console.log('Setting payments data:', paymentsData);
       setPayments(paymentsData);
     }
   }, [paymentsData]);
@@ -336,9 +371,20 @@ const SubscriptionsManagement = () => {
   useEffect(() => {
     setIsLoading(paymentsLoading);
     if (paymentsError) {
+      console.error('Payments loading error:', paymentsError);
       setError(String(paymentsError));
     }
   }, [paymentsLoading, paymentsError]);
+
+  // Add debug logging for filtered payments
+  useEffect(() => {
+    console.log('Filtered payments:', {
+      totalPayments: payments.length,
+      filteredCount: filteredPayments.length,
+      searchTerm,
+      statusFilter
+    });
+  }, [filteredPayments, payments, searchTerm, statusFilter]);
 
   // Status update mutation with notes
   const updatePaymentStatus = useMutation({
@@ -349,15 +395,13 @@ const SubscriptionsManagement = () => {
       subscriptionStatus,
     }: {
       paymentId: string;
-      status: "verified" | "rejected";
+      status: 'verified' | 'rejected' | 'cancelled' | 'inactive';
       notes?: string;
       subscriptionStatus?: string;
     }) => {
       const token = localStorage.getItem("token");
       const response = await axios.put(
-        `${
-          import.meta.env.VITE_API_URL
-        }/subscriptions/payment-verification/${paymentId}`,
+        `${import.meta.env.VITE_API_URL}/subscriptions/payment-verification/${paymentId}`,
         { status, notes, subscriptionStatus },
         {
           headers: {
@@ -413,26 +457,6 @@ const SubscriptionsManagement = () => {
     setShowVerificationModal(false);
     setShowRejectionModal(false);
   };
-
-  // Filter payments based on search term
-  const filteredPayments = useMemo(() => {
-    return payments && payments.length
-      ? payments.filter((payment: Payment) => {
-          const matchesSearch =
-            payment.userName
-              ?.toLowerCase()
-              .includes(searchTerm.toLowerCase()) ||
-            payment.userEmail
-              ?.toLowerCase()
-              .includes(searchTerm.toLowerCase()) ||
-            payment.referenceNumber
-              ?.toLowerCase()
-              .includes(searchTerm.toLowerCase());
-
-          return matchesSearch;
-        })
-      : [];
-  }, [payments, searchTerm]);
 
   // Add this function to extract references from a bank statement
   const extractReferencesFromFile = async () => {
@@ -641,7 +665,7 @@ const SubscriptionsManagement = () => {
             <div className="no-data-message">
               <span className="no-data-icon">🔍</span>
               <h3>No matching records</h3>
-              <p>No payments match your current filters. Try adjusting your search or filter criteria.</p>
+              <p>No payments with reference numbers match your current filters. Try adjusting your search or filter criteria.</p>
             </div>
           </div>
         ) : (
@@ -684,7 +708,12 @@ const SubscriptionsManagement = () => {
                     <td className="date-cell">{new Date(payment.createdAt).toLocaleDateString()}</td>
                     <td className={`status-cell status-${payment.status}`}>
                       {payment.status === 'verified' ? 'Verified' : 
-                       payment.status === 'unverified' ? 'Pending Verification' : 'Rejected'}
+                       payment.status === 'unverified' ? 'Pending Verification' : 
+                       payment.status === 'rejected' ? 'Rejected' :
+                       payment.status === 'cancelled' ? 'Cancelled' :
+                       payment.status === 'inactive' ? 'Inactive' :
+                       payment.status === 'active' ? 'Active' :
+                       payment.status === 'paid' ? 'Paid' : payment.status}
                     </td>
                     <td className="actions-cell">
                       <button 

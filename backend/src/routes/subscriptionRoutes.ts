@@ -3,6 +3,7 @@ import express from 'express';
 import subscriptionController from '../controllers/subscriptionController.js';
 import { auth } from '../middleware/auth.js';
 import { adminAuth } from '../middleware/adminAuth.js';
+import { checkSubscription } from '../middleware/subscriptionCheck.js';
 
 const router = express.Router();
 
@@ -33,5 +34,16 @@ router.put('/payment-verification/:paymentId', auth, adminAuth, subscriptionCont
 
 // Get additional plans for a subscription (requires auth)
 router.get('/additional-plans/:subscriptionId', auth, subscriptionController.getAdditionalPlans);
+
+// Add subscription check route
+router.get('/check', auth, checkSubscription, (req, res) => {
+  res.status(200).json({
+    statusCode: 200,
+    message: 'Subscription is active',
+    data: {
+      isSubscriptionActive: true
+    }
+  });
+});
 
 export default router; 

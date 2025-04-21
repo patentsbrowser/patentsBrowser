@@ -9,14 +9,12 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
   faTimes,
-  faChevronDown,
-  faChevronUp,
   faLayerGroup,
   faListAlt,
   faPlus,
   faSlidersH,
   faCode,
-  faCog,
+
 } from "@fortawesome/free-solid-svg-icons";
 import "./PatentHighlighter.scss";
 
@@ -46,11 +44,6 @@ interface PredefinedSet {
 
 interface PredefinedSets {
   [key: string]: PredefinedSet;
-}
-
-interface Offset {
-  word: string;
-  start: number;
 }
 
 // Track all matches (either simple term or proximity matches)
@@ -141,6 +134,47 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
   // Use location data attribute to track which instance this is for debugging
   const location = props['data-location'] || 'unknown';
 
+  // Add subscription status state
+  const [isSubscriptionActive, setIsSubscriptionActive] = useState(true);
+  const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
+
+  // Check subscription status on mount and when isOpen changes
+  useEffect(() => {
+    const checkSubscription = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setIsSubscriptionActive(false);
+          setSubscriptionError('Please login to use this feature');
+          return;
+        }
+
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/subscription/check`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          setIsSubscriptionActive(false);
+          setSubscriptionError(data.message || 'Subscription required');
+        } else {
+          setIsSubscriptionActive(true);
+          setSubscriptionError(null);
+        }
+      } catch (error) {
+        console.error('Error checking subscription:', error);
+        setIsSubscriptionActive(false);
+        setSubscriptionError('Error checking subscription status');
+      }
+    };
+
+    if (isOpen) {
+      checkSubscription();
+    }
+  }, [isOpen]);
+
   // Load state from localStorage if available
   const [searchTerms, setSearchTerms] = useState<TermColor[]>(() => {
     try {
@@ -199,28 +233,8 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     "#7D33FF", // Purple
     "#FF7D33", // Orange
   ];
-  const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const proximityFirstTermRef = useRef<HTMLInputElement>(null);
-
-  // Add a new term to search
-  // const addSearchTerm = () => {
-  //   if (!inputTerm.trim()) return;
-
-  //   // Add the term with a color
-  //   const newTerm: TermColor = {
-  //     term: inputTerm.trim(),
-  //     color: colorOptions[searchTerms.length % colorOptions.length],
-  //   };
-
-  //   setSearchTerms((prevTerms) => [...prevTerms, newTerm]);
-  //   setInputTerm("");
-
-  //   // Focus input for next term
-  //   if (inputRef.current) {
-  //     inputRef.current.focus();
-  //   }
-  // };
 
   // Add a term to the proximity search list
   const addTermToProximitySearch = () => {
@@ -257,13 +271,6 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     const updatedTerms = [...searchTerms];
     updatedTerms.splice(index, 1);
     setSearchTerms(updatedTerms);
-  };
-
-  // Remove a proximity search
-  const removeProximitySearch = (index: number) => {
-    const updatedSearches = [...proximitySearches];
-    updatedSearches.splice(index, 1);
-    setProximitySearches(updatedSearches);
   };
 
   // Remove a term from proximity search list
@@ -323,13 +330,6 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
 
     // Force a highlight update
     setHighlightId((prev) => prev + 1);
-  };
-
-  // Remove formula search
-  const removeFormulaSearch = (index: number) => {
-    const updatedSearches = [...formulaSearches];
-    updatedSearches.splice(index, 1);
-    setFormulaSearches(updatedSearches);
   };
 
   // Parse formula input
@@ -1277,224 +1277,236 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     localStorage.setItem('patent_highlighter_formulas', JSON.stringify(formulaSearches));
   }, [formulaSearches]);
 
-  // If not in modal mode, render as before
-  if (!isOpen) {
-    // Return null - don't show the button since we have one in PatentSummaryList
-    return null;
-  }
-
+  // Modify the return statement to show subscription error
   return (
-    <div className="patent-highlighter-modal-overlay">
-      <div className="patent-highlighter-modal">
-        <div className="modal-header">
-          <h3>
-            <FontAwesomeIcon icon={faSearch} /> Patent Highlighter
-          </h3>
-          <button className="close-button" onClick={onClose}>
-            <FontAwesomeIcon icon={faTimes} />
+    <div className="patent-highlighter">
+      {!isSubscriptionActive && (
+        <div className="subscription-error">
+          <p>{subscriptionError}</p>
+          <button onClick={() => window.location.href = '/subscription'}>
+            Subscribe Now
           </button>
         </div>
-        <div className="modal-body">
-          <div className="patent-highlighter">
-            <div className="highlighter-content">
-              <div className="search-input-container">
-                <button
-                  className="predefined-btn"
-                  onClick={() => toggleSearchType('predefined')}
-                  title="Use predefined term sets"
-                >
-                  <FontAwesomeIcon icon={faLayerGroup} />
-                </button>
-                <button
-                  className="proximity-btn"
-                  onClick={() => toggleSearchType('proximity')}
-                  title="Create proximity search"
-                >
-                  <FontAwesomeIcon icon={faSlidersH} />
-                </button>
-                <button
-                  className="formula-btn"
-                  onClick={() => toggleSearchType('formula')}
-                  title="Use formula search"
-                >
-                  <FontAwesomeIcon icon={faCode} />
-                </button>
-                <button onClick={clearAllTerms} className="clear-btn">
-                  Clear All
-                </button>
-              </div>
-
-              {activeSearchType === 'predefined' && (
-                <div className="predefined-sets">
-                  <h5>Predefined Term Sets:</h5>
-                  <div className="sets-container">
-                    {Object.entries(PREDEFINED_SETS).map(([key, set]) => (
-                      <button
-                        key={key}
-                        className="set-button"
-                        onClick={() => addPredefinedSet(key)}
-                        style={{ borderColor: set.color }}
-                      >
-                        <span className="set-name">{set.name}</span>
-                        <span className="set-count">{set.terms.length} terms</span>
-                      </button>
-                    ))}
+      )}
+      <div className={`patent-highlighter-modal ${isOpen ? 'open' : ''}`}>
+        <div className="modal-content">
+          <div className="modal-header">
+            <h4>Patent Highlighter</h4>
+            <button className="close-button" onClick={onClose}>
+              ×
+            </button>
+          </div>
+          <div className="modal-body">
+            {isSubscriptionActive ? (
+              <div className="patent-highlighter">
+                <div className="highlighter-content">
+                  <div className="search-input-container">
+                    <button
+                      className="predefined-btn"
+                      onClick={() => toggleSearchType('predefined')}
+                      title="Use predefined term sets"
+                    >
+                      <FontAwesomeIcon icon={faLayerGroup} />
+                    </button>
+                    <button
+                      className="proximity-btn"
+                      onClick={() => toggleSearchType('proximity')}
+                      title="Create proximity search"
+                    >
+                      <FontAwesomeIcon icon={faSlidersH} />
+                    </button>
+                    <button
+                      className="formula-btn"
+                      onClick={() => toggleSearchType('formula')}
+                      title="Use formula search"
+                    >
+                      <FontAwesomeIcon icon={faCode} />
+                    </button>
+                    <button onClick={clearAllTerms} className="clear-btn">
+                      Clear All
+                    </button>
                   </div>
 
-                  <div className="custom-set">
-                    <h5>
-                      <FontAwesomeIcon icon={faListAlt} /> Custom Term Set:
-                    </h5>
-                    <textarea
-                      value={customTermSet}
-                      onChange={(e) => setCustomTermSet(e.target.value)}
-                      placeholder="Enter terms separated by commas..."
-                      rows={3}
-                      ref={textareaRef}
-                    ></textarea>
-                    <button onClick={addCustomTermSet}>Add Custom Set</button>
-                  </div>
-                </div>
-              )}
+                  {activeSearchType === 'predefined' && (
+                    <div className="predefined-sets">
+                      <h5>Predefined Term Sets:</h5>
+                      <div className="sets-container">
+                        {Object.entries(PREDEFINED_SETS).map(([key, set]) => (
+                          <button
+                            key={key}
+                            className="set-button"
+                            onClick={() => addPredefinedSet(key)}
+                            style={{ borderColor: set.color }}
+                          >
+                            <span className="set-name">{set.name}</span>
+                            <span className="set-count">{set.terms.length} terms</span>
+                          </button>
+                        ))}
+                      </div>
 
-              {activeSearchType === 'proximity' && (
-                <div className="proximity-search">
-                  <h5>
-                    <FontAwesomeIcon icon={faSlidersH} /> Proximity Search:
-                  </h5>
-                  <p className="proximity-description">
-                    Find and highlight text where multiple terms appear within a
-                    specified word range of each other.
-                  </p>
-
-                  <div className="proximity-terms">
-                    <h6>Add terms to search for:</h6>
-                    <div className="proximity-input-row">
-                      <input
-                        type="text"
-                        value={proximityFirstTerm}
-                        onChange={(e) => setProximityFirstTerm(e.target.value)}
-                        placeholder="Enter a term..."
-                        ref={proximityFirstTermRef}
-                        onKeyDown={(e) =>
-                          e.key === "Enter" && addTermToProximitySearch()
-                        }
-                      />
-                      <button onClick={addTermToProximitySearch}>
-                        <FontAwesomeIcon icon={faPlus} />
-                      </button>
+                      <div className="custom-set">
+                        <h5>
+                          <FontAwesomeIcon icon={faListAlt} /> Custom Term Set:
+                        </h5>
+                        <textarea
+                          value={customTermSet}
+                          onChange={(e) => setCustomTermSet(e.target.value)}
+                          placeholder="Enter terms separated by commas..."
+                          rows={3}
+                          ref={textareaRef}
+                        ></textarea>
+                        <button onClick={addCustomTermSet}>Add Custom Set</button>
+                      </div>
                     </div>
+                  )}
 
-                    {proximityTerms.length > 0 && (
-                      <div className="proximity-terms-list">
-                        {proximityTerms.map((term, index) => (
-                          <div key={index} className="proximity-term-item">
-                            <span>{term}</span>
-                            <button onClick={() => removeProximityTerm(index)}>
+                  {activeSearchType === 'proximity' && (
+                    <div className="proximity-search">
+                      <h5>
+                        <FontAwesomeIcon icon={faSlidersH} /> Proximity Search:
+                      </h5>
+                      <p className="proximity-description">
+                        Find and highlight text where multiple terms appear within a
+                        specified word range of each other.
+                      </p>
+
+                      <div className="proximity-terms">
+                        <h6>Add terms to search for:</h6>
+                        <div className="proximity-input-row">
+                          <input
+                            type="text"
+                            value={proximityFirstTerm}
+                            onChange={(e) => setProximityFirstTerm(e.target.value)}
+                            placeholder="Enter a term..."
+                            ref={proximityFirstTermRef}
+                            onKeyDown={(e) =>
+                              e.key === "Enter" && addTermToProximitySearch()
+                            }
+                          />
+                          <button onClick={addTermToProximitySearch}>
+                            <FontAwesomeIcon icon={faPlus} />
+                          </button>
+                        </div>
+
+                        {proximityTerms.length > 0 && (
+                          <div className="proximity-terms-list">
+                            {proximityTerms.map((term, index) => (
+                              <div key={index} className="proximity-term-item">
+                                <span>{term}</span>
+                                <button onClick={() => removeProximityTerm(index)}>
+                                  <FontAwesomeIcon icon={faTimes} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="proximity-distance">
+                          <label>Maximum distance between terms (in words):</label>
+                          <div className="distance-input">
+                            <input
+                              type="number"
+                              min="1"
+                              max="50"
+                              value={proximityDistance}
+                              onChange={(e) =>
+                                setProximityDistance(parseInt(e.target.value) || 5)
+                              }
+                            />
+                          </div>
+                        </div>
+
+                        <button
+                          className="create-proximity-btn"
+                          onClick={createProximitySearch}
+                          disabled={proximityTerms.length < 2}
+                        >
+                          Create Proximity Search
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeSearchType === 'formula' && (
+                    <div className="formula-search">
+                      <h5>
+                        <FontAwesomeIcon icon={faCode} /> Formula Search:
+                      </h5>
+                      <p className="formula-description">
+                        Enter a formula to search for terms. Examples:
+                        <br />
+                        • Single term: (panel)
+                        <br />
+                        • OR search: (panel or touch)
+                        <br />
+                        • Proximity search: ((panel) 5D (touch))
+                        <br/>• Complex search: ((panel or touch) 5D (electric or
+                        touchscreen))
+                      </p>
+
+                      <div className="formula-input">
+                        <textarea
+                          value={formulaInput}
+                          onChange={(e) => setFormulaInput(e.target.value)}
+                          placeholder="Enter your formula..."
+                          rows={3}
+                        ></textarea>
+                        <button onClick={addFormulaSearch}>Add Formula</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {searchTerms.length > 0 && (
+                    <div className="search-terms-list">
+                      <h5>Search Terms: ({searchTerms.length})</h5>
+                      <div className="terms-container">
+                        {searchTerms.map((term, index) => (
+                          <div
+                            key={index}
+                            className="term-badge"
+                            style={{ backgroundColor: term.color }}
+                          >
+                            <span>{term.term}</span>
+                            <button onClick={() => removeSearchTerm(index)}>
                               <FontAwesomeIcon icon={faTimes} />
                             </button>
                           </div>
                         ))}
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    <div className="proximity-distance">
-                      <label>Maximum distance between terms (in words):</label>
-                      <div className="distance-input">
-                        <input
-                          type="number"
-                          min="1"
-                          max="50"
-                          value={proximityDistance}
-                          onChange={(e) =>
-                            setProximityDistance(parseInt(e.target.value) || 5)
-                          }
-                        />
+                  {foundMatches.length > 0 && (
+                    <div className="matches-summary">
+                      <h5>
+                        Found Matches: (
+                        {foundMatches.reduce((sum, match) => sum + match.count, 0)} total)
+                      </h5>
+                      <div className="matches-container">
+                        {foundMatches.map((match, index) => (
+                          <div key={index} className="match-item">
+                            <span
+                              className="match-term"
+                              style={{ backgroundColor: match.color }}
+                            >
+                              {match.term}
+                            </span>
+                            <span className="match-count">{match.count} matches</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
-
-                    <button
-                      className="create-proximity-btn"
-                      onClick={createProximitySearch}
-                      disabled={proximityTerms.length < 2}
-                    >
-                      Create Proximity Search
-                    </button>
-                  </div>
+                  )}
                 </div>
-              )}
-
-              {activeSearchType === 'formula' && (
-                <div className="formula-search">
-                  <h5>
-                    <FontAwesomeIcon icon={faCode} /> Formula Search:
-                  </h5>
-                  <p className="formula-description">
-                    Enter a formula to search for terms. Examples:
-                    <br />
-                    • Single term: (panel)
-                    <br />
-                    • OR search: (panel or touch)
-                    <br />
-                    • Proximity search: ((panel) 5D (touch))
-                    <br/>• Complex search: ((panel or touch) 5D (electric or
-                    touchscreen))
-                  </p>
-
-                  <div className="formula-input">
-                    <textarea
-                      value={formulaInput}
-                      onChange={(e) => setFormulaInput(e.target.value)}
-                      placeholder="Enter your formula..."
-                      rows={3}
-                    ></textarea>
-                    <button onClick={addFormulaSearch}>Add Formula</button>
-                  </div>
-                </div>
-              )}
-
-              {searchTerms.length > 0 && (
-                <div className="search-terms-list">
-                  <h5>Search Terms: ({searchTerms.length})</h5>
-                  <div className="terms-container">
-                    {searchTerms.map((term, index) => (
-                      <div
-                        key={index}
-                        className="term-badge"
-                        style={{ backgroundColor: term.color }}
-                      >
-                        <span>{term.term}</span>
-                        <button onClick={() => removeSearchTerm(index)}>
-                          <FontAwesomeIcon icon={faTimes} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {foundMatches.length > 0 && (
-                <div className="matches-summary">
-                  <h5>
-                    Found Matches: (
-                    {foundMatches.reduce((sum, match) => sum + match.count, 0)} total)
-                  </h5>
-                  <div className="matches-container">
-                    {foundMatches.map((match, index) => (
-                      <div key={index} className="match-item">
-                        <span
-                          className="match-term"
-                          style={{ backgroundColor: match.color }}
-                        >
-                          {match.term}
-                        </span>
-                        <span className="match-count">{match.count} matches</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="subscription-required">
+                <p>This feature requires an active subscription.</p>
+                <button onClick={() => window.location.href = '/subscription'}>
+                  Subscribe Now
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

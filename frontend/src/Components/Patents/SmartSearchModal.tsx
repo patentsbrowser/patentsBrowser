@@ -327,20 +327,22 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
                 <div className="not-found-list">
                   {remainingNotFoundPatents.map((patentId) => (
                     <div key={patentId} className="not-found-item">
-                      {editingPatents.hasOwnProperty(patentId) ? (
+                      {editingPatents[patentId] ? (
                         <input
                           type="text"
+                          className="edit-patent-input"
                           value={editingPatents[patentId]}
                           onChange={(e) => handleUpdatePatent(patentId, e.target.value)}
-                          className="edit-patent-input"
-                          placeholder="Enter correct patent ID"
+                          placeholder="Enter corrected patent ID"
+                          autoFocus
                         />
                       ) : (
                         <>
                           <span className="patent-id">{patentId}</span>
-                          <button 
+                          <button
                             className="edit-button"
                             onClick={() => handleEditPatent(patentId)}
+                            title="Edit patent ID"
                           >
                             <FontAwesomeIcon icon={faEdit} />
                           </button>
@@ -351,13 +353,13 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
                 </div>
                 {Object.keys(editingPatents).length > 0 && (
                   <div className="not-found-actions">
-                    <button 
+                    <button
                       className="submit-corrections-button"
                       onClick={handleSubmitCorrections}
                       disabled={isSubmitting}
                     >
                       <FontAwesomeIcon icon={faCheck} />
-                      {isSubmitting ? 'Searching...' : 'Submit Corrections'}
+                      Submit Corrections
                     </button>
                   </div>
                 )}
