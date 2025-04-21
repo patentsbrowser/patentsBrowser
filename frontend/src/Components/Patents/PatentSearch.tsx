@@ -295,20 +295,20 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
           
           // Call patent API directly instead of handleSearch
           const result = await patentApi.searchMultiplePatentsUnified(formattedIds, 'smart');
-          dispatch(setSmartSearchResults(result));
           
           // Check for patents that weren't found
           if (result?.hits?.hits) {
             const foundPatentIds = new Set(result.hits.hits.map((hit: any) => 
               hit._source?.publication_number || hit._id
             ));
+            
             const notFound = formattedIds.filter(id => !foundPatentIds.has(id));
             if (notFound.length > 0) {
               setNotFoundPatents(notFound);
-              toast.error(`${notFound.length} patents not found: ${notFound.join(', ')}`);
             }
           }
           
+          dispatch(setSmartSearchResults(result));
           // Set loading to false after successful API call
           setIsLoading(false);
           
@@ -382,7 +382,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
             
             if (notFound.length > 0) {
               setNotFoundPatents(notFound);
-              toast.error(`${notFound.length} patents not found: ${notFound.join(', ')}`);
             }
             
             setPatentSummaries(results);
@@ -448,7 +447,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
             return typedResult.patentId || '';
           }).filter(Boolean);
           setNotFoundPatents(notFoundIds);
-          toast.error(`${notFoundIds.length} patents not found: ${notFoundIds.join(', ')}`);
         }
         
         setPatentSummaries(results);
@@ -765,7 +763,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
               const folderName = `Patent Search ${new Date().toLocaleString()}`;
               
               // Create a custom patent list for multiple patents
-              await authApi.saveCustomPatentList(folderName, patentIds, 'search');
+              // await authApi.saveCustomPatentList(folderName, patentIds, 'search');
               
               // Show success message about folder creation
               toast.success(
