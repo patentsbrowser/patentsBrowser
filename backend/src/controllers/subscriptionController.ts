@@ -3,6 +3,7 @@ import PricingPlan from '../models/PricingPlan.js';
 import Subscription, { SubscriptionPlan, SubscriptionStatus } from '../models/Subscription.js';
 import { User } from '../models/User.js';
 import mongoose from 'mongoose';
+import Payment from '../models/Payment.js';
 
 // Simple in-memory cache to minimize database queries
 let plansCache = {
@@ -512,86 +513,64 @@ export const getPendingPayments = async (req: Request, res: Response) => {
 };
 
 // Update payment verification status (admin only)
-export const updatePaymentVerification = async (req: Request, res: Response) => {
+export const verifyPayment = async (req: Request, res: Response) => {
   try {
     const { paymentId } = req.params;
-    const { status, notes } = req.body;
-    
-    if (!paymentId || !status) {
-      return res.status(400).json({
-        success: false,
-        message: 'Payment ID and status are required'
-      });
-    }
-    
-    if (!['verified', 'rejected'].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Status must be either "verified" or "rejected"'
-      });
-    }
-    
-    // Find the subscription
-    const subscription = await Subscription.findById(paymentId);
-    
-    if (!subscription) {
+    const { status, notes, subscriptionStatus } = req.body;
+    const adminId = req.user?._id;
+
+    // Find the payment
+    const payment = await Payment.findById(paymentId);
+    if (!payment) {
       return res.status(404).json({
-        success: false,
-        message: 'Payment not found'
+        statusCode: 404,
+        message: 'Payment not found',
+        data: null
       });
     }
-    
-    // Update status based on admin decision
-    if (status === 'verified') {
-      subscription.status = SubscriptionStatus.ACTIVE;
-      
-      // Update user's subscription status and always set the most recent reference number
-      const updateData: any = { 
-        subscriptionStatus: 'paid',
-        subscriptionEnd: subscription.endDate,
-        notes: notes || undefined
-      };
-      
-      // Only update reference number if it exists in the subscription
-      if (subscription.upiTransactionRef) {
-        updateData.referenceNumber = subscription.upiTransactionRef;
+
+    // Update payment status
+    payment.status = status;
+    payment.verificationNotes = notes;
+    payment.verifiedBy = adminId;
+    payment.verificationDate = new Date();
+
+    // If payment is rejected, clear isPendingPayment flag
+    if (status === 'rejected') {
+      // Find the user's subscription
+      const subscription = await Subscription.findOne({
+        userId: payment.userId,
+        isPendingPayment: true
+      });
+
+      if (subscription) {
+        subscription.isPendingPayment = false;
+        subscription.status = 'rejected';
+        await subscription.save();
       }
-      
-      // Only update user's subscription status if the payment is verified
-      await User.findByIdAndUpdate(subscription.userId, updateData);
-      
-    } else {
-      subscription.status = SubscriptionStatus.REJECTED;
-      
-      // Update user's subscription status - change to 'trial' and explicitly set isPendingPayment to false
-      await User.findByIdAndUpdate(subscription.userId, { 
-        subscriptionStatus: 'trial',
-        isPendingPayment: false,
-        notes: notes || undefined
+    }
+
+    await payment.save();
+
+    // Update user's subscription status if provided
+    if (subscriptionStatus) {
+      await User.findByIdAndUpdate(payment.userId, {
+        subscriptionStatus,
+        isPendingPayment: status !== 'rejected'
       });
     }
-    
-    // Save verification notes if provided
-    if (notes) {
-      subscription.notes = notes;
-    }
-    
-    // Save the updated subscription
-    await subscription.save();
-    
+
     return res.status(200).json({
-      success: true,
-      message: `Payment ${status === 'verified' ? 'verified' : 'rejected'} successfully`,
-      data: {
-        paymentId,
-        status: subscription.status
-      }
+      statusCode: 200,
+      message: 'Payment status updated successfully',
+      data: payment
     });
   } catch (error) {
-    console.error('Error updating payment verification:', error);
+    console.error('Error verifying payment:', error);
     return res.status(500).json({
-      success: false,
-      message: 'Error updating payment verification'
+      statusCode: 500,
+      message: 'Error verifying payment',
+      data: null
     });
   }
 };
@@ -698,7 +677,7 @@ export default {
   getUserSubscription,
   getPaymentStatus,
   getPendingPayments,
-  updatePaymentVerification,
+  verifyPayment,
   getUserPaymentHistory,
   getAdditionalPlans
 }; 

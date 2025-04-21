@@ -17,7 +17,7 @@ interface Plan {
 
 interface Subscription {
   _id: string;
-  status: 'active' | 'expired' | 'pending' | 'trial';
+  status: 'active' | 'inactive' | 'trial' | 'cancelled' | 'payment_pending' | 'paid' | 'rejected';
   plan: Plan;
   startDate: string;
   endDate: string;
@@ -222,42 +222,76 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
             const statusResult = await SubscriptionService.checkPaymentVerificationStatus(submittedTransactionId);
             
             if (statusResult.success) {
-              if (statusResult.data.status === 'active') {
-                // Payment has been verified by admin
-                clearInterval(intervalId);
-                setStatusCheckInterval(null);
-                setPaymentStep('complete');
-                toast.success('Payment verified! Your subscription is now active.');
-                setTimeout(() => {
-                  if (onPaymentComplete) {
-                    onPaymentComplete();
-                  }
-                  if (onClose) {
-                    onClose();
-                  }
-                }, 2000);
-                setTrialDaysAddedMessage(`${trialDaysRemaining} trial days will be added to your subscription`);
-              } else if (statusResult.data.status === 'rejected') {
-                // Payment has been rejected by admin
-                clearInterval(intervalId);
-                setStatusCheckInterval(null);
-                setVerificationStatus('Your payment was rejected. Please check your payment history for details.');
-                toast.error('Payment was rejected by admin. Please check payment history for details.');
-                setIsSubmitting(false);
-                setPaymentStep('ready');
-                // Reset the form
-                setTransactionId('');
-                // Close modal after a delay
-                setTimeout(() => {
-                  if (onPaymentComplete) {
-                    onPaymentComplete(); // This will trigger a subscription state refresh
-                  }
-                  if (onClose) {
-                    onClose();
-                  }
-                }, 3000);
+              switch(statusResult.data.status) {
+                case 'active':
+                  // Payment has been verified by admin
+                  clearInterval(intervalId);
+                  setStatusCheckInterval(null);
+                  setPaymentStep('complete');
+                  toast.success('Payment verified! Your subscription is now active.');
+                  setTimeout(() => {
+                    if (onPaymentComplete) {
+                      onPaymentComplete();
+                    }
+                    if (onClose) {
+                      onClose();
+                    }
+                  }, 2000);
+                  setTrialDaysAddedMessage(`${trialDaysRemaining} trial days will be added to your subscription`);
+                  break;
+                
+                case 'rejected':
+                  // Payment has been rejected by admin
+                  clearInterval(intervalId);
+                  setStatusCheckInterval(null);
+                  setVerificationStatus('Your payment was rejected. Please check your payment history for details.');
+                  toast.error('Payment was rejected by admin. Please check payment history for details.');
+                  setIsSubmitting(false);
+                  setPaymentStep('ready');
+                  // Reset the form
+                  setTransactionId('');
+                  // Close modal after a delay
+                  setTimeout(() => {
+                    if (onPaymentComplete) {
+                      onPaymentComplete();
+                    }
+                    if (onClose) {
+                      onClose();
+                    }
+                  }, 3000);
+                  break;
+                
+                case 'cancelled':
+                  // Payment has been cancelled
+                  clearInterval(intervalId);
+                  setStatusCheckInterval(null);
+                  setVerificationStatus('Your payment was cancelled. Please try again or contact support.');
+                  toast.error('Payment was cancelled. Please try again or contact support.');
+                  setIsSubmitting(false);
+                  setPaymentStep('ready');
+                  setTransactionId('');
+                  break;
+                
+                case 'inactive':
+                  // Payment is inactive
+                  clearInterval(intervalId);
+                  setStatusCheckInterval(null);
+                  setVerificationStatus('Your payment is inactive. Please contact support for assistance.');
+                  toast.error('Payment is inactive. Please contact support for assistance.');
+                  setIsSubmitting(false);
+                  setPaymentStep('ready');
+                  setTransactionId('');
+                  break;
+                
+                case 'payment_pending':
+                  // Continue polling
+                  break;
+                
+                default:
+                  // Handle unknown status
+                  console.warn('Unknown payment status:', statusResult.data.status);
+                  break;
               }
-              // Otherwise keep polling (pending/unverified)
             }
           } catch (error) {
             console.error('Error checking payment status:', error);
@@ -503,7 +537,7 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
   };
 
   // Check if there's a pending payment
-  const isPendingPayment = subscription.isPendingPayment || subscription.status === 'pending';
+  const isPendingPayment = subscription.isPendingPayment || subscription.status === 'payment_pending';
 
   return (
     <div className="subscription-status">
@@ -512,6 +546,10 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
         <span className={`status-badge ${isPendingPayment ? 'pending' : subscription.status}`}>
           {isPendingPayment ? 'Payment Pending' :
            subscription.status === 'trial' ? 'Free Trial' :
+           subscription.status === 'cancelled' ? 'Cancelled' :
+           subscription.status === 'rejected' ? 'Payment Rejected' :
+           subscription.status === 'inactive' ? 'Inactive' :
+           subscription.status === 'paid' ? 'Paid' :
            subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1)}
         </span>
       </div>
@@ -544,6 +582,33 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
               </div>
             </div>
           </div>
+        ) : subscription.status === 'rejected' ? (
+          <div className="rejected-payment-status">
+            <div className="rejected-icon">❌</div>
+            <div className="rejected-message">
+              <h3>Payment Rejected</h3>
+              <p>Your payment was rejected by our admin team.</p>
+              <p>Please try again or contact support for assistance.</p>
+            </div>
+          </div>
+        ) : subscription.status === 'cancelled' ? (
+          <div className="cancelled-subscription-status">
+            <div className="cancelled-icon">⚠️</div>
+            <div className="cancelled-message">
+              <h3>Subscription Cancelled</h3>
+              <p>Your subscription has been cancelled.</p>
+              <p>You can subscribe again to regain access to premium features.</p>
+            </div>
+          </div>
+        ) : subscription.status === 'inactive' ? (
+          <div className="inactive-subscription-status">
+            <div className="inactive-icon">⏸️</div>
+            <div className="inactive-message">
+              <h3>Subscription Inactive</h3>
+              <p>Your subscription is currently inactive.</p>
+              <p>Please contact support to reactivate your subscription.</p>
+            </div>
+          </div>
         ) : (
           // Show regular subscription details
           <>
@@ -569,7 +634,7 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
               </div>
             </div>
             
-            {(subscription.status === 'active' || subscription.status === 'trial') && (
+            {(subscription.status === 'active' || subscription.status === 'trial' || subscription.status === 'paid') && (
               <div className="time-remaining">
                 <div className="days-left">{totalDaysRemaining}</div>
                 <div className="days-label">total days remaining</div>
@@ -693,8 +758,9 @@ const SubscriptionPage: React.FC = () => {
         const subscriptionData = result.data;
         setUserSubscription(subscriptionData);
         
-        // Check if there's a pending payment
-        const isPending = subscriptionData.isPendingPayment || subscriptionData.status === 'payment_pending';
+        // Check if there's a pending payment, but exclude rejected payments
+        const isPending = (subscriptionData.isPendingPayment || subscriptionData.status === 'payment_pending') && 
+                         subscriptionData.status !== 'rejected';
         setHasPendingPayment(isPending);
         
         // Set trial days remaining

@@ -12,7 +12,7 @@ interface Payment {
   userEmail: string;
   amount: number;
   currency: string;
-  status: 'verified' | 'unverified' | 'rejected';
+  status: 'verified' | 'unverified' | 'rejected' | 'cancelled' | 'inactive' | 'active' | 'paid';
   referenceNumber: string;
   plan: string;
   paymentDate: string;
@@ -349,15 +349,13 @@ const SubscriptionsManagement = () => {
       subscriptionStatus,
     }: {
       paymentId: string;
-      status: "verified" | "rejected";
+      status: 'verified' | 'rejected' | 'cancelled' | 'inactive';
       notes?: string;
       subscriptionStatus?: string;
     }) => {
       const token = localStorage.getItem("token");
       const response = await axios.put(
-        `${
-          import.meta.env.VITE_API_URL
-        }/subscriptions/payment-verification/${paymentId}`,
+        `${import.meta.env.VITE_API_URL}/subscriptions/payment-verification/${paymentId}`,
         { status, notes, subscriptionStatus },
         {
           headers: {
@@ -689,7 +687,12 @@ const SubscriptionsManagement = () => {
                     <td className="date-cell">{new Date(payment.createdAt).toLocaleDateString()}</td>
                     <td className={`status-cell status-${payment.status}`}>
                       {payment.status === 'verified' ? 'Verified' : 
-                       payment.status === 'unverified' ? 'Pending Verification' : 'Rejected'}
+                       payment.status === 'unverified' ? 'Pending Verification' : 
+                       payment.status === 'rejected' ? 'Rejected' :
+                       payment.status === 'cancelled' ? 'Cancelled' :
+                       payment.status === 'inactive' ? 'Inactive' :
+                       payment.status === 'active' ? 'Active' :
+                       payment.status === 'paid' ? 'Paid' : payment.status}
                     </td>
                     <td className="actions-cell">
                       <button 
