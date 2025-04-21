@@ -69,9 +69,8 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
 
   const handleSubmit = () => {
     if (selectedFolder) {
-      const workfileCount = selectedFolder.workFiles?.length || 0;
-      const nextWorkfileName = `workfile${workfileCount + 1}`;
-      onSubmit(selectedFolder.name, nextWorkfileName, filterReadPatents);
+      const finalWorkfileName = workfileName.trim() || `workfile${(selectedFolder.workFiles?.length || 0) + 1}`;
+      onSubmit(selectedFolder.name, finalWorkfileName, filterReadPatents);
     } else if (folderName.trim()) {
       onSubmit(folderName, workfileName, filterReadPatents);
     }
@@ -150,6 +149,7 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
               }}
               placeholder="Enter new folder name"
               disabled={!!selectedFolder}
+              className="compact-input"
             />
           </div>
 
@@ -161,7 +161,7 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
               value={workfileName}
               onChange={(e) => setWorkfileName(e.target.value)}
               placeholder="Enter workfile name"
-              disabled={!!selectedFolder}
+              className="compact-input"
             />
           </div>
         </div>
