@@ -348,7 +348,6 @@ const SubscriptionsManagement = () => {
           }
         );
         // Log the response to debug
-        console.log('Payments API Response:', response.data);
         return response.data.data.payments || [];
       } catch (error) {
         console.error("Error fetching pending payments:", error);
@@ -362,7 +361,6 @@ const SubscriptionsManagement = () => {
   // Sync the API data with our local state
   useEffect(() => {
     if (paymentsData) {
-      console.log('Setting payments data:', paymentsData);
       setPayments(paymentsData);
     }
   }, [paymentsData]);
@@ -375,16 +373,6 @@ const SubscriptionsManagement = () => {
       setError(String(paymentsError));
     }
   }, [paymentsLoading, paymentsError]);
-
-  // Add debug logging for filtered payments
-  useEffect(() => {
-    console.log('Filtered payments:', {
-      totalPayments: payments.length,
-      filteredCount: filteredPayments.length,
-      searchTerm,
-      statusFilter
-    });
-  }, [filteredPayments, payments, searchTerm, statusFilter]);
 
   // Status update mutation with notes
   const updatePaymentStatus = useMutation({
