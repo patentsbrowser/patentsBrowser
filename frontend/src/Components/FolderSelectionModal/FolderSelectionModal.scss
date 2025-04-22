@@ -387,6 +387,12 @@
         font-size: 1rem;
         transition: all 0.2s ease;
 
+        option {
+          background: var(--input-bg);
+          color: var(--text-color);
+          padding: 0.5rem;
+        }
+
         &:focus {
           outline: none;
           border-color: var(--accent-color);
@@ -403,10 +409,19 @@
       .folder-select {
         cursor: pointer;
         appearance: none;
+        background-color: var(--input-bg);
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: right 1.25rem center;
         padding-right: 3rem;
+
+        &::-ms-expand {
+          display: none;
+        }
+
+        &:hover {
+          background-color: var(--hover-bg);
+        }
       }
     }
   }
@@ -548,6 +563,48 @@
             &:hover {
               background: var(--accent-hover);
             }
+          }
+        }
+      }
+    }
+  }
+
+  .folder-selection-modal {
+    .modal-body {
+      .existing-folders-section,
+      .new-folder-section,
+      .workfile-section {
+        .folder-select,
+        .compact-input {
+          background: var(--input-bg-dark, #2d2d2d);
+          border-color: var(--border-color-dark, #404040);
+          color: var(--text-color-dark, #e0e0e0);
+
+          option {
+            background: var(--input-bg-dark, #2d2d2d);
+            color: var(--text-color-dark, #e0e0e0);
+          }
+
+          &:hover {
+            background: var(--hover-bg-dark, #353535);
+          }
+
+          &:focus {
+            border-color: var(--accent-color);
+          }
+
+          &:disabled {
+            background: var(--disabled-bg-dark, #1a1a1a);
+          }
+        }
+
+        .folder-select {
+          background-color: var(--input-bg-dark, #2d2d2d);
+          /* Update the dropdown arrow color for dark theme */
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+
+          &:hover {
+            background-color: var(--hover-bg-dark, #353535);
           }
         }
       }
