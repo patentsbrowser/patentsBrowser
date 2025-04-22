@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './FolderSelectionModal.scss';
+import { toast } from 'react-hot-toast';
+import { patentApi } from '../../api/patents';
 
 interface WorkFile {
   name: string;
@@ -26,6 +28,16 @@ interface FolderSelectionModalProps {
   notFoundPatents?: string[];
 }
 
+interface PatentSearchResult {
+  patent_id: string;
+  family_id: string;
+}
+
+interface PatentSearchResponse {
+  results: PatentSearchResult[];
+  not_found: string[];
+}
+
 const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
   isOpen,
   onClose,
@@ -44,6 +56,9 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
   const [isFiltering, setIsFiltering] = useState(false);
   const [allDuplicates, setAllDuplicates] = useState(false);
   const [showNotFound, setShowNotFound] = useState(true);
+  const [editedPatents, setEditedPatents] = useState<{ [key: string]: string }>({});
+  const [editingPatents, setEditingPatents] = useState<Set<string>>(new Set());
+  const [isSubmittingCorrections, setIsSubmittingCorrections] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -54,6 +69,8 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
       setFilterFamily(true);
       setAllDuplicates(false);
       setShowNotFound(true);
+      setEditedPatents({});
+      setEditingPatents(new Set());
       updateFilteredPatents(true, true);
     }
   }, [isOpen, patentIds]);
@@ -67,7 +84,8 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
   const updateFilteredPatents = async (shouldFilterDuplicates: boolean, shouldFilterFamily: boolean) => {
     setIsFiltering(true);
     try {
-      let filtered = [...patentIds];
+      // First filter out not-found patents
+      let filtered = patentIds.filter(id => !notFoundPatents.includes(id));
       
       if (shouldFilterDuplicates && selectedFolder) {
         const existingPatents = new Set<string>();
@@ -127,9 +145,91 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
     }
   };
 
+  const toggleEdit = (id: string) => {
+    setEditingPatents(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const handlePatentEdit = (originalId: string, newId: string) => {
+    setEditedPatents(prev => ({
+      ...prev,
+      [originalId]: newId
+    }));
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, id: string) => {
+    if (e.key === 'Enter') {
+      toggleEdit(id);
+    } else if (e.key === 'Escape') {
+      // Reset to original value and disable editing
+      setEditedPatents(prev => {
+        const newEdited = { ...prev };
+        delete newEdited[id];
+        return newEdited;
+      });
+      toggleEdit(id);
+    }
+  };
+
+  const handleSubmitCorrections = async () => {
+    setIsSubmittingCorrections(true);
+    try {
+      // Get all edited patent IDs that have been changed
+      const correctedPatents = Object.entries(editedPatents)
+        .filter(([originalId, newId]) => originalId !== newId && newId.trim() !== '')
+        .map(([_, newId]) => newId.trim());
+
+      if (correctedPatents.length === 0) {
+        return;
+      }
+
+      // Call the search API with corrected patents
+      const response = await patentApi.searchPatentsForValidation(correctedPatents);
+      
+      if (response.results && Array.isArray(response.results)) {
+        // Update the found and not found lists
+        const newFoundPatents = response.results.map((result: PatentSearchResult) => result.patent_id);
+        const stillNotFound = correctedPatents.filter(id => !newFoundPatents.includes(id));
+        
+        // Update the filtered patents list with newly found patents
+        setFilteredPatentIds(prev => [...prev, ...newFoundPatents]);
+        
+        // Clear the edited status for successfully found patents
+        const updatedEditedPatents = { ...editedPatents };
+        newFoundPatents.forEach((foundId: string) => {
+          const originalId = Object.keys(editedPatents).find(key => editedPatents[key] === foundId);
+          if (originalId) {
+            delete updatedEditedPatents[originalId];
+          }
+        });
+        setEditedPatents(updatedEditedPatents);
+        
+        // Show success message
+        if (newFoundPatents.length > 0) {
+          toast.success(`Found ${newFoundPatents.length} corrected patents`);
+        }
+        if (stillNotFound.length > 0) {
+          toast.error(`${stillNotFound.length} patents still not found`);
+        }
+      }
+    } catch (error) {
+      console.error('Error submitting corrections:', error);
+      toast.error('Failed to validate corrected patents');
+    } finally {
+      setIsSubmittingCorrections(false);
+    }
+  };
+
   const handleSubmit = () => {
-    // Get only the found patent IDs by excluding not found patents
-    const foundPatentIds = filteredPatentIds.filter(id => !notFoundPatents.includes(id));
+    // No need to filter not-found patents here anymore since filteredPatentIds already excludes them
+    const foundPatentIds = filteredPatentIds;
     
     if (selectedFolder) {
       const finalWorkfileName = workfileName.trim() || `workfile${(selectedFolder.workFiles?.length || 0) + 1}`;
@@ -266,11 +366,50 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
 
             {notFoundPatents.length > 0 && showNotFound && (
               <div className="not-found-section">
-                <h4>Patents Not Found in Database</h4>
+                <div className="not-found-header">
+                  <h4>Patents Not Found in Database</h4>
+                  {Object.keys(editedPatents).length > 0 && (
+                    <button
+                      className="submit-corrections-button"
+                      onClick={handleSubmitCorrections}
+                      disabled={isSubmittingCorrections}
+                    >
+                      {isSubmittingCorrections ? 'Submitting...' : 'Submit Corrections'}
+                    </button>
+                  )}
+                </div>
                 <div className="not-found-list">
                   {notFoundPatents.map((id, index) => (
                     <div key={index} className="not-found-item">
-                      {id}
+                      <div className="patent-id-edit">
+                        <input
+                          type="text"
+                          value={editedPatents[id] || id}
+                          onChange={(e) => handlePatentEdit(id, e.target.value)}
+                          onKeyDown={(e) => handleInputKeyDown(e, id)}
+                          className="patent-id-input"
+                          placeholder="Enter correct patent ID"
+                          readOnly={!editingPatents.has(id)}
+                        />
+                        <button 
+                          className={`edit-button ${editingPatents.has(id) ? 'editing' : ''}`}
+                          onClick={() => {
+                            if (editingPatents.has(id) && editedPatents[id] === id) {
+                              // If we're in edit mode but no changes, just exit edit mode
+                              toggleEdit(id);
+                            } else if (editingPatents.has(id)) {
+                              // If we're in edit mode and there are changes, save changes
+                              toggleEdit(id);
+                            } else {
+                              // Enter edit mode
+                              toggleEdit(id);
+                            }
+                          }}
+                          title={editingPatents.has(id) ? 'Save' : 'Edit'}
+                        >
+                          {editingPatents.has(id) ? '✓' : editedPatents[id] && editedPatents[id] !== id ? '↺' : '✎'}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
