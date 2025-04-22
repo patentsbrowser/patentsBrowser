@@ -30,7 +30,7 @@ router.get('/payment-history', auth, subscriptionController.getUserPaymentHistor
 router.get('/pending-payments', auth, adminAuth, subscriptionController.getPendingPayments);
 
 // Update payment verification status (admin only)
-router.put('/payment-verification/:paymentId', auth, adminAuth, subscriptionController.updatePaymentVerification);
+// router.put('/payment-verification/:paymentId', auth, adminAuth, subscriptionController.updatePaymentVerification);
 
 // Get additional plans for a subscription (requires auth)
 router.get('/additional-plans/:subscriptionId', auth, subscriptionController.getAdditionalPlans);
