@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import './ManageFoldersModal.scss';
+import { useMutation } from 'react';
+import { toast } from 'react-hot-toast';
 
 interface PatentFolder {
   id: string;
@@ -111,6 +113,19 @@ const ManageFoldersModal = ({
         }
       }
     }
+  };
+
+  const handleFolderSelection = async (folderName: string, workfileName: string, filterDuplicates: boolean, filterFamily: boolean, foundPatentIds: string[]) => {
+    const combinedFolderName = `${folderName}/${workfileName}`;
+    savePatentMutation.mutate(
+      { ids: foundPatentIds, folderName: combinedFolderName },
+      {
+        onSuccess: () => {
+          setSelectedPatents([]);
+          toast.success(`Saved ${foundPatentIds.length} patents to ${folderName}`);
+        }
+      }
+    );
   };
 
   return (

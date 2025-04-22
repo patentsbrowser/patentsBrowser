@@ -297,7 +297,7 @@ export const patentApi = {
             "created_at", "updated_at", "id", "*.created_at", "*.updated_at",
             "*.id", "patent_id", "patent.title",
             "*.full_text", "citations_npl", "citations_pat",
-            "family_members", "abstract_fulltext",
+            , "abstract_fulltext",
             "non_patent_citations"
           ]
         }
@@ -386,13 +386,71 @@ export const patentApi = {
           "*.full_text",
           "citations_npl",
           "citations_pat",
-          "family_members",
           "abstract_fulltext",
           "non_patent_citations"
         ]
       }
     });
     return response.data;
+  },
+
+  // New method for validating patents
+  searchPatentsForValidation: async (ids: string[]) => {
+    const response = await axios.post('https://api.unifiedpatents.com/patents/v6/_search', {
+      query: {
+        bool: {
+          must: [
+            {
+              terms: {
+                ucid_spif: ids
+              }
+            }
+          ]
+        }
+      },
+      size: 300,
+      sort: [
+        { portfolio_score: "desc" }
+      ],
+      track_total_hits: true,
+      _source: {
+        exclude: [
+          "created_at",
+          "updated_at",
+          "id",
+          "*.created_at",
+          "*.updated_at",
+          "*.id",
+          "patent_id",
+          "patent.title",
+          "*.full_text",
+          "citations_npl",
+          "citations_pat",
+          "abstract_fulltext",
+          "non_patent_citations"
+        ]
+      }
+    });
+    
+    interface PatentResult {
+      patent_id: string;
+      family_id: string;
+    }
+
+    // Get the found patents from API response using _id instead of grant_number
+    const foundPatents = response.data.hits.hits.map((hit: any) => ({
+      patent_id: hit._id,
+      family_id: hit._source.family_id
+    })) as PatentResult[];
+
+    // Any ID that's not in the API response is considered not found
+    const foundPatentIds = new Set(foundPatents.map((p: PatentResult) => p.patent_id));
+    const notFoundPatents = ids.filter(id => !foundPatentIds.has(id));
+    
+    return {
+      results: foundPatents,
+      not_found: notFoundPatents
+    };
   },
 };
 

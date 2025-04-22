@@ -1,8 +1,10 @@
 .subscription-page {
   min-height: 100vh;
   padding: 2rem;
-  background-color: var(--primary-bg, #ffffff);
-  color: var(--text-color, #333333);
+  // background-color: var(--bg-primary, #000000);
+  color: var(--text-primary, #ffffff);
+  max-width: 1400px;
+  margin: 0 auto;
   
   &.loading {
     display: flex;
@@ -17,337 +19,292 @@
     margin-bottom: 3rem;
     
     h1 {
+      color: var(--accent-primary, #9c27b0);
       font-size: 2.5rem;
-      color: #592e83; // Royal violet
-      margin-bottom: 1rem;
-      position: relative;
-      display: inline-block;
-      
-      &::after {
-        content: '';
-        position: absolute;
-        bottom: -10px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 100px;
-        height: 3px;
-        background: linear-gradient(90deg, transparent, #ffd700, transparent);
-      }
+      margin-bottom: 0.5rem;
+      text-decoration: underline;
+      text-decoration-color: var(--accent-secondary, #ffd700);
     }
     
     p {
-      font-size: 1.2rem;
-      color: var(--text-secondary, #64748b);
+      color: var(--text-secondary, #888);
+      font-size: 1.1rem;
     }
   }
 
-  .current-subscription {
-    max-width: 800px;
-    margin: 0 auto 3rem;
+  .subscription-status {
+    background-color: var(--card-bg-light, #ffffff);
+    border-radius: 15px;
     padding: 2rem;
-    background-color: rgba(89, 46, 131, 0.05);
-    border-radius: 10px;
-    border: 1px solid rgba(89, 46, 131, 0.1);
-    
-    h2 {
-      font-size: 1.8rem;
-      color: #592e83;
-      margin-bottom: 1.5rem;
-      text-align: center;
-    }
-    
-    .subscription-details {
-      p {
-        margin-bottom: 0.8rem;
-        font-size: 1.1rem;
-        
-        strong {
-          color: #592e83;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px var(--shadow-color, rgba(0, 0, 0, 0.1));
+
+    .status-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+
+      h2 {
+        color: var(--accent-primary, #9c27b0);
+        font-size: 1.8rem;
+        margin: 0;
+      }
+
+      .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        background-color: var(--warning-bg, #fff3cd);
+        color: var(--warning-text, #856404);
+
+        &.trial {
+          background-color: var(--success-bg, #d4edda);
+          color: var(--success-text, #155724);
+        }
+
+        &.pending {
+          background-color: var(--warning-bg, #fff3cd);
+          color: var(--warning-text, #856404);
         }
       }
-      
-      .cancel-subscription-btn {
-        margin-top: 1.5rem;
-        padding: 0.8rem 1.5rem;
-        background-color: #f44336;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        
-        &:hover {
-          background-color: #e53935;
-          box-shadow: 0 2px 10px rgba(244, 67, 54, 0.3);
+    }
+
+    .subscription-details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+      color: var(--text-primary-light, #333);
+
+      .detail-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+
+        .label {
+          color: var(--text-secondary-light, #666);
+          font-size: 0.9rem;
+        }
+
+        .value {
+          font-weight: 500;
+        }
+      }
+
+      .trial-counter {
+        grid-column: 1 / -1;
+        background-color: var(--accent-bg-light, #f3e5f5);
+        padding: 1.5rem;
+        border-radius: 10px;
+        text-align: center;
+
+        .days {
+          font-size: 3rem;
+          font-weight: bold;
+          color: var(--accent-primary, #9c27b0);
+          line-height: 1;
+          margin-bottom: 0.5rem;
+        }
+
+        .label {
+          color: var(--text-secondary-light, #666);
+          font-size: 0.9rem;
         }
       }
     }
   }
 
   .free-trial-card {
-    max-width: 800px;
-    margin: 0 auto 3rem;
+    background-color: var(--success-card-bg, #002800);
+    border-radius: 15px;
     padding: 2rem;
-    background-color: rgba(40, 167, 69, 0.05);
-    border-radius: 10px;
-    border: 1px solid rgba(40, 167, 69, 0.1);
+    margin: 2rem 0;
     text-align: center;
-    
+    border: 1px solid var(--success-border, rgba(76, 175, 80, 0.2));
+
     h2 {
-      font-size: 1.8rem;
-      color: #28a745; // Royal green
+      color: var(--success-color, #4CAF50);
+      font-size: 2rem;
       margin-bottom: 1rem;
     }
-    
+
     p {
+      color: var(--text-primary, #ffffff);
       margin-bottom: 1.5rem;
-      font-size: 1.1rem;
-      color: var(--text-secondary, #64748b);
+
+      strong {
+        color: var(--success-color, #4CAF50);
+      }
     }
-    
+
     .trial-features {
-      display: inline-block;
       text-align: left;
-      margin-bottom: 1.5rem;
-      
-      li {
-        margin-bottom: 0.5rem;
-        font-size: 1.05rem;
-        position: relative;
-        padding-left: 1.5rem;
-        
-        &::before {
-          content: '✓';
-          position: absolute;
-          left: 0;
-          color: #28a745;
-          font-weight: bold;
-        }
-      }
-      
+      margin: 2rem 0;
+
       h3 {
-        font-size: 1.1rem;
-        color: #28a745;
+        color: var(--success-color, #4CAF50);
+        font-size: 1.2rem;
         margin-bottom: 1rem;
-        font-weight: 600;
       }
-    }
-    
-    .start-trial-btn {
-      padding: 0.8rem 2rem;
-      background-color: #28a745;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      font-size: 1.1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      
-      &:hover {
-        background-color: #218838;
-        box-shadow: 0 2px 10px rgba(40, 167, 69, 0.3);
-      }
-      
-      &:disabled {
-        opacity: 0.7;
-        cursor: not-allowed;
-      }
-    }
-    
-    .trial-upgrade-message {
-      padding: 0.75rem;
-      background-color: rgba(220, 53, 69, 0.1);
-      border-radius: 0.5rem;
-      text-align: center;
-      margin-top: 1rem;
-      
-      p {
-        color: #dc3545;
-        font-weight: 500;
+
+      ul {
+        list-style: none;
+        padding: 0;
         margin: 0;
+
+        li {
+          color: var(--text-primary, #ffffff);
+          margin-bottom: 0.8rem;
+          padding-left: 1.8rem;
+          position: relative;
+
+          &::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--success-color, #4CAF50);
+            font-weight: bold;
+          }
+        }
       }
     }
   }
 
   .subscription-plans {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 2rem;
-    margin-top: 2rem;
+    padding: 1rem;
     
     .plan-card {
-      background-color: white;
-      border-radius: 10px;
+      background-color: var(--card-bg, #1f2922);
+      border-radius: 12px;
       padding: 2rem;
-      flex: 1;
-      min-width: 250px;
-      max-width: 300px;
-      width: 300px; /* Set fixed width */
-      height: 500px; /* Set fixed height */
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-      transition: all 0.4s ease;
-      border: 2px solid rgba(89, 46, 131, 0.1);
-      position: relative;
-      overflow: hidden;
       display: flex;
       flex-direction: column;
+      position: relative;
+      border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+      transition: all 0.3s ease;
+      
+      [data-theme="light"] & {
+        background-color: var(--card-bg-light, #f5f5f5);
+        border-color: var(--border-color-light, rgba(0, 0, 0, 0.1));
+      }
       
       &:hover {
-        transform: scale(1.05);
-        box-shadow: 0 15px 30px rgba(89, 46, 131, 0.2);
-        border-color: #ffd700;
-        z-index: 1;
+        transform: translateY(-5px);
+        border-color: var(--accent-primary, #9c27b0);
+        box-shadow: 0 10px 20px var(--shadow-color, rgba(0, 0, 0, 0.2));
       }
-      
+
       &.popular {
-        border-color: #ffd700;
-        transform: scale(1.05);
-        box-shadow: 0 8px 15px rgba(255, 215, 0, 0.2);
-        height: 500px; /* Keep same height when popular */
-        
-        &:hover {
-          transform: scale(1.1);
-          box-shadow: 0 20px 40px rgba(255, 215, 0, 0.3);
-          border-width: 3px;
-          border-color: #ffd700;
-          height: 500px; /* Keep same height when hovering */
-        }
-        
-        .popular-badge {
+        &::before {
+          content: "Popular";
           position: absolute;
-          top: 10px;
-          right: -30px;
+          top: 1rem;
+          right: -2rem;
+          background: var(--success-color, #4CAF50);
+          color: var(--text-on-accent, #ffffff);
+          padding: 0.3rem 2rem;
           transform: rotate(45deg);
-          background-color: #ffd700;
-          color: #592e83;
-          padding: 0.2rem 2rem;
-          font-weight: 600;
           font-size: 0.9rem;
-          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+          z-index: 1;
         }
       }
-      
+
       h3 {
-        font-size: 1.5rem;
-        color: #592e83;
-        margin-bottom: 1rem;
-        text-align: center;
-      }
-      
-      .price {
-        font-size: 2.5rem;
-        text-align: center;
-        margin-bottom: 1rem;
-        color: #333;
-        
-        .currency {
-          font-size: 1.5rem;
-          vertical-align: super;
-          margin-right: 0.1rem;
-          font-weight: 600;
-        }
-        
-        .amount {
-          font-weight: 700;
-        }
-        
-        .period {
-          font-size: 1rem;
-          color: var(--text-secondary, #64748b);
-        }
-      }
-      
-      .discount {
-        text-align: center;
+        color: var(--accent-primary, #9c27b0);
+        font-size: 1.8rem;
         margin-bottom: 1.5rem;
-        color: #28a745;
-        font-weight: 600;
-        font-size: 1.1rem;
+        text-align: center;
       }
-      
-      .features {
+
+      .price {
+        text-align: center;
+        margin-bottom: 2rem;
+
+        .currency {
+          color: var(--success-color, #4CAF50);
+          font-size: 1.5rem;
+          vertical-align: top;
+          margin-right: 0.2rem;
+        }
+
+        .amount {
+          color: var(--success-color, #4CAF50);
+          font-size: 3rem;
+          font-weight: bold;
+        }
+
+        .period {
+          color: var(--text-secondary, #888);
+          font-size: 1rem;
+          margin-left: 0.3rem;
+        }
+      }
+
+      ul.features {
         list-style: none;
         padding: 0;
-        margin-bottom: 2rem;
-        flex-grow: 1;  /* Makes the features list take up available space */
-        
+        margin: 0 0 2rem 0;
+        flex-grow: 1;
+
         li {
-          margin-bottom: 0.8rem;
+          color: var(--text-primary, #ccc);
+          margin-bottom: 1rem;
+          padding-left: 1.8rem;
           position: relative;
-          padding-left: 1.5rem;
-          color: var(--text-secondary, #64748b);
-          
+
+          [data-theme="light"] & {
+            color: var(--text-primary-light, #333);
+          }
+
           &::before {
-            content: '✓';
+            content: "✓";
             position: absolute;
             left: 0;
-            color: #592e83;
+            color: var(--success-color, #4CAF50);
+            font-weight: bold;
           }
         }
       }
-      
+
       .subscribe-btn {
-        width: 100%;
-        padding: 0.8rem;
-        background-color: #592e83;
-        color: white;
+        background-color: var(--accent-primary, #9c27b0);
+        color: var(--text-on-accent, #ffffff);
         border: none;
-        border-radius: 5px;
-        font-size: 1rem;
-        font-weight: 600;
+        padding: 1rem;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        font-weight: 500;
         cursor: pointer;
         transition: all 0.3s ease;
-        margin-top: auto; /* Pushes button to bottom */
-        position: relative;
-        z-index: 2;
-        
+        width: 100%;
+
         &:hover {
-          background-color: #452366;
-          box-shadow: 0 5px 15px rgba(89, 46, 131, 0.4);
-          transform: translateY(-3px);
+          background-color: var(--accent-primary-dark, #7b1fa2);
+          transform: translateY(-2px);
         }
-        
+
         &:disabled {
-          opacity: 0.7;
+          background-color: var(--disabled-color, #666);
           cursor: not-allowed;
           transform: none;
-          box-shadow: none;
         }
       }
     }
   }
 
   /* Responsive Styles */
+  @media (max-width: 1200px) {
+    .subscription-plans {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
   @media (max-width: 768px) {
-    .subscription-page {
-      padding: 1.5rem;
-      
-      .subscription-header {
-        h1 {
-          font-size: 2rem;
-        }
-      }
-      
-      .subscription-plans {
-        flex-direction: column;
-        align-items: center;
-        
-        .plan-card {
-          width: 100%;
-          max-width: 100%;
-          
-          &.popular {
-            transform: scale(1);
-            
-            &:hover {
-              transform: translateY(-10px) scale(1);
-            }
-          }
-        }
-      }
+    .subscription-plans {
+      grid-template-columns: 1fr;
     }
   }
 
@@ -1131,5 +1088,47 @@
         margin-top: 0.25rem;
       }
     }
+  }
+}
+
+// CSS Variables for theming
+:root {
+  // Dark theme (default)
+  --bg-primary: #000000;
+  --card-bg: #1f2922;
+  --text-primary: #ffffff;
+  --text-secondary: #888888;
+  --text-on-accent: #ffffff;
+  --accent-primary: #9c27b0;
+  --accent-primary-dark: #7b1fa2;
+  --accent-secondary: #ffd700;
+  --success-color: #4CAF50;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --shadow-color: rgba(0, 0, 0, 0.2);
+  --disabled-color: #666666;
+
+  // Card specific colors
+  --card-bg-light: #ffffff;
+  --text-primary-light: #333333;
+  --text-secondary-light: #666666;
+  --accent-bg-light: #f3e5f5;
+  --success-card-bg: #002800;
+  --success-border: rgba(76, 175, 80, 0.2);
+  --warning-bg: #fff3cd;
+  --warning-text: #856404;
+  --success-bg: #d4edda;
+  --success-text: #155724;
+
+  // Light theme overrides
+  [data-theme="light"] & {
+    --bg-primary: #ffffff;
+    --card-bg: #f5f5f5;
+    --text-primary: #333333;
+    --text-secondary: #666666;
+    --border-color: rgba(0, 0, 0, 0.1);
+    --shadow-color: rgba(156, 39, 176, 0.15);
+    --success-card-bg: #f0f9f0;
+    --text-primary-light: #333333;
+    --text-secondary-light: #666666;
   }
 } 

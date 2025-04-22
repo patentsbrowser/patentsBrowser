@@ -1,9 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { authApi } from '../../api/auth';
+import { patentApi } from '../../api/patents';
 import toast from 'react-hot-toast';
 import './savedPatentList.scss';
 import { useAuth } from '../../AuthContext';
+import Loader from '../Common/Loader';
+import FolderSelectionModal from '../FolderSelectionModal/FolderSelectionModal';
 
 interface WorkFile {
   name: string;
@@ -20,171 +23,15 @@ interface CustomFolder {
   workFiles?: WorkFile[];
 }
 
-interface FolderSelectionModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (folderName: string, workfileName: string, filterReadPatents: boolean) => void;
-  existingFolders: CustomFolder[];
-  patentIds: string[];
-  readPatents: Set<string>;
+interface PatentSearchResult {
+  family_id: string;
+  patent_id: string;
 }
 
-const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
-  isOpen,
-  onClose,
-  onSubmit,
-  existingFolders,
-  patentIds,
-  readPatents
-}) => {
-  const [folderName, setFolderName] = useState('workfile');
-  const [workfileName, setWorkfileName] = useState('workfile');
-  const [selectedFolder, setSelectedFolder] = useState<CustomFolder | null>(null);
-  const [filterReadPatents, setFilterReadPatents] = useState(true);
-  const [filteredPatentIds, setFilteredPatentIds] = useState<string[]>(patentIds);
-
-  useEffect(() => {
-    if (isOpen) {
-      setFolderName('workfile');
-      setWorkfileName('workfile');
-      setSelectedFolder(null);
-      setFilterReadPatents(true);
-      updateFilteredPatents(true);
-    }
-  }, [isOpen, patentIds, readPatents]);
-
-  const updateFilteredPatents = (shouldFilter: boolean) => {
-    if (shouldFilter) {
-      setFilteredPatentIds(patentIds.filter(id => !readPatents.has(id.toUpperCase())));
-    } else {
-      setFilteredPatentIds(patentIds);
-    }
-  };
-
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const shouldFilter = e.target.checked;
-    setFilterReadPatents(shouldFilter);
-    updateFilteredPatents(shouldFilter);
-  };
-
-  const handleSubmit = () => {
-    if (selectedFolder) {
-      const finalWorkfileName = workfileName.trim() || `workfile${(selectedFolder.workFiles?.length || 0) + 1}`;
-      onSubmit(selectedFolder.name, finalWorkfileName, filterReadPatents);
-    } else if (folderName.trim()) {
-      onSubmit(folderName, workfileName, filterReadPatents);
-    }
-    onClose();
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="folder-selection-modal-overlay">
-      <div className="folder-selection-modal">
-        <div className="modal-header">
-          <h3>Select Folder</h3>
-          <button className="close-button" onClick={onClose}>×</button>
-        </div>
-        
-        <div className="modal-body">
-          <div className="patent-ids-summary">
-            <p>Found {patentIds.length} patent IDs to save</p>
-            {readPatents.size > 0 && (
-              <p className="read-patents-info">
-                ({patentIds.filter(id => readPatents.has(id.toUpperCase())).length} already read)
-              </p>
-            )}
-          </div>
-
-          <div className="filter-section">
-            <label className="filter-label">
-              <input
-                type="checkbox"
-                checked={filterReadPatents}
-                onChange={handleFilterChange}
-                className="filter-checkbox"
-              />
-              Filter out already read patents
-            </label>
-            {filterReadPatents && filteredPatentIds.length !== patentIds.length && (
-              <p className="filter-info">
-                Will save {filteredPatentIds.length} unread patents
-              </p>
-            )}
-          </div>
-
-          {existingFolders.length > 0 && (
-            <div className="existing-folders-section">
-              <label htmlFor="existing-folders">Add to Existing Folder:</label>
-              <select
-                id="existing-folders"
-                value={selectedFolder?._id || ''}
-                onChange={(e) => {
-                  const folder = existingFolders.find(f => f._id === e.target.value);
-                  setSelectedFolder(folder || null);
-                  setFolderName('');
-                }}
-                className="folder-select"
-              >
-                <option value="">Select a folder...</option>
-                {existingFolders.map((folder) => (
-                  <option key={folder._id} value={folder._id}>
-                    {folder.name} ({folder.patentIds.length})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          
-          <div className="new-folder-section">
-            <label htmlFor="folder-name">Or Create New Folder:</label>
-            <input
-              id="folder-name"
-              type="text"
-              value={folderName}
-              onChange={(e) => {
-                setFolderName(e.target.value);
-                setSelectedFolder(null);
-              }}
-              placeholder="Enter new folder name"
-              disabled={!!selectedFolder}
-              className="compact-input"
-            />
-          </div>
-
-          <div className="workfile-section">
-            <label htmlFor="workfile-name">Workfile Name:</label>
-            <input
-              id="workfile-name"
-              type="text"
-              value={workfileName}
-              onChange={(e) => setWorkfileName(e.target.value)}
-              placeholder="Enter workfile name"
-              className="compact-input"
-            />
-          </div>
-        </div>
-        
-        <div className="modal-actions">
-          <button 
-            className="cancel-button" 
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-          <button 
-            className="submit-button" 
-            onClick={handleSubmit}
-            disabled={!selectedFolder && !folderName.trim()}
-          >
-            {selectedFolder ? 'Add to Folder' : 'Create Workfile'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+interface PatentSearchResponse {
+  results: PatentSearchResult[];
+  not_found: string[];
+}
 
 // Remove the localStorage keys and functions
 const getUserStorageKey = (userId: string) => `savedPatentList_${userId}`;
@@ -202,7 +49,9 @@ const SavedPatentList = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [readPatents, setReadPatents] = useState<Set<string>>(new Set());
+  const [familyPatents, setFamilyPatents] = useState<{ [key: string]: string[] }>({});
+  const [notFoundPatents, setNotFoundPatents] = useState<string[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Fetch existing folders
   const { data: existingFolders = [], isLoading: isLoadingFolders } = useQuery<CustomFolder[]>({
@@ -226,6 +75,39 @@ const SavedPatentList = () => {
       const errorMessage = error.response?.data?.message || 'Failed to save patents. Please try again.';
       toast.error(errorMessage);
       console.error('Error saving patents:', error);
+    }
+  });
+
+  // Add patent search mutation
+  const searchPatentsMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      return await patentApi.searchPatentsForValidation(ids);
+    },
+    onSuccess: (data: PatentSearchResponse) => {
+      // Process found patents and their family IDs
+      const familyMap: { [key: string]: string[] } = {};
+      const foundPatents = new Set<string>();
+      
+      if (data.results && Array.isArray(data.results)) {
+        data.results.forEach(result => {
+          if (result.family_id) {
+            familyMap[result.patent_id] = [result.family_id];
+            foundPatents.add(result.patent_id);
+          }
+        });
+      }
+
+      // Find not found patents
+      const notFound = data.not_found || [];
+      
+      setFamilyPatents(familyMap);
+      setNotFoundPatents(notFound);
+      setIsSearching(false);
+    },
+    onError: (error) => {
+      console.error('Error searching patents:', error);
+      toast.error('Failed to validate patents');
+      setIsSearching(false);
     }
   });
 
@@ -279,16 +161,14 @@ const SavedPatentList = () => {
       if (response.data && Array.isArray(response.data.patentIds)) {
         const extractedIds: string[] = response.data.patentIds;
         
-        // Remove read patents filtering
-        const newIds = extractedIds.filter(id => {
-          const standardizedId = id.trim().toUpperCase();
-          return !patentIds.includes(standardizedId);
-        });
+        // Search patents in Unified Patents API
+        setIsSearching(true);
+        await searchPatentsMutation.mutateAsync(extractedIds);
         
-        if (newIds.length > 0) {
-          setPatentIds(prevIds => [...prevIds, ...newIds]);
+        if (extractedIds.length > 0) {
+          setPatentIds(extractedIds);
           setShowFolderModal(true);
-          toast.success(`Added ${newIds.length} new patents`);
+          toast.success(`Added ${extractedIds.length} new patents`);
         } else {
           toast.success('All patents from this file have already been added');
         }
@@ -316,19 +196,16 @@ const SavedPatentList = () => {
     }
   };
 
-  const handleFolderSelection = async (folderName: string, workfileName: string, filterReadPatents: boolean) => {
-    const idsToSave = patentIds.length > 0 ? patentIds : [inputValue.trim()];
-    
-    // Remove read status check
+  const handleFolderSelection = async (folderName: string, workfileName: string, filterDuplicates: boolean, filterFamily: boolean, foundPatentIds: string[]) => {
     const combinedFolderName = `${folderName}/${workfileName}`;
     savePatentMutation.mutate(
-      { ids: idsToSave, folderName: combinedFolderName },
+      { ids: foundPatentIds, folderName: combinedFolderName },
       {
         onSuccess: () => {
           localStorage.removeItem(getUserStorageKey(user?.id || ''));
           setPatentIds([]);
           setInputValue('');
-          toast.success(`Saved ${idsToSave.length} patents to ${folderName}`);
+          toast.success(`Saved ${foundPatentIds.length} patents to ${folderName}`);
         }
       }
     );
@@ -352,6 +229,12 @@ const SavedPatentList = () => {
 
   return (
     <div className="saved-patent-list">
+      {(savePatentMutation.isPending || isUploading || isSearching) && (
+        <Loader 
+          fullScreen={true} 
+          text={isUploading ? "Processing file..." : isSearching ? "Validating patents..." : "Saving patents..."} 
+        />
+      )}
       <h2>Save Patents</h2>
       {!user?.id && (
         <div className="login-notice">
@@ -403,7 +286,7 @@ const SavedPatentList = () => {
             className="file-upload-button"
             disabled={isUploading}
           >
-            {isUploading ? 'Processing...' : 'Upload File (.txt, .doc, .docx, .xls, .xlsx, .csv)'}
+            Upload File (.txt, .doc, .docx, .xls, .xlsx, .csv)
           </button>
           <div className="file-upload-info">
             <p>The system will extract patent IDs from the uploaded file</p>
@@ -437,7 +320,7 @@ const SavedPatentList = () => {
           disabled={savePatentMutation.isPending || (!inputValue.trim() && patentIds.length === 0)}
           className="submit-button"
         >
-          {savePatentMutation.isPending ? 'Saving...' : 'Save Patents'}
+          Save Patents
         </button>
       </form>
 
@@ -447,7 +330,8 @@ const SavedPatentList = () => {
         onSubmit={handleFolderSelection}
         existingFolders={existingFolders}
         patentIds={patentIds}
-        readPatents={readPatents}
+        familyPatents={familyPatents}
+        notFoundPatents={notFoundPatents}
       />
     </div>
   );

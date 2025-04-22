@@ -1,16 +1,14 @@
 import Claims from './Claims';
 import Description from './Description';
 import Figures from './Figures';
-// import FamilyMembers from './FamilyMembers';
 import PatentHighlighter from './PatentHighlighter';
 import { useState, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../Redux/hooks';
 import { fetchFullPatentDetails } from '../../Redux/slices/patentSlice';
 import './PatentDetails.scss';
 import { ApiSource } from '../../api/patents';
-// import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// import { faCog } from '@fortawesome/free-solid-svg-icons';
-// import { formatPatentId } from '../Patents/utils';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCog } from '@fortawesome/free-solid-svg-icons';
 
 interface PatentDetailsProps {
   title: string;
@@ -49,9 +47,7 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
   claims,
   description,
   figures,
-  familyMembers,
   patentId,
-  onPatentSelect,
   apiSource = 'unified',
   initialFetch = false
 }) => {
@@ -167,7 +163,14 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
       <div className="patent-header">
         <h3>{title}</h3>
         <div className="header-actions">
-          {/* Settings button removed - use the one in PatentSummaryList instead */}
+          <button 
+            className={`highlighter-toggle-button ${isHighlighterOpen ? 'active' : ''}`}
+            onClick={() => setIsHighlighterOpen(!isHighlighterOpen)}
+            title="Patent Highlighter Settings"
+            aria-label="Patent Highlighter Settings"
+          >
+            <FontAwesomeIcon icon={faCog} /> Highlighter
+          </button>
         </div>
         <ControlledPatentHighlighter 
           isOpen={isHighlighterOpen}
