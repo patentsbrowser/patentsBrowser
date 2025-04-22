@@ -47,9 +47,7 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
   claims,
   description,
   figures,
-  familyMembers,
   patentId,
-  onPatentSelect,
   apiSource = 'unified',
   initialFetch = false
 }) => {

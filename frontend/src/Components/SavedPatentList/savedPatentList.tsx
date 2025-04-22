@@ -24,10 +24,9 @@ interface CustomFolder {
 interface FolderSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (folderName: string, workfileName: string, filterReadPatents: boolean) => void;
+  onSubmit: (folderName: string, workfileName: string, filterDuplicates: boolean) => void;
   existingFolders: CustomFolder[];
   patentIds: string[];
-  readPatents: Set<string>;
 }
 
 const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
@@ -35,45 +34,81 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
   onClose,
   onSubmit,
   existingFolders,
-  patentIds,
-  readPatents
+  patentIds
 }) => {
   const [folderName, setFolderName] = useState('workfile');
   const [workfileName, setWorkfileName] = useState('workfile');
   const [selectedFolder, setSelectedFolder] = useState<CustomFolder | null>(null);
-  const [filterReadPatents, setFilterReadPatents] = useState(true);
+  const [filterDuplicates, setFilterDuplicates] = useState(true);
   const [filteredPatentIds, setFilteredPatentIds] = useState<string[]>(patentIds);
+  const [isFiltering, setIsFiltering] = useState(false);
+  const [allDuplicates, setAllDuplicates] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setFolderName('workfile');
       setWorkfileName('workfile');
       setSelectedFolder(null);
-      setFilterReadPatents(true);
+      setFilterDuplicates(true);
+      setAllDuplicates(false);
       updateFilteredPatents(true);
     }
-  }, [isOpen, patentIds, readPatents]);
+  }, [isOpen, patentIds]);
 
-  const updateFilteredPatents = (shouldFilter: boolean) => {
-    if (shouldFilter) {
-      setFilteredPatentIds(patentIds.filter(id => !readPatents.has(id.toUpperCase())));
-    } else {
-      setFilteredPatentIds(patentIds);
+  // Add new useEffect for automatic duplicate checking
+  useEffect(() => {
+    if (selectedFolder) {
+      updateFilteredPatents(filterDuplicates);
+    }
+  }, [selectedFolder, filterDuplicates]);
+
+  const updateFilteredPatents = async (shouldFilterDuplicates: boolean) => {
+    setIsFiltering(true);
+    try {
+      let filtered = [...patentIds];
+      
+      if (shouldFilterDuplicates && selectedFolder) {
+        // Get all patent IDs from the selected folder's workfiles
+        const existingPatents = new Set<string>();
+        selectedFolder.workFiles?.forEach(workFile => {
+          workFile.patentIds.forEach(id => existingPatents.add(id.toUpperCase()));
+        });
+        
+        // Filter out duplicates
+        filtered = filtered.filter(id => !existingPatents.has(id.toUpperCase()));
+      }
+      
+      setFilteredPatentIds(filtered);
+      setAllDuplicates(filtered.length === 0);
+    } finally {
+      setIsFiltering(false);
     }
   };
 
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDuplicateFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const shouldFilter = e.target.checked;
-    setFilterReadPatents(shouldFilter);
+    setFilterDuplicates(shouldFilter);
     updateFilteredPatents(shouldFilter);
+  };
+
+  const handleFolderSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const folder = existingFolders.find(f => f._id === e.target.value);
+    setSelectedFolder(folder || null);
+    setFolderName('');
+    if (folder) {
+      await updateFilteredPatents(filterDuplicates);
+    } else {
+      setAllDuplicates(false);
+      setFilteredPatentIds(patentIds);
+    }
   };
 
   const handleSubmit = () => {
     if (selectedFolder) {
       const finalWorkfileName = workfileName.trim() || `workfile${(selectedFolder.workFiles?.length || 0) + 1}`;
-      onSubmit(selectedFolder.name, finalWorkfileName, filterReadPatents);
+      onSubmit(selectedFolder.name, finalWorkfileName, filterDuplicates);
     } else if (folderName.trim()) {
-      onSubmit(folderName, workfileName, filterReadPatents);
+      onSubmit(folderName, workfileName, false);
     }
     onClose();
   };
@@ -91,28 +126,6 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
         <div className="modal-body">
           <div className="patent-ids-summary">
             <p>Found {patentIds.length} patent IDs to save</p>
-            {readPatents.size > 0 && (
-              <p className="read-patents-info">
-                ({patentIds.filter(id => readPatents.has(id.toUpperCase())).length} already read)
-              </p>
-            )}
-          </div>
-
-          <div className="filter-section">
-            <label className="filter-label">
-              <input
-                type="checkbox"
-                checked={filterReadPatents}
-                onChange={handleFilterChange}
-                className="filter-checkbox"
-              />
-              Filter out already read patents
-            </label>
-            {filterReadPatents && filteredPatentIds.length !== patentIds.length && (
-              <p className="filter-info">
-                Will save {filteredPatentIds.length} unread patents
-              </p>
-            )}
           </div>
 
           {existingFolders.length > 0 && (
@@ -121,11 +134,7 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
               <select
                 id="existing-folders"
                 value={selectedFolder?._id || ''}
-                onChange={(e) => {
-                  const folder = existingFolders.find(f => f._id === e.target.value);
-                  setSelectedFolder(folder || null);
-                  setFolderName('');
-                }}
+                onChange={handleFolderSelect}
                 className="folder-select"
               >
                 <option value="">Select a folder...</option>
@@ -135,6 +144,30 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+          
+          {selectedFolder && (
+            <div className="duplicate-filter-section">
+              <label className="filter-label">
+                <input
+                  type="checkbox"
+                  checked={filterDuplicates}
+                  onChange={handleDuplicateFilterChange}
+                  className="filter-checkbox"
+                  disabled={isFiltering}
+                />
+                Filter out patents that already exist in this folder
+              </label>
+              {isFiltering ? (
+                <p className="filter-info">Checking for duplicates...</p>
+              ) : allDuplicates ? (
+                <p className="filter-info error">All patents are already in this folder</p>
+              ) : filterDuplicates ? (
+                <p className="filter-info">
+                  Will save {filteredPatentIds.length} new patents
+                </p>
+              ) : null}
             </div>
           )}
           
@@ -177,7 +210,7 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
           <button 
             className="submit-button" 
             onClick={handleSubmit}
-            disabled={!selectedFolder && !folderName.trim()}
+            disabled={(!selectedFolder && !folderName.trim()) || (!!selectedFolder && allDuplicates)}
           >
             {selectedFolder ? 'Add to Folder' : 'Create Workfile'}
           </button>
@@ -203,7 +236,6 @@ const SavedPatentList = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [readPatents, setReadPatents] = useState<Set<string>>(new Set());
 
   // Fetch existing folders
   const { data: existingFolders = [], isLoading: isLoadingFolders } = useQuery<CustomFolder[]>({
@@ -317,10 +349,9 @@ const SavedPatentList = () => {
     }
   };
 
-  const handleFolderSelection = async (folderName: string, workfileName: string, filterReadPatents: boolean) => {
+  const handleFolderSelection = async (folderName: string, workfileName: string, filterDuplicates: boolean) => {
     const idsToSave = patentIds.length > 0 ? patentIds : [inputValue.trim()];
     
-    // Remove read status check
     const combinedFolderName = `${folderName}/${workfileName}`;
     savePatentMutation.mutate(
       { ids: idsToSave, folderName: combinedFolderName },
@@ -454,7 +485,6 @@ const SavedPatentList = () => {
         onSubmit={handleFolderSelection}
         existingFolders={existingFolders}
         patentIds={patentIds}
-        readPatents={readPatents}
       />
     </div>
   );
