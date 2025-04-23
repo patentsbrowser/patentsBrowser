@@ -100,20 +100,62 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
       }
 
       if (shouldFilterFamily && selectedFolder) {
-        const existingFamilyPatents = new Set<string>();
+        // First, collect all family IDs from existing patents in the folder
+        const existingFamilyIds = new Set<string>();
         selectedFolder.workFiles?.forEach(workFile => {
           workFile.patentIds.forEach(id => {
-            existingFamilyPatents.add(id.toUpperCase());
-            const familyIds = familyPatents[id.toUpperCase()] || [];
-            familyIds.forEach(familyId => existingFamilyPatents.add(familyId.toUpperCase()));
+            const upperPatentId = id.toUpperCase();
+            // Add the family ID of this patent if it exists
+            const familyId = familyPatents[upperPatentId]?.[0];
+            if (familyId) {
+              existingFamilyIds.add(familyId.toUpperCase());
+            }
           });
         });
 
+        // Create a map of family IDs for the current patent list
+        const currentFamilyIds = new Map<string, string>();
+        filtered.forEach(id => {
+          const upperPatentId = id.toUpperCase();
+          const familyId = familyPatents[upperPatentId]?.[0];
+          if (familyId) {
+            currentFamilyIds.set(upperPatentId, familyId.toUpperCase());
+          }
+        });
+
+        // Group patents by family ID
+        const familyGroups = new Map<string, string[]>();
+        currentFamilyIds.forEach((familyId, patentId) => {
+          if (!familyGroups.has(familyId)) {
+            familyGroups.set(familyId, []);
+          }
+          familyGroups.get(familyId)?.push(patentId);
+        });
+
+        // Filter out patents based on family relationships
         filtered = filtered.filter(id => {
-          const upperId = id.toUpperCase();
-          if (existingFamilyPatents.has(upperId)) return false;
-          const familyIds = familyPatents[upperId] || [];
-          return !familyIds.some(familyId => existingFamilyPatents.has(familyId.toUpperCase()));
+          const upperPatentId = id.toUpperCase();
+          const familyId = currentFamilyIds.get(upperPatentId);
+
+          // If no family ID, keep the patent
+          if (!familyId) return true;
+
+          // If family already exists in folder, filter out
+          if (existingFamilyIds.has(familyId)) return false;
+
+          // For new family groups, keep only the US patent or first patent if no US patent
+          const familyGroup = familyGroups.get(familyId);
+          if (familyGroup) {
+            // Prefer US patents
+            const usPatent = familyGroup.find(pid => pid.startsWith('US'));
+            if (usPatent) {
+              return upperPatentId === usPatent;
+            }
+            // If no US patent, keep the first one in the group
+            return upperPatentId === familyGroup[0];
+          }
+
+          return true;
         });
       }
       
