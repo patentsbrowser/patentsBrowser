@@ -113,6 +113,11 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
           });
         });
 
+        // Get user's preferred patent authorities
+        const preferredAuthorities = (localStorage.getItem('preferredPatentAuthority') || 'US WO EP GB FR DE CH JP RU SU')
+          .split(' ')
+          .map(auth => auth.toUpperCase());
+
         // Create a map of family IDs for the current patent list
         const currentFamilyIds = new Map<string, string>();
         filtered.forEach(id => {
@@ -143,16 +148,29 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
           // If family already exists in folder, filter out
           if (existingFamilyIds.has(familyId)) return false;
 
-          // For new family groups, keep only the US patent or first patent if no US patent
+          // For new family groups, keep only the preferred patent based on authority order
           const familyGroup = familyGroups.get(familyId);
           if (familyGroup) {
-            // Prefer US patents
-            const usPatent = familyGroup.find(pid => pid.startsWith('US'));
-            if (usPatent) {
-              return upperPatentId === usPatent;
-            }
-            // If no US patent, keep the first one in the group
-            return upperPatentId === familyGroup[0];
+            // Sort patents by preferred authority
+            const sortedPatents = [...familyGroup].sort((a, b) => {
+              const aCountry = a.slice(0, 2);
+              const bCountry = b.slice(0, 2);
+              const aIndex = preferredAuthorities.indexOf(aCountry);
+              const bIndex = preferredAuthorities.indexOf(bCountry);
+              
+              // If both countries are in preferences, use their order
+              if (aIndex !== -1 && bIndex !== -1) {
+                return aIndex - bIndex;
+              }
+              // If only one country is in preferences, prefer it
+              if (aIndex !== -1) return -1;
+              if (bIndex !== -1) return 1;
+              // If neither country is in preferences, keep original order
+              return 0;
+            });
+
+            // Keep only the most preferred patent from the family
+            return upperPatentId === sortedPatents[0];
           }
 
           return true;
