@@ -5,8 +5,10 @@ import { upload } from '../middleware/upload.js';
 import { User } from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import { generateOTP, sendOTP, storeOTP, verifyOTP, resendOTP } from '../services/otpService.js';
+import { AuthController } from '../controllers/authController';
 
 const router = express.Router();
+const authController = new AuthController();
 
 // Signup route
 router.post('/signup', async (req:any, res:any) => {
@@ -228,5 +230,9 @@ router.get('/check-admin', auth, checkAdminStatus);
 router.get('/profile', auth, getProfile);
 router.post('/update-profile', auth, updateProfile);
 router.post('/upload-image', auth, upload.single('profileImage'), uploadImage);
+
+// Google Authentication routes
+router.post('/google/login', authController.googleLogin);
+router.post('/set-password', auth, authController.setPassword);
 
 export default router; 
