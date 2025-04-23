@@ -40,68 +40,151 @@
 
 // Input field styles with high specificity
 .folder-selection-modal {
-  .new-folder-section,
-  .workfile-section {
-    margin-bottom: 20px;
-    padding: 0;
-    background: none !important;
-    border: none !important;
-    box-shadow: none !important;
+  .modal-body .modal-content-wrapper .main-content {
+    .existing-folders-section {
+      margin-bottom: 20px;
+      padding: 0;
+      background: none !important;
+      border: none !important;
+      box-shadow: none !important;
 
-    input.compact-input {
-      display: block;
-      width: 100%;
-      height: 44px;
-      padding: 0 16px;
-      margin: 0;
-      background-color: #0a0f1d !important;
-      color: #f8fafc !important;
-      border: 1px solid rgba(59, 130, 246, 0.1) !important;
-      border-radius: 6px !important;
-      font-family: 'SF Mono', 'Consolas', monospace !important;
-      font-size: 14px !important;
-      font-weight: 400 !important;
-      line-height: 44px !important;
-      letter-spacing: 0.02em !important;
-      appearance: none !important;
-      -webkit-appearance: none !important;
-      -moz-appearance: none !important;
-      outline: none !important;
-      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1) !important;
-      transition: all 0.2s ease !important;
-
-      &::placeholder {
-        color: #64748b !important;
-        opacity: 1 !important;
+      label {
+        display: block;
+        color: #e2e8f0 !important;
+        font-size: 14px;
+        font-weight: 600 !important;
+        margin-bottom: 8px;
+        user-select: none;
+        text-transform: none;
+        letter-spacing: 0;
       }
 
-      &:hover {
-        background-color: #131b2e !important;
-        border-color: rgba(59, 130, 246, 0.2) !important;
-      }
+      select.folder-select {
+        display: block !important;
+        // width: 100% !important;
+        width: 535px !important;
+        height: 44px !important;
+        padding: 0 16px !important;
+        margin: 0 !important;
+        background-color: #0a0f1d !important;
+        color: #f8fafc !important;
+        border: 1px solid rgba(59, 130, 246, 0.1) !important;
+        border-radius: 6px !important;
+        font-family: "SF Mono", "Consolas", monospace !important;
+        font-size: 14px !important;
+        font-weight: 400 !important;
+        line-height: 44px !important;
+        letter-spacing: 0.02em !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        outline: none !important;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+        transition: all 0.2s ease !important;
+        cursor: pointer !important;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 10px center !important;
+        background-size: 16px !important;
+        padding-right: 35px !important;
 
-      &:focus {
-        background-color: #131b2e !important;
-        border-color: rgba(59, 130, 246, 0.3) !important;
-        box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3), inset 0 1px 2px rgba(0, 0, 0, 0.2) !important;
-      }
+        &::placeholder {
+          color: #64748b !important;
+          opacity: 1 !important;
+        }
 
-      &:disabled {
-        background-color: rgba(15, 23, 42, 0.5) !important;
-        cursor: not-allowed !important;
-        opacity: 0.7 !important;
+        &:hover {
+          background-color: #131b2e !important;
+          border-color: rgba(59, 130, 246, 0.2) !important;
+        }
+
+        &:focus {
+          background-color: #131b2e !important;
+          border-color: rgba(59, 130, 246, 0.3) !important;
+          box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3),
+            inset 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+        }
+
+        &:disabled {
+          background-color: rgba(15, 23, 42, 0.5) !important;
+          cursor: not-allowed !important;
+          opacity: 0.7 !important;
+        }
+
+        option {
+          background-color: #0a0f1d !important;
+          color: #f8fafc !important;
+          padding: 8px 12px !important;
+          font-family: "SF Mono", "Consolas", monospace !important;
+        }
       }
     }
 
-    label {
-      display: block;
-      color: #e2e8f0 !important;
-      font-size: 14px;
-      font-weight: 600 !important;
-      margin-bottom: 8px;
-      user-select: none;
-      text-transform: none;
-      letter-spacing: 0;
+    .new-folder-section,
+    .workfile-section {
+      margin-bottom: 20px;
+      padding: 0;
+      background: none !important;
+      border: none !important;
+      box-shadow: none !important;
+
+      label {
+        display: block;
+        color: #e2e8f0 !important;
+        font-size: 14px;
+        font-weight: 600 !important;
+        margin-bottom: 8px;
+        user-select: none;
+        text-transform: none;
+        letter-spacing: 0;
+      }
+
+      input.compact-input {
+        display: block;
+        // width: 100%;
+        width: 500px;
+        height: 44px;
+        padding: 0 16px;
+        margin: 0;
+        background-color: #0a0f1d !important;
+        color: #f8fafc !important;
+        border: 1px solid rgba(59, 130, 246, 0.1) !important;
+        border-radius: 6px !important;
+        font-family: "SF Mono", "Consolas", monospace !important;
+        font-size: 14px !important;
+        font-weight: 400 !important;
+        line-height: 44px !important;
+        letter-spacing: 0.02em !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        outline: none !important;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+        transition: all 0.2s ease !important;
+
+        &::placeholder {
+          color: #64748b !important;
+          opacity: 1 !important;
+        }
+
+        &:hover {
+          background-color: #131b2e !important;
+          border-color: rgba(59, 130, 246, 0.2) !important;
+        }
+
+        &:focus {
+          background-color: #131b2e !important;
+          border-color: rgba(59, 130, 246, 0.3) !important;
+          box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3),
+            inset 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+        }
+
+        &:disabled {
+          background-color: rgba(15, 23, 42, 0.5) !important;
+          cursor: not-allowed !important;
+          opacity: 0.7 !important;
+        }
+      }
     }
   }
 
@@ -212,12 +295,12 @@
     display: flex;
     flex: 1;
     overflow: hidden;
-    
+
     .modal-content-wrapper {
       display: flex;
       width: 100%;
       height: 100%;
-      
+
       .main-content {
         flex: 1;
         padding: 2rem;
@@ -225,7 +308,7 @@
         display: flex;
         flex-direction: column;
         background: var(--primary-bg);
-        
+
         .patent-ids-summary {
           background: var(--secondary-bg);
           border-radius: 12px;
@@ -269,44 +352,111 @@
 
         .form-sections {
           flex: 1;
-          
+
           .existing-folders-section,
           .new-folder-section,
           .workfile-section {
-            margin-bottom: 1rem;
-            padding: 0.5rem 0;
-            position: relative;
-          }
-        }
+            margin-bottom: 24px;
+            padding: 20px;
+            background: rgba(15, 23, 42, 0.3);
+            border-radius: 8px;
+            border: 1px solid rgba(59, 130, 246, 0.1);
 
-        // Remove any other .new-folder-section, .workfile-section styles that might be conflicting
-        .form-sections {
-          .new-folder-section,
-          .workfile-section {
-            all: unset;  // Reset any styles that might be coming from this selector
-            display: block;  // Restore display property
+            label {
+              display: block;
+              color: #e2e8f0 !important;
+              font-size: 14px;
+              font-weight: 600 !important;
+              margin-bottom: 12px;
+              user-select: none;
+              text-transform: none;
+              letter-spacing: 0;
+            }
+
+            select.folder-select {
+              display: block;
+              width: 535px !important;
+              height: 44px;
+              padding: 0 16px;
+              margin: 0;
+              background-color: #0a0f1d !important;
+              color: #f8fafc !important;
+              border: 1px solid rgba(59, 130, 246, 0.1) !important;
+              border-radius: 6px !important;
+              font-family: "SF Mono", "Consolas", monospace !important;
+              font-size: 14px !important;
+              font-weight: 400 !important;
+              line-height: 44px !important;
+              letter-spacing: 0.02em !important;
+              appearance: none !important;
+              -webkit-appearance: none !important;
+              -moz-appearance: none !important;
+              outline: none !important;
+              box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+              transition: all 0.2s ease !important;
+              cursor: pointer;
+              background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+              background-repeat: no-repeat !important;
+              background-position: right 10px center !important;
+              background-size: 16px !important;
+              padding-right: 35px !important;
+
+              &::placeholder {
+                color: #64748b !important;
+                opacity: 1 !important;
+              }
+
+              &:hover {
+                background-color: #131b2e !important;
+                border-color: rgba(59, 130, 246, 0.2) !important;
+              }
+
+              &:focus {
+                background-color: #131b2e !important;
+                border-color: rgba(59, 130, 246, 0.3) !important;
+                box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3),
+                  inset 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+              }
+
+              &:disabled {
+                background-color: rgba(15, 23, 42, 0.5) !important;
+                cursor: not-allowed !important;
+                opacity: 0.7 !important;
+              }
+
+              option {
+                background-color: #0a0f1d !important;
+                color: #f8fafc !important;
+                padding: 8px 12px !important;
+                font-family: "SF Mono", "Consolas", monospace !important;
+              }
+            }
           }
         }
 
         // Dark theme specific overrides
         [data-theme="dark"] & {
+          .existing-folders-section,
           .new-folder-section,
           .workfile-section {
-            background: rgba(31, 41, 55, 0.5);
-
-            input.compact-input {
+            select.folder-select {
               background: var(--secondary-bg);
-              border-color: rgba(55, 65, 81, 0.8);
+              border-color: var(--border-color);
               color: var(--text-color);
 
               &:hover:not(:disabled),
               &:focus {
-                background: var(--secondary-bg);
+                background: var(--hover-bg);
                 border-color: var(--accent-color);
               }
 
               &:focus {
                 box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+              }
+
+              option {
+                background-color: var(--secondary-bg);
+                color: var(--text-color);
               }
             }
           }
@@ -398,7 +548,7 @@
               input {
                 height: 42px;
                 padding: 0 1rem;
-                font-family: 'SF Mono', 'Consolas', monospace;
+                font-family: "SF Mono", "Consolas", monospace;
                 font-size: 0.9375rem;
                 border: 1px solid var(--border-color);
                 border-radius: 6px;
@@ -508,43 +658,81 @@
     }
 
     .modal-body {
-      .main-content {
-        .patent-ids-summary {
-          background: #1f2937;
-        }
+      .modal-content-wrapper {
+        .main-content {
+          .existing-folders-section {
+            select.folder-select {
+              background-color: #0a0f1d !important;
+              color: #f8fafc !important;
+              border: 1px solid rgba(59, 130, 246, 0.1) !important;
 
-        .compact-input {
-          background: #111827;
-          border-color: #374151;
-          color: #f3f4f6;
+              &:hover:not(:disabled) {
+                background-color: #131b2e !important;
+                border-color: rgba(59, 130, 246, 0.2) !important;
+              }
 
-          &::placeholder {
-            color: #9ca3af;
+              &:focus {
+                background-color: #131b2e !important;
+                border-color: rgba(59, 130, 246, 0.3) !important;
+                box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3),
+                  inset 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+              }
+
+              &:disabled {
+                background-color: rgba(15, 23, 42, 0.5) !important;
+                opacity: 0.7 !important;
+              }
+
+              option {
+                background-color: #0a0f1d !important;
+                color: #f8fafc !important;
+                padding: 8px 12px !important;
+              }
+            }
+
+            label {
+              color: #e2e8f0 !important;
+            }
           }
 
-          &:focus {
-            border-color: #3b82f6;
-          }
-
-          &:disabled {
+          .patent-ids-summary {
             background: #1f2937;
           }
-        }
-      }
 
-      .not-found-section {
-        background: #1f2937;
-
-        .not-found-item {
-          background: #1f2937;
-
-          input {
-            background: #1f2937;
+          .compact-input {
+            background: #111827;
             border-color: #374151;
             color: #f3f4f6;
+            width: 500px;
 
             &::placeholder {
               color: #9ca3af;
+            }
+
+            &:focus {
+              border-color: #3b82f6;
+            }
+
+            &:disabled {
+              background: #1f2937;
+            }
+          }
+        }
+
+        .not-found-section {
+          background: #1f2937;
+
+          .not-found-item {
+            background: #1f2937;
+
+            input {
+              background: #1f2937;
+              border-color: #374151;
+              color: #f3f4f6;
+
+              &::placeholder {
+                color: #9ca3af;
+              }
             }
           }
         }
@@ -565,4 +753,4 @@
       }
     }
   }
-} 
+}
