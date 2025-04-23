@@ -223,7 +223,7 @@ export const patentApi = {
   },
 
   // New method for searching multiple patents using Unified Patents API
-  searchMultiplePatentsUnified: async (patentNumbers: string[], searchType: 'direct' | 'smart' = 'direct'): Promise<any> => {
+  searchMultiplePatentsUnified: async (patentNumbers: string[], searchType: 'smart' | 'direct' = 'smart') => {
     let payload;
     
     if (searchType === 'smart') {
@@ -231,17 +231,15 @@ export const patentApi = {
       payload = {
         query: {
           bool: {
-            // must: [
-            //   {
-            //     wildcard: {
-            //       publication_type: "g*"
-            //     }
-            //   }
-            // ],
             should: [
               {
                 terms: {
                   ucid_spif: patentNumbers
+                }
+              },
+              {
+                terms: {
+                  publication_number: patentNumbers
                 }
               }
             ],
@@ -270,19 +268,19 @@ export const patentApi = {
       payload = {
         query: {
           bool: {
-            must: [
+            should: [
               {
                 terms: {
                   ucid_spif: patentNumbers
                 }
               },
-              // {
-              //   wildcard: {
-              //     publication_type: "g*"
-              //   }
-              // }
-              // Removed wildcard as per user's changes
-            ]
+              {
+                terms: {
+                  publication_number: patentNumbers
+                }
+              }
+            ],
+            minimum_should_match: 1
           }
         },
         size: 20,
@@ -297,7 +295,7 @@ export const patentApi = {
             "created_at", "updated_at", "id", "*.created_at", "*.updated_at",
             "*.id", "patent_id", "patent.title",
             "*.full_text", "citations_npl", "citations_pat",
-            , "abstract_fulltext",
+            "abstract_fulltext",
             "non_patent_citations"
           ]
         }
