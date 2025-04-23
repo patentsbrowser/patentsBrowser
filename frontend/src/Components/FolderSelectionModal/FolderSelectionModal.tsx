@@ -364,7 +364,7 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
               </div>
             </div>
 
-            {notFoundPatents.length > 0 && showNotFound && (
+            {notFoundPatents.length > 0 && showNotFound ? (
               <div className="not-found-section">
                 <div className="not-found-header">
                   <h4>Patents Not Found in Database</h4>
@@ -409,6 +409,26 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
                         >
                           {editingPatents.has(id) ? '✓' : editedPatents[id] && editedPatents[id] !== id ? '↺' : '✎'}
                         </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="not-found-section">
+                <div className="not-found-header">
+                  <h4>Found Patents in Database</h4>
+                </div>
+                <div className="not-found-list">
+                  {patentIds.filter(id => !notFoundPatents.includes(id)).map((id, index) => (
+                    <div key={index} className="not-found-item">
+                      <div className="patent-id-edit">
+                        <input
+                          type="text"
+                          value={id}
+                          readOnly
+                          className="patent-id-input"
+                        />
                       </div>
                     </div>
                   ))}
