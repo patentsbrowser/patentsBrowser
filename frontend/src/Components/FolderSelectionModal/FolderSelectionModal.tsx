@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './FolderSelectionModal.scss';
 import { toast } from 'react-hot-toast';
 import { patentApi } from '../../api/patents';
+import { normalizePatentIds } from '../../utils/patentUtils';
 
 interface WorkFile {
   name: string;
@@ -26,6 +27,7 @@ interface FolderSelectionModalProps {
   patentIds: string[];
   familyPatents?: { [key: string]: string[] };
   notFoundPatents?: string[];
+  setNotFoundPatents: (patents: string[]) => void;
 }
 
 interface PatentSearchResult {
@@ -45,7 +47,8 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
   existingFolders,
   patentIds,
   familyPatents = {},
-  notFoundPatents = []
+  notFoundPatents = [],
+  setNotFoundPatents
 }) => {
   const [folderName, setFolderName] = useState('workfile');
   const [workfileName, setWorkfileName] = useState('workfile');
@@ -178,40 +181,89 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
     }
   };
 
+  const handleParsePatents = () => {
+    const updatedPatents: { [key: string]: string } = {};
+    const newEditingPatents = new Set<string>();
+    
+    notFoundPatents.forEach(id => {
+      const currentValue = editedPatents[id] || id;
+      const normalized = normalizePatentIds(currentValue);
+      if (normalized.length > 0) {
+        const newValue = normalized[0] as string; // Type assertion since we know it's a string
+        console.log(`Patent ID changed: ${currentValue} -> ${newValue}`);
+        updatedPatents[id] = newValue;
+        newEditingPatents.add(id); // Automatically add to editing mode
+      }
+    });
+
+    // Update the edited patents state
+    setEditedPatents(prev => {
+      const newState = {
+        ...prev,
+        ...updatedPatents
+      };
+      console.log('All patent changes:', newState);
+      return newState;
+    });
+
+    // Set all parsed patents to editing mode automatically
+    setEditingPatents(newEditingPatents);
+
+    // Show success message
+    toast.success(`${Object.keys(updatedPatents).length} patent IDs parsed successfully`);
+  };
+
   const handleSubmitCorrections = async () => {
     setIsSubmittingCorrections(true);
     try {
-      // Get all edited patent IDs that have been changed
+      // Get all edited patent IDs that have been parsed/changed
       const correctedPatents = Object.entries(editedPatents)
-        .filter(([originalId, newId]) => originalId !== newId && newId.trim() !== '')
+        .filter(([originalId, newId]) => newId.trim() !== '') // Include all parsed patents
         .map(([_, newId]) => newId.trim());
 
+      console.log('Submitting corrections for:', correctedPatents);
+
       if (correctedPatents.length === 0) {
+        toast.error('No changes to submit');
         return;
       }
 
       // Call the search API with corrected patents
-      const response = await patentApi.searchPatentsForValidation(correctedPatents);
+      const response = await patentApi.searchPatentsForValidation(correctedPatents) as PatentSearchResponse;
       
       if (response.results && Array.isArray(response.results)) {
         // Update the found and not found lists
         const newFoundPatents = response.results.map((result: PatentSearchResult) => result.patent_id);
         const stillNotFound = correctedPatents.filter(id => !newFoundPatents.includes(id));
         
+        console.log('API Response:', {
+          newFoundPatents,
+          stillNotFound
+        });
+
         // Update the filtered patents list with newly found patents
         setFilteredPatentIds(prev => [...prev, ...newFoundPatents]);
+
+        // Remove all successfully parsed patents from notFoundPatents list
+        const updatedNotFoundPatents = notFoundPatents.filter(id => {
+          const correctedId = editedPatents[id];
+          // Keep only patents that weren't parsed or were parsed but still not found
+          return !correctedId || stillNotFound.includes(correctedId);
+        });
+        setNotFoundPatents(updatedNotFoundPatents);
         
-        // Clear the edited status for successfully found patents
+        // Clear the edited status for all parsed patents that were found
         const updatedEditedPatents = { ...editedPatents };
-        newFoundPatents.forEach((foundId: string) => {
-          const originalId = Object.keys(editedPatents).find(key => editedPatents[key] === foundId);
-          if (originalId) {
+        Object.keys(editedPatents).forEach(originalId => {
+          const correctedId = editedPatents[originalId];
+          if (newFoundPatents.includes(correctedId)) {
             delete updatedEditedPatents[originalId];
           }
         });
         setEditedPatents(updatedEditedPatents);
+        setEditingPatents(new Set());
         
-        // Show success message
+        // Show success message with updated counts
         if (newFoundPatents.length > 0) {
           toast.success(`Found ${newFoundPatents.length} corrected patents`);
         }
@@ -368,15 +420,24 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
               <div className="not-found-section">
                 <div className="not-found-header">
                   <h4>Patents Not Found in Database</h4>
-                  {Object.keys(editedPatents).length > 0 && (
+                  <div className="header-actions">
                     <button
-                      className="submit-corrections-button"
-                      onClick={handleSubmitCorrections}
-                      disabled={isSubmittingCorrections}
+                      className="parse-button"
+                      onClick={handleParsePatents}
+                      type="button"
                     >
-                      {isSubmittingCorrections ? 'Submitting...' : 'Submit Corrections'}
+                      Parse IDs
                     </button>
-                  )}
+                    {Object.keys(editedPatents).length > 0 && (
+                      <button
+                        className="submit-corrections-button"
+                        onClick={handleSubmitCorrections}
+                        disabled={isSubmittingCorrections}
+                      >
+                        {isSubmittingCorrections ? 'Submitting...' : 'Submit Corrections'}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="not-found-list">
                   {notFoundPatents.map((id, index) => (
@@ -391,24 +452,6 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
                           placeholder="Enter correct patent ID"
                           readOnly={!editingPatents.has(id)}
                         />
-                        <button 
-                          className={`edit-button ${editingPatents.has(id) ? 'editing' : ''}`}
-                          onClick={() => {
-                            if (editingPatents.has(id) && editedPatents[id] === id) {
-                              // If we're in edit mode but no changes, just exit edit mode
-                              toggleEdit(id);
-                            } else if (editingPatents.has(id)) {
-                              // If we're in edit mode and there are changes, save changes
-                              toggleEdit(id);
-                            } else {
-                              // Enter edit mode
-                              toggleEdit(id);
-                            }
-                          }}
-                          title={editingPatents.has(id) ? 'Save' : 'Edit'}
-                        >
-                          {editingPatents.has(id) ? '✓' : editedPatents[id] && editedPatents[id] !== id ? '↺' : '✎'}
-                        </button>
                       </div>
                     </div>
                   ))}

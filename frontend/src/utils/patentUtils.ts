@@ -101,4 +101,57 @@ export const filterPatentsByFamilyId = (patents: any[], isUnifiedSearch: boolean
   }
 
   return filteredPatents;
-}; 
+};
+
+// export function normalizePatentIds(rawText: string): string[] {
+//   const regexCompact = /^([A-Z]{2})(\d+)([A-Z]\d?)$/;
+//   const regexFormatted = /^([A-Z]{2})-(\d+)-([A-Z]\d?)$/;
+
+//   // Split on common delimiters: comma, semicolon, newline, tab, space, or pipe
+//   const rawIds = rawText.split(/[\s,;|\n\r\t]+/).map(id => id.trim()).filter(Boolean);
+
+//   const normalized = rawIds.map(id => {
+//     if (regexFormatted.test(id)) {
+//       return id; // Already in normalized format
+//     }
+
+//     const match = id.match(regexCompact);
+//     if (match) {
+//       const [, country, number, kind] = match;
+//       return `${country}-${number}-${kind}`;
+//     }
+
+//     console.warn(`Skipping unrecognized ID: ${id}`);
+//     return null;
+//   });
+
+//   // Remove nulls and duplicates
+//   return [...new Set(normalized.filter((id): id is string => id !== null))];
+// }
+export function normalizePatentIds(rawText: any) {
+    const regexCompact = /^([A-Z]{2,3})(\d+)([A-Z]+\d*)$/;
+    const regexFormatted = /^([A-Z]{2,3})-(\d+)-([A-Z]+\d*)$/;
+  
+    const rawIds = rawText
+      .split(/[\s,;|\n\r\t]+/)
+      .map((id: any) => id.replace(/\(.*?\)/g, '').trim())
+      .filter(Boolean);
+  
+    const normalized = rawIds.map((id: any) => {
+      if (regexFormatted.test(id)) {
+        return id;
+      }
+  
+      const match = id.match(regexCompact);
+      if (match) {
+        const [, country, number, kind] = match;
+        return `${country}-${number}-${kind}`;
+      }
+  
+      console.warn(`Skipping unrecognized ID: ${id}`);
+      return null;
+    });
+  
+    return [...new Set(normalized.filter(Boolean))];
+  }
+  

@@ -184,15 +184,25 @@ const SavedPatentList = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (inputValue.trim()) {
       addPatentId();
     }
     
-    if (patentIds.length > 0 || inputValue.trim()) {
-      setShowFolderModal(true);
+    if (patentIds.length > 0) {
+      setIsSearching(true);
+      try {
+        // Search patents in Unified Patents API
+        await searchPatentsMutation.mutateAsync(patentIds);
+        setShowFolderModal(true);
+      } catch (error) {
+        console.error('Error validating patents:', error);
+        toast.error('Failed to validate patents. Please try again.');
+      } finally {
+        setIsSearching(false);
+      }
     }
   };
 
@@ -320,7 +330,7 @@ const SavedPatentList = () => {
           disabled={savePatentMutation.isPending || (!inputValue.trim() && patentIds.length === 0)}
           className="submit-button"
         >
-          Save Patents
+          Proceed
         </button>
       </form>
 
@@ -332,6 +342,7 @@ const SavedPatentList = () => {
         patentIds={patentIds}
         familyPatents={familyPatents}
         notFoundPatents={notFoundPatents}
+        setNotFoundPatents={setNotFoundPatents}
       />
     </div>
   );
