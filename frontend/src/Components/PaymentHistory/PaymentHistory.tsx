@@ -202,7 +202,17 @@ const PaymentHistory: React.FC = () => {
       ) : error ? (
         <div className="error-message">{error}</div>
       ) : paymentHistory.length === 0 ? (
-        <div className="empty-message">No payment history available.</div>
+        <div className="empty-state">
+          <div className="book-icon">
+            <div className="book-cover">
+              <div className="book-page"></div>
+              <div className="book-page"></div>
+              <div className="book-page"></div>
+            </div>
+          </div>
+          <h3>No Payment Records Found</h3>
+          <p>Your payment history is currently empty. Any payments you make will appear here.</p>
+        </div>
       ) : (
         <>
           <div className="payment-list">

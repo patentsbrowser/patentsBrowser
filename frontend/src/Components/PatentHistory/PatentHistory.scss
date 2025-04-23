@@ -36,14 +36,21 @@
     .patent-search-input {
       width: 100%;
       padding: 0.75rem;
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
       background-color: var(--input-bg);
       color: var(--text-color);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
       
       &:focus {
         outline: none;
         border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px var(--accent-light);
+      }
+
+      &::placeholder {
+        color: var(--text-secondary);
       }
     }
   }
@@ -61,6 +68,8 @@
       border: 1px solid var(--border-color);
       border-radius: 6px;
       overflow: hidden;
+      background: var(--card-bg, #fff);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       
       .date-header {
         display: flex;
@@ -69,6 +78,7 @@
         background-color: var(--secondary-bg);
         cursor: pointer;
         transition: background-color 0.2s ease;
+        border-bottom: 1px solid var(--border-color);
         
         &:hover {
           background-color: var(--hover-bg);
@@ -172,9 +182,11 @@
           border-top: 1px solid var(--border-color);
           cursor: pointer;
           transition: background-color 0.2s ease;
+          background-color: var(--card-bg, #fff);
+          border-bottom: 1px solid var(--border-color) !important;
           
           &:hover {
-            background-color: var(--hover-bg);
+            background-color: var(--hover-bg) !important;
           }
           
           .patent-id {
@@ -188,8 +200,8 @@
           }
           
           .source-tag {
-            background-color: var(--accent-color);
-            color: white;
+            background-color: var(--accent-light);
+            color: var(--accent-color);
             padding: 0.25rem 0.5rem;
             border-radius: 4px;
             font-size: 0.8rem;
@@ -270,4 +282,60 @@
       }
     }
   }
+}
+
+.empty-message {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: var(--card-bg, #fff);
+  border-radius: 8px;
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.24);
+  position: relative;
+  margin: 2rem auto;
+  max-width: 600px;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--accent-color);
+    border-radius: 4px 0 0 4px;
+  }
+
+  &::after {
+    content: '📚';
+    display: block;
+    font-size: 2.5rem;
+    margin: 1rem 0;
+  }
+}
+
+:root {
+  // Light theme
+  --card-bg: #ffffff;
+  --border-color: #e0e0e0;
+  --text-color: #333333;
+  --text-secondary: #666666;
+  --accent-color: #1976d2;
+  --accent-light: #e3f2fd;
+  --hover-bg: #f5f5f5;
+  --secondary-bg: #f8f9fa;
+  --input-bg: #ffffff;
+}
+
+[data-theme="dark"] {
+  --card-bg: #2d2d2d;
+  --border-color: #404040;
+  --text-color: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --accent-color: #64b5f6;
+  --accent-light: rgba(100, 181, 246, 0.2);
+  --hover-bg: #363636;
+  --secondary-bg: #333333;
+  --input-bg: #2d2d2d;
 } 
