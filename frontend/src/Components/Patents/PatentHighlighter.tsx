@@ -14,7 +14,7 @@ import {
   faPlus,
   faSlidersH,
   faCode,
-
+  faHighlighter,
 } from "@fortawesome/free-solid-svg-icons";
 import "./PatentHighlighter.scss";
 
@@ -122,6 +122,102 @@ const PREDEFINED_SETS: PredefinedSets = {
   },
 };
 
+// Add ColorPickerHighlighter interface
+interface ColorPickerHighlighterProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onHighlight: (rules: { rule: string; color: string }[]) => void;
+}
+
+// Add ColorPickerHighlighter component
+const ColorPickerHighlighter: React.FC<ColorPickerHighlighterProps> = ({
+  isOpen,
+  onClose,
+  onHighlight,
+}) => {
+  const [rules, setRules] = useState<{ rule: string; color: string }[]>([{ rule: "", color: "#ffeb3b" }]);
+  const defaultColors = ["#ffeb3b", "#a5d6a7", "#90caf9", "#f48fb1", "#ffe082", "#b39ddb", "#80cbc4"];
+
+  const addRule = () => {
+    setRules([...rules, { 
+      rule: "", 
+      color: defaultColors[Math.floor(Math.random() * defaultColors.length)] 
+    }]);
+  };
+
+  const removeRule = (index: number) => {
+    setRules(rules.filter((_, i) => i !== index));
+  };
+
+  const updateRule = (index: number, rule: string) => {
+    const newRules = [...rules];
+    newRules[index].rule = rule;
+    setRules(newRules);
+  };
+
+  const updateColor = (index: number, color: string) => {
+    const newRules = [...rules];
+    newRules[index].color = color;
+    setRules(newRules);
+  };
+
+  const handleHighlight = () => {
+    const validRules = rules.filter(r => r.rule.trim());
+    onHighlight(validRules);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      <div className="patent-highlighter-backdrop" onClick={onClose} />
+      <div className="color-picker-highlighter">
+        <div className="color-picker-header">
+          <h2>
+            Color Highlighter
+            <button className="close-button" onClick={onClose}>×</button>
+          </h2>
+        </div>
+
+        <div className="color-picker-content">
+          <div className="rules-container">
+            {rules.map((rule, index) => (
+              <div key={index} className="rule-box">
+                <textarea
+                  placeholder="e.g. ((monitoring or event) 5D (sensor or data)) or (monitor+ or event)"
+                  value={rule.rule}
+                  onChange={(e) => updateRule(index, e.target.value)}
+                />
+                <input
+                  type="color"
+                  className="color-picker"
+                  value={rule.color}
+                  onChange={(e) => updateColor(index, e.target.value)}
+                />
+                <button 
+                  className="remove-btn"
+                  onClick={() => removeRule(index)}
+                >
+                  <FontAwesomeIcon icon={faTimes} />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="color-picker-controls">
+            <button className="add-rule-btn" onClick={addRule}>
+              <FontAwesomeIcon icon={faPlus} /> Add Rule
+            </button>
+            <button className="highlight-btn" onClick={handleHighlight}>
+              <FontAwesomeIcon icon={faHighlighter} /> Highlight
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
 /**
  * PatentHighlighter component - highlights search terms in patent details
  */
@@ -194,6 +290,8 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
   ];
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const proximityFirstTermRef = useRef<HTMLInputElement>(null);
+
+  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
 
   // Add a term to the proximity search list
   const addTermToProximitySearch = () => {
@@ -1236,6 +1334,21 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
     localStorage.setItem('patent_highlighter_formulas', JSON.stringify(formulaSearches));
   }, [formulaSearches]);
 
+  // Add color picker highlight handler
+  const handleColorPickerHighlight = (rules: { rule: string; color: string }[]) => {
+    // Clear existing highlights first
+    clearHighlights();
+
+    // Add each rule as a formula search
+    const newFormulaSearches = rules.map(({ rule, color }) => ({
+      formula: rule,
+      color: color
+    }));
+
+    setFormulaSearches(newFormulaSearches);
+    setIsColorPickerOpen(false);
+  };
+
   // Modify the return statement to show subscription error
   return isOpen ? (
     <>
@@ -1244,7 +1357,15 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
         <div className="patent-highlighter-header">
           <h2>
             Patent Highlighter
-            <button className="close-button" onClick={onClose}>×</button>
+            <div className="header-controls">
+              <button 
+                className="color-picker-btn"
+                onClick={() => setIsColorPickerOpen(true)}
+              >
+                <FontAwesomeIcon icon={faHighlighter} />
+              </button>
+              <button className="close-button" onClick={onClose}>×</button>
+            </div>
           </h2>
         </div>
 
@@ -1448,6 +1569,12 @@ const PatentHighlighter: React.FC<PatentHighlighterProps> = ({
           )}
         </div>
       </div>
+      
+      <ColorPickerHighlighter
+        isOpen={isColorPickerOpen}
+        onClose={() => setIsColorPickerOpen(false)}
+        onHighlight={handleColorPickerHighlight}
+      />
     </>
   ) : null;
 };
