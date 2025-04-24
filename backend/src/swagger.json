@@ -7,11 +7,11 @@
   },
   "servers": [
     {
-      "url": "http://localhost:5000/api",
+      "url": "http://localhost:5000",
       "description": "Local development server"
     },
     {
-      "url": "https://api.patentsbrowser.com/api",
+      "url": "https://api.patentsbrowser.com",
       "description": "Production server"
     }
   ],
@@ -47,6 +47,10 @@
           "isEmailVerified": {
             "type": "boolean",
             "description": "Whether the user's email is verified"
+          },
+          "needsPasswordSetup": {
+            "type": "boolean",
+            "description": "Whether the user needs to set up a password"
           }
         }
       },
@@ -166,6 +170,145 @@
           },
           "400": {
             "description": "User already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/google-login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Login with Google",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["token"],
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "description": "Google OAuth token"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Login successful"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "token": {
+                          "type": "string",
+                          "description": "JWT token for authentication"
+                        },
+                        "user": {
+                          "$ref": "#/components/schemas/User"
+                        },
+                        "isNewUser": {
+                          "type": "boolean",
+                          "description": "Whether this is a new user"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/set-password": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Set password for Google-authenticated user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userId", "password"],
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "description": "User's ID"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "New password to set"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password set successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Password set successfully"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
@@ -481,6 +624,75 @@
         }
       }
     },
+    "/auth/upload-image": {
+      "post": {
+        "tags": ["User"],
+        "summary": "Upload user profile image",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "profileImage": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "User's profile image"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Image uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Image uploaded successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "imageUrl": {
+                          "type": "string",
+                          "description": "URL of the uploaded image"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/patents/search": {
       "get": {
         "tags": ["Patents"],
@@ -723,6 +935,85 @@
                     "message": {
                       "type": "string",
                       "example": "Patents saved successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "folderId": {
+                          "type": "string",
+                          "description": "ID of the created folder"
+                        },
+                        "savedPatents": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Patent"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/saved-patents/extract-from-file": {
+      "post": {
+        "tags": ["Saved Patents"],
+        "summary": "Extract patents from uploaded file",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "patentFile": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "File containing patent data"
+                  },
+                  "folderName": {
+                    "type": "string",
+                    "description": "Name of the folder to save patents in"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Patents extracted and saved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Patents extracted and saved successfully"
                     },
                     "data": {
                       "type": "object",
