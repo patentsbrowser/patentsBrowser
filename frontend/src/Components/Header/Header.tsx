@@ -7,6 +7,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi } from '../../api/auth';
 import LogoutModal from '../Modal/LogoutModal';
+import ChangePassword from '../ChangePassword/ChangePassword';
 import ModeSwitcher from './ModeSwitcher';
 import { useAdmin } from '../../context/AdminContext';
 
@@ -21,6 +22,7 @@ const Header = () => {
   const { theme, toggleTheme } = useTheme();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -155,9 +157,15 @@ const Header = () => {
                 <Link to="/auth/profile" className="dropdown-item" onClick={() => setShowDropdown(false)}>
                   Profile
                 </Link>
-                <Link to="/auth/payment-history" className="dropdown-item" onClick={() => setShowDropdown(false)}>
-                  Payment History
-                </Link>
+                <button 
+                  className="dropdown-item" 
+                  onClick={() => {
+                    setShowChangePassword(true);
+                    setShowDropdown(false);
+                  }}
+                >
+                  Change Password
+                </button>
                 <button className="dropdown-item logout" onClick={() => {
                   setShowLogoutModal(true);
                   setShowDropdown(false);
@@ -175,6 +183,12 @@ const Header = () => {
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
         onLogout={handleLogout}
+      />
+
+      {/* Add ChangePassword component */}
+      <ChangePassword
+        isOpen={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
       />
     </header>
   );

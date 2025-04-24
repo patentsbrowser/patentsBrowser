@@ -250,7 +250,6 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
       const normalized = normalizePatentIds(currentValue);
       if (normalized.length > 0) {
         const newValue = normalized[0] as string; // Type assertion since we know it's a string
-        console.log(`Patent ID changed: ${currentValue} -> ${newValue}`);
         updatedPatents[id] = newValue;
         newEditingPatents.add(id); // Automatically add to editing mode
       }
@@ -262,7 +261,7 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
         ...prev,
         ...updatedPatents
       };
-      console.log('All patent changes:', newState);
+
       return newState;
     });
 
@@ -281,8 +280,6 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
         .filter(([originalId, newId]) => newId.trim() !== '') // Include all parsed patents
         .map(([_, newId]) => newId.trim());
 
-      console.log('Submitting corrections for:', correctedPatents);
-
       if (correctedPatents.length === 0) {
         toast.error('No changes to submit');
         return;
@@ -295,11 +292,6 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
         // Update the found and not found lists
         const newFoundPatents = response.results.map((result: PatentSearchResult) => result.patent_id);
         const stillNotFound = correctedPatents.filter(id => !newFoundPatents.includes(id));
-        
-        console.log('API Response:', {
-          newFoundPatents,
-          stillNotFound
-        });
 
         // Update the filtered patents list with newly found patents
         setFilteredPatentIds(prev => [...prev, ...newFoundPatents]);
