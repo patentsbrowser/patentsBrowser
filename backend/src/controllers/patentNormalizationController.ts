@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { normalizePatentIds } from '../services/patentNormalizationService';
+import { normalizePatentIds } from '../services/patentNormalizationService.js';
 
 export async function normalizePatents(req: Request, res: Response) {
   try {

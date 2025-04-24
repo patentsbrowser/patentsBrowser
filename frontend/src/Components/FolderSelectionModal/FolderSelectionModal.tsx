@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { patentApi } from '../../api/patents';
 import { API_BASE_URL } from '../../config/api';
 import { normalizePatentIds } from '../../utils/patentUtils';
+import Loader from '../Common/Loader';
 
 interface WorkFile {
   name: string;
@@ -63,6 +64,7 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
   const [editedPatents, setEditedPatents] = useState<{ [key: string]: string }>({});
   const [editingPatents, setEditingPatents] = useState<Set<string>>(new Set());
   const [isSubmittingCorrections, setIsSubmittingCorrections] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -243,6 +245,7 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
   };
 
   const handleParsePatents = async () => {
+    setIsParsing(true);
     try {
       // Get all not found patent IDs
       const notFoundIds = notFoundPatents.map(id => id.trim());
@@ -294,6 +297,8 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
     } catch (error) {
       console.error('Error parsing patent IDs:', error);
       toast.error('Failed to parse patent IDs');
+    } finally {
+      setIsParsing(false);
     }
   };
 
@@ -573,6 +578,13 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
             {selectedFolder ? 'Add to Folder' : 'Create Workfile'}
           </button>
         </div>
+        
+        {isParsing && (
+          <Loader 
+            fullScreen={true} 
+            text="Parsing patent IDs..." 
+          />
+        )}
       </div>
     </div>
   );
