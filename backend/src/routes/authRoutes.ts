@@ -235,4 +235,99 @@ router.post('/google-login', authController.googleLogin);
 router.post('/set-password', auth, authController.setPassword);
 router.post('/change-password', auth, changePassword);
 
+// Send OTP for forgot password
+router.post('/send-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Email is required',
+        data: null
+      });
+    }
+
+    // Check if user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'User not found',
+        data: null
+      });
+    }
+
+    // Generate and send OTP
+    const otp = generateOTP();
+    await sendOTP(email, otp);
+    storeOTP(email, otp);
+    
+    res.status(200).json({
+      statusCode: 200,
+      message: 'OTP sent successfully',
+      data: null
+    });
+  } catch (error) {
+    console.error('Error sending OTP:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to send OTP',
+      data: null
+    });
+  }
+});
+
+// Reset password with OTP
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Email, OTP, and new password are required',
+        data: null
+      });
+    }
+
+    // Verify OTP
+    const isValid = verifyOTP(email, otp);
+    if (!isValid) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Invalid or expired OTP',
+        data: null
+      });
+    }
+
+    // Find user and update password
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'User not found',
+        data: null
+      });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Password reset successful',
+      data: null
+    });
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to reset password',
+      data: null
+    });
+  }
+});
+
 export default router; 

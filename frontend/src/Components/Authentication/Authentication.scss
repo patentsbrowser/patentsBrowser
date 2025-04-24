@@ -737,4 +737,21 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
     }
   }
+}
+
+.forgot-password-btn {
+  background: none;
+  border: none;
+  color: #6a26cd;
+  font-size: 0.9rem;
+  padding: 0;
+  margin-top: 0.5rem;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: #5a1db8;
+    text-decoration: underline;
+  }
 } 

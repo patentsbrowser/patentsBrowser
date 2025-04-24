@@ -10,6 +10,7 @@ import { authApi } from "../../api/auth";
 import { motion } from "framer-motion";
 import { GoogleLogin as GoogleOAuthLogin } from '@react-oauth/google';
 import axiosInstance from '../../api/axiosConfig';
+import ForgotPassword from './ForgotPassword';
 
 const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
   const [email, setEmail] = useState("");
@@ -17,6 +18,7 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordSetup, setShowPasswordSetup] = useState(false);
   const [tempUserId, setTempUserId] = useState("");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { setUser, forceAdminCheck } = useAuth();
   const navigate = useNavigate();
 
@@ -248,6 +250,15 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </motion.button>
             </div>
+            <motion.button
+              type="button"
+              className="forgot-password-btn"
+              onClick={() => setShowForgotPassword(true)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Forgot Password?
+            </motion.button>
           </motion.div>
           <motion.button 
             type="submit" 
@@ -297,6 +308,9 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
           </motion.button>
         </motion.p>
       </motion.div>
+      {showForgotPassword && (
+        <ForgotPassword onClose={() => setShowForgotPassword(false)} />
+      )}
     </>
   );
 };
