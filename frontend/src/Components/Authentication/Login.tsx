@@ -5,12 +5,12 @@ import { useNavigate } from "react-router-dom";
 import "./Authentication.scss";
 import toast from "react-hot-toast";
 import Loader from "../Loader/Loader";
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { authApi } from "../../api/auth";
 import { motion } from "framer-motion";
-import { GoogleLogin as GoogleOAuthLogin } from '@react-oauth/google';
-import axiosInstance from '../../api/axiosConfig';
-import ForgotPassword from './ForgotPassword';
+import { GoogleLogin as GoogleOAuthLogin } from "@react-oauth/google";
+import axiosInstance from "../../api/axiosConfig";
+import ForgotPassword from "./ForgotPassword";
 
 const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
   const [email, setEmail] = useState("");
@@ -30,12 +30,17 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
       if (response.statusCode === 200) {
         handleLoginSuccess(response.data);
       } else {
-        toast.error(response.message || "Login failed. Please check your credentials.");
+        toast.error(
+          response.message || "Login failed. Please check your credentials."
+        );
       }
     },
     onError: (error: any) => {
       console.error("Login error:", error);
-      const errorMessage = error.response?.data?.message || error.message || "Login failed. Please check your credentials.";
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Login failed. Please check your credentials.";
       toast.error(errorMessage);
     },
   });
@@ -45,17 +50,17 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
     localStorage.setItem("token", data.token);
     localStorage.setItem("user", JSON.stringify(data.user));
     setUser(data.user);
-    
+
     setTimeout(() => {
       forceAdminCheck();
     }, 500);
-    
+
     navigate("/auth/dashboard");
   };
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
-      const response = await axiosInstance.post('/auth/google-login', {
+      const response = await axiosInstance.post("/auth/google-login", {
         token: credentialResponse.credential,
       });
 
@@ -69,29 +74,29 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
         handleLoginSuccess({ token, user });
       }
     } catch (error) {
-      console.error('Google login failed:', error);
-      toast.error('Failed to login with Google. Please try again.');
+      console.error("Google login failed:", error);
+      toast.error("Failed to login with Google. Please try again.");
     }
   };
 
   const handlePasswordSetup = async (newPassword: string) => {
     try {
-      await axiosInstance.post('/auth/set-password', {
+      await axiosInstance.post("/auth/set-password", {
         userId: tempUserId,
-        password: newPassword
+        password: newPassword,
       });
 
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
       user.needsPasswordSetup = false;
-      localStorage.setItem('user', JSON.stringify(user));
-      
+      localStorage.setItem("user", JSON.stringify(user));
+
       handleLoginSuccess({
-        token: localStorage.getItem('token'),
-        user
+        token: localStorage.getItem("token"),
+        user,
       });
     } catch (error) {
-      console.error('Error setting password:', error);
-      toast.error('Failed to set password. Please try again.');
+      console.error("Error setting password:", error);
+      toast.error("Failed to set password. Please try again.");
     }
   };
 
@@ -106,39 +111,41 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
 
   const formVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
       transition: {
         staggerChildren: 0.15,
         delayChildren: 0.2,
-      }
-    }
+      },
+    },
   };
 
   const inputVariants = {
     hidden: { opacity: 0, x: -20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       x: 0,
-      transition: { type: "spring", stiffness: 150, damping: 13 }
-    }
+      transition: { type: "spring", stiffness: 150, damping: 13 },
+    },
   };
 
   if (showPasswordSetup) {
     return (
-      <motion.div 
+      <motion.div
         className="auth-box"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
       >
         <h2>Set Your Password</h2>
         <p>Please set a password for your account to continue</p>
-        
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          handlePasswordSetup(password);
-        }}>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handlePasswordSetup(password);
+          }}
+        >
           <div className="form-group">
             <label htmlFor="password">Password</label>
             <div className="password-input-container">
@@ -164,13 +171,13 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
             </div>
           </div>
 
-          <motion.button 
-            type="submit" 
+          <motion.button
+            type="submit"
             className="submit-btn"
-            whileHover={{ 
+            whileHover={{
               scale: 1.05,
               y: -5,
-              boxShadow: "0 10px 25px rgba(106, 38, 205, 0.4)"
+              boxShadow: "0 10px 25px rgba(106, 38, 205, 0.4)",
             }}
             whileTap={{ scale: 0.95 }}
           >
@@ -184,15 +191,15 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
   return (
     <>
       <Loader isLoading={loginMutation.isPending} />
-      <motion.div 
+      <motion.div
         className="auth-box"
         initial={{ opacity: 0, rotateY: 30, scale: 0.9 }}
         animate={{ opacity: 1, rotateY: 0, scale: 1 }}
-        transition={{ 
-          type: "spring", 
-          stiffness: 100, 
+        transition={{
+          type: "spring",
+          stiffness: 100,
           damping: 15,
-          duration: 0.8 
+          duration: 0.8,
         }}
         whileHover={{ translateZ: 40 }}
       >
@@ -200,17 +207,16 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.5 }}
-        >Sign In</motion.h2>
-        <motion.form 
+        >
+          Sign In
+        </motion.h2>
+        <motion.form
           onSubmit={handleSubmit}
           variants={formVariants}
           initial="hidden"
           animate="visible"
         >
-          <motion.div 
-            className="form-group"
-            variants={inputVariants}
-          >
+          <motion.div className="form-group" variants={inputVariants}>
             <label htmlFor="email">Email Address</label>
             <input
               type="email"
@@ -223,10 +229,7 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
               className="auth-input"
             />
           </motion.div>
-          <motion.div 
-            className="form-group"
-            variants={inputVariants}
-          >
+          <motion.div className="form-group" variants={inputVariants}>
             <label htmlFor="password">Password</label>
             <div className="password-input-container">
               <input
@@ -260,19 +263,19 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
               Forgot Password?
             </motion.button>
           </motion.div>
-          <motion.button 
-            type="submit" 
+          <motion.button
+            type="submit"
             className="submit-btn"
             disabled={loginMutation.isPending}
             variants={inputVariants}
-            whileHover={{ 
-              scale: 1.05, 
+            whileHover={{
+              scale: 1.05,
               y: -5,
-              boxShadow: "0 10px 25px rgba(106, 38, 205, 0.4)"
+              boxShadow: "0 10px 25px rgba(106, 38, 205, 0.4)",
             }}
             whileTap={{ scale: 0.95 }}
           >
-            {loginMutation.isPending ? 'Signing In...' : 'Sign In'}
+            {loginMutation.isPending ? "Signing In..." : "Sign In"}
           </motion.button>
 
           <div className="divider">
@@ -283,7 +286,7 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
             <GoogleOAuthLogin
               onSuccess={handleGoogleSuccess}
               onError={() => {
-                toast.error('Google login failed');
+                toast.error("Google login failed");
               }}
             />
           </div>
@@ -293,15 +296,15 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
         >
-          Don't have an account?{' '}
+          Don't have an account?{" "}
           <motion.button
             className="switch-btn"
             onClick={switchToSignup}
             disabled={loginMutation.isPending}
-            whileHover={{ 
+            whileHover={{
               scale: 1.1,
               color: "#ffffff",
-              textShadow: "0 0 8px rgba(255, 215, 0, 0.8)" 
+              textShadow: "0 0 8px rgba(255, 215, 0, 0.8)",
             }}
           >
             Sign Up
