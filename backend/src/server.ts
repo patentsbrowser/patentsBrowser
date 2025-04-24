@@ -12,6 +12,7 @@ import otpRoutes from './routes/otpRoutes.js';
 import subscriptionRoutes from './routes/subscriptionRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
 import { createDefaultPlans } from './models/PricingPlan.js';
+import { setupSwagger } from './config/swagger.js';
 
 // Get current directory in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -56,28 +57,8 @@ if (missingEnvVars.length === 0) {
 
 const app = express();
 
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  if (req.method !== 'GET') {
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
-  }
-  
-  // Capture the original send function
-  const originalSend = res.send;
-  
-  // Override the send function to log responses
-  res.send = function(body) {
-    if (res.statusCode >= 400) {
-      console.log(`Response [${res.statusCode}]:`, body);
-    }
-    return originalSend.call(this, body);
-  };
-  
-  next();
-});
-
-// Configure CORS to allow requests from the frontend domain
+// Basic middleware
+app.use(express.json());
 app.use(cors({
   origin: [
     'https://patentsbrowser.com', 
@@ -93,29 +74,22 @@ app.use(cors({
   optionsSuccessStatus: 204
 }));
 
-// Additional middleware to ensure CORS headers are set for all responses
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin && (
-    origin === 'https://patentsbrowser.com' || 
-    origin === 'https://www.patentsbrowser.com' || 
-    origin === 'https://patentsbrowser-backend.onrender.com' || 
-    origin.startsWith('http://localhost')
-  )) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  next();
-});
+// Setup Swagger documentation
+setupSwagger(app);
 
-app.use(express.json());
-
-// Health check endpoint for Render monitoring
+// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', environment: env });
 });
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/patents', patentRoutes);
+app.use('/api/saved-patents', savedPatentRoutes);
+app.use('/api/otp', otpRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/feedback', feedbackRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Make sure uploadedImages directory is served as public
 const uploadDir = path.join(__dirname, '../uploadedImages');
@@ -169,15 +143,6 @@ app.use('/uploads', express.static(uploadsDir, {
     res.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   }
 }));
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/patents', patentRoutes);
-app.use('/api/saved-patents', savedPatentRoutes);
-app.use('/api/otp', otpRoutes);
-app.use('/api/subscriptions', subscriptionRoutes);
-app.use('/api/feedback', feedbackRoutes);
-app.use('/api/admin', adminRoutes);
 
 // Debug: Log all registered routes
 console.log('============ REGISTERED ROUTES ============');

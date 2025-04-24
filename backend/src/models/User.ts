@@ -23,6 +23,10 @@ interface IUser extends mongoose.Document {
   googlePayCustomerId?: string;
   referenceNumber?: string;
   isAdmin: boolean;
+  profilePicture: string;
+  googleId: string;
+  updatedAt: Date;
+  needsPasswordSetup: boolean;
 }
 
 const userSchema = new mongoose.Schema({
@@ -40,13 +44,17 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true
+    required: false, // Not required for Google login
   },
   isEmailVerified: {
     type: Boolean,
     default: false
   },
   createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
     type: Date,
     default: Date.now
   },
@@ -112,7 +120,20 @@ const userSchema = new mongoose.Schema({
   isAdmin: {
     type: Boolean,
     default: false
-  }
+  },
+  profilePicture: {
+    type: String,
+    default: '',
+  },
+  googleId: {
+    type: String,
+    sparse: true,
+    unique: true,
+  },
+  needsPasswordSetup: {
+    type: Boolean,
+    default: false
+  },
 });
 
 userSchema.pre('save', async function(next) {
@@ -121,6 +142,7 @@ userSchema.pre('save', async function(next) {
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
+    this.updatedAt = new Date();
     next();
   } catch (error: any) {
     next(error);
