@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
-import path from 'path';
 import { generateOTP, sendOTP, storeOTP } from '../services/otpService.js';
+import { googleAuthService } from '../services/googleAuthService.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -343,4 +343,90 @@ export const checkAdminStatus = async (req: Request, res: Response) => {
       isAdmin: false
     });
   }
-}; 
+};
+
+export class AuthController {
+    async googleLogin(req: Request, res: Response) {
+        try {
+            const { token } = req.body;
+            console.log('token================================', token)
+            if (!token) {
+                return res.status(400).json({ message: 'Token is required' });
+            }
+
+            const googleUser = await googleAuthService.verifyGoogleToken(token);
+            
+            // Check if user exists
+            let user = await User.findOne({ email: googleUser.email });
+            let isNewUser = false;
+            
+            if (!user) {
+                // Create new user if doesn't exist
+                user = await User.create({
+                    email: googleUser.email,
+                    name: googleUser.name,
+                    profilePicture: googleUser.picture,
+                    googleId: googleUser.googleId,
+                    isEmailVerified: true, // Google emails are verified
+                    needsPasswordSetup: true // Flag to indicate password setup is needed
+                });
+                isNewUser = true;
+            } else if (!user.googleId) {
+                // If user exists but hasn't logged in with Google before
+                user.googleId = googleUser.googleId;
+                user.isEmailVerified = true;
+                if (!user.password) {
+                    user.needsPasswordSetup = true;
+                }
+                await user.save();
+            }
+
+            // Generate JWT token
+            const jwtToken = jwt.sign(
+                { userId: user._id },
+                process.env.JWT_SECRET || 'your-secret-key',
+                { expiresIn: '24h' }
+            );
+
+            res.json({
+                token: jwtToken,
+                user: {
+                    id: user._id,
+                    email: user.email,
+                    name: user.name,
+                    profilePicture: user.profilePicture,
+                    needsPasswordSetup: user.needsPasswordSetup
+                },
+                isNewUser
+            });
+        } catch (error) {
+            console.error('Google login error:', error);
+            res.status(500).json({ message: 'Authentication failed' });
+        }
+    }
+
+    async setPassword(req: Request, res: Response) {
+        try {
+            const { userId, password } = req.body;
+
+            if (!userId || !password) {
+                return res.status(400).json({ message: 'User ID and password are required' });
+            }
+
+            const user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            // Set the password and mark password setup as complete
+            user.password = password;
+            user.needsPasswordSetup = false;
+            await user.save();
+
+            res.json({ message: 'Password set successfully' });
+        } catch (error) {
+            console.error('Set password error:', error);
+            res.status(500).json({ message: 'Failed to set password' });
+        }
+    }
+} 

@@ -679,4 +679,62 @@
 .submit-btn,
 .btn {
   will-change: transform, opacity;
+}
+
+.divider {
+  margin: 20px 0;
+  text-align: center;
+  position: relative;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 45%;
+    height: 1px;
+    background-color: var(--border-color);
+  }
+
+  &::before {
+    left: 0;
+  }
+
+  &::after {
+    right: 0;
+  }
+
+  span {
+    background-color: var(--background-color);
+    padding: 0 10px;
+    color: var(--text-color);
+    font-size: 14px;
+  }
+}
+
+.google-login-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+
+  > div {
+    width: 100% !important;
+  }
+
+  button {
+    width: 100% !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+
+    &:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    &:active {
+      transform: translateY(0) !important;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    }
+  }
 } 
