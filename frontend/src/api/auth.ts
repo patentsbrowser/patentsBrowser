@@ -443,6 +443,20 @@ export const authApi = {
     return response;
   },
 
+  // Change password function
+  changePassword: async (data: { currentPassword: string; newPassword: string }) => {
+    try {
+      const response = await api.post('/auth/change-password', data);
+      return response.data;
+    } catch (error: any) {
+      return {
+        statusCode: error.response?.status || 500,
+        message: error.response?.data?.message || 'Failed to change password',
+        data: null
+      };
+    }
+  },
+
   // Remove patent read status APIs
   // getReadPatents: () => axios.get(`${API_URL}/patent-read-status/list`),
   // markPatentAsRead: (patentId: string) => axios.post(`${API_URL}/patent-read-status/mark-read`, { patentId }),

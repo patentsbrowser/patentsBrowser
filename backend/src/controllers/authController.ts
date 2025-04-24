@@ -429,4 +429,64 @@ export class AuthController {
             res.status(500).json({ message: 'Failed to set password' });
         }
     }
-} 
+}
+
+export const changePassword = async (req: Request, res: Response) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!req.user) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'Unauthorized',
+        data: null
+      });
+    }
+
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'User not found',
+        data: null
+      });
+    }
+
+    // Verify current password
+    const isValidPassword = await user.comparePassword(currentPassword);
+    if (!isValidPassword) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'Current password is incorrect',
+        data: null
+      });
+    }
+
+    // Check if new password is same as current password
+    const isSamePassword = await user.comparePassword(newPassword);
+    if (isSamePassword) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'New password cannot be the same as current password',
+        data: null
+      });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Password changed successfully',
+      data: null
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to change password',
+      data: null
+    });
+  }
+}; 

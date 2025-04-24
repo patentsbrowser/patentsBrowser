@@ -1,5 +1,5 @@
 import express from 'express';
-import { getProfile, login, logout, signup, updateProfile, uploadImage, checkAdminStatus, AuthController } from '../controllers/authController.js';
+import { getProfile, login, logout, signup, updateProfile, uploadImage, checkAdminStatus, AuthController, changePassword } from '../controllers/authController.js';
 import { auth } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import { User } from '../models/User.js';
@@ -233,5 +233,6 @@ router.post('/upload-image', auth, upload.single('profileImage'), uploadImage);
 // Google Authentication routes
 router.post('/google-login', authController.googleLogin);
 router.post('/set-password', auth, authController.setPassword);
+router.post('/change-password', auth, changePassword);
 
 export default router; 
