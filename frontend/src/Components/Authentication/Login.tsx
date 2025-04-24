@@ -9,7 +9,7 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { authApi } from "../../api/auth";
 import { motion } from "framer-motion";
 import { GoogleLogin as GoogleOAuthLogin } from '@react-oauth/google';
-import axios from 'axios';
+import axiosInstance from '../../api/axiosConfig';
 
 const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
   const [email, setEmail] = useState("");
@@ -53,7 +53,7 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
-      const response = await axios.post('/api/auth/google/login', {
+      const response = await axiosInstance.post('/auth/google-login', {
         token: credentialResponse.credential,
       });
 
@@ -74,13 +74,9 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
 
   const handlePasswordSetup = async (newPassword: string) => {
     try {
-      await axios.post('/api/auth/set-password', {
+      await axiosInstance.post('/auth/set-password', {
         userId: tempUserId,
         password: newPassword
-      }, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
       });
 
       const user = JSON.parse(localStorage.getItem('user') || '{}');

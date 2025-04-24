@@ -12,6 +12,7 @@ import otpRoutes from './routes/otpRoutes.js';
 import subscriptionRoutes from './routes/subscriptionRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
 import { createDefaultPlans } from './models/PricingPlan.js';
+import { setupSwagger } from './config/swagger.js';
 
 // Get current directory in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -178,6 +179,9 @@ app.use('/api/otp', otpRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/admin', adminRoutes);
+
+// Setup Swagger documentation
+setupSwagger(app);
 
 // Debug: Log all registered routes
 console.log('============ REGISTERED ROUTES ============');

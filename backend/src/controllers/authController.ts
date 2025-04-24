@@ -349,7 +349,7 @@ export class AuthController {
     async googleLogin(req: Request, res: Response) {
         try {
             const { token } = req.body;
-            
+            console.log('token================================', token)
             if (!token) {
                 return res.status(400).json({ message: 'Token is required' });
             }

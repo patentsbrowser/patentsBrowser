@@ -1,11 +1,10 @@
 import express from 'express';
-import { getProfile, login, logout, signup, updateProfile, uploadImage, checkAdminStatus } from '../controllers/authController.js';
+import { getProfile, login, logout, signup, updateProfile, uploadImage, checkAdminStatus, AuthController } from '../controllers/authController.js';
 import { auth } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import { User } from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import { generateOTP, sendOTP, storeOTP, verifyOTP, resendOTP } from '../services/otpService.js';
-import { AuthController } from '../controllers/authController';
 
 const router = express.Router();
 const authController = new AuthController();
@@ -232,7 +231,7 @@ router.post('/update-profile', auth, updateProfile);
 router.post('/upload-image', auth, upload.single('profileImage'), uploadImage);
 
 // Google Authentication routes
-router.post('/google/login', authController.googleLogin);
+router.post('/google-login', authController.googleLogin);
 router.post('/set-password', auth, authController.setPassword);
 
 export default router; 
