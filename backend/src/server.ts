@@ -11,7 +11,6 @@ import savedPatentRoutes from './routes/savedPatentRoutes.js';
 import otpRoutes from './routes/otpRoutes.js';
 import subscriptionRoutes from './routes/subscriptionRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
-import patentNormalizationRoutes from './routes/patentNormalizationRoutes.js';
 import { createDefaultPlans } from './models/PricingPlan.js';
 import { setupSwagger } from './config/swagger.js';
 
@@ -91,7 +90,6 @@ app.use('/api/otp', otpRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/patent-normalization', patentNormalizationRoutes);
 
 // Make sure uploadedImages directory is served as public
 const uploadDir = path.join(__dirname, '../uploadedImages');
