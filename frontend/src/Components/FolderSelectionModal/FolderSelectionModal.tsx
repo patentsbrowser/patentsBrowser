@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import './FolderSelectionModal.scss';
 import { toast } from 'react-hot-toast';
 import { patentApi } from '../../api/patents';
+import { API_BASE_URL } from '../../config/api';
 import { normalizePatentIds } from '../../utils/patentUtils';
+import Loader from '../Common/Loader';
 
 interface WorkFile {
   name: string;
@@ -62,6 +64,7 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
   const [editedPatents, setEditedPatents] = useState<{ [key: string]: string }>({});
   const [editingPatents, setEditingPatents] = useState<Set<string>>(new Set());
   const [isSubmittingCorrections, setIsSubmittingCorrections] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -241,35 +244,62 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
     }
   };
 
-  const handleParsePatents = () => {
-    const updatedPatents: { [key: string]: string } = {};
-    const newEditingPatents = new Set<string>();
-    
-    notFoundPatents.forEach(id => {
-      const currentValue = editedPatents[id] || id;
-      const normalized = normalizePatentIds(currentValue);
-      if (normalized.length > 0) {
-        const newValue = normalized[0] as string; // Type assertion since we know it's a string
-        updatedPatents[id] = newValue;
-        newEditingPatents.add(id); // Automatically add to editing mode
-      }
-    });
+  const handleParsePatents = async () => {
+    setIsParsing(true);
+    try {
+      // Get all not found patent IDs
+      const notFoundIds = notFoundPatents.map(id => id.trim());
+      
+      // Call the normalization API with the correct backend URL
+      const response = await fetch(`${API_BASE_URL}/patent-normalization/normalize`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ patentIds: notFoundIds }),
+      });
 
-    // Update the edited patents state
-    setEditedPatents(prev => {
-      const newState = {
+      if (!response.ok) {
+        throw new Error('Failed to normalize patent IDs');
+      }
+
+      const data = await response.json();
+      const results = data.results;
+
+      // Update the edited patents state with normalized IDs
+      const updatedPatents: { [key: string]: string } = {};
+      const newEditingPatents = new Set<string>();
+      
+      results.forEach((result: any) => {
+        if (result.normalized) {
+          // Only update if we found a normalized version
+          updatedPatents[result.original] = result.normalized;
+          newEditingPatents.add(result.original);
+        }
+      });
+
+      // Update the edited patents state
+      setEditedPatents(prev => ({
         ...prev,
         ...updatedPatents
-      };
+      }));
 
-      return newState;
-    });
+      // Set all parsed patents to editing mode automatically
+      setEditingPatents(newEditingPatents);
 
-    // Set all parsed patents to editing mode automatically
-    setEditingPatents(newEditingPatents);
-
-    // Show success message
-    toast.success(`${Object.keys(updatedPatents).length} patent IDs parsed successfully`);
+      // Show success message
+      const successCount = Object.keys(updatedPatents).length;
+      if (successCount > 0) {
+        toast.success(`${successCount} patent IDs parsed successfully`);
+      } else {
+        toast.error('No patent IDs could be parsed');
+      }
+    } catch (error) {
+      console.error('Error parsing patent IDs:', error);
+      toast.error('Failed to parse patent IDs');
+    } finally {
+      setIsParsing(false);
+    }
   };
 
   const handleSubmitCorrections = async () => {
@@ -548,6 +578,13 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
             {selectedFolder ? 'Add to Folder' : 'Create Workfile'}
           </button>
         </div>
+        
+        {isParsing && (
+          <Loader 
+            fullScreen={true} 
+            text="Parsing patent IDs..." 
+          />
+        )}
       </div>
     </div>
   );
