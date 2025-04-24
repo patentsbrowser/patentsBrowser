@@ -1,5 +1,5 @@
 import swaggerUi from 'swagger-ui-express';
-import swaggerDocument from '../swagger.json' assert { type: "json" };
+import swaggerDocument from '../swagger.json' with { type: "json" };
 import path from 'path';
 import { fileURLToPath } from 'url';
 
