@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { User } from '../models/User.js';
 import mongoose from 'mongoose';
-import Subscription from '../models/Subscription.js';
+import { Subscription } from '../models/Subscription.js';
 import { SubscriptionStatus } from '../models/Subscription.js';
 
 // Get all users

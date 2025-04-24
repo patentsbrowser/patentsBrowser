@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { User } from '../models/User.js';
-
-import Subscription, { SubscriptionStatus } from '../models/Subscription.js';
+import { Subscription, SubscriptionStatus } from '../models/Subscription.js';
 
 export const checkSubscription = async (req: Request, res: Response, next: NextFunction) => {
   try {
