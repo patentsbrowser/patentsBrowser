@@ -632,4 +632,76 @@ export const getUserProfile = async (req: Request, res: Response) => {
       message: 'Error getting user profile'
     });
   }
+};
+
+// Get user payment history
+export const getUserPaymentHistory = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.id;
+
+    // Check if the ID is valid
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Invalid user ID',
+        data: null
+      });
+    }
+
+    // Get all subscriptions for the user, sorted by creation date (newest first)
+    const subscriptions = await Subscription.find({ userId })
+      .sort({ createdAt: -1 })
+      .populate('verifiedBy', 'name email');
+
+    // Format subscription data for response
+    const paymentHistory = subscriptions.map(sub => ({
+      id: sub._id,
+      planName: sub.plan,
+      planDuration: getPlanDuration(sub.startDate, sub.endDate),
+      amount: sub.amount,
+      currency: 'INR', // Assuming INR as default currency
+      referenceNumber: sub.upiTransactionRef || 'N/A',
+      status: sub.status,
+      startDate: sub.startDate,
+      endDate: sub.endDate,
+      transactionDate: sub.createdAt,
+      orderId: sub.upiOrderId || 'N/A',
+      adminMessage: sub.notes || null,
+      verifiedBy: sub.verifiedBy ? {
+        name: sub.verifiedBy.name,
+        email: sub.verifiedBy.email
+      } : null,
+      verificationDate: sub.verificationDate
+    }));
+
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Payment history retrieved successfully',
+      data: paymentHistory
+    });
+  } catch (error: any) {
+    console.error('Error retrieving payment history:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to retrieve payment history',
+      data: null
+    });
+  }
+};
+
+// Helper function to calculate plan duration
+const getPlanDuration = (startDate: Date, endDate: Date): string => {
+  if (!startDate || !endDate) return 'N/A';
+  
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const diffTime = Math.abs(end.getTime() - start.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 30) return '1 Month';
+  if (diffDays === 90) return '3 Months';
+  if (diffDays === 180) return '6 Months';
+  if (diffDays === 365) return '1 Year';
+  
+  return `${diffDays} Days`;
 }; 

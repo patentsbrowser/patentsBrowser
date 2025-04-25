@@ -2556,3 +2556,236 @@
     }
   }
 } 
+
+// Payment History Modal Styles
+.payment-history-modal {
+  max-width: 1200px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  background-color: var(--secondary-bg);
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color);
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: linear-gradient(to right, rgba(var(--accent-rgb), 0.1), rgba(var(--accent-rgb), 0));
+
+    h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--accent-color);
+    }
+
+    .close-button {
+      background: none;
+      border: none;
+      font-size: 1.75rem;
+      line-height: 1;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+
+      &:hover {
+        color: var(--text-color);
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+    
+    // Custom thin scrollbar
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: rgba(var(--accent-rgb), 0.3);
+      border-radius: 10px;
+      
+      &:hover {
+        background: rgba(var(--accent-rgb), 0.5);
+      }
+    }
+  }
+
+  .payment-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      font-weight: 600;
+      color: var(--text-secondary);
+      background-color: var(--primary-bg);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    td {
+      color: var(--text-color);
+    }
+
+    tr {
+      &:hover {
+        background-color: var(--hover-bg);
+      }
+    }
+
+    .sr-no {
+      width: 60px;
+      text-align: center;
+    }
+
+    .plan-info {
+      min-width: 150px;
+      
+      .plan-name {
+        font-weight: 500;
+        color: var(--text-color);
+      }
+    }
+
+    .amount {
+      min-width: 100px;
+      font-weight: 500;
+      color: var(--accent-color);
+    }
+
+    .reference-number {
+      min-width: 120px;
+      font-family: monospace;
+      font-size: 0.95rem;
+      letter-spacing: 0.5px;
+      color: var(--text-color);
+    }
+
+    .transaction-date {
+      min-width: 100px;
+      color: var(--text-secondary);
+    }
+
+    .status {
+      min-width: 120px;
+      text-align: center;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-color);
+    }
+
+    .admin-message {
+      min-width: 150px;
+      max-width: 200px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text-secondary);
+    }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+    
+    p {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+  }
+
+  .error-message {
+    color: #dc3545;
+    text-align: center;
+    padding: 1rem;
+    background-color: rgba(220, 53, 69, 0.1);
+    border-radius: 0.5rem;
+    border-left: 4px solid #dc3545;
+    font-weight: 500;
+  }
+}
+
+// Action Buttons Styles
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-start;
+  align-items: center;
+
+  .action-button {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: white;
+    font-size: 0.875rem;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    &.view {
+      background-color: #17a2b8;
+    }
+
+    &.edit {
+      background-color: #28a745;
+    }
+
+    &.history {
+      background-color: #6c757d;
+    }
+
+    &.pause {
+      background-color: #ffc107;
+    }
+
+    &.play {
+      background-color: #28a745;
+    }
+
+    &.cancel {
+      background-color: #dc3545;
+    }
+
+    i {
+      font-size: 0.875rem;
+    }
+  }
+} 

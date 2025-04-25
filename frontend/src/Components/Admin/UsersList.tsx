@@ -4,6 +4,7 @@ import axios from "axios";
 import "./Admin.scss";
 import UserProfileModal from "./UserProfileModal";
 import UserSubscriptionModal from "./UserSubscriptionModal";
+import UserPaymentHistoryModal from "./UserPaymentHistoryModal";
 import ConfirmationModal from "./ConfirmationModal";
 import toast from "react-hot-toast";
 
@@ -62,6 +63,8 @@ const UsersList = () => {
     type: 'warning',
     onConfirm: () => {}
   });
+  const [isPaymentHistoryModalOpen, setIsPaymentHistoryModalOpen] = useState(false);
+  const [selectedUserForPaymentHistory, setSelectedUserForPaymentHistory] = useState<User | null>(null);
 
   // Listen for settings updates
   useEffect(() => {
@@ -567,6 +570,16 @@ const UsersList = () => {
     });
   };
 
+  const handleViewPaymentHistory = (user: User) => {
+    setSelectedUserForPaymentHistory(user);
+    setIsPaymentHistoryModalOpen(true);
+  };
+
+  const handleClosePaymentHistoryModal = () => {
+    setIsPaymentHistoryModalOpen(false);
+    setSelectedUserForPaymentHistory(null);
+  };
+
   return (
     <div className="admin-users-container">
       <div className="admin-header">
@@ -688,14 +701,10 @@ const UsersList = () => {
                   currentUsers.map((user: User, index: number) => (
                     <tr key={user.id}>
                       <td>{indexOfFirstItem + index + 1}</td>
-                      <td>{user.name}</td>
+                      <td>{user.name || "N/A"}</td>
                       <td>{user.email}</td>
                       <td>
-                        <span
-                          className={`subscription-status ${getSubscriptionStatusClass(
-                            user.subscriptionStatus
-                          )}`}
-                        >
+                        <span className={`status ${getSubscriptionStatusClass(user.subscriptionStatus)}`}>
                           {user.subscriptionStatus || "Unknown"}
                         </span>
                       </td>
@@ -713,51 +722,53 @@ const UsersList = () => {
                           ? new Date(user.lastLogin).toLocaleDateString()
                           : "N/A"}
                       </td>
-                      <td className="actions-cell">
+                      <td className="actions">
                         <button
-                          className="action-btn view-btn"
+                          className="action-button view"
                           onClick={() => handleViewUser(user.id)}
+                          title="View Profile"
                         >
-                          View
+                          <i className="fas fa-user"></i>
                         </button>
                         <button
-                          className="action-btn edit-btn"
+                          className="action-button edit"
                           onClick={() => handleEditSubscription(user)}
+                          title="Edit Subscription"
                         >
-                          Edit
+                          <i className="fas fa-edit"></i>
                         </button>
-                        {user.subscriptionStatus && user.subscriptionStatus.toLowerCase() === 'active' && (
-                          <>
-                            <button
-                              className="action-btn pause-btn"
-                              onClick={() => handlePauseSubscription(user.id)}
-                            >
-                              Pause
-                            </button>
-                            <button
-                              className="action-btn cancel-btn"
-                              onClick={() => handleCancelSubscription(user.id)}
-                            >
-                              Cancel
-                            </button>
-                          </>
+                        <button
+                          className="action-button history"
+                          onClick={() => handleViewPaymentHistory(user)}
+                          title="View Payment History"
+                        >
+                          <i className="fas fa-history"></i>
+                        </button>
+                        {user.subscriptionStatus?.toLowerCase() === "active" && (
+                          <button
+                            className="action-button pause"
+                            onClick={() => handlePauseSubscription(user.id)}
+                            title="Pause Subscription"
+                          >
+                            <i className="fas fa-pause"></i>
+                          </button>
                         )}
-                        {user.subscriptionStatus && user.subscriptionStatus.toLowerCase() === 'inactive' && (
-                          <>
-                            <button
-                              className="action-btn enable-btn"
-                              onClick={() => handleEnableSubscription(user.id)}
-                            >
-                              Enable
-                            </button>
-                            <button
-                              className="action-btn cancel-btn"
-                              onClick={() => handleCancelSubscription(user.id)}
-                            >
-                              Cancel
-                            </button>
-                          </>
+                        {user.subscriptionStatus?.toLowerCase() === "paused" && (
+                          <button
+                            className="action-button play"
+                            onClick={() => handleEnableSubscription(user.id)}
+                            title="Enable Subscription"
+                          >
+                            <i className="fas fa-play"></i>
+                          </button>
                         )}
+                        <button
+                          className="action-button cancel"
+                          onClick={() => handleCancelSubscription(user.id)}
+                          title="Cancel Subscription"
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -869,6 +880,15 @@ const UsersList = () => {
           isOpen={isSubscriptionModalOpen}
           onClose={handleCloseSubscriptionModal}
           onSuccess={handleSubscriptionSuccess}
+        />
+      )}
+
+      {selectedUserForPaymentHistory && (
+        <UserPaymentHistoryModal
+          isOpen={isPaymentHistoryModalOpen}
+          onClose={handleClosePaymentHistoryModal}
+          userId={selectedUserForPaymentHistory.id}
+          userName={selectedUserForPaymentHistory.name || selectedUserForPaymentHistory.email}
         />
       )}
 
