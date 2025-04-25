@@ -8,6 +8,15 @@ interface UserProfileModalProps {
   onClose: () => void;
 }
 
+interface Subscription {
+  plan?: string;
+  startDate?: string;
+  endDate?: string;
+  status?: string;
+  amount?: number;
+  _id?: string;
+}
+
 interface UserProfile {
   id: string;
   name: string;
@@ -27,20 +36,18 @@ interface UserProfile {
   loginCount?: number; // Total number of logins
   avgSessionDuration?: number; // Average session time in minutes
   lastSessionDuration?: number; // Last session duration in minutes
+  trialDaysRemaining?: number;
   subscription?: {
-    plan?: string;
-    startDate?: string;
-    endDate?: string;
-    status?: string;
-    _id?: string;
+    isActive: boolean;
+    mainPlan: Subscription;
+    additionalPlans: Subscription[];
+    isCustomPlan: boolean;
+    totalDays: number;
+    totalAmount: number;
+    latestEndDate: string;
+    stackedPlansCount: number;
+    trialDaysRemaining: number;
   };
-  additionalPlans?: Array<{
-    plan?: string;
-    startDate?: string;
-    endDate?: string;
-    status?: string;
-    _id?: string;
-  }>;
 }
 
 const UserProfileModal = ({ userId, isOpen, onClose }: UserProfileModalProps) => {
@@ -98,6 +105,27 @@ const UserProfileModal = ({ userId, isOpen, onClose }: UserProfileModalProps) =>
       const remainingHours = Math.floor((minutes % 1440) / 60);
       return `${days} day${days !== 1 ? 's' : ''} ${remainingHours > 0 ? `${remainingHours} hour${remainingHours !== 1 ? 's' : ''}` : ''}`;
     }
+  };
+
+  // Format date to a readable string
+  const formatDate = (dateString?: string): string => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Format currency
+  const formatCurrency = (amount?: number): string => {
+    if (!amount) return 'N/A';
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR'
+    }).format(amount);
   };
 
   // Debug current state
@@ -185,17 +213,13 @@ const UserProfileModal = ({ userId, isOpen, onClose }: UserProfileModalProps) =>
                   <div className="detail-row">
                     <span className="detail-label">Member Since:</span>
                     <span className="detail-value">
-                      {userProfile.createdAt 
-                        ? new Date(userProfile.createdAt).toLocaleDateString() 
-                        : 'Unknown'}
+                      {userProfile.createdAt ? formatDate(userProfile.createdAt) : 'Unknown'}
                     </span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Last Login:</span>
                     <span className="detail-value">
-                      {userProfile.lastLogin 
-                        ? new Date(userProfile.lastLogin).toLocaleDateString() 
-                        : 'Never'}
+                      {userProfile.lastLogin ? formatDate(userProfile.lastLogin) : 'Never'}
                     </span>
                   </div>
                   <div className="detail-row">
@@ -241,65 +265,90 @@ const UserProfileModal = ({ userId, isOpen, onClose }: UserProfileModalProps) =>
                   </div>
                 </div>
                 
+                {/* Subscription Details */}
                 <div className="detail-group">
                   <h4>Subscription Details</h4>
                   <div className="detail-row">
                     <span className="detail-label">Status:</span>
                     <span className="detail-value">{userProfile.subscriptionStatus || 'None'}</span>
                   </div>
+                  
                   {userProfile.subscription && (
                     <>
+                      {/* Trial Information */}
+                      {userProfile.subscription.trialDaysRemaining > 0 && (
+                        <div className="detail-row">
+                          <span className="detail-label">Trial Days Left:</span>
+                          <span className="detail-value highlight">
+                            {userProfile.subscription.trialDaysRemaining} days
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* Main Plan Details */}
                       <div className="detail-row">
                         <span className="detail-label">Main Plan:</span>
-                        <span className="detail-value">{userProfile.subscription.plan || 'None'}</span>
+                        <span className="detail-value">{userProfile.subscription.mainPlan?.plan || 'None'}</span>
                       </div>
-                      {userProfile.subscription.startDate && (
-                        <div className="detail-row">
-                          <span className="detail-label">Started:</span>
-                          <span className="detail-value">
-                            {new Date(userProfile.subscription.startDate).toLocaleDateString()}
-                          </span>
-                        </div>
-                      )}
-                      {userProfile.subscription.endDate && (
-                        <div className="detail-row">
-                          <span className="detail-label">Expires:</span>
-                          <span className="detail-value">
-                            {new Date(userProfile.subscription.endDate).toLocaleDateString()}
-                          </span>
-                        </div>
+                      
+                      {/* Total Subscription Information */}
+                      <div className="detail-row">
+                        <span className="detail-label">Total Duration:</span>
+                        <span className="detail-value highlight">
+                          {userProfile.subscription.totalDays} days
+                        </span>
+                      </div>
+                      
+                      <div className="detail-row">
+                        <span className="detail-label">Total Amount:</span>
+                        <span className="detail-value highlight">
+                          {formatCurrency(userProfile.subscription.totalAmount)}
+                        </span>
+                      </div>
+                      
+                      <div className="detail-row">
+                        <span className="detail-label">Subscription Until:</span>
+                        <span className="detail-value highlight">
+                          {formatDate(userProfile.subscription.latestEndDate)}
+                        </span>
+                      </div>
+                      
+                      {/* Stacked Plans Information */}
+                      {userProfile.subscription.isCustomPlan && (
+                        <>
+                          <div className="detail-row">
+                            <span className="detail-label">Stacked Plans:</span>
+                            <span className="detail-value highlight">
+                              {userProfile.subscription.stackedPlansCount} additional plan(s)
+                            </span>
+                          </div>
+                          
+                          {userProfile.subscription.additionalPlans.length > 0 && (
+                            <div className="stacked-plans-section">
+                              <h5>Additional Plans</h5>
+                              {userProfile.subscription.additionalPlans.map((plan, index) => (
+                                <div key={plan._id || index} className="stacked-plan">
+                                  <div className="detail-row">
+                                    <span className="detail-label">Plan Type:</span>
+                                    <span className="detail-value">{plan.plan}</span>
+                                  </div>
+                                  <div className="detail-row">
+                                    <span className="detail-label">Duration:</span>
+                                    <span className="detail-value">
+                                      {formatDate(plan.startDate)} to {formatDate(plan.endDate)}
+                                    </span>
+                                  </div>
+                                  <div className="detail-row">
+                                    <span className="detail-label">Amount:</span>
+                                    <span className="detail-value">{formatCurrency(plan.amount)}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </>
                       )}
                     </>
-                  )}
-                  
-                  {userProfile.additionalPlans && userProfile.additionalPlans.length > 0 && (
-                    <div className="additional-plans-section">
-                      <h5>Additional Plans</h5>
-                      {userProfile.additionalPlans.map((plan, index) => (
-                        <div key={plan._id || index} className="additional-plan">
-                          <div className="detail-row">
-                            <span className="detail-label">Plan:</span>
-                            <span className="detail-value">{plan.plan || 'None'}</span>
-                          </div>
-                          {plan.startDate && (
-                            <div className="detail-row">
-                              <span className="detail-label">Started:</span>
-                              <span className="detail-value">
-                                {new Date(plan.startDate).toLocaleDateString()}
-                              </span>
-                            </div>
-                          )}
-                          {plan.endDate && (
-                            <div className="detail-row">
-                              <span className="detail-label">Expires:</span>
-                              <span className="detail-value">
-                                {new Date(plan.endDate).toLocaleDateString()}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
                   )}
                 </div>
               </div>

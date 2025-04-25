@@ -997,6 +997,184 @@ export const cancelSubscription = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Stack a new plan on top of existing subscription
+ */
+export const stackNewPlan = async (req: Request, res: Response) => {
+  try {
+    const { planId, upiOrderId } = req.body;
+    
+    if (!planId || !upiOrderId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Plan ID and UPI Order ID are required'
+      });
+    }
+    
+    // @ts-ignore - User ID is added by auth middleware
+    const userId = req.user._id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+    
+    // Get plan details
+    const plan = await PricingPlan.findById(planId);
+    
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Plan not found'
+      });
+    }
+    
+    // Find user's active subscription
+    const existingSubscription = await Subscription.findOne({ 
+      userId,
+      status: SubscriptionStatus.ACTIVE 
+    });
+    
+    if (!existingSubscription) {
+      return res.status(400).json({
+        success: false,
+        message: 'No active subscription found to stack upon'
+      });
+    }
+    
+    // Calculate end date based on plan type
+    const endDate = calculateEndDate(plan.type as SubscriptionPlan);
+    const startDate = new Date();
+    
+    // Create new stacked subscription
+    const stackedSubscription = new Subscription({
+      userId,
+      plan: plan.type,
+      startDate,
+      endDate,
+      status: SubscriptionStatus.PAYMENT_PENDING,
+      upiOrderId,
+      amount: plan.price,
+      isPendingPayment: true,
+      parentSubscriptionId: existingSubscription._id
+    });
+    
+    await stackedSubscription.save();
+    
+    // Update user's pending payment status
+    await User.findByIdAndUpdate(userId, {
+      isPendingPayment: true
+    });
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Pending stacked plan subscription created',
+      data: {
+        subscriptionId: stackedSubscription._id,
+        plan: plan.name,
+        status: stackedSubscription.status,
+        startDate: stackedSubscription.startDate,
+        endDate: stackedSubscription.endDate,
+        amount: plan.price
+      }
+    });
+  } catch (error) {
+    console.error('Error stacking new plan:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error creating stacked plan subscription'
+    });
+  }
+};
+
+/**
+ * Get all stacked plans for the current user
+ */
+export const getStackedPlans = async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - User ID is added by auth middleware
+    const userId = req.user._id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+    
+    // Find all stacked plans (subscriptions with parentSubscriptionId)
+    const stackedPlans = await Subscription.find({
+      userId,
+      parentSubscriptionId: { $exists: true },
+      status: SubscriptionStatus.ACTIVE
+    }).populate('plan');
+    
+    return res.status(200).json({
+      success: true,
+      data: stackedPlans
+    });
+  } catch (error) {
+    console.error('Error fetching stacked plans:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching stacked plans'
+    });
+  }
+};
+
+/**
+ * Get total subscription benefits across all stacked plans
+ */
+export const getTotalSubscriptionBenefits = async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - User ID is added by auth middleware
+    const userId = req.user._id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+    
+    // Find all active subscriptions including stacked plans
+    const allSubscriptions = await Subscription.find({
+      userId,
+      status: SubscriptionStatus.ACTIVE
+    }).populate('plan');
+    
+    // Calculate total benefits
+    const totalBenefits = {
+      totalAmount: allSubscriptions.reduce((sum, sub) => sum + sub.amount, 0),
+      totalDays: allSubscriptions.reduce((sum, sub) => {
+        const days = Math.ceil((sub.endDate.getTime() - sub.startDate.getTime()) / (1000 * 60 * 60 * 24));
+        return sum + days;
+      }, 0),
+      plans: allSubscriptions.map(sub => ({
+        planId: sub.plan._id,
+        planName: sub.plan.name,
+        amount: sub.amount,
+        startDate: sub.startDate,
+        endDate: sub.endDate,
+        isStacked: !!sub.parentSubscriptionId
+      }))
+    };
+    
+    return res.status(200).json({
+      success: true,
+      data: totalBenefits
+    });
+  } catch (error) {
+    console.error('Error calculating total subscription benefits:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error calculating total subscription benefits'
+    });
+  }
+};
+
 // Export all controller methods
 export default {
   getPricingPlans,
@@ -1010,5 +1188,8 @@ export default {
   getAdditionalPlans,
   pauseSubscription,
   enableSubscription,
-  cancelSubscription
+  cancelSubscription,
+  stackNewPlan,
+  getStackedPlans,
+  getTotalSubscriptionBenefits
 }; 
