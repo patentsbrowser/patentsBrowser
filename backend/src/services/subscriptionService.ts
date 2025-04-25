@@ -19,7 +19,7 @@ export const updateSubscriptionStatuses = async () => {
 
     // Update expired paid subscriptions
     const expiredSubscriptions = await Subscription.find({
-      status: { $in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.PAID] },
+      status: SubscriptionStatus.ACTIVE,
       endDate: { $lt: now }
     });
 
