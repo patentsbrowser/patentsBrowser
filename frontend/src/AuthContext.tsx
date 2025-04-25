@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useEffect, useRef, useCallback } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { useMutation } from '@tanstack/react-query';
 import { authApi } from './api/auth';
 import { toast } from 'react-hot-toast';
@@ -46,53 +46,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [adminCheckPerformed, setAdminCheckPerformed] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const inactivityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
-
-  // Function to reset inactivity timer
-  const resetInactivityTimer = useCallback(() => {
-    if (inactivityTimeoutRef.current) {
-      clearTimeout(inactivityTimeoutRef.current);
-    }
-
-    if (user) {
-      inactivityTimeoutRef.current = setTimeout(() => {
-        // Clear user data and redirect to login
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setUser(null);
-        window.location.href = '/';
-        toast.error('Session expired due to inactivity');
-      }, INACTIVITY_TIMEOUT);
-    }
-  }, [user]);
-
-  // Set up activity listeners
-  useEffect(() => {
-    if (user) {
-      const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-      
-      const handleActivity = () => {
-        resetInactivityTimer();
-      };
-
-      activityEvents.forEach(event => {
-        window.addEventListener(event, handleActivity);
-      });
-
-      // Initial timer setup
-      resetInactivityTimer();
-
-      return () => {
-        activityEvents.forEach(event => {
-          window.removeEventListener(event, handleActivity);
-        });
-        if (inactivityTimeoutRef.current) {
-          clearTimeout(inactivityTimeoutRef.current);
-        }
-      };
-    }
-  }, [user, resetInactivityTimer]);
 
   // Function to check admin status (to be called only once)
   const checkAdminStatus = async () => {

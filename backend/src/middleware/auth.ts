@@ -17,7 +17,6 @@ declare global {
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
 
 export const auth = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -38,7 +37,7 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
       const decoded: any = jwt.verify(token, JWT_SECRET);
       console.log('Auth middleware - decoded token:', { ...decoded, userId: decoded.userId });
       
-      // Check if user exists and if the token matches the active token
+      // Check if user exists
       const user = await User.findById(decoded.userId);
       
       if (!user) {
@@ -50,29 +49,6 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
           code: 'INVALID_TOKEN'
         });
       }
-      
-      // Check for user inactivity
-      const lastActivity = user.lastActivity || user.lastLogin;
-      const now = new Date();
-      const timeSinceLastActivity = now.getTime() - lastActivity.getTime();
-      
-      if (timeSinceLastActivity > INACTIVITY_TIMEOUT) {
-        console.log('User inactive for too long, logging out');
-        // Clear the active token
-        user.activeToken = null;
-        await user.save();
-        
-        return res.status(401).json({
-          statusCode: 401,
-          message: 'Session expired due to inactivity',
-          data: null,
-          code: 'SESSION_EXPIRED'
-        });
-      }
-      
-      // Update last activity timestamp
-      user.lastActivity = now;
-      await user.save();
       
       // Set user data on the request
       req.user = {
