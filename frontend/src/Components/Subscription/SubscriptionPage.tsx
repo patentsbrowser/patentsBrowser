@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as SubscriptionService from '../../services/SubscriptionService';
-// import './SubscriptionPage.scss';
-import './CurrentSubscription.scss';
+import './SubscriptionPage.scss';
+// import './CurrentSubscription.scss';
 import { toast } from 'react-toastify';
 import { QRCodeSVG } from 'qrcode.react';
 import { Link } from 'react-router-dom';
@@ -885,7 +885,7 @@ const SubscriptionPage: React.FC = () => {
         <div className="loading-subscription">Loading your subscription details...</div>
       ) : (
         <>
-          {userSubscription && (
+          {userSubscription && userSubscription.status !== 'trial' && (
             <div className="current-subscription-container">
               <div className="subscription-box">
                 <div className="section current-plan">
