@@ -26,15 +26,22 @@ router.post('/signup', async (req:any, res:any) => {
       });
     }
 
-    // Create new user
+    // Calculate trial end date (14 days from now)
+    const trialEndDate = new Date();
+    trialEndDate.setDate(trialEndDate.getDate() + 14);
+
+    // Create new user with trial period
     const user = new User({
       name,
       email,
-      password
+      password,
+      subscriptionStatus: 'trial',
+      trialEndDate,
+      trialStartDate: new Date()
     });
 
     await user.save();
-    console.log('New user created:', email);
+    console.log('New user created with trial period:', email);
 
     // Generate and send OTP
     const otp = generateOTP();
@@ -57,7 +64,8 @@ router.post('/signup', async (req:any, res:any) => {
         user: {
           id: user._id,
           name: user.name,
-          email: user.email
+          email: user.email,
+          trialEndDate: user.trialEndDate
         }
       }
     });

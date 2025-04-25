@@ -18,23 +18,55 @@ export const getAllUsers = async (req: Request, res: Response) => {
       status: SubscriptionStatus.ACTIVE
     });
 
-    // Create a map of user IDs to their subscription status
+    // Create a map of user IDs to their subscription status and latest reference number
     const subscriptionMap = new Map();
     subscriptions.forEach(sub => {
-      subscriptionMap.set(sub.userId.toString(), true);
+      const userId = sub.userId.toString();
+      const existingData = subscriptionMap.get(userId) || { hasSubscription: false, referenceNumber: null };
+      
+      // Update subscription status
+      existingData.hasSubscription = true;
+      
+      // Update reference number if this subscription has one and is newer
+      if (sub.upiTransactionRef) {
+        if (!existingData.referenceNumber || 
+            new Date(sub.createdAt) > new Date(existingData.createdAt)) {
+          existingData.referenceNumber = sub.upiTransactionRef;
+          existingData.createdAt = sub.createdAt;
+        }
+      }
+      
+      subscriptionMap.set(userId, existingData);
     });
 
     // Format user data for response
     const formattedUsers = users.map(user => {
-      // Only set subscriptionStatus if user has an active subscription
-      const hasSubscription = subscriptionMap.get(user._id.toString());
+      // Check if user is on trial
+      const isOnTrial = user.subscriptionStatus === SubscriptionStatus.TRIAL && user.trialEndDate && new Date(user.trialEndDate) > new Date();
+      
+      // Calculate remaining trial days if on trial
+      let trialDaysRemaining = 0;
+      if (isOnTrial && user.trialEndDate) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const trialEndDate = new Date(user.trialEndDate);
+        trialEndDate.setHours(0, 0, 0, 0);
+        
+        if (trialEndDate > today) {
+          const diffTime = trialEndDate.getTime() - today.getTime();
+          trialDaysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+      }
+      
+      const userSubscriptionData = subscriptionMap.get(user._id.toString()) || { hasSubscription: false, referenceNumber: null };
       
       return {
         id: user._id,
         name: user.name,
         email: user.email,
-        subscriptionStatus: hasSubscription ? user.subscriptionStatus : null,
-        referenceNumber: user.referenceNumber || 'N/A',
+        subscriptionStatus: isOnTrial ? 'trial' : (userSubscriptionData.hasSubscription ? user.subscriptionStatus : 'inactive'),
+        referenceNumber: userSubscriptionData.referenceNumber || 'N/A',
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
         isEmailVerified: user.isEmailVerified,
@@ -44,7 +76,8 @@ export const getAllUsers = async (req: Request, res: Response) => {
         phoneCode: user.phoneCode,
         gender: user.gender,
         nationality: user.nationality,
-        trialEndDate: user.trialEndDate
+        trialEndDate: user.trialEndDate,
+        trialDaysRemaining
       };
     });
 
@@ -632,4 +665,76 @@ export const getUserProfile = async (req: Request, res: Response) => {
       message: 'Error getting user profile'
     });
   }
+};
+
+// Get user payment history
+export const getUserPaymentHistory = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.id;
+
+    // Check if the ID is valid
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Invalid user ID',
+        data: null
+      });
+    }
+
+    // Get all subscriptions for the user, sorted by creation date (newest first)
+    const subscriptions = await Subscription.find({ userId })
+      .sort({ createdAt: -1 })
+      .populate('verifiedBy', 'name email');
+
+    // Format subscription data for response
+    const paymentHistory = subscriptions.map(sub => ({
+      id: sub._id,
+      planName: sub.plan,
+      planDuration: getPlanDuration(sub.startDate, sub.endDate),
+      amount: sub.amount,
+      currency: 'INR', // Assuming INR as default currency
+      referenceNumber: sub.upiTransactionRef || 'N/A',
+      status: sub.status,
+      startDate: sub.startDate,
+      endDate: sub.endDate,
+      transactionDate: sub.createdAt,
+      orderId: sub.upiOrderId || 'N/A',
+      adminMessage: sub.notes || null,
+      verifiedBy: sub.verifiedBy ? {
+        name: sub.verifiedBy.name,
+        email: sub.verifiedBy.email
+      } : null,
+      verificationDate: sub.verificationDate
+    }));
+
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Payment history retrieved successfully',
+      data: paymentHistory
+    });
+  } catch (error: any) {
+    console.error('Error retrieving payment history:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to retrieve payment history',
+      data: null
+    });
+  }
+};
+
+// Helper function to calculate plan duration
+const getPlanDuration = (startDate: Date, endDate: Date): string => {
+  if (!startDate || !endDate) return 'N/A';
+  
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const diffTime = Math.abs(end.getTime() - start.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 30) return '1 Month';
+  if (diffDays === 90) return '3 Months';
+  if (diffDays === 180) return '6 Months';
+  if (diffDays === 365) return '1 Year';
+  
+  return `${diffDays} Days`;
 }; 
