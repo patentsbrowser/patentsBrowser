@@ -588,6 +588,7 @@
                 background: var(--primary-bg);
                 color: var(--text-color);
                 transition: all 0.2s ease;
+                flex: 1;
 
                 &:focus {
                   border-color: #2563eb;
@@ -599,7 +600,7 @@
                 }
               }
 
-              button {
+              .edit-button {
                 width: 36px;
                 height: 36px;
                 display: flex;
@@ -611,16 +612,28 @@
                 color: var(--text-color);
                 cursor: pointer;
                 transition: all 0.2s ease;
+                padding: 0;
 
                 &:hover {
                   background: var(--hover-bg);
                   border-color: #2563eb;
+                  color: #2563eb;
                 }
 
                 &.editing {
                   background: #2563eb;
                   border-color: #2563eb;
                   color: white;
+
+                  &:hover {
+                    background: #1d4ed8;
+                    color: white;
+                  }
+                }
+
+                svg {
+                  width: 16px;
+                  height: 16px;
                 }
               }
             }

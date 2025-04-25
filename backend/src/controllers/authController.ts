@@ -51,6 +51,7 @@ export const login = async (req: Request, res: Response) => {
     
     const user = await User.findOne({ email });
     console.log('User found:', user ? 'Yes' : 'No');
+    console.log('User admin status:', user?.isAdmin);
     
     if (!user) {
       console.log('User not found for email:', email);
@@ -96,7 +97,8 @@ export const login = async (req: Request, res: Response) => {
       isAdmin: user.isAdmin
     });
 
-    res.status(200).json({
+    // Log the exact response being sent
+    const responseData = {
       statusCode: 200,
       message: 'Successfully logged in!',
       data: {
@@ -108,7 +110,10 @@ export const login = async (req: Request, res: Response) => {
           isAdmin: user.isAdmin 
         }
       }
-    });
+    };
+    console.log('Login response data:', JSON.stringify(responseData, null, 2));
+
+    res.status(200).json(responseData);
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({
@@ -293,54 +298,6 @@ export const uploadImage = async (req: Request, res: Response) => {
       statusCode: 500,
       message: 'Failed to upload image',
       data: null
-    });
-  }
-};
-
-// Check if a user has admin privileges
-export const checkAdminStatus = async (req: Request, res: Response) => {
-  try {
-    console.log('checkAdminStatus called with user:', req.user);
-    
-    // Check if user exists
-    if (!req.user || !req.user.userId) {
-      console.log('checkAdminStatus: No user in request');
-      return res.status(401).json({
-        statusCode: 401,
-        message: 'Unauthorized',
-        data: null
-      });
-    }
-
-    const user = await User.findById(req.user.userId);
-    console.log('checkAdminStatus: Found user:', user ? {
-      id: user._id,
-      email: user.email,
-      isAdmin: user.isAdmin
-    } : 'No user found');
-    
-    if (!user) {
-      return res.status(404).json({
-        statusCode: 404,
-        message: 'User not found',
-        data: null
-      });
-    }
-
-    console.log('checkAdminStatus: Returning isAdmin status:', !!user.isAdmin);
-    
-    res.status(200).json({
-      statusCode: 200,
-      message: 'Admin status checked successfully',
-      isAdmin: !!user.isAdmin
-    });
-  } catch (error) {
-    console.error('Error checking admin status:', error);
-    res.status(500).json({
-      statusCode: 500,
-      message: 'Failed to check admin status',
-      data: null,
-      isAdmin: false
     });
   }
 };

@@ -133,57 +133,75 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
   if (showPasswordSetup) {
     return (
       <motion.div
-        className="auth-box"
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
+        className="set-password-modal"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
       >
-        <h2>Set Your Password</h2>
-        <p>Please set a password for your account to continue</p>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handlePasswordSetup(password);
+        <motion.div
+          className="modal-content"
+          initial={{ scale: 0.95, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          exit={{ scale: 0.95, y: 20 }}
+          transition={{
+            type: "spring",
+            stiffness: 300,
+            damping: 25
           }}
         >
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <div className="password-input-container">
-              <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                required
-                className="auth-input"
-              />
-              <motion.button
-                type="button"
-                className="password-toggle-btn"
-                onClick={togglePasswordVisibility}
-                tabIndex={-1}
-                whileHover={{ scale: 1.2, rotate: 5 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </motion.button>
-            </div>
-          </div>
+          <h2>Set Your Password</h2>
+          <p>Please set a password for your account to continue using the application</p>
 
-          <motion.button
-            type="submit"
-            className="submit-btn"
-            whileHover={{
-              scale: 1.05,
-              y: -5,
-              boxShadow: "0 10px 25px rgba(106, 38, 205, 0.4)",
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (password.length < 6) {
+                toast.error("Password must be at least 6 characters long");
+                return;
+              }
+              handlePasswordSetup(password);
             }}
-            whileTap={{ scale: 0.95 }}
           >
-            Set Password
-          </motion.button>
-        </form>
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <div className="password-input-container">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                  minLength={6}
+                  className="auth-input"
+                />
+                <motion.button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={togglePasswordVisibility}
+                  tabIndex={-1}
+                  whileHover={{ scale: 1.2, rotate: 5 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </motion.button>
+              </div>
+            </div>
+
+            <motion.button
+              type="submit"
+              className="submit-btn"
+              whileHover={{
+                scale: 1.05,
+                y: -5,
+                boxShadow: "0 10px 25px rgba(106, 38, 205, 0.4)",
+              }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Set Password
+            </motion.button>
+          </form>
+        </motion.div>
       </motion.div>
     );
   }

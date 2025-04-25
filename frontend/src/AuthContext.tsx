@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { useMutation } from '@tanstack/react-query';
 import { authApi } from './api/auth';
+import { toast } from 'react-hot-toast';
 
 interface User {
   id: string;
@@ -32,66 +33,27 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// Define useAuth hook before the provider
+const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  // Initialize user from localStorage if available
-  const [user, setUser] = useState<User | null>(() => {
-    try {
-      const savedUser = localStorage.getItem('user');
-      // Only parse if savedUser exists and is not "undefined"
-      const parsedUser = savedUser && savedUser !== "undefined" ? JSON.parse(savedUser) : null;
-      return parsedUser;
-    } catch (error) {
-      // Clear potentially corrupted data
-      localStorage.removeItem('user');
-      return null;
-    }
-  });
-
-  // Check if token exists on component mount
-  useEffect(() => {
-    try {
-      const token = localStorage.getItem('token');
-      const savedUser = localStorage.getItem('user');
-      
-      if (!token || !savedUser || savedUser === "undefined") {
-        // Clean up any inconsistent state
-        if (!token) localStorage.removeItem('user');
-        if (!savedUser) localStorage.removeItem('token');
-        setUser(null);
-      }
-    } catch (error) {
-      // If there's any error, clear the auth state to be safe
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setUser(null);
-    }
-  }, []);
-
-  // Add a new state variable to track when admin check has already been performed
-  const [adminCheckPerformed, setAdminCheckPerformed] = useState<boolean>(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [adminCheckPerformed, setAdminCheckPerformed] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Function to check admin status (to be called only once)
   const checkAdminStatus = async () => {
     // Skip if already checked or no user
     if (adminCheckPerformed || !user) return;
     
-    try {
-      const { authApi } = await import('./api/auth');
-      const result = await authApi.checkAdminStatus();
-      
-      if (result.isAdmin) {
-        // Update user object with admin status
-        const updatedUser = { ...user, isAdmin: true };
-        setUser(updatedUser);
-        
-        // Update localStorage
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-      }
-    } catch (error) {
-      console.error('AuthContext - Error checking admin status:', error);
-    } finally {
-      setAdminCheckPerformed(true);
-    }
+    // No need to make an API call since we already have the admin status from login
+    setAdminCheckPerformed(true);
   };
 
   // Expose the admin check function
@@ -103,9 +65,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginMutation = useMutation({
     mutationFn: (credentials: { email: string; password: string }) => authApi.login(credentials),
     onSuccess: (data) => {
+      console.log('Login response received:', data);
+      console.log('User admin status from response:', data.user?.isAdmin);
+      
+      // Ensure we're storing the complete user object with admin status
+      const userData = {
+        ...data.user,
+        isAdmin: data.user?.isAdmin || false
+      };
+      
       localStorage.setItem('token', data.data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      setUser(data.user);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      
+      // Set admin check as performed since we have the status from login
+      setAdminCheckPerformed(true);
+      
+      // Log the user state after update
+      console.log('User state after login:', userData);
     }
   });
 
@@ -163,10 +140,5 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-}; 
+// Export useAuth separately
+export { useAuth }; 

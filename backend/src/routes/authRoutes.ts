@@ -1,5 +1,5 @@
 import express from 'express';
-import { getProfile, login, logout, signup, updateProfile, uploadImage, checkAdminStatus, AuthController, changePassword } from '../controllers/authController.js';
+import { getProfile, login, updateProfile, uploadImage, AuthController, changePassword } from '../controllers/authController.js';
 import { auth } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import { User } from '../models/User.js';
@@ -222,9 +222,6 @@ router.post('/logout', auth, async (req, res) => {
     });
   }
 });
-
-// Check admin status route
-router.get('/check-admin', auth, checkAdminStatus);
 
 router.get('/profile', auth, getProfile);
 router.post('/update-profile', auth, updateProfile);
