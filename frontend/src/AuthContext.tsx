@@ -39,6 +39,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const savedUser = localStorage.getItem('user');
       // Only parse if savedUser exists and is not "undefined"
       const parsedUser = savedUser && savedUser !== "undefined" ? JSON.parse(savedUser) : null;
+      console.log('Initialized user from localStorage:', parsedUser);
       return parsedUser;
     } catch (error) {
       // Clear potentially corrupted data
@@ -58,6 +59,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (!token) localStorage.removeItem('user');
         if (!savedUser) localStorage.removeItem('token');
         setUser(null);
+      } else {
+        // Log the user data on mount
+        const parsedUser = JSON.parse(savedUser);
+        console.log('User data on mount:', parsedUser);
+        console.log('Admin status on mount:', parsedUser.isAdmin);
       }
     } catch (error) {
       // If there's any error, clear the auth state to be safe
@@ -75,23 +81,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Skip if already checked or no user
     if (adminCheckPerformed || !user) return;
     
-    try {
-      const { authApi } = await import('./api/auth');
-      const result = await authApi.checkAdminStatus();
-      
-      if (result.isAdmin) {
-        // Update user object with admin status
-        const updatedUser = { ...user, isAdmin: true };
-        setUser(updatedUser);
-        
-        // Update localStorage
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-      }
-    } catch (error) {
-      console.error('AuthContext - Error checking admin status:', error);
-    } finally {
-      setAdminCheckPerformed(true);
-    }
+    // No need to make an API call since we already have the admin status from login
+    setAdminCheckPerformed(true);
   };
 
   // Expose the admin check function
@@ -103,9 +94,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginMutation = useMutation({
     mutationFn: (credentials: { email: string; password: string }) => authApi.login(credentials),
     onSuccess: (data) => {
+      console.log('Login response received:', data);
+      console.log('User admin status from response:', data.user?.isAdmin);
+      
+      // Ensure we're storing the complete user object with admin status
+      const userData = {
+        ...data.user,
+        isAdmin: data.user?.isAdmin || false
+      };
+      
       localStorage.setItem('token', data.data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      setUser(data.user);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      
+      // Set admin check as performed since we have the status from login
+      setAdminCheckPerformed(true);
+      
+      // Log the user state after update
+      console.log('User state after login:', userData);
     }
   });
 

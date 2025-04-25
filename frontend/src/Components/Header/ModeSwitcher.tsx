@@ -1,11 +1,10 @@
 import { useAuth } from '../../AuthContext';
 import { useAdmin } from '../../context/AdminContext';
-import { useEffect, useState } from 'react';
 import './ModeSwitcher.scss';
 
 const ModeSwitcher = () => {
-  const { user, adminCheckPerformed } = useAuth();
-  const { isAdminMode, toggleAdminMode, setAdminMode } = useAdmin();
+  const { user } = useAuth();
+  const { isAdminMode, toggleAdminMode } = useAdmin();
 
   // Only show the switcher if the user has admin privileges
   if (!user?.isAdmin) {
