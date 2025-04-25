@@ -46,4 +46,9 @@ router.get('/check', auth, checkSubscription, (req, res) => {
   });
 });
 
+// Admin subscription management routes
+router.post('/users/:userId/pause-subscription', auth, adminAuth, subscriptionController.pauseSubscription);
+router.post('/users/:userId/enable-subscription', auth, adminAuth, subscriptionController.enableSubscription);
+router.post('/users/:userId/cancel-subscription', auth, adminAuth, subscriptionController.cancelSubscription);
+
 export default router; 

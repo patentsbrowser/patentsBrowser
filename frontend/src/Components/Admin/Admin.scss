@@ -456,6 +456,30 @@
       background-color: rgba(var(--accent-rgb), 0.8);
     }
   }
+  
+  &.pause-btn {
+    background-color: #f59e0b;
+    color: white;
+    &:hover {
+      background-color: #d97706;
+    }
+  }
+  
+  &.cancel-btn {
+    background-color: #ef4444;
+    color: white;
+    &:hover {
+      background-color: #dc2626;
+    }
+  }
+  
+  &.enable-btn {
+    background-color: #10b981;
+    color: white;
+    &:hover {
+      background-color: #059669;
+    }
+  }
 }
 
 .loading-state, .error-state {
@@ -2466,6 +2490,67 @@
         &:disabled {
           opacity: 0.6;
           cursor: not-allowed;
+        }
+      }
+    }
+  }
+}
+
+.confirmation-modal {
+  max-width: 400px !important;
+  
+  .confirmation-icon {
+    font-size: 2.5rem;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  
+  .confirmation-message {
+    text-align: center;
+    font-size: 1.1rem;
+    color: var(--text-color);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+  
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    background-color: rgba(0, 0, 0, 0.02);
+    
+    .btn {
+      min-width: 100px;
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.5rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      
+      &.btn-secondary {
+        background-color: var(--primary-bg);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+        
+        &:hover {
+          background-color: var(--hover-bg);
+          border-color: var(--text-color);
+        }
+      }
+      
+      &.btn-primary {
+        color: white;
+        border: none;
+        
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        &:active {
+          transform: translateY(0);
         }
       }
     }

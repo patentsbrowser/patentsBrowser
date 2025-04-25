@@ -825,6 +825,178 @@ export const getAdditionalPlans = async (req: Request, res: Response) => {
   }
 };
 
+// Pause subscription
+export const pauseSubscription = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const adminId = req.user?._id;
+
+    // Find the user's active subscription
+    const subscription = await Subscription.findOne({
+      userId,
+      status: SubscriptionStatus.ACTIVE
+    });
+
+    if (!subscription) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'No active subscription found for this user',
+        data: null
+      });
+    }
+
+    // Update subscription status to inactive
+    const updatedSubscription = await Subscription.findByIdAndUpdate(
+      subscription._id,
+      {
+        status: SubscriptionStatus.INACTIVE,
+        notes: 'Subscription paused by admin',
+        verifiedBy: adminId,
+        verificationDate: new Date()
+      },
+      { new: true }
+    );
+
+    // Update user's subscription status
+    await User.findByIdAndUpdate(userId, {
+      subscriptionStatus: 'inactive'
+    });
+
+    return res.status(200).json({
+      statusCode: 200,
+      message: 'Subscription paused successfully',
+      data: updatedSubscription
+    });
+  } catch (error) {
+    console.error('Error pausing subscription:', error);
+    return res.status(500).json({
+      statusCode: 500,
+      message: 'Error pausing subscription',
+      data: null
+    });
+  }
+};
+
+// Enable subscription
+export const enableSubscription = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const adminId = req.user?._id;
+
+    // Find the user's inactive subscription
+    const subscription = await Subscription.findOne({
+      userId,
+      status: SubscriptionStatus.INACTIVE
+    });
+
+    if (!subscription) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'No inactive subscription found for this user',
+        data: null
+      });
+    }
+
+    // Calculate remaining time from original end date
+    const now = new Date();
+    const originalEndDate = subscription.endDate;
+    const timeRemaining = originalEndDate.getTime() - now.getTime();
+    
+    // If subscription has expired, return error
+    if (timeRemaining <= 0) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Subscription has expired. Please create a new subscription.',
+        data: null
+      });
+    }
+
+    // Update subscription status to active
+    const updatedSubscription = await Subscription.findByIdAndUpdate(
+      subscription._id,
+      {
+        status: SubscriptionStatus.ACTIVE,
+        notes: 'Subscription enabled by admin',
+        verifiedBy: adminId,
+        verificationDate: new Date()
+      },
+      { new: true }
+    );
+
+    // Update user's subscription status
+    await User.findByIdAndUpdate(userId, {
+      subscriptionStatus: 'active'
+    });
+
+    return res.status(200).json({
+      statusCode: 200,
+      message: 'Subscription enabled successfully',
+      data: updatedSubscription
+    });
+  } catch (error) {
+    console.error('Error enabling subscription:', error);
+    return res.status(500).json({
+      statusCode: 500,
+      message: 'Error enabling subscription',
+      data: null
+    });
+  }
+};
+
+// Cancel subscription
+export const cancelSubscription = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const adminId = req.user?._id;
+
+    // Find the user's active or inactive subscription
+    const subscription = await Subscription.findOne({
+      userId,
+      status: { $in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.INACTIVE] }
+    });
+
+    if (!subscription) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'No active or inactive subscription found for this user',
+        data: null
+      });
+    }
+
+    // Update subscription status to cancelled
+    const updatedSubscription = await Subscription.findByIdAndUpdate(
+      subscription._id,
+      {
+        status: SubscriptionStatus.CANCELLED,
+        notes: 'Subscription cancelled by admin',
+        verifiedBy: adminId,
+        verificationDate: new Date(),
+        cancelledAt: new Date()
+      },
+      { new: true }
+    );
+
+    // Update user's subscription status
+    await User.findByIdAndUpdate(userId, {
+      subscriptionStatus: 'inactive',
+      paymentStatus: 'free'
+    });
+
+    return res.status(200).json({
+      statusCode: 200,
+      message: 'Subscription cancelled successfully',
+      data: updatedSubscription
+    });
+  } catch (error) {
+    console.error('Error cancelling subscription:', error);
+    return res.status(500).json({
+      statusCode: 500,
+      message: 'Error cancelling subscription',
+      data: null
+    });
+  }
+};
+
 // Export all controller methods
 export default {
   getPricingPlans,
@@ -835,5 +1007,8 @@ export default {
   getPendingPayments,
   verifyPayment,
   getUserPaymentHistory,
-  getAdditionalPlans
+  getAdditionalPlans,
+  pauseSubscription,
+  enableSubscription,
+  cancelSubscription
 }; 
