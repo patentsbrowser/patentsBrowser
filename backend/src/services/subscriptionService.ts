@@ -1,6 +1,6 @@
-import { User } from '../models/User';
-import { Subscription } from '../models/Subscription';
-import { SubscriptionStatus } from '../models/Subscription';
+import { User } from '../models/User.js';
+import { Subscription } from '../models/Subscription.js';
+import { SubscriptionStatus } from '../models/Subscription.js';
 
 export const updateSubscriptionStatuses = async () => {
   try {
