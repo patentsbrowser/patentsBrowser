@@ -158,19 +158,24 @@ const SavedPatentList = () => {
     try {
       const response = await authApi.uploadPatentFile(file);
       
-      if (response.data && Array.isArray(response.data.patentIds)) {
-        const extractedIds: string[] = response.data.patentIds;
+      if (response.data) {
+        const { patentIds, notFoundPatents } = response.data;
         
-        // Search patents in Unified Patents API
-        setIsSearching(true);
-        await searchPatentsMutation.mutateAsync(extractedIds);
+        if (notFoundPatents && notFoundPatents.length > 0) {
+          toast.error(`${notFoundPatents.length} patents could not be transformed to unified format`);
+          setNotFoundPatents(notFoundPatents);
+        }
         
-        if (extractedIds.length > 0) {
-          setPatentIds(extractedIds);
+        if (patentIds && patentIds.length > 0) {
+          // Search patents in Unified Patents API
+          // setIsSearching(true);
+          // await searchPatentsMutation.mutateAsync(patentIds);
+          
+          setPatentIds(patentIds);
           setShowFolderModal(true);
-          toast.success(`Added ${extractedIds.length} new patents`);
+          toast.success(`Added ${patentIds.length} new patents`);
         } else {
-          toast.success('All patents from this file have already been added');
+          toast.success('No valid patents found in the file');
         }
       }
     } catch (error: any) {
@@ -302,7 +307,7 @@ const SavedPatentList = () => {
             <p>The system will extract patent IDs from the uploaded file</p>
             <p>For spreadsheet files (Excel/CSV): Looks for "Publication numbers" in column B and "Publication kind code" headers</p>
             <p>Multiple publication numbers and kind codes in the same cell will be processed separately</p>
-            <p>Publication numbers and kind codes will be kept in their original format</p>
+            <p>Publication numbers will be automatically transformed to unified format</p>
           </div>
         </div>
         

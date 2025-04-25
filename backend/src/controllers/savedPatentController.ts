@@ -10,6 +10,7 @@ import { standardizePatentNumber } from '../utils/patentUtils.js';
 import { SearchHistory } from '../models/SearchHistory.js';
 import { WorkFile } from '../models/WorkFile.js';
 import mongoose from 'mongoose';
+import axios from 'axios';
 
 function extractPatentId(trimmedLine: string): string | null {
   // Basic pattern for patent numbers (can be enhanced based on requirements)
@@ -610,27 +611,78 @@ export const extractPatentIdsFromFile = async (req: AuthRequest, res: Response) 
     // Clean up the uploaded file
     await fs.remove(filePath);
 
-    // Process the extracted patent IDs
-    const processedPatentIds = publicationNumbers.map((pubNum, index) => {
+    // First extract patent IDs from file
+    const extractedPatentIds = publicationNumbers.map((pubNum, index) => {
       let patentId = pubNum.trim();
       // If we have a kind code for this publication number, append it
       if (kindCodes[index]) {
-        patentId = `${patentId}${kindCodes[index]}`; // Remove hyphen when combining
+        patentId = `${patentId}${kindCodes[index]}`;
       }
       return patentId;
     });
 
-    // Return the extracted patent IDs along with raw data for reference
-    res.status(200).json({
-      statusCode: 200,
-      message: 'Patent IDs extracted successfully',
-      data: {
-        patentIds: processedPatentIds,
-        publicationNumbers,
-        kindCodes,
-        note: kindCodes.length > 0 ? 'Publication numbers were combined with their corresponding kind codes.' : undefined
+    // Then transform the extracted patent IDs
+    try {
+      console.log('Sending to transform API:', extractedPatentIds);
+      const transformResponse = await axios.post('https://api.unifiedpatents.com/helpers/transform-publication-numbers', {
+        publications: extractedPatentIds
+      });
+
+      // Process the response to extract unified format patent IDs
+      const transformedPatents: string[] = [];
+      const notFoundPatents: string[] = [];
+
+      // Check if we have a valid response
+      if (transformResponse.data && Array.isArray(transformResponse.data)) {
+        // The API returns an array of transformed patent IDs directly
+        transformResponse.data.forEach((transformedId: string, index: number) => {
+          if (transformedId) {
+            // Check if the transformed ID is different from the original
+            if (transformedId.toLowerCase() !== extractedPatentIds[index].toLowerCase()) {
+              transformedPatents.push(transformedId);
+            } else {
+              // If the ID didn't change, add it to not found patents
+              notFoundPatents.push(extractedPatentIds[index]);
+            }
+          } else {
+            notFoundPatents.push(extractedPatentIds[index]);
+          }
+        });
+      } else {
+        // If response structure is invalid, treat all as not found
+        notFoundPatents.push(...extractedPatentIds);
       }
-    });
+
+      console.log('Transformed patents:', transformedPatents);
+      console.log('Not found patents:', notFoundPatents);
+
+      // Return the transformed patent IDs along with raw data for reference
+      res.status(200).json({
+        statusCode: 200,
+        message: 'Patent IDs extracted and transformed successfully',
+        data: {
+          patentIds: transformedPatents,
+          notFoundPatents,
+          originalPublicationNumbers: publicationNumbers,
+          kindCodes,
+          note: kindCodes.length > 0 ? 'Publication numbers were combined with their corresponding kind codes and transformed to unified format.' : undefined
+        }
+      });
+    } catch (error) {
+      console.error('Error transforming publication numbers:', error);
+      // If transformation fails, return the original format
+      res.status(200).json({
+        statusCode: 200,
+        message: 'Patent IDs extracted successfully (transformation failed)',
+        data: {
+          patentIds: extractedPatentIds,
+          notFoundPatents: [],
+          originalPublicationNumbers: publicationNumbers,
+          kindCodes,
+          note: 'Failed to transform to unified format. Using original format.'
+        }
+      });
+    }
   } catch (error) {
     console.error('Error extracting patent IDs:', error);
     res.status(500).json({
