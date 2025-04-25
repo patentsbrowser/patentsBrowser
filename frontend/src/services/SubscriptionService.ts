@@ -252,6 +252,62 @@ export const getAdditionalPlans = async (subscriptionId: string) => {
   }
 };
 
+/**
+ * Stack a new plan on top of existing subscription
+ * @param planId - The ID of the plan to stack
+ * @param upiOrderId - A unique identifier for this order
+ */
+export const stackNewPlan = async (planId: string, upiOrderId: string) => {
+  try {
+    debugLog('Stacking new plan', { planId, upiOrderId });
+    
+    const response = await axiosInstance.post('/subscriptions/stack-plan', {
+      planId,
+      upiOrderId
+    });
+    
+    debugLog('Plan stacked successfully', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error stacking new plan:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all stacked plans for the current user
+ */
+export const getStackedPlans = async () => {
+  try {
+    debugLog('Getting stacked plans', {});
+    
+    const response = await axiosInstance.get('/subscriptions/stacked-plans');
+    
+    debugLog('Stacked plans response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error getting stacked plans:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get total subscription benefits across all stacked plans
+ */
+export const getTotalSubscriptionBenefits = async () => {
+  try {
+    debugLog('Getting total subscription benefits', {});
+    
+    const response = await axiosInstance.get('/subscriptions/total-benefits');
+    
+    debugLog('Total benefits response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error getting total subscription benefits:', error);
+    throw error;
+  }
+};
+
 export default {
   getSubscriptionPlans,
   createPendingSubscription,
@@ -259,5 +315,8 @@ export default {
   getUserSubscription,
   checkPaymentVerificationStatus,
   getUserPaymentHistory,
-  getAdditionalPlans
+  getAdditionalPlans,
+  stackNewPlan,
+  getStackedPlans,
+  getTotalSubscriptionBenefits
 }; 

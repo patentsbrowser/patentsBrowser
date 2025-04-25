@@ -17,6 +17,7 @@ const getCountryFlagEmoji = (countryCode: string): string => {
 const ProfilePage = () => {
   const navigate = useNavigate();
   const [countries, setCountries] = useState<ICountry[]>([]);
+  const [paymentStatus, setPaymentStatus] = useState<string>('free');
   
   // Load countries on component mount
   useEffect(() => {
@@ -40,7 +41,19 @@ const ProfilePage = () => {
   // Format payment status for display
   const formatPaymentStatus = (status?: string) => {
     if (!status) return "Free Trial";
-    return status === 'paid' ? "Paid Version" : "Free Trial";
+    
+    switch(status) {
+      case 'active':
+        return "Paid Subscription";
+      case 'pending':
+        return "Payment Pending";
+      case 'trial':
+        return "Free Trial";
+      case 'expired':
+        return "Expired";
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1);
+    }
   };
 
   const formatGender = (gender?: string) => {
@@ -146,8 +159,11 @@ const ProfilePage = () => {
           <div className="detail-item">
             <div className="detail-label">Subscription</div>
             <div className="detail-value status-value">
-              <span className={`payment-status small ${profile.paymentStatus === "Paid Version" ? 'paid' : 'free'}`}>
-                {profile.paymentStatus}
+              <span className={`payment-status small ${`payment-status ${
+            paymentStatus === 'active' ? 'paid' : 
+            paymentStatus === 'pending' ? 'pending' : 'free'
+          }`}`}>
+                {formatPaymentStatus(profile.paymentStatus)}
               </span>
             </div>
           </div>

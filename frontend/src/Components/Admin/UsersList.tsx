@@ -726,7 +726,7 @@ const UsersList = () => {
                         >
                           Edit
                         </button>
-                        {user.subscriptionStatus?.toLowerCase() === 'active' && (
+                        {user.subscriptionStatus && user.subscriptionStatus.toLowerCase() === 'active' && (
                           <>
                             <button
                               className="action-btn pause-btn"
@@ -742,7 +742,7 @@ const UsersList = () => {
                             </button>
                           </>
                         )}
-                        {user.subscriptionStatus?.toLowerCase() === 'inactive' && (
+                        {user.subscriptionStatus && user.subscriptionStatus.toLowerCase() === 'inactive' && (
                           <>
                             <button
                               className="action-btn enable-btn"

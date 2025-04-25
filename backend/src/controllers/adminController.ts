@@ -13,24 +13,40 @@ export const getAllUsers = async (req: Request, res: Response) => {
       __v: 0
     });
 
+    // Get all active subscriptions
+    const subscriptions = await Subscription.find({
+      status: SubscriptionStatus.ACTIVE
+    });
+
+    // Create a map of user IDs to their subscription status
+    const subscriptionMap = new Map();
+    subscriptions.forEach(sub => {
+      subscriptionMap.set(sub.userId.toString(), true);
+    });
+
     // Format user data for response
-    const formattedUsers = users.map(user => ({
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      subscriptionStatus: user.subscriptionStatus,
-      referenceNumber: user.referenceNumber || 'N/A',
-      createdAt: user.createdAt,
-      lastLogin: user.lastLogin,
-      isEmailVerified: user.isEmailVerified,
-      isAdmin: user.isAdmin,
-      address: user.address,
-      number: user.number,
-      phoneCode: user.phoneCode,
-      gender: user.gender,
-      nationality: user.nationality,
-      trialEndDate: user.trialEndDate
-    }));
+    const formattedUsers = users.map(user => {
+      // Only set subscriptionStatus if user has an active subscription
+      const hasSubscription = subscriptionMap.get(user._id.toString());
+      
+      return {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        subscriptionStatus: hasSubscription ? user.subscriptionStatus : null,
+        referenceNumber: user.referenceNumber || 'N/A',
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin,
+        isEmailVerified: user.isEmailVerified,
+        isAdmin: user.isAdmin,
+        address: user.address,
+        number: user.number,
+        phoneCode: user.phoneCode,
+        gender: user.gender,
+        nationality: user.nationality,
+        trialEndDate: user.trialEndDate
+      };
+    });
 
     res.status(200).json({
       statusCode: 200,
@@ -79,8 +95,61 @@ export const getUserById = async (req: Request, res: Response) => {
       });
     }
 
-    // Get subscription information
-    const subscription = await Subscription.findOne({ userId: user._id });
+    // Get all active subscriptions for the user
+    const subscriptions = await Subscription.find({
+      userId: user._id,
+      status: SubscriptionStatus.ACTIVE
+    }).sort({ endDate: -1 }); // Sort by endDate to get the latest subscription first
+
+    // Get the main subscription (the one with no parentSubscriptionId)
+    const mainSubscription = subscriptions.find(sub => !sub.parentSubscriptionId) || subscriptions[0];
+
+    // Get additional plans (all subscriptions with parentSubscriptionId)
+    const additionalPlans = subscriptions.filter(sub => sub.parentSubscriptionId);
+
+    // Calculate total subscription duration and latest end date
+    let latestEndDate = mainSubscription ? new Date(mainSubscription.endDate) : null;
+    let totalDays = 0;
+
+    if (mainSubscription) {
+      const mainDays = Math.ceil(
+        (new Date(mainSubscription.endDate).getTime() - new Date(mainSubscription.startDate).getTime()) 
+        / (1000 * 60 * 60 * 24)
+      );
+      totalDays += mainDays;
+    }
+
+    // Add duration from additional plans
+    additionalPlans.forEach(plan => {
+      const planDays = Math.ceil(
+        (new Date(plan.endDate).getTime() - new Date(plan.startDate).getTime()) 
+        / (1000 * 60 * 60 * 24)
+      );
+      totalDays += planDays;
+
+      // Update latest end date if this plan ends later
+      if (latestEndDate && new Date(plan.endDate) > latestEndDate) {
+        latestEndDate = new Date(plan.endDate);
+      }
+    });
+
+    // Calculate remaining trial days if user is on trial
+    let trialDaysRemaining = 0;
+    if (user.subscriptionStatus === SubscriptionStatus.TRIAL && user.trialEndDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const trialEndDate = new Date(user.trialEndDate);
+      trialEndDate.setHours(0, 0, 0, 0);
+      
+      if (trialEndDate > today) {
+        const diffTime = trialEndDate.getTime() - today.getTime();
+        trialDaysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+    }
+
+    // Calculate total amount from all subscriptions
+    const totalAmount = subscriptions.reduce((sum, sub) => sum + (sub.amount || 0), 0);
 
     // Format user data for response
     const userData = {
@@ -99,13 +168,17 @@ export const getUserById = async (req: Request, res: Response) => {
       gender: user.gender,
       nationality: user.nationality,
       trialEndDate: user.trialEndDate,
-      subscription: subscription ? {
-        plan: subscription.plan,
-        startDate: subscription.startDate,
-        endDate: subscription.endDate,
-        status: subscription.status,
-        trialEndsAt: subscription.trialEndsAt,
-        cancelledAt: subscription.cancelledAt
+      trialDaysRemaining,
+      subscription: subscriptions.length > 0 ? {
+        isActive: true,
+        mainPlan: mainSubscription,
+        additionalPlans,
+        isCustomPlan: additionalPlans.length > 0,
+        totalDays,
+        totalAmount,
+        latestEndDate,
+        stackedPlansCount: additionalPlans.length,
+        trialDaysRemaining
       } : null
     };
 
@@ -397,6 +470,9 @@ export const manageUserSubscription = async (req: Request, res: Response) => {
       status: SubscriptionStatus.ACTIVE 
     }).sort({ endDate: -1 });
 
+    // Get the main subscription (the one with no parentSubscriptionId)
+    const mainSubscription = existingSubscriptions.find(sub => !sub.parentSubscriptionId);
+
     // Create new subscription
     const newSubscription = new Subscription({
       userId,
@@ -406,18 +482,12 @@ export const manageUserSubscription = async (req: Request, res: Response) => {
       status: status
     });
 
-    // If there are existing active subscriptions, mark this as an additional plan
-    if (existingSubscriptions.length > 0) {
-      newSubscription.parentSubscriptionId = existingSubscriptions[0]._id;
+    // If there's a main subscription, this is a stacked plan
+    if (mainSubscription) {
+      newSubscription.parentSubscriptionId = mainSubscription._id;
     }
 
     await newSubscription.save();
-
-    // Update user's subscription status
-    await User.findByIdAndUpdate(userId, {
-      subscriptionStatus: status,
-      updatedAt: new Date()
-    });
 
     // Get all active subscriptions after update
     const updatedSubscriptions = await Subscription.find({
@@ -425,33 +495,57 @@ export const manageUserSubscription = async (req: Request, res: Response) => {
       status: SubscriptionStatus.ACTIVE
     }).sort({ endDate: -1 });
 
-    // Determine if this is a custom plan
-    const isCustomPlan = updatedSubscriptions.length > 1;
+    // Calculate total subscription duration and latest end date
+    let latestEndDate = new Date(endDate);
+    let totalDays = 0;
 
-    res.status(200).json({
+    updatedSubscriptions.forEach(sub => {
+      const subDays = Math.ceil(
+        (new Date(sub.endDate).getTime() - new Date(sub.startDate).getTime()) 
+        / (1000 * 60 * 60 * 24)
+      );
+      totalDays += subDays;
+
+      // Update latest end date if this subscription ends later
+      if (new Date(sub.endDate) > latestEndDate) {
+        latestEndDate = new Date(sub.endDate);
+      }
+    });
+
+    // Update user's subscription status and end date
+    await User.findByIdAndUpdate(userId, {
+      subscriptionStatus: status,
+      subscriptionEndDate: latestEndDate,
+      updatedAt: new Date()
+    });
+
+    // Get additional plans (all subscriptions with parentSubscriptionId)
+    const additionalPlans = updatedSubscriptions.filter(sub => sub.parentSubscriptionId);
+
+    // Calculate total amount
+    const totalAmount = updatedSubscriptions.reduce((sum, sub) => sum + (sub.amount || 0), 0);
+
+    return res.status(200).json({
       statusCode: 200,
       message: 'Subscription updated successfully',
       data: {
         subscription: {
-          userId,
-          plan: isCustomPlan ? 'custom' : newSubscription.plan,
-          startDate: newSubscription.startDate,
-          endDate: newSubscription.endDate,
-          status: newSubscription.status
-        },
-        additionalPlans: updatedSubscriptions.slice(1).map(sub => ({
-          plan: sub.plan,
-          startDate: sub.startDate,
-          endDate: sub.endDate,
-          status: sub.status
-        }))
+          isActive: true,
+          mainPlan: mainSubscription || newSubscription,
+          additionalPlans,
+          isCustomPlan: additionalPlans.length > 0,
+          totalDays,
+          totalAmount,
+          latestEndDate,
+          stackedPlansCount: additionalPlans.length
+        }
       }
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error managing user subscription:', error);
-    res.status(500).json({
+    return res.status(500).json({
       statusCode: 500,
-      message: 'Failed to update subscription: ' + error.message,
+      message: 'Error managing user subscription',
       data: null
     });
   }
@@ -476,60 +570,66 @@ export const getUserProfile = async (req: Request, res: Response) => {
       status: SubscriptionStatus.ACTIVE
     }).sort({ endDate: -1 }); // Sort by endDate to get the latest subscription first
 
-    // Get the main subscription (the one with the latest end date)
-    const mainSubscription = subscriptions[0];
+    // Get the main subscription (the one with no parentSubscriptionId)
+    const mainSubscription = subscriptions.find(sub => !sub.parentSubscriptionId) || subscriptions[0];
 
-    // Get additional plans (all other active subscriptions)
-    const additionalPlans = subscriptions.slice(1);
+    // Get additional plans (all subscriptions with parentSubscriptionId)
+    const additionalPlans = subscriptions.filter(sub => sub.parentSubscriptionId);
 
-    // Determine if this is a custom plan (multiple active subscriptions)
-    const isCustomPlan = subscriptions.length > 1;
+    // Calculate total subscription duration and latest end date
+    let latestEndDate = mainSubscription ? new Date(mainSubscription.endDate) : null;
+    let totalDays = 0;
 
-    // Transform the user data
-    const userProfile = {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      number: user.number,
-      phoneCode: user.phoneCode,
-      imageUrl: user.imageUrl,
-      subscriptionStatus: user.subscriptionStatus,
-      createdAt: user.createdAt,
-      lastLogin: user.lastLogin,
-      address: user.address,
-      gender: user.gender,
-      nationality: user.nationality,
-      isAdmin: user.isAdmin,
-      isEmailVerified: user.isEmailVerified,
-      timeSpent: user.timeSpent,
-      loginCount: user.loginCount,
-      avgSessionDuration: user.avgSessionDuration,
-      lastSessionDuration: user.lastSessionDuration,
-      subscription: mainSubscription ? {
-        plan: isCustomPlan ? 'custom' : mainSubscription.plan,
-        startDate: mainSubscription.startDate,
-        endDate: mainSubscription.endDate,
-        status: mainSubscription.status,
-        _id: mainSubscription._id
-      } : undefined,
-      additionalPlans: additionalPlans.length > 0 ? additionalPlans.map(plan => ({
-        plan: plan.plan,
-        startDate: plan.startDate,
-        endDate: plan.endDate,
-        status: plan.status,
-        _id: plan._id
-      })) : undefined
-    };
+    if (mainSubscription) {
+      const mainDays = Math.ceil(
+        (new Date(mainSubscription.endDate).getTime() - new Date(mainSubscription.startDate).getTime()) 
+        / (1000 * 60 * 60 * 24)
+      );
+      totalDays += mainDays;
+    }
+
+    // Add duration from additional plans
+    additionalPlans.forEach(plan => {
+      const planDays = Math.ceil(
+        (new Date(plan.endDate).getTime() - new Date(plan.startDate).getTime()) 
+        / (1000 * 60 * 60 * 24)
+      );
+      totalDays += planDays;
+
+      // Update latest end date if this plan ends later
+      if (latestEndDate && new Date(plan.endDate) > latestEndDate) {
+        latestEndDate = new Date(plan.endDate);
+      }
+    });
+
+    // Determine if this is a custom plan (has stacked plans)
+    const isCustomPlan = additionalPlans.length > 0;
+
+    // Calculate total amount
+    const totalAmount = subscriptions.reduce((sum, sub) => sum + (sub.amount || 0), 0);
 
     return res.status(200).json({
       statusCode: 200,
-      data: userProfile
+      message: 'User profile retrieved successfully',
+      data: {
+        ...user.toObject(),
+        subscription: {
+          isActive: subscriptions.length > 0,
+          mainPlan: mainSubscription,
+          additionalPlans,
+          isCustomPlan,
+          totalDays,
+          totalAmount,
+          latestEndDate,
+          stackedPlansCount: additionalPlans.length
+        }
+      }
     });
   } catch (error) {
     console.error('Error getting user profile:', error);
     return res.status(500).json({
       statusCode: 500,
-      message: 'Failed to get user profile'
+      message: 'Error getting user profile'
     });
   }
 }; 

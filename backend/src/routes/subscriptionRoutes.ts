@@ -51,4 +51,13 @@ router.post('/users/:userId/pause-subscription', auth, adminAuth, subscriptionCo
 router.post('/users/:userId/enable-subscription', auth, adminAuth, subscriptionController.enableSubscription);
 router.post('/users/:userId/cancel-subscription', auth, adminAuth, subscriptionController.cancelSubscription);
 
+// Stack a new plan on top of existing subscription (requires auth)
+router.post('/stack-plan', auth, subscriptionController.stackNewPlan);
+
+// Get all stacked plans for the current user (requires auth)
+router.get('/stacked-plans', auth, subscriptionController.getStackedPlans);
+
+// Get total subscription benefits across all stacked plans (requires auth)
+router.get('/total-benefits', auth, subscriptionController.getTotalSubscriptionBenefits);
+
 export default router; 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as SubscriptionService from '../../services/SubscriptionService';
 import './SubscriptionPage.scss';
+// import './CurrentSubscription.scss';
 import { toast } from 'react-toastify';
 import { QRCodeSVG } from 'qrcode.react';
 import { Link } from 'react-router-dom';
@@ -17,15 +18,13 @@ interface Plan {
 
 interface Subscription {
   _id: string;
-  status: 'active' | 'inactive' | 'trial' | 'cancelled' | 'payment_pending' | 'paid' | 'rejected';
   plan: Plan;
+  planName: string;
+  status: string;
   startDate: string;
   endDate: string;
-  userId: string;
-  trialEndsAt?: string;
+  isPendingPayment: boolean;
   trialDaysRemaining?: number;
-  parentSubscriptionId?: string;
-  isPendingPayment?: boolean;
 }
 
 interface PaymentModalProps {
@@ -36,6 +35,42 @@ interface PaymentModalProps {
   isTrialActive: boolean;
   trialDaysRemaining: number;
 }
+
+// Helper functions
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-IN', { 
+    day: 'numeric', 
+    month: 'short', 
+    year: 'numeric' 
+  });
+};
+
+const calculateDaysLeft = (endDate: string) => {
+  const today = new Date();
+  const end = new Date(endDate);
+  const diffTime = end.getTime() - today.getTime();
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+};
+
+const formatIndianPrice = (price: number): string => {
+  return price.toLocaleString('en-IN');
+};
+
+const getPlanTypeDisplay = (planType: string) => {
+  switch (planType) {
+    case 'monthly':
+      return 'Monthly';
+    case 'quarterly':
+      return 'Quarterly';
+    case 'half_yearly':
+      return 'Half Yearly';
+    case 'yearly':
+      return 'Yearly';
+    default:
+      return planType;
+  }
+};
 
 // UPI Reference validation function
 export function validateUPIReference(refNumber: string) {
@@ -513,29 +548,6 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
     }
   }, [subscription, additionalPlans]);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', { 
-      day: 'numeric', 
-      month: 'short', 
-      year: 'numeric' 
-    });
-  };
-
-  const calculateDaysLeft = (endDateString: string) => {
-    const endDate = new Date(endDateString);
-    const today = new Date();
-    
-    // Clear time portion for accurate day calculation
-    endDate.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
-    
-    const diffTime = endDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return diffDays;
-  };
-
   // Check if there's a pending payment
   const isPendingPayment = subscription.isPendingPayment || subscription.status === 'payment_pending';
 
@@ -622,7 +634,7 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
                 <div className="plan-type">
                   {subscription.plan.type === 'monthly' ? 'Monthly' : 
                     subscription.plan.type === 'quarterly' ? 'Quarterly' : 
-                    subscription.plan.type === 'half_yearly' ? 'Half Yearly' : 'Yearly'} Plan
+                    subscription.plan.type === 'half_yearly' ? 'Half Yearly' : 'Yearly'}
                 </div>
               )}
             </div>
@@ -751,6 +763,8 @@ const SubscriptionPage: React.FC = () => {
   const [isTrialActive, setIsTrialActive] = useState(false);
   const [hasPendingPayment, setHasPendingPayment] = useState(false);
   const [trialDaysRemaining, setTrialDaysRemaining] = useState(0);
+  const [stackedPlans, setStackedPlans] = useState<Subscription[]>([]);
+  const [totalBenefits, setTotalBenefits] = useState<any>(null);
   
   // Use ref to track if data has been fetched to prevent duplicate calls
   const dataFetchedRef = useRef(false);
@@ -760,38 +774,32 @@ const SubscriptionPage: React.FC = () => {
       setIsLoadingSubscription(true);
       const result = await SubscriptionService.getUserSubscription();
       
-      if (result.success && result.data) {
-        const subscriptionData = result.data;
-        setUserSubscription(subscriptionData);
+      if (result.success) {
+        setUserSubscription(result.data);
+        setIsTrialActive(result.data?.status === 'trial');
+        setHasPendingPayment(result.data?.isPendingPayment || false);
         
-        // Check if there's a pending payment, but exclude rejected payments
-        const isPending = (subscriptionData.isPendingPayment || subscriptionData.status === 'payment_pending') && 
-                         subscriptionData.status !== 'rejected';
-        setHasPendingPayment(isPending);
-        
-        // Set trial days remaining
-        if (subscriptionData.trialDaysRemaining !== undefined) {
-          setTrialDaysRemaining(subscriptionData.trialDaysRemaining);
+        if (result.data?.status === 'trial' && result.data?.trialDaysRemaining) {
+          setTrialDaysRemaining(result.data.trialDaysRemaining);
         }
         
-        // A user has an active trial if they're in trial status OR they have trialDaysRemaining
-        setIsTrialActive(
-          subscriptionData.status === 'trial' || 
-          (subscriptionData.trialDaysRemaining !== undefined && subscriptionData.trialDaysRemaining > 0)
-        );
-      } else {
-        // For new users or after payment rejection, reset to initial state
-        setUserSubscription(null);
-        setHasPendingPayment(false);
-        setTrialDaysRemaining(0);
-        setIsTrialActive(false);
+        // Fetch stacked plans if user has an active subscription
+        if (result.data?.status === 'active') {
+          const stackedResult = await SubscriptionService.getStackedPlans();
+          if (stackedResult.success) {
+            setStackedPlans(stackedResult.data);
+          }
+          
+          // Fetch total benefits
+          const benefitsResult = await SubscriptionService.getTotalSubscriptionBenefits();
+          if (benefitsResult.success) {
+            setTotalBenefits(benefitsResult.data);
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching user subscription:', error);
-      setUserSubscription(null);
-      setHasPendingPayment(false);
-      setTrialDaysRemaining(0);
-      setIsTrialActive(false);
+      toast.error('Failed to load subscription details');
     } finally {
       setIsLoadingSubscription(false);
     }
@@ -840,16 +848,14 @@ const SubscriptionPage: React.FC = () => {
     };
   }, []); // Empty dependency array ensures this runs only once on mount
 
-  const formatIndianPrice = (price: number): string => {
-    return price.toLocaleString('en-IN');
-  };
-  
   const handleSubscribeClick = (plan: Plan) => {
     // Don't allow new subscription if there's a pending payment
     if (hasPendingPayment) {
       toast.error('You have a pending payment. Please wait for verification or check payment history.');
       return;
     }
+    
+    // Simply open payment modal for both new subscriptions and stacking
     setSelectedPlan(plan);
     setIsPaymentModalOpen(true);
   };
@@ -879,9 +885,86 @@ const SubscriptionPage: React.FC = () => {
         <div className="loading-subscription">Loading your subscription details...</div>
       ) : (
         <>
-          {/* Always show subscription status if user has any subscription data */}
-          {userSubscription && (
-            <SubscriptionStatus subscription={userSubscription} />
+          {userSubscription && userSubscription.status !== 'trial' && (
+            <div className="current-subscription-container">
+              <div className="subscription-box">
+                <div className="section current-plan">
+                  <h2>Current Subscription</h2>
+                  <div className="subscription-details">
+                    <div className="plan-name">
+                      <h3>{userSubscription.planName}</h3>
+                      <div className="plan-type">
+                        {getPlanTypeDisplay(userSubscription.plan.type)}
+                      </div>
+                    </div>
+                    <div className="date-info">
+                      <div className="date-item">
+                        <span className="date-label">Started:</span>
+                        <span className="date-value">{formatDate(userSubscription.startDate)}</span>
+                      </div>
+                      <div className="date-item">
+                        <span className="date-label">Expires:</span>
+                        <span className="date-value">{formatDate(userSubscription.endDate)}</span>
+                      </div>
+                    </div>
+                    <div className="time-remaining">
+                      <div className="days-left">{calculateDaysLeft(userSubscription.endDate)}</div>
+                      <div className="days-label">days remaining</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="section stacked-plans">
+                  {stackedPlans.length > 0 && (
+                    <div className="stacked-plans">
+                      <h3>Stacked Plans</h3>
+                      <div className="stacked-plans-list">
+                        {stackedPlans.map((plan) => (
+                          <div key={plan._id} className="stacked-plan-card">
+                            <h4>{plan.plan.name} Plan</h4>
+                            <div className="plan-type">
+                              {getPlanTypeDisplay(plan.plan.type)}
+                            </div>
+                            <div className="date-info">
+                              <div className="date-item">
+                                <span className="date-label">Started:</span>
+                                <span className="date-value">{formatDate(plan.startDate)}</span>
+                              </div>
+                              <div className="date-item">
+                                <span className="date-label">Expires:</span>
+                                <span className="date-value">{formatDate(plan.endDate)}</span>
+                              </div>
+                            </div>
+                            <div className="time-remaining">
+                              <div className="days-left">{calculateDaysLeft(plan.endDate)}</div>
+                              <div className="days-label">days remaining</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="section total-benefits">
+                  {totalBenefits && (
+                    <div className="total-benefits">
+                      <h3>Total Benefits</h3>
+                      <div className="benefits-details">
+                        <div className="benefit-item">
+                          <span className="benefit-label">Total Amount:</span>
+                          <span className="benefit-value">₹{formatIndianPrice(totalBenefits.totalAmount)}</span>
+                        </div>
+                        <div className="benefit-item">
+                          <span className="benefit-label">Total Days:</span>
+                          <span className="benefit-value">{totalBenefits.totalDays} days</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Show free trial section if user is on trial or has no subscription */}
@@ -911,9 +994,7 @@ const SubscriptionPage: React.FC = () => {
                 <div className="price">
                   <span className="currency">₹</span>
                   <span className="amount">{formatIndianPrice(plan.price)}</span>
-                  <span className="period">/{plan.type === 'monthly' ? 'month' : 
-                    plan.type === 'quarterly' ? '3 months' : 
-                    plan.type === 'half_yearly' ? '6 months' : 'year'}</span>
+                  <span className="period">/{getPlanTypeDisplay(plan.type)}</span>
                 </div>
                 {plan.discountPercentage > 0 && (
                   <div className="discount">{plan.discountPercentage}% discount</div>
@@ -930,7 +1011,7 @@ const SubscriptionPage: React.FC = () => {
                 >
                   {hasPendingPayment ? 'Payment Pending' :
                     userSubscription?.status === 'trial' ? 'Upgrade Now' :
-                    userSubscription?.status === 'active' ? 'Change Plan' : 'Subscribe Now'}
+                    userSubscription?.status === 'active' ? 'Add Plan' : 'Subscribe Now'}
                 </button>
                 {isTrialActive && !hasPendingPayment && trialDaysRemaining > 0 && (
                   <div className="trial-upgrade-note">

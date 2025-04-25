@@ -352,7 +352,8 @@ export class AuthController {
                     email: user.email,
                     name: user.name,
                     profilePicture: user.profilePicture,
-                    needsPasswordSetup: user.needsPasswordSetup
+                    needsPasswordSetup: user.needsPasswordSetup,
+                    isAdmin: user.isAdmin
                 },
                 isNewUser
             });
