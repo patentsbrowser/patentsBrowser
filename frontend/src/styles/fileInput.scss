@@ -1,0 +1,135 @@
+// File input wrapper styles
+.file-input-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 1rem;
+
+  input[type="file"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 6px;
+    background-color: var(--input-bg, #fff);
+    color: var(--text-color, #333);
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      border-color: var(--accent-color, #4caf50);
+      background-color: var(--hover-bg, #f5f5f5);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: var(--accent-color, #4caf50);
+      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background-color: var(--disabled-bg, #eee);
+    }
+  }
+
+  .selected-file {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary, #666);
+  }
+}
+
+// Upload button styles
+.upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background-color: var(--accent-color, #4caf50);
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 1rem;
+
+  &:hover:not(:disabled) {
+    background-color: var(--accent-hover, #43a047);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: var(--disabled-bg, #ccc);
+  }
+
+  // Add loading state styles if needed
+  &.loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.8;
+
+    &::after {
+      content: "";
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border: 2px solid transparent;
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+  }
+}
+
+// Loading spinner animation
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Container for file input and upload button
+.file-upload-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  width: 100%;
+  max-width: 600px;
+  margin-bottom: 1.5rem;
+}
+
+// Dark theme adjustments
+[data-theme="dark"] {
+  .file-input-wrapper {
+    input[type="file"] {
+      background-color: var(--input-bg-dark, #2d2d2d);
+      border-color: var(--border-color-dark, #404040);
+      color: var(--text-color-dark, #e0e0e0);
+
+      &:hover:not(:disabled) {
+        background-color: var(--hover-bg-dark, #353535);
+        border-color: var(--accent-color, #4caf50);
+      }
+
+      &:disabled {
+        background-color: var(--disabled-bg-dark, #1a1a1a);
+      }
+    }
+
+    .selected-file {
+      color: var(--text-secondary-dark, #999);
+    }
+  }
+} 

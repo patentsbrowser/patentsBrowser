@@ -13,6 +13,7 @@ import subscriptionRoutes from './routes/subscriptionRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
 import { createDefaultPlans } from './models/PricingPlan.js';
 import { setupSwagger } from './config/swagger.js';
+import { startSubscriptionCron } from './cron/subscriptionCron.js';
 
 // Get current directory in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -217,6 +218,9 @@ mongoose.connect(MONGODB_URI)
     } catch (error) {
       console.error('Error creating default pricing plans:', error);
     }
+    
+    // Start subscription status update cron job
+    startSubscriptionCron();
     
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

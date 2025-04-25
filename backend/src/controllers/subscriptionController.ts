@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
 import PricingPlan from '../models/PricingPlan.js';
-import Subscription, { SubscriptionPlan, SubscriptionStatus } from '../models/Subscription.js';
+import { Subscription, SubscriptionPlan, SubscriptionStatus } from '../models/Subscription.js';
 import { User } from '../models/User.js';
-import mongoose from 'mongoose';
 import Payment from '../models/Payment.js';
 
 // Simple in-memory cache to minimize database queries
@@ -142,6 +141,7 @@ export const createPendingSubscription = async (req: Request, res: Response) => 
     
     // Calculate end date based on plan type, including any remaining trial days
     const endDate = calculateEndDate(plan.type as SubscriptionPlan, trialDaysRemaining);
+    const startDate = new Date();
     
     // Check if user already has a subscription
     let existingSubscription = await Subscription.findOne({ 
@@ -149,20 +149,31 @@ export const createPendingSubscription = async (req: Request, res: Response) => 
       status: SubscriptionStatus.ACTIVE 
     });
     
+    // Create subscription data
+    const subscriptionData = {
+      userId,
+      plan: plan.type,
+      startDate,
+      endDate,
+      status: SubscriptionStatus.PAYMENT_PENDING,
+      upiOrderId,
+      amount: plan.price,
+      isPendingPayment: true
+    };
+    
     if (existingSubscription) {
       // Create a new subscription for the additional plan
       const newSubscription = new Subscription({
-        userId,
-        plan: plan.type,
-        startDate: new Date(),
-        endDate,
-        status: SubscriptionStatus.PAYMENT_PENDING,
-        upiOrderId,
-        // Store reference to the original subscription
+        ...subscriptionData,
         parentSubscriptionId: existingSubscription._id
       });
       
       await newSubscription.save();
+      
+      // Update user's pending payment status
+      await User.findByIdAndUpdate(userId, {
+        isPendingPayment: true
+      });
       
       return res.status(200).json({
         success: true,
@@ -174,21 +185,20 @@ export const createPendingSubscription = async (req: Request, res: Response) => 
           startDate: newSubscription.startDate,
           endDate: newSubscription.endDate,
           trialDaysAdded: trialDaysRemaining,
-          isAdditionalPlan: true
+          isAdditionalPlan: true,
+          amount: plan.price
         }
       });
     } else {
       // Create new subscription (first time subscription)
-      const subscription = new Subscription({
-        userId,
-        plan: plan.type,
-        startDate: new Date(),
-        endDate,
-        status: SubscriptionStatus.PAYMENT_PENDING,
-        upiOrderId
-      });
+      const subscription = new Subscription(subscriptionData);
       
       await subscription.save();
+      
+      // Update user's pending payment status
+      await User.findByIdAndUpdate(userId, {
+        isPendingPayment: true
+      });
       
       return res.status(200).json({
         success: true,
@@ -200,7 +210,8 @@ export const createPendingSubscription = async (req: Request, res: Response) => 
           startDate: subscription.startDate,
           endDate: subscription.endDate,
           trialDaysAdded: trialDaysRemaining,
-          isAdditionalPlan: false
+          isAdditionalPlan: false,
+          amount: plan.price
         }
       });
     }
@@ -251,7 +262,7 @@ export const verifyUpiPayment = async (req: Request, res: Response) => {
     const subscription = await Subscription.findOne({ 
       userId, 
       status: SubscriptionStatus.PAYMENT_PENDING 
-    });
+    }).populate('userId');
     
     if (!subscription) {
       return res.status(404).json({
@@ -260,8 +271,15 @@ export const verifyUpiPayment = async (req: Request, res: Response) => {
       });
     }
     
-    // In a real-world scenario, you would verify the transaction with your bank or UPI provider here
-    // For demonstration, we'll implement a simple verification
+    // Get plan details
+    const plan = await PricingPlan.findOne({ type: subscription.plan });
+    
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Plan not found'
+      });
+    }
     
     // Optional: Validate transaction ID format (assuming UPI transaction IDs have a specific format)
     const transactionIdRegex = /^[A-Za-z0-9]{10,25}$/;
@@ -272,19 +290,50 @@ export const verifyUpiPayment = async (req: Request, res: Response) => {
       });
     }
     
-    // Store transaction reference ID without verifying immediately
-    // Admin will verify this payment manually
-    subscription.upiTransactionRef = transactionId;
-    await subscription.save();
+    // Update subscription with transaction reference
+    const updatedSubscription = await Subscription.findByIdAndUpdate(
+      subscription._id,
+      {
+        upiTransactionRef: transactionId,
+        amount: plan.price,
+        isPendingPayment: true
+      },
+      { new: true }
+    );
+    
+    // Create a pending payment record
+    const payment = new Payment({
+      userId: subscription.userId,
+      amount: plan.price,
+      currency: 'INR',
+      status: 'unverified',
+      referenceNumber: transactionId,
+      plan: subscription.plan,
+      paymentDate: new Date(),
+      planName: `${subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)} Plan`,
+      userSubscriptionStatus: subscription.userId.subscriptionStatus,
+      orderDetails: {
+        orderId: subscription.upiOrderId,
+        planId: plan._id
+      }
+    });
+    await payment.save();
+    
+    // Update user's pending payment status
+    await User.findByIdAndUpdate(userId, {
+      isPendingPayment: true,
+      referenceNumber: transactionId
+    });
     
     return res.status(200).json({
       success: true,
       message: 'Payment reference submitted. Admin will verify your payment shortly.',
       data: {
-        subscriptionId: subscription._id,
-        plan: subscription.plan,
-        status: subscription.status,
-        transactionId: transactionId
+        subscriptionId: updatedSubscription._id,
+        plan: plan.name,
+        status: updatedSubscription.status,
+        transactionId: transactionId,
+        amount: plan.price
       }
     });
   } catch (error) {
@@ -519,9 +568,9 @@ export const verifyPayment = async (req: Request, res: Response) => {
     const { status, notes, subscriptionStatus } = req.body;
     const adminId = req.user?._id;
 
-    // Find the payment
-    const payment = await Payment.findById(paymentId);
-    if (!payment) {
+    // Find the subscription with this payment ID
+    const subscription = await Subscription.findById(paymentId);
+    if (!subscription) {
       return res.status(404).json({
         statusCode: 404,
         message: 'Payment not found',
@@ -529,41 +578,148 @@ export const verifyPayment = async (req: Request, res: Response) => {
       });
     }
 
-    // Update payment status
-    payment.status = status;
-    payment.verificationNotes = notes;
-    payment.verifiedBy = adminId;
-    payment.verificationDate = new Date();
+    // Get the user and plan details
+    const user = await User.findById(subscription.userId);
+    const plan = await PricingPlan.findOne({ type: subscription.plan });
 
-    // If payment is rejected, clear isPendingPayment flag
-    if (status === 'rejected') {
-      // Find the user's subscription
-      const subscription = await Subscription.findOne({
-        userId: payment.userId,
-        isPendingPayment: true
+    if (!user || !plan) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'User or plan not found',
+        data: null
       });
-
-      if (subscription) {
-        subscription.isPendingPayment = false;
-        subscription.status = 'rejected';
-        await subscription.save();
-      }
     }
 
-    await payment.save();
+    // Map frontend status to SubscriptionStatus enum
+    let mappedStatus: SubscriptionStatus;
+    switch (status) {
+      case 'verified':
+        mappedStatus = SubscriptionStatus.ACTIVE;
+        break;
+      case 'rejected':
+        mappedStatus = SubscriptionStatus.REJECTED;
+        break;
+      case 'cancelled':
+        mappedStatus = SubscriptionStatus.CANCELLED;
+        break;
+      case 'inactive':
+        mappedStatus = SubscriptionStatus.INACTIVE;
+        break;
+      default:
+        return res.status(400).json({
+          statusCode: 400,
+          message: 'Invalid status value',
+          data: null
+        });
+    }
 
-    // Update user's subscription status if provided
-    if (subscriptionStatus) {
-      await User.findByIdAndUpdate(payment.userId, {
-        subscriptionStatus,
-        isPendingPayment: status !== 'rejected'
+    // Calculate subscription dates based on plan
+    let startDate = new Date();
+    let endDate = new Date();
+    
+    // Set subscription duration based on plan type
+    switch (subscription.plan.toLowerCase()) {
+      case 'monthly':
+        endDate.setMonth(endDate.getMonth() + 1);
+        break;
+      case 'quarterly':
+        endDate.setMonth(endDate.getMonth() + 3);
+        break;
+      case 'yearly':
+        endDate.setFullYear(endDate.getFullYear() + 1);
+        break;
+      default:
+        endDate.setMonth(endDate.getMonth() + 1); // Default to monthly
+    }
+
+    // Update subscription status and dates
+    const updatedSubscription = await Subscription.findByIdAndUpdate(
+      paymentId,
+      {
+        status: mappedStatus,
+        notes: notes,
+        verifiedBy: adminId,
+        verificationDate: new Date(),
+        startDate: startDate,
+        endDate: endDate,
+        isPendingPayment: false,
+        amount: plan.price
+      },
+      { new: true }
+    );
+
+    // Create a payment record
+    if (mappedStatus === SubscriptionStatus.ACTIVE) {
+      const payment = new Payment({
+        userId: subscription.userId,
+        amount: plan.price,
+        currency: 'INR',
+        status: 'verified',
+        referenceNumber: subscription.upiTransactionRef,
+        plan: subscription.plan,
+        paymentDate: new Date(),
+        verificationDate: new Date(),
+        verifiedBy: adminId,
+        verificationNotes: notes,
+        planName: `${subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)} Plan`,
+        userSubscriptionStatus: 'active',
+        orderDetails: {
+          orderId: subscription.upiOrderId,
+          planId: plan._id
+        }
       });
+      await payment.save();
+
+      // Update user's subscription details
+      await User.findByIdAndUpdate(
+        subscription.userId,
+        {
+          subscriptionStatus: 'active',
+          subscriptionStartDate: startDate,
+          subscriptionEndDate: endDate,
+          isPendingPayment: false,
+          currentPlan: subscription.plan,
+          paymentStatus: 'paid',
+          referenceNumber: subscription.upiTransactionRef
+        }
+      );
+    } else if (mappedStatus === SubscriptionStatus.REJECTED) {
+      // Create rejected payment record
+      const payment = new Payment({
+        userId: subscription.userId,
+        amount: plan.price,
+        currency: 'INR',
+        status: 'rejected',
+        referenceNumber: subscription.upiTransactionRef,
+        plan: subscription.plan,
+        paymentDate: new Date(),
+        rejectionDate: new Date(),
+        rejectedBy: adminId,
+        rejectionReason: notes,
+        planName: `${subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)} Plan`,
+        userSubscriptionStatus: 'inactive',
+        orderDetails: {
+          orderId: subscription.upiOrderId,
+          planId: plan._id
+        }
+      });
+      await payment.save();
+
+      // Update user status to inactive
+      await User.findByIdAndUpdate(
+        subscription.userId,
+        {
+          subscriptionStatus: 'inactive',
+          isPendingPayment: false,
+          paymentStatus: 'free'
+        }
+      );
     }
 
     return res.status(200).json({
       statusCode: 200,
       message: 'Payment status updated successfully',
-      data: payment
+      data: updatedSubscription
     });
   } catch (error) {
     console.error('Error verifying payment:', error);
@@ -669,6 +825,178 @@ export const getAdditionalPlans = async (req: Request, res: Response) => {
   }
 };
 
+// Pause subscription
+export const pauseSubscription = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const adminId = req.user?._id;
+
+    // Find the user's active subscription
+    const subscription = await Subscription.findOne({
+      userId,
+      status: SubscriptionStatus.ACTIVE
+    });
+
+    if (!subscription) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'No active subscription found for this user',
+        data: null
+      });
+    }
+
+    // Update subscription status to inactive
+    const updatedSubscription = await Subscription.findByIdAndUpdate(
+      subscription._id,
+      {
+        status: SubscriptionStatus.INACTIVE,
+        notes: 'Subscription paused by admin',
+        verifiedBy: adminId,
+        verificationDate: new Date()
+      },
+      { new: true }
+    );
+
+    // Update user's subscription status
+    await User.findByIdAndUpdate(userId, {
+      subscriptionStatus: 'inactive'
+    });
+
+    return res.status(200).json({
+      statusCode: 200,
+      message: 'Subscription paused successfully',
+      data: updatedSubscription
+    });
+  } catch (error) {
+    console.error('Error pausing subscription:', error);
+    return res.status(500).json({
+      statusCode: 500,
+      message: 'Error pausing subscription',
+      data: null
+    });
+  }
+};
+
+// Enable subscription
+export const enableSubscription = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const adminId = req.user?._id;
+
+    // Find the user's inactive subscription
+    const subscription = await Subscription.findOne({
+      userId,
+      status: SubscriptionStatus.INACTIVE
+    });
+
+    if (!subscription) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'No inactive subscription found for this user',
+        data: null
+      });
+    }
+
+    // Calculate remaining time from original end date
+    const now = new Date();
+    const originalEndDate = subscription.endDate;
+    const timeRemaining = originalEndDate.getTime() - now.getTime();
+    
+    // If subscription has expired, return error
+    if (timeRemaining <= 0) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Subscription has expired. Please create a new subscription.',
+        data: null
+      });
+    }
+
+    // Update subscription status to active
+    const updatedSubscription = await Subscription.findByIdAndUpdate(
+      subscription._id,
+      {
+        status: SubscriptionStatus.ACTIVE,
+        notes: 'Subscription enabled by admin',
+        verifiedBy: adminId,
+        verificationDate: new Date()
+      },
+      { new: true }
+    );
+
+    // Update user's subscription status
+    await User.findByIdAndUpdate(userId, {
+      subscriptionStatus: 'active'
+    });
+
+    return res.status(200).json({
+      statusCode: 200,
+      message: 'Subscription enabled successfully',
+      data: updatedSubscription
+    });
+  } catch (error) {
+    console.error('Error enabling subscription:', error);
+    return res.status(500).json({
+      statusCode: 500,
+      message: 'Error enabling subscription',
+      data: null
+    });
+  }
+};
+
+// Cancel subscription
+export const cancelSubscription = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const adminId = req.user?._id;
+
+    // Find the user's active or inactive subscription
+    const subscription = await Subscription.findOne({
+      userId,
+      status: { $in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.INACTIVE] }
+    });
+
+    if (!subscription) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'No active or inactive subscription found for this user',
+        data: null
+      });
+    }
+
+    // Update subscription status to cancelled
+    const updatedSubscription = await Subscription.findByIdAndUpdate(
+      subscription._id,
+      {
+        status: SubscriptionStatus.CANCELLED,
+        notes: 'Subscription cancelled by admin',
+        verifiedBy: adminId,
+        verificationDate: new Date(),
+        cancelledAt: new Date()
+      },
+      { new: true }
+    );
+
+    // Update user's subscription status
+    await User.findByIdAndUpdate(userId, {
+      subscriptionStatus: 'inactive',
+      paymentStatus: 'free'
+    });
+
+    return res.status(200).json({
+      statusCode: 200,
+      message: 'Subscription cancelled successfully',
+      data: updatedSubscription
+    });
+  } catch (error) {
+    console.error('Error cancelling subscription:', error);
+    return res.status(500).json({
+      statusCode: 500,
+      message: 'Error cancelling subscription',
+      data: null
+    });
+  }
+};
+
 // Export all controller methods
 export default {
   getPricingPlans,
@@ -679,5 +1007,8 @@ export default {
   getPendingPayments,
   verifyPayment,
   getUserPaymentHistory,
-  getAdditionalPlans
+  getAdditionalPlans,
+  pauseSubscription,
+  enableSubscription,
+  cancelSubscription
 }; 

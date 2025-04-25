@@ -30,7 +30,7 @@ router.get('/payment-history', auth, subscriptionController.getUserPaymentHistor
 router.get('/pending-payments', auth, adminAuth, subscriptionController.getPendingPayments);
 
 // Update payment verification status (admin only)
-// router.put('/payment-verification/:paymentId', auth, adminAuth, subscriptionController.updatePaymentVerification);
+router.put('/payment-verification/:paymentId', auth, adminAuth, subscriptionController.verifyPayment);
 
 // Get additional plans for a subscription (requires auth)
 router.get('/additional-plans/:subscriptionId', auth, subscriptionController.getAdditionalPlans);
@@ -45,5 +45,10 @@ router.get('/check', auth, checkSubscription, (req, res) => {
     }
   });
 });
+
+// Admin subscription management routes
+router.post('/users/:userId/pause-subscription', auth, adminAuth, subscriptionController.pauseSubscription);
+router.post('/users/:userId/enable-subscription', auth, adminAuth, subscriptionController.enableSubscription);
+router.post('/users/:userId/cancel-subscription', auth, adminAuth, subscriptionController.cancelSubscription);
 
 export default router; 

@@ -566,14 +566,18 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
               <div className="trial-info">
                 <p><strong>Trial Status:</strong></p>
                 <div className="date-info">
-                  <div className="date-item">
-                    <span className="date-label">Started on:</span>
-                    <span className="date-value">{formatDate(subscription.startDate)}</span>
-                  </div>
-                  <div className="date-item">
-                    <span className="date-label">Valid until:</span>
-                    <span className="date-value">{formatDate(subscription.endDate)}</span>
-                  </div>
+                  {subscription.status !== 'trial' && (
+                    <div className="date-item">
+                      <span className="date-label">Started on:</span>
+                      <span className="date-value">{formatDate(subscription.startDate)}</span>
+                    </div>
+                  )}
+                  {(subscription.status === 'active' || subscription.status === 'paid') && (
+                    <div className="date-item">
+                      <span className="date-label">Expires:</span>
+                      <span className="date-value">{formatDate(subscription.endDate)}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="time-remaining">
                   <div className="days-left">{calculateDaysLeft(subscription.endDate)}</div>
@@ -624,17 +628,21 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
             </div>
             
             <div className="date-info">
-              <div className="date-item">
-                <span className="date-label">Started on:</span>
-                <span className="date-value">{formatDate(subscription.startDate)}</span>
-              </div>
-              <div className="date-item">
-                <span className="date-label">Expires on:</span>
-                <span className="date-value">{formatDate(subscription.endDate)}</span>
-              </div>
+              {subscription.status !== 'trial' && (
+                <div className="date-item">
+                  <span className="date-label">Started on:</span>
+                  <span className="date-value">{formatDate(subscription.startDate)}</span>
+                </div>
+              )}
+              {(subscription.status === 'active' || subscription.status === 'paid') && (
+                <div className="date-item">
+                  <span className="date-label">Expires on:</span>
+                  <span className="date-value">{formatDate(subscription.endDate)}</span>
+                </div>
+              )}
             </div>
             
-            {(subscription.status === 'active' || subscription.status === 'trial' || subscription.status === 'paid') && (
+            {(subscription.status === 'active' || subscription.status === 'paid') && (
               <div className="time-remaining">
                 <div className="days-left">{totalDaysRemaining}</div>
                 <div className="days-label">total days remaining</div>
@@ -698,8 +706,6 @@ const FreeTrialSection: React.FC<{ isTrialActive: boolean, trialDaysRemaining: n
       {isTrialActive ? (
         <>
           <h2>Your 14-Day Free Trial is Active!</h2>
-          <p>You have <strong>{trialDaysRemaining} days</strong> remaining in your free trial period.</p>
-          
           <div className="trial-features">
             <h3>Your trial includes:</h3>
             <ul>

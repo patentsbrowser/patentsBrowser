@@ -11,11 +11,10 @@ export enum SubscriptionPlan {
 export enum SubscriptionStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
-  TRIAL = 'trial',
-  CANCELLED = 'cancelled',
   PAYMENT_PENDING = 'payment_pending',
-  PAID = 'paid',
-  REJECTED = 'rejected'
+  REJECTED = 'rejected',
+  CANCELLED = 'cancelled',
+  TRIAL = 'trial'
 }
 
 export interface ISubscription extends Document {
@@ -32,6 +31,11 @@ export interface ISubscription extends Document {
   parentSubscriptionId?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+  amount: number;
+  paymentScreenshotUrl?: string;
+  verificationDate?: Date;
+  verifiedBy?: mongoose.Types.ObjectId;
+  isPendingPayment: boolean;
 }
 
 const subscriptionSchema = new Schema<ISubscription>(
@@ -43,37 +47,46 @@ const subscriptionSchema = new Schema<ISubscription>(
     },
     plan: {
       type: String,
-      enum: Object.values(SubscriptionPlan),
-      required: true
-    },
-    startDate: {
-      type: Date,
-      required: true,
-      default: Date.now
-    },
-    endDate: {
-      type: Date,
+      enum: ['free', 'monthly', 'quarterly', 'yearly'],
       required: true
     },
     status: {
       type: String,
       enum: Object.values(SubscriptionStatus),
-      default: SubscriptionStatus.TRIAL
+      default: SubscriptionStatus.PAYMENT_PENDING
     },
-    upiOrderId: {
-      type: String
+    startDate: {
+      type: Date
+    },
+    endDate: {
+      type: Date
+    },
+    amount: {
+      type: Number,
+      required: true
     },
     upiTransactionRef: {
       type: String
     },
-    trialEndsAt: {
+    upiOrderId: {
+      type: String
+    },
+    paymentScreenshotUrl: {
+      type: String
+    },
+    verificationDate: {
       type: Date
     },
-    cancelledAt: {
-      type: Date
+    verifiedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User'
     },
     notes: {
       type: String
+    },
+    isPendingPayment: {
+      type: Boolean,
+      default: true
     },
     parentSubscriptionId: {
       type: Schema.Types.ObjectId,
@@ -83,6 +96,10 @@ const subscriptionSchema = new Schema<ISubscription>(
   { timestamps: true }
 );
 
+// Add index for faster queries
+subscriptionSchema.index({ userId: 1, status: 1 });
+subscriptionSchema.index({ upiTransactionRef: 1 });
+
 const Subscription = mongoose.model<ISubscription>('Subscription', subscriptionSchema);
 
-export default Subscription; 
+export { Subscription }; 

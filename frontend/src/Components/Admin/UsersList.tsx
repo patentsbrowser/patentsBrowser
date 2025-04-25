@@ -4,6 +4,8 @@ import axios from "axios";
 import "./Admin.scss";
 import UserProfileModal from "./UserProfileModal";
 import UserSubscriptionModal from "./UserSubscriptionModal";
+import ConfirmationModal from "./ConfirmationModal";
+import toast from "react-hot-toast";
 
 interface User {
   id: string;
@@ -46,6 +48,19 @@ const UsersList = () => {
     // Try to get the default pagination limit from settings
     const savedLimit = localStorage.getItem("adminDefaultPaginationLimit");
     return savedLimit ? Number(savedLimit) : 10; // Default to 10 if not set
+  });
+  const [confirmationModal, setConfirmationModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'warning' | 'danger' | 'info';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'warning',
+    onConfirm: () => {}
   });
 
   // Listen for settings updates
@@ -461,6 +476,96 @@ const UsersList = () => {
     }
   };
 
+  const handlePauseSubscription = (userId: string) => {
+    setConfirmationModal({
+      isOpen: true,
+      title: 'Pause Subscription',
+      message: 'Are you sure you want to pause this user\'s subscription?',
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          const token = localStorage.getItem("token");
+          await axios.post(
+            `${import.meta.env.VITE_API_URL}/subscriptions/users/${userId}/pause-subscription`,
+            {},
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          refetch();
+          toast.success('Subscription paused successfully');
+        } catch (error) {
+          console.error('Error pausing subscription:', error);
+          toast.error('Failed to pause subscription. Please try again.');
+        } finally {
+          setConfirmationModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
+  };
+
+  const handleEnableSubscription = (userId: string) => {
+    setConfirmationModal({
+      isOpen: true,
+      title: 'Enable Subscription',
+      message: 'Are you sure you want to enable this user\'s subscription?',
+      type: 'info',
+      onConfirm: async () => {
+        try {
+          const token = localStorage.getItem("token");
+          await axios.post(
+            `${import.meta.env.VITE_API_URL}/subscriptions/users/${userId}/enable-subscription`,
+            {},
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          refetch();
+          toast.success('Subscription enabled successfully');
+        } catch (error) {
+          console.error('Error enabling subscription:', error);
+          toast.error('Failed to enable subscription. Please try again.');
+        } finally {
+          setConfirmationModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
+  };
+
+  const handleCancelSubscription = (userId: string) => {
+    setConfirmationModal({
+      isOpen: true,
+      title: 'Cancel Subscription',
+      message: 'Are you sure you want to cancel this user\'s subscription? This action cannot be undone.',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          const token = localStorage.getItem("token");
+          await axios.post(
+            `${import.meta.env.VITE_API_URL}/subscriptions/users/${userId}/cancel-subscription`,
+            {},
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          refetch();
+          toast.success('Subscription cancelled successfully');
+        } catch (error) {
+          console.error('Error canceling subscription:', error);
+          toast.error('Failed to cancel subscription. Please try again.');
+        } finally {
+          setConfirmationModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
+  };
+
   return (
     <div className="admin-users-container">
       <div className="admin-header">
@@ -620,6 +725,38 @@ const UsersList = () => {
                         >
                           Edit
                         </button>
+                        {user.subscriptionStatus?.toLowerCase() === 'active' && (
+                          <>
+                            <button
+                              className="action-btn pause-btn"
+                              onClick={() => handlePauseSubscription(user.id)}
+                            >
+                              Pause
+                            </button>
+                            <button
+                              className="action-btn cancel-btn"
+                              onClick={() => handleCancelSubscription(user.id)}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        )}
+                        {user.subscriptionStatus?.toLowerCase() === 'inactive' && (
+                          <>
+                            <button
+                              className="action-btn enable-btn"
+                              onClick={() => handleEnableSubscription(user.id)}
+                            >
+                              Enable
+                            </button>
+                            <button
+                              className="action-btn cancel-btn"
+                              onClick={() => handleCancelSubscription(user.id)}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -733,6 +870,17 @@ const UsersList = () => {
           onSuccess={handleSubscriptionSuccess}
         />
       )}
+
+      <ConfirmationModal
+        isOpen={confirmationModal.isOpen}
+        title={confirmationModal.title}
+        message={confirmationModal.message}
+        type={confirmationModal.type}
+        onConfirm={confirmationModal.onConfirm}
+        onCancel={() => setConfirmationModal(prev => ({ ...prev, isOpen: false }))}
+        confirmText="Yes, proceed"
+        cancelText="No, cancel"
+      />
     </div>
   );
 };

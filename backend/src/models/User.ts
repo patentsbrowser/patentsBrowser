@@ -27,6 +27,12 @@ interface IUser extends mongoose.Document {
   googleId: string;
   updatedAt: Date;
   needsPasswordSetup: boolean;
+  role: string;
+  currentPlan: string;
+  subscriptionStartDate: Date;
+  subscriptionEndDate: Date;
+  trialStartDate: Date;
+  isPendingPayment: boolean;
 }
 
 const userSchema = new mongoose.Schema({
@@ -44,7 +50,12 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: false, // Not required for Google login
+    required: true
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
   },
   isEmailVerified: {
     type: Boolean,
@@ -73,17 +84,27 @@ const userSchema = new mongoose.Schema({
   },
   subscriptionStatus: {
     type: String,
-    enum: Object.values(SubscriptionStatus),
-    default: SubscriptionStatus.TRIAL
+    enum: ['inactive', 'trial', 'active'],
+    default: 'trial'
   },
-  trialEndDate: {
+  currentPlan: {
+    type: String,
+    enum: ['free', 'monthly', 'quarterly', 'yearly'],
+    default: 'free'
+  },
+  subscriptionStartDate: {
+    type: Date
+  },
+  subscriptionEndDate: {
+    type: Date
+  },
+  trialStartDate: {
     type: Date,
-    default: function() {
-      // Set trial end date to 14 days from now
-      const date = new Date();
-      date.setDate(date.getDate() + 14);
-      return date;
-    }
+    default: Date.now
+  },
+  isPendingPayment: {
+    type: Boolean,
+    default: false
   },
   googlePayCustomerId: {
     type: String
@@ -134,23 +155,29 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-});
+}, { timestamps: true });
 
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password')) {
+    return next();
+  }
   
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     this.updatedAt = new Date();
     next();
-  } catch (error: any) {
-    next(error);
+  } catch (error) {
+    next(error as Error);
   }
 });
 
-userSchema.methods.comparePassword = async function(candidatePassword: string) {
-  return bcrypt.compare(candidatePassword, this.password);
+userSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    throw error;
+  }
 };
 
 export const User = mongoose.model<IUser>('User', userSchema); 
