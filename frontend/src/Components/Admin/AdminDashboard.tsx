@@ -63,7 +63,7 @@ const DashboardSummary = () => {
     user.subscriptionStatus?.toLowerCase() === 'paid'
   ).length;
   const trialUsers = users.filter((user: User) => 
-    user.subscriptionStatus?.toLowerCase() === 'trial'
+    user.subscriptionStatus?.toLowerCase() === 'inactive'
   ).length;
   const avgTimeOnPlatform = calculateAverageTimeOnPlatform(users);
 
