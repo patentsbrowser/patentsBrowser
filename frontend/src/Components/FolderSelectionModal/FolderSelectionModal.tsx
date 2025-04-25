@@ -241,20 +241,65 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
     }
   };
 
-  const handleParsePatents = () => {
+  const handleParsePatents = async () => {
     const updatedPatents: { [key: string]: string } = {};
     const newEditingPatents = new Set<string>();
     
-    notFoundPatents.forEach(id => {
-      const currentValue = editedPatents[id] || id;
-      const normalized = normalizePatentIds(currentValue);
-      if (normalized.length > 0) {
-        const newValue = normalized[0] as string; // Type assertion since we know it's a string
-        updatedPatents[id] = newValue;
-        newEditingPatents.add(id); // Automatically add to editing mode
+    // Make Google Patents API call through backend proxy
+    try {
+      // Get only the top 5 not found patents
+      const topFivePatents = notFoundPatents.slice(0, 5);
+      
+      // Create multiple num parameters for each patent
+      const numParams = topFivePatents.map(id => `num=${encodeURIComponent(id)}`).join('&');
+      
+      const params = new URLSearchParams({
+        country: '',
+        country_pref: 'US, EP, WO, JP, CN',
+        type: '',
+        exp: '',
+        peid: '6339e0742a368:b:86a73150'
+      });
+      
+      const response = await fetch(`http://localhost:5000/api/google-patents/search?${numParams}&${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || `HTTP error! status: ${response.status}`);
       }
-    });
+      
+      const data = await response.json().catch(error => {
+        console.error('Error parsing JSON response:', error);
+        throw new Error('Invalid JSON response from server');
+      });
+      
+      console.log('Google Patents API Response:', data);
+      
+      // Handle the response data here if needed
+      if (data.error) {
+        toast.error(data.error);
+        return;
+      }
 
+      // If we got a successful response, update the patent IDs
+      if (data.success && data.results && data.results.length > 0) {
+        data.results.forEach((result: { originalId: string; ucid: string }) => {
+          updatedPatents[result.originalId] = result.ucid;
+          newEditingPatents.add(result.originalId);
+        });
+        toast.success(`Found ${data.results.length} patents`);
+      }
+      
+    } catch (error) {
+      console.error('Error calling Google Patents API:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to fetch patent data');
+    }
+    
     // Update the edited patents state
     setEditedPatents(prev => {
       const newState = {
@@ -269,7 +314,9 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
     setEditingPatents(newEditingPatents);
 
     // Show success message
-    toast.success(`${Object.keys(updatedPatents).length} patent IDs parsed successfully`);
+    if (Object.keys(updatedPatents).length > 0) {
+      toast.success(`${Object.keys(updatedPatents).length} patent IDs parsed successfully`);
+    }
   };
 
   const handleSubmitCorrections = async () => {

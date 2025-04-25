@@ -11,6 +11,7 @@ import savedPatentRoutes from './routes/savedPatentRoutes.js';
 import otpRoutes from './routes/otpRoutes.js';
 import subscriptionRoutes from './routes/subscriptionRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
+import googlePatentsRoutes from './routes/googlePatentsRoutes.js';
 import { createDefaultPlans } from './models/PricingPlan.js';
 import { setupSwagger } from './config/swagger.js';
 import { startSubscriptionCron } from './cron/subscriptionCron.js';
@@ -91,6 +92,7 @@ app.use('/api/otp', otpRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/google-patents', googlePatentsRoutes);
 
 // Make sure uploadedImages directory is served as public
 const uploadDir = path.join(__dirname, '../uploadedImages');
