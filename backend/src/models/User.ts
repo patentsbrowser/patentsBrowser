@@ -50,7 +50,9 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true
+    required: function() {
+      return !this.googleId; // Only require password if user is not authenticated via Google
+    }
   },
   role: {
     type: String,
@@ -158,7 +160,7 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) {
+  if (!this.isModified('password') || !this.password) {
     return next();
   }
   

@@ -777,3 +777,130 @@
     text-decoration: underline;
   }
 }
+
+// Set Password Modal
+.set-password-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+
+  .modal-content {
+    background: var(--background-color);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    width: 90%;
+    max-width: 400px;
+    position: relative;
+    border: 1px solid var(--border-color);
+    animation: slideUp 0.3s ease-out;
+
+    h2 {
+      color: var(--text-color);
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      text-align: center;
+    }
+
+    p {
+      color: var(--text-color);
+      margin-bottom: 1.5rem;
+      text-align: center;
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: var(--text-color);
+      }
+
+      .password-input-container {
+        position: relative;
+        width: 90%;
+        height: 10;
+
+        input {
+          width: 100%;
+          padding: 0.8rem;
+          padding-right: 40px;
+          border: 1px solid var(--border-color);
+          border-radius: 8px;
+          background: var(--input-bg);
+          color: var(--text-color);
+          font-size: 1rem;
+          transition: all 0.3s ease;
+
+          &:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(89, 46, 131, 0.2);
+          }
+        }
+
+        .password-toggle-btn {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          color: var(--text-color);
+          opacity: 0.6;
+          cursor: pointer;
+          padding: 0;
+          font-size: 1.2rem;
+          transition: all 0.2s ease;
+
+          &:hover {
+            opacity: 1;
+          }
+        }
+      }
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 0.8rem;
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background: var(--primary-color-dark);
+        transform: translateY(-2px);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
