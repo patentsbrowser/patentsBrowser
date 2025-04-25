@@ -300,8 +300,9 @@ const SavedPatentList = () => {
           </button>
           <div className="file-upload-info">
             <p>The system will extract patent IDs from the uploaded file</p>
-            <p>For spreadsheet files (Excel/CSV): Looks for columns with "Earliest publication number" and "Publication kind codes" headers</p>
-            <p>When multiple kind codes are found (like "A1, A, T5"), the system will prioritize A1, B1, B2, A, B in that order and combine without spaces (e.g., US8125463A1)</p>
+            <p>For spreadsheet files (Excel/CSV): Looks for "Publication numbers" in column B and "Publication kind code" headers</p>
+            <p>Multiple publication numbers and kind codes in the same cell will be processed separately</p>
+            <p>Publication numbers and kind codes will be kept in their original format</p>
           </div>
         </div>
         

@@ -579,13 +579,13 @@ export const extractPatentIdsFromFile = async (req: AuthRequest, res: Response) 
       
       if (data.length > 0) {
         const headers = data[0] as string[];
-        pubNumIndex = headers.findIndex(header => 
-          header.toLowerCase().includes('publication') || 
-          header.toLowerCase().includes('patent')
-        );
+        // Look for "Publication numbers" in column B (index 1)
+        if (headers.length > 1 && headers[1].toLowerCase().includes('publication numbers')) {
+          pubNumIndex = 1;
+        }
         kindCodeIndex = headers.findIndex(header => 
-          header.toLowerCase().includes('kind') || 
-          header.toLowerCase().includes('code')
+          header.toLowerCase().includes('publication kind code') || 
+          header.toLowerCase().includes('kind code')
         );
       }
       
@@ -593,39 +593,31 @@ export const extractPatentIdsFromFile = async (req: AuthRequest, res: Response) 
       for (let i = 1; i < data.length; i++) {
         const row = data[i] as any[];
         if (pubNumIndex !== -1 && row[pubNumIndex]) {
-          publicationNumbers.push(row[pubNumIndex].toString());
+          // Split multiple publication numbers and remove special characters
+          const pubNums = row[pubNumIndex].toString().split(/[,\s]+/).map((num: string) => 
+            num.replace(/[^A-Za-z0-9]/g, '') // Remove special characters
+          );
+          publicationNumbers.push(...pubNums);
         }
         if (kindCodeIndex !== -1 && row[kindCodeIndex]) {
-          kindCodes.push(row[kindCodeIndex].toString());
+          // Split multiple kind codes
+          const codes = row[kindCodeIndex].toString().split(/[,\s]+/).filter(Boolean);
+          kindCodes.push(...codes);
         }
       }
     }
 
     // Clean up the uploaded file
-      await fs.remove(filePath);
+    await fs.remove(filePath);
 
-    // Process the extracted patent IDs using standardizePatentNumber
-    const kindCodePriority = ['A1', 'B1', 'B2', 'A', 'B', 'C1', 'C2', 'C'];
-    
+    // Process the extracted patent IDs
     const processedPatentIds = publicationNumbers.map((pubNum, index) => {
       let patentId = pubNum.trim();
       // If we have a kind code for this publication number, append it
       if (kindCodes[index]) {
-        // Split multiple kind codes and remove spaces
-        const availableKindCodes = kindCodes[index].split(/[,\s]+/).filter(Boolean);
-        // Find the highest priority kind code
-        const selectedKindCode = availableKindCodes.sort((a, b) => {
-          const indexA = kindCodePriority.indexOf(a.toUpperCase());
-          const indexB = kindCodePriority.indexOf(b.toUpperCase());
-          // If kind code isn't in priority list, give it lowest priority
-          return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
-        })[0];
-        
-        if (selectedKindCode) {
-          patentId = `${patentId}-${selectedKindCode}`;
-        }
+        patentId = `${patentId}${kindCodes[index]}`; // Remove hyphen when combining
       }
-      return standardizePatentNumber(patentId);
+      return patentId;
     });
 
     // Return the extracted patent IDs along with raw data for reference
@@ -636,7 +628,7 @@ export const extractPatentIdsFromFile = async (req: AuthRequest, res: Response) 
         patentIds: processedPatentIds,
         publicationNumbers,
         kindCodes,
-        note: kindCodes.length > 0 ? 'Publication numbers were combined with highest priority kind codes (A1 > B1 > B2 > A > B).' : undefined
+        note: kindCodes.length > 0 ? 'Publication numbers were combined with their corresponding kind codes.' : undefined
       }
     });
   } catch (error) {
