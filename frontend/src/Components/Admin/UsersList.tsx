@@ -112,7 +112,8 @@ const UsersList = () => {
     // Filter by search term
     const matchesSearch =
       user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.referenceNumber?.toLowerCase().includes(searchTerm.toLowerCase());
 
     // Filter by subscription status
     let matchesSubscription = true;
