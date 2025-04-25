@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as SubscriptionService from '../../services/SubscriptionService';
-import './SubscriptionPage.scss';
+// import './SubscriptionPage.scss';
+import './CurrentSubscription.scss';
 import { toast } from 'react-toastify';
 import { QRCodeSVG } from 'qrcode.react';
 import { Link } from 'react-router-dom';
@@ -885,78 +886,84 @@ const SubscriptionPage: React.FC = () => {
       ) : (
         <>
           {userSubscription && (
-            <div className="current-subscription">
-              <h2>Current Subscription</h2>
-              <div className="subscription-details">
-                <div className="plan-name">
-                  <h3>{userSubscription.planName}</h3>
-                  <div className="plan-type">
-                    {getPlanTypeDisplay(userSubscription.plan.type)}
+            <div className="current-subscription-container">
+              <div className="subscription-box">
+                <div className="section current-plan">
+                  <h2>Current Subscription</h2>
+                  <div className="subscription-details">
+                    <div className="plan-name">
+                      <h3>{userSubscription.planName}</h3>
+                      <div className="plan-type">
+                        {getPlanTypeDisplay(userSubscription.plan.type)}
+                      </div>
+                    </div>
+                    <div className="date-info">
+                      <div className="date-item">
+                        <span className="date-label">Started:</span>
+                        <span className="date-value">{formatDate(userSubscription.startDate)}</span>
+                      </div>
+                      <div className="date-item">
+                        <span className="date-label">Expires:</span>
+                        <span className="date-value">{formatDate(userSubscription.endDate)}</span>
+                      </div>
+                    </div>
+                    <div className="time-remaining">
+                      <div className="days-left">{calculateDaysLeft(userSubscription.endDate)}</div>
+                      <div className="days-label">days remaining</div>
+                    </div>
                   </div>
                 </div>
-                <div className="date-info">
-                  <div className="date-item">
-                    <span className="date-label">Started:</span>
-                    <span className="date-value">{formatDate(userSubscription.startDate)}</span>
-                  </div>
-                  <div className="date-item">
-                    <span className="date-label">Expires:</span>
-                    <span className="date-value">{formatDate(userSubscription.endDate)}</span>
-                  </div>
-                </div>
-                <div className="time-remaining">
-                  <div className="days-left">{calculateDaysLeft(userSubscription.endDate)}</div>
-                  <div className="days-label">days remaining</div>
-                </div>
-              </div>
-              
-              {/* Display stacked plans if any */}
-              {stackedPlans.length > 0 && (
-                <div className="stacked-plans">
-                  <h3>Stacked Plans</h3>
-                  <div className="stacked-plans-list">
-                    {stackedPlans.map((plan) => (
-                      <div key={plan._id} className="stacked-plan-card">
-                        <h4>{plan.plan.name} Plan</h4>
-                        <div className="plan-type">
-                          {getPlanTypeDisplay(plan.plan.type)}
-                        </div>
-                        <div className="date-info">
-                          <div className="date-item">
-                            <span className="date-label">Started:</span>
-                            <span className="date-value">{formatDate(plan.startDate)}</span>
+
+                <div className="section stacked-plans">
+                  {stackedPlans.length > 0 && (
+                    <div className="stacked-plans">
+                      <h3>Stacked Plans</h3>
+                      <div className="stacked-plans-list">
+                        {stackedPlans.map((plan) => (
+                          <div key={plan._id} className="stacked-plan-card">
+                            <h4>{plan.plan.name} Plan</h4>
+                            <div className="plan-type">
+                              {getPlanTypeDisplay(plan.plan.type)}
+                            </div>
+                            <div className="date-info">
+                              <div className="date-item">
+                                <span className="date-label">Started:</span>
+                                <span className="date-value">{formatDate(plan.startDate)}</span>
+                              </div>
+                              <div className="date-item">
+                                <span className="date-label">Expires:</span>
+                                <span className="date-value">{formatDate(plan.endDate)}</span>
+                              </div>
+                            </div>
+                            <div className="time-remaining">
+                              <div className="days-left">{calculateDaysLeft(plan.endDate)}</div>
+                              <div className="days-label">days remaining</div>
+                            </div>
                           </div>
-                          <div className="date-item">
-                            <span className="date-label">Expires:</span>
-                            <span className="date-value">{formatDate(plan.endDate)}</span>
-                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="section total-benefits">
+                  {totalBenefits && (
+                    <div className="total-benefits">
+                      <h3>Total Benefits</h3>
+                      <div className="benefits-details">
+                        <div className="benefit-item">
+                          <span className="benefit-label">Total Amount:</span>
+                          <span className="benefit-value">₹{formatIndianPrice(totalBenefits.totalAmount)}</span>
                         </div>
-                        <div className="time-remaining">
-                          <div className="days-left">{calculateDaysLeft(plan.endDate)}</div>
-                          <div className="days-label">days remaining</div>
+                        <div className="benefit-item">
+                          <span className="benefit-label">Total Days:</span>
+                          <span className="benefit-value">{totalBenefits.totalDays} days</span>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Display total benefits if available */}
-              {totalBenefits && (
-                <div className="total-benefits">
-                  <h3>Total Subscription Benefits</h3>
-                  <div className="benefits-details">
-                    <div className="benefit-item">
-                      <span className="benefit-label">Total Amount:</span>
-                      <span className="benefit-value">₹{formatIndianPrice(totalBenefits.totalAmount)}</span>
                     </div>
-                    <div className="benefit-item">
-                      <span className="benefit-label">Total Days:</span>
-                      <span className="benefit-value">{totalBenefits.totalDays} days</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           )}
 
