@@ -148,78 +148,69 @@ export const createPendingSubscription = async (req: Request, res: Response) => 
       userId,
       status: SubscriptionStatus.ACTIVE 
     });
-    
-    // Create subscription data
-    const subscriptionData = {
+
+    // If there's an existing subscription, make this a stacked plan
+    if (existingSubscription) {
+      // Calculate the duration of the new plan in days
+      const newPlanDuration = Math.ceil(
+        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      // Add the new plan's duration to the existing subscription's end date
+      const stackedEndDate = new Date(existingSubscription.endDate);
+      stackedEndDate.setDate(stackedEndDate.getDate() + newPlanDuration);
+
+      // Create new subscription as a stacked plan
+      const newSubscription = new Subscription({
+        userId,
+        plan: plan.type,
+        startDate,
+        endDate: stackedEndDate,
+        status: SubscriptionStatus.PAYMENT_PENDING,
+        upiOrderId,
+        amount: plan.price,
+        parentSubscriptionId: existingSubscription._id
+      });
+
+      await newSubscription.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Stacked subscription created successfully',
+        data: {
+          subscription: newSubscription,
+          isStacked: true,
+          parentSubscriptionId: existingSubscription._id
+        }
+      });
+    }
+
+    // If no existing subscription, create a new one
+    const newSubscription = new Subscription({
       userId,
       plan: plan.type,
       startDate,
       endDate,
       status: SubscriptionStatus.PAYMENT_PENDING,
       upiOrderId,
-      amount: plan.price,
-      isPendingPayment: true
-    };
-    
-    if (existingSubscription) {
-      // Create a new subscription for the additional plan
-      const newSubscription = new Subscription({
-        ...subscriptionData,
-        parentSubscriptionId: existingSubscription._id
-      });
-      
-      await newSubscription.save();
-      
-      // Update user's pending payment status
-      await User.findByIdAndUpdate(userId, {
-        isPendingPayment: true
-      });
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Pending additional plan subscription created',
-        data: {
-          subscriptionId: newSubscription._id,
-          plan: plan.name,
-          status: newSubscription.status,
-          startDate: newSubscription.startDate,
-          endDate: newSubscription.endDate,
-          trialDaysAdded: trialDaysRemaining,
-          isAdditionalPlan: true,
-          amount: plan.price
-        }
-      });
-    } else {
-      // Create new subscription (first time subscription)
-      const subscription = new Subscription(subscriptionData);
-      
-      await subscription.save();
-      
-      // Update user's pending payment status
-      await User.findByIdAndUpdate(userId, {
-        isPendingPayment: true
-      });
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Pending subscription created',
-        data: {
-          subscriptionId: subscription._id,
-          plan: plan.name,
-          status: subscription.status,
-          startDate: subscription.startDate,
-          endDate: subscription.endDate,
-          trialDaysAdded: trialDaysRemaining,
-          isAdditionalPlan: false,
-          amount: plan.price
-        }
-      });
-    }
+      amount: plan.price
+    });
+
+    await newSubscription.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Subscription created successfully',
+      data: {
+        subscription: newSubscription,
+        isStacked: false
+      }
+    });
   } catch (error) {
-    console.error('Error creating pending subscription:', error);
+    console.error('Error creating subscription:', error);
     return res.status(500).json({
       success: false,
-      message: 'Error creating pending subscription'
+      message: 'Error creating subscription'
     });
   }
 };
