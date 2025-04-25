@@ -83,15 +83,15 @@ export const checkSubscription = async (req: Request, res: Response, next: NextF
         break;
 
       case SubscriptionStatus.ACTIVE:
-      case SubscriptionStatus.PAID:
         // Check if subscription is still valid
         const subscription = await Subscription.findOne({
-          userId,
-          status: { $in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.PAID] },
+          userId: user._id,
+          status: SubscriptionStatus.ACTIVE,
           endDate: { $gt: new Date() }
-        }).sort({ endDate: -1 });
+        });
 
         if (!subscription) {
+          // Subscription has expired
           return res.status(403).json({
             statusCode: 403,
             message: 'Your subscription has expired. Please renew to continue using premium features.',
