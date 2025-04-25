@@ -18,6 +18,7 @@ interface IUser extends mongoose.Document {
   isEmailVerified: boolean;
   activeToken: string;
   lastLogin: Date;
+  lastActivity: Date;
   subscriptionStatus: SubscriptionStatus;
   trialEndDate: Date;
   googlePayCustomerId?: string;
@@ -77,7 +78,11 @@ const userSchema = new mongoose.Schema({
   },
   lastLogin: {
     type: Date,
-    default: null
+    default: Date.now
+  },
+  lastActivity: {
+    type: Date,
+    default: Date.now
   },
   paymentStatus: {
     type: String,

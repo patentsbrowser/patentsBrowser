@@ -1,5 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { useAuth } from "../AuthContext";
+import { createContext, useContext, useState, ReactNode } from 'react';
 
 interface AdminContextType {
   isAdminMode: boolean;
@@ -7,49 +6,31 @@ interface AdminContextType {
   setAdminMode: (value: boolean) => void;
 }
 
+// Create the context
 const AdminContext = createContext<AdminContextType | null>(null);
-export const AdminProvider = ({ children }: { children: ReactNode }) => {
-  const { user, adminCheckPerformed } = useAuth();
-  // Initialize isAdminMode to true for admin users, false for regular users
-  const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
 
-  // Update admin mode when user info changes or admin status changes
-  useEffect(() => {
-    if (user?.isAdmin) {
-      // Set admin mode to true by default for admin users
-      setIsAdminMode(true);
-    } else {
-      // Reset to false for non-admin users
-      setIsAdminMode(false);
+// Create the provider component
+function AdminProvider({ children }: { children: ReactNode }) {
+  const [isAdminMode, setIsAdminMode] = useState(false);
 
-    }
-  }, [user?.id, user?.isAdmin]); // Update when user ID or admin status changes
-
-  const toggleAdminMode = () => {
-
-    setIsAdminMode(prev => !prev);
-  };
-
-  // Direct setter for admin mode
-  const setAdminMode = (value: boolean) => {
-    setIsAdminMode(value);
-  };
+  const toggleAdminMode = () => setIsAdminMode(prev => !prev);
+  const setAdminMode = (value: boolean) => setIsAdminMode(value);
 
   return (
-    <AdminContext.Provider value={{ 
-      isAdminMode,
-      toggleAdminMode,
-      setAdminMode
-    }}>
+    <AdminContext.Provider value={{ isAdminMode, toggleAdminMode, setAdminMode }}>
       {children}
     </AdminContext.Provider>
   );
-};
+}
 
-export const useAdmin = () => {
+// Create the hook
+function useAdmin() {
   const context = useContext(AdminContext);
   if (!context) {
     throw new Error("useAdmin must be used within an AdminProvider");
   }
   return context;
-}; 
+}
+
+// Export everything together
+export { AdminProvider, useAdmin }; 
