@@ -1,5 +1,6 @@
 import { OAuth2Client } from 'google-auth-library';
-import { googleConfig } from '../config/googleAuth';
+import { googleConfig } from '../config/googleAuth.js';
+// import { googleConfig } from '../config/googleAuth';
 
 class GoogleAuthService {
     private client: OAuth2Client;
