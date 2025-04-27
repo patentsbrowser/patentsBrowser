@@ -385,9 +385,6 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
         const newFoundPatents = response.results.map((result: PatentSearchResult) => result.patent_id);
         const stillNotFound = correctedPatents.filter(id => !newFoundPatents.includes(id));
 
-        // Log the patents being saved
-        console.log('Patents being saved:', newFoundPatents);
-
         // Update the filtered patents list with newly found patents
         setFilteredPatentIds(prev => [...prev, ...newFoundPatents]);
 

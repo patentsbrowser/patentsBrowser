@@ -13,12 +13,10 @@ const authController = new AuthController();
 router.post('/signup', async (req:any, res:any) => {
   try {
     const { name, email, password } = req.body;
-    console.log('Signup request received for email:', email);
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      console.log('User already exists:', email);
       return res.status(400).json({
         statusCode: 400,
         message: 'User already exists',
@@ -41,19 +39,14 @@ router.post('/signup', async (req:any, res:any) => {
     });
 
     await user.save();
-    console.log('New user created with trial period:', email);
 
     // Generate and send OTP
     const otp = generateOTP();
-    console.log('Generated OTP:', otp);
     
     try {
       await sendOTP(email, otp);
-      console.log('OTP sent successfully to:', email);
       storeOTP(email, otp);
-      console.log('OTP stored for:', email);
     } catch (emailError) {
-      console.error('Error sending OTP:', emailError);
       // Continue with the response even if email fails
     }
 
@@ -70,7 +63,6 @@ router.post('/signup', async (req:any, res:any) => {
       }
     });
   } catch (error) {
-    console.error('Signup error:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Error creating account',
@@ -129,8 +121,6 @@ router.post('/verify-otp', async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
     
-    console.log('User verified and logged in successfully, token updated');
-
     res.status(200).json({
       statusCode: 200,
       message: 'OTP verified successfully',
@@ -145,7 +135,6 @@ router.post('/verify-otp', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error verifying OTP:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Internal server error',
@@ -189,7 +178,6 @@ router.post('/resend-otp', async (req, res) => {
       data: null
     });
   } catch (error) {
-    console.error('Error resending OTP:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Failed to resend OTP',
@@ -222,7 +210,6 @@ router.post('/logout', auth, async (req, res) => {
       data: null
     });
   } catch (error) {
-    console.error('Logout error:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Error logging out',
@@ -274,7 +261,6 @@ router.post('/send-otp', async (req, res) => {
       data: null
     });
   } catch (error) {
-    console.error('Error sending OTP:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Failed to send OTP',
@@ -326,7 +312,6 @@ router.post('/reset-password', async (req, res) => {
       data: null
     });
   } catch (error) {
-    console.error('Error resetting password:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Failed to reset password',

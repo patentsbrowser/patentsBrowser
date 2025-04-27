@@ -27,7 +27,6 @@ export const searchGooglePatents = async (req: Request, res: Response) => {
     if (peid) queryParams.append('peid', peid as string);
 
     const url = `${baseUrl}?${queryParams.toString()}`;
-    console.log('Making request to:', url);
 
     const response = await axios.get(url, {
       headers: {
@@ -37,9 +36,6 @@ export const searchGooglePatents = async (req: Request, res: Response) => {
         'Referer': 'https://patents.google.com/'
       }
     });
-
-    // Log the response for debugging
-    console.log('Google Patents API Response:', response.data);
 
     // Process the response
     if (response.data && response.data.result) {

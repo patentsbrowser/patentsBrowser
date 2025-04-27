@@ -22,7 +22,6 @@ const __dirname = path.dirname(__filename);
 
 // Load environment variables based on NODE_ENV
 const env = process.env.NODE_ENV || 'development';
-console.log(`Running in ${env} environment`);
 
 if (env === 'production') {
   dotenv.config({ path: '.env.production' });
@@ -36,7 +35,6 @@ const requiredEnvVars = ['JWT_SECRET', 'MONGODB_URI'];
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingEnvVars.length > 0) {
-  console.error('Missing required environment variables:', missingEnvVars);
   if (env === 'production') {
     process.exit(1); // Only exit in production
   } else {
@@ -96,15 +94,12 @@ app.use('/api/google-patents', googlePatentsRoutes);
 
 // Make sure uploadedImages directory is served as public
 const uploadDir = path.join(__dirname, '../uploadedImages');
-console.log('Upload directory path: ', uploadDir);
 
 // Ensure upload directory exists
 import fs from 'fs';
 if (!fs.existsSync(uploadDir)) {
   console.log('Creating upload directory');
   fs.mkdirSync(uploadDir, { recursive: true });
-} else {
-  console.log('Upload directory already exists');
 }
 
 app.use('/uploadedImages', express.static(uploadDir, {

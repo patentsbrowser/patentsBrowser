@@ -21,8 +21,6 @@ export const getPricingPlans = async (req: Request, res: Response) => {
 
     // Check if we have a valid cache
     if (plansCache.data && (now - plansCache.timestamp) < CACHE_EXPIRY) {
-      console.log('Returning cached pricing plans');
-      
       return res.status(200).json({
         success: true,
         data: plansCache.data
@@ -30,7 +28,6 @@ export const getPricingPlans = async (req: Request, res: Response) => {
     }
 
     // If no valid cache, fetch from database
-    console.log('Fetching pricing plans from database');
     const plans = await PricingPlan.find({}).sort({ price: 1 });
     
     // Update cache
@@ -39,14 +36,11 @@ export const getPricingPlans = async (req: Request, res: Response) => {
       timestamp: now
     };
     
-    console.log(`Returning ${plans.length} pricing plans from database`);
-    
     return res.status(200).json({
       success: true,
       data: plans
     });
   } catch (error) {
-    console.error('Error fetching pricing plans:', error);
     return res.status(500).json({
       success: false,
       message: 'Error fetching pricing plans'
@@ -207,7 +201,6 @@ export const createPendingSubscription = async (req: Request, res: Response) => 
       }
     });
   } catch (error) {
-    console.error('Error creating subscription:', error);
     return res.status(500).json({
       success: false,
       message: 'Error creating subscription'
@@ -328,7 +321,6 @@ export const verifyUpiPayment = async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Error processing payment reference:', error);
     return res.status(500).json({
       success: false,
       message: 'Error processing payment reference'
@@ -447,7 +439,6 @@ export const getUserSubscription = async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Error getting user subscription:', error);
     return res.status(500).json({
       success: false,
       message: 'Error fetching subscription details'
@@ -498,7 +489,6 @@ export const getPaymentStatus = async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Error checking payment status:', error);
     return res.status(500).json({
       success: false,
       message: 'Error checking payment status'
@@ -544,7 +534,6 @@ export const getPendingPayments = async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching pending payments:', error);
     return res.status(500).json({
       success: false,
       message: 'Error fetching pending payments'
@@ -713,7 +702,6 @@ export const verifyPayment = async (req: Request, res: Response) => {
       data: updatedSubscription
     });
   } catch (error) {
-    console.error('Error verifying payment:', error);
     return res.status(500).json({
       statusCode: 500,
       message: 'Error verifying payment',
@@ -766,7 +754,6 @@ export const getUserPaymentHistory = async (req: Request, res: Response) => {
       data: paymentHistory
     });
   } catch (error) {
-    console.error('Error fetching user payment history:', error);
     return res.status(500).json({
       success: false,
       message: 'Error fetching payment history'
@@ -808,7 +795,6 @@ export const getAdditionalPlans = async (req: Request, res: Response) => {
       data: additionalPlans
     });
   } catch (error) {
-    console.error('Error fetching additional plans:', error);
     return res.status(500).json({
       success: false,
       message: 'Error fetching additional plans'
@@ -859,7 +845,6 @@ export const pauseSubscription = async (req: Request, res: Response) => {
       data: updatedSubscription
     });
   } catch (error) {
-    console.error('Error pausing subscription:', error);
     return res.status(500).json({
       statusCode: 500,
       message: 'Error pausing subscription',
@@ -925,7 +910,6 @@ export const enableSubscription = async (req: Request, res: Response) => {
       data: updatedSubscription
     });
   } catch (error) {
-    console.error('Error enabling subscription:', error);
     return res.status(500).json({
       statusCode: 500,
       message: 'Error enabling subscription',
@@ -979,7 +963,6 @@ export const cancelSubscription = async (req: Request, res: Response) => {
       data: updatedSubscription
     });
   } catch (error) {
-    console.error('Error cancelling subscription:', error);
     return res.status(500).json({
       statusCode: 500,
       message: 'Error cancelling subscription',
@@ -1072,7 +1055,6 @@ export const stackNewPlan = async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Error stacking new plan:', error);
     return res.status(500).json({
       success: false,
       message: 'Error creating stacked plan subscription'
@@ -1107,7 +1089,6 @@ export const getStackedPlans = async (req: Request, res: Response) => {
       data: stackedPlans
     });
   } catch (error) {
-    console.error('Error fetching stacked plans:', error);
     return res.status(500).json({
       success: false,
       message: 'Error fetching stacked plans'
@@ -1158,7 +1139,6 @@ export const getTotalSubscriptionBenefits = async (req: Request, res: Response) 
       data: totalBenefits
     });
   } catch (error) {
-    console.error('Error calculating total subscription benefits:', error);
     return res.status(500).json({
       success: false,
       message: 'Error calculating total subscription benefits'

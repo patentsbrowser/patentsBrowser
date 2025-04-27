@@ -35,7 +35,6 @@ export const signup = async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Signup error:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Registration failed. Please try again.',
@@ -47,14 +46,10 @@ export const signup = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    console.log('Login attempt for email:', email);
     
     const user = await User.findOne({ email });
-    console.log('User found:', user ? 'Yes' : 'No');
-    console.log('User admin status:', user?.isAdmin);
     
     if (!user) {
-      console.log('User not found for email:', email);
       return res.status(404).json({
         statusCode: 404,
         message: 'Email not found',
@@ -63,7 +58,6 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const isValidPassword = await user.comparePassword(password);
-    console.log('Password validation:', isValidPassword ? 'Valid' : 'Invalid');
     
     if (!isValidPassword) {
       return res.status(401).json({
@@ -83,21 +77,11 @@ export const login = async (req: Request, res: Response) => {
     // If email is not verified, mark it as verified since we're allowing login
     // without OTP verification
     if (!user.isEmailVerified) {
-      console.log('Auto-verifying email on login for user:', email);
       user.isEmailVerified = true;
     }
     
     await user.save();
     
-    console.log('User logged in successfully, token updated');
-    console.log('User data returned:', {
-      id: user._id,
-      email: user.email,
-      name: user.name,
-      isAdmin: user.isAdmin
-    });
-
-    // Log the exact response being sent
     const responseData = {
       statusCode: 200,
       message: 'Successfully logged in!',
@@ -111,11 +95,9 @@ export const login = async (req: Request, res: Response) => {
         }
       }
     };
-    console.log('Login response data:', JSON.stringify(responseData, null, 2));
 
     res.status(200).json(responseData);
   } catch (error) {
-    console.error('Login error:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Login failed. Please try again.',
@@ -143,14 +125,6 @@ export const getProfile = async (req: Request, res: Response) => {
         data: null
       });
     }
-
-    // Log user data including admin status
-    console.log('getProfile - User data returned:', {
-      id: user._id,
-      email: user.email,
-      name: user.name,
-      isAdmin: user.isAdmin
-    });
 
     // Create response data with explicit admin status included
     const responseData = {
@@ -242,7 +216,6 @@ export const logout = async (req: Request, res: Response) => {
       data: null
     });
   } catch (error) {
-    console.error('Logout error:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Failed to logout. Please try again.',
@@ -293,7 +266,6 @@ export const uploadImage = async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Error uploading image:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Failed to upload image',
@@ -306,7 +278,6 @@ export class AuthController {
     async googleLogin(req: Request, res: Response) {
         try {
             const { token } = req.body;
-            console.log('token================================', token)
             if (!token) {
                 return res.status(400).json({ message: 'Token is required' });
             }
@@ -358,7 +329,6 @@ export class AuthController {
                 isNewUser
             });
         } catch (error) {
-            console.error('Google login error:', error);
             res.status(500).json({ message: 'Authentication failed' });
         }
     }
@@ -383,7 +353,6 @@ export class AuthController {
 
             res.json({ message: 'Password set successfully' });
         } catch (error) {
-            console.error('Set password error:', error);
             res.status(500).json({ message: 'Failed to set password' });
         }
     }
@@ -440,7 +409,6 @@ export const changePassword = async (req: Request, res: Response) => {
       data: null
     });
   } catch (error) {
-    console.error('Change password error:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Failed to change password',

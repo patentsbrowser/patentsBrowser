@@ -89,7 +89,6 @@ export const createDefaultPlans = async () => {
     ];
 
     await PricingPlan.insertMany(defaultPlans);
-    console.log('Default pricing plans created');
   }
 };
 
