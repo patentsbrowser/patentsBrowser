@@ -549,86 +549,61 @@
                 font-size: 14px;
                 background-color: var(--input-bg);
                 color: var(--text-color);
+                transition: all 0.2s ease;
+                flex: 1;
 
-                &:read-only {
-                  background-color: var(--secondary-bg);
-                  cursor: not-allowed;
-                  transition: all 0.2s ease;
-                  flex: 1;
-
-                  &:focus {
-                    border-color: #2563eb;
-                    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
-                  }
+                &:focus {
+                  border-color: #2563eb;
+                  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+                }
 
                   &::placeholder {
                     color: var(--text-secondary);
                   }
                 }
 
-                .edit-button {
-                  padding: 6px;
-                  border: none;
-                  border-radius: 4px;
-                  background-color: transparent;
-                  color: var(--text-secondary);
-                  cursor: pointer;
-                  transition: all 0.2s ease;
-                  font-size: 16px;
+              .edit-button {
+                width: 36px;
+                height: 36px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                background: var(--secondary-bg);
+                color: var(--text-color);
+                cursor: pointer;
+                transition: all 0.2s ease;
+                padding: 0;
+
+                &:hover {
+                  background: var(--hover-bg);
+                  border-color: #2563eb;
+                  color: #2563eb;
+                }
+
+                &.editing {
+                  background: #2563eb;
+                  border-color: #2563eb;
+                  color: white;
 
                   &:hover {
-                    background-color: var(--hover-bg);
-                    color: var(--text-color);
+                    background: #1d4ed8;
+                    color: white;
                   }
+                }
 
-                  &.editing {
-                    color: var(--success-color);
-
-                    &:hover {
-                      background-color: var(--success-bg);
-                    }
-
-                    width: 36px;
-                    height: 36px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    border: 1px solid var(--border-color);
-                    border-radius: 6px;
-                    background: var(--secondary-bg);
-                    color: var(--text-color);
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-                    padding: 0;
-
-                    &:hover {
-                      background: var(--hover-bg);
-                      border-color: #2563eb;
-                      color: #2563eb;
-                    }
-
-                    &.editing {
-                      background: #2563eb;
-                      border-color: #2563eb;
-                      color: white;
-
-                      &:hover {
-                        background: #1d4ed8;
-                        color: white;
-                      }
-                    }
-
-                    svg {
-                      width: 16px;
-                      height: 16px;
-                    }
-                  }
+                svg {
+                  width: 16px;
+                  height: 16px;
                 }
               }
             }
           }
         }
       }
+    }
+  }
 
       .modal-actions {
         background: var(--secondary-bg);
@@ -681,107 +656,107 @@
       }
     }
 
-    // Dark theme adjustments
-    [data-theme="dark"] {
-      .folder-selection-modal {
-        background: var(--primary-bg);
+// Dark theme adjustments
+[data-theme="dark"] {
+  .folder-selection-modal {
+    background: #111827;
 
-        .modal-header {
-          background: var(--secondary-bg);
-        }
+    .modal-header {
+      background: #1f2937;
+    }
 
-        .modal-body {
-          .modal-content-wrapper {
-            .main-content {
-              .existing-folders-section {
-                select.folder-select {
-                  background-color: var(--input-bg);
-                  color: var(--text-color);
-                  border: 1px solid var(--border-color);
+    .modal-body {
+      .modal-content-wrapper {
+        .main-content {
+          .existing-folders-section {
+            select.folder-select {
+              background-color: #0a0f1d !important;
+              color: #f8fafc !important;
+              border: 1px solid rgba(59, 130, 246, 0.1) !important;
 
-                  &:hover:not(:disabled) {
-                    background-color: var(--hover-bg);
-                    border-color: var(--accent-color);
-                  }
-
-                  &:focus {
-                    background-color: var(--hover-bg);
-                    border-color: var(--accent-color);
-                    box-shadow: 0 0 0 1px var(--accent-color);
-                  }
-
-                  &:disabled {
-                    background-color: var(--secondary-bg);
-                    opacity: 0.7;
-                  }
-
-                  option {
-                    background-color: var(--input-bg);
-                    color: var(--text-color);
-                  }
-                }
-
-                label {
-                  color: var(--text-color);
-                }
+              &:hover:not(:disabled) {
+                background-color: #131b2e !important;
+                border-color: rgba(59, 130, 246, 0.2) !important;
               }
 
-              .patent-ids-summary {
-                background: var(--secondary-bg);
+              &:focus {
+                background-color: #131b2e !important;
+                border-color: rgba(59, 130, 246, 0.3) !important;
+                box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3),
+                  inset 0 1px 2px rgba(0, 0, 0, 0.2) !important;
               }
 
-              .compact-input {
-                background: var(--input-bg);
-                border-color: var(--border-color);
-                color: var(--text-color);
+              &:disabled {
+                background-color: rgba(15, 23, 42, 0.5) !important;
+                opacity: 0.7 !important;
+              }
 
-                &::placeholder {
-                  color: var(--text-secondary);
-                }
-
-                &:focus {
-                  border-color: var(--accent-color);
-                }
-
-                &:disabled {
-                  background: var(--secondary-bg);
-                }
+              option {
+                background-color: #0a0f1d !important;
+                color: #f8fafc !important;
+                padding: 8px 12px !important;
               }
             }
 
-            .not-found-section {
-              background: var(--secondary-bg);
+            label {
+              color: #e2e8f0 !important;
+            }
+          }
 
-              .not-found-item {
-                background: var(--card-bg);
-                border-color: var(--border-color);
+          .patent-ids-summary {
+            background: #1f2937;
+          }
 
-                input {
-                  background: var(--input-bg);
-                  border-color: var(--border-color);
-                  color: var(--text-color);
+          .compact-input {
+            background: #111827;
+            border-color: #374151;
+            color: #f3f4f6;
+            width: 500px;
 
-                  &::placeholder {
-                    color: var(--text-secondary);
-                  }
-                }
-              }
+            &::placeholder {
+              color: #9ca3af;
+            }
+
+            &:focus {
+              border-color: #3b82f6;
+            }
+
+            &:disabled {
+              background: #1f2937;
             }
           }
         }
 
-        .modal-actions {
-          background: var(--secondary-bg);
+        .not-found-section {
+          background: #1f2937;
 
-          .cancel-button {
-            background: var(--secondary-bg);
-            color: var(--text-color);
-            border-color: var(--border-color);
+          .not-found-item {
+            background: #1f2937;
 
-            &:hover {
-              background: var(--hover-bg);
+            input {
+              background: #1f2937;
+              border-color: #374151;
+              color: #f3f4f6;
+
+              &::placeholder {
+                color: #9ca3af;
+              }
             }
           }
+        }
+      }
+    }
+
+    .modal-actions {
+      background: #1f2937;
+
+      .cancel-button {
+        background: #1f2937;
+        color: #f3f4f6;
+        border-color: #374151;
+
+        &:hover {
+          background: #2d3748;
         }
       }
     }
