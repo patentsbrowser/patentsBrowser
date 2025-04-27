@@ -39,7 +39,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const savedUser = localStorage.getItem('user');
       // Only parse if savedUser exists and is not "undefined"
       const parsedUser = savedUser && savedUser !== "undefined" ? JSON.parse(savedUser) : null;
-      console.log('Initialized user from localStorage:', parsedUser);
       return parsedUser;
     } catch (error) {
       // Clear potentially corrupted data
@@ -62,8 +61,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         // Log the user data on mount
         const parsedUser = JSON.parse(savedUser);
-        console.log('User data on mount:', parsedUser);
-        console.log('Admin status on mount:', parsedUser.isAdmin);
       }
     } catch (error) {
       // If there's any error, clear the auth state to be safe
@@ -94,9 +91,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginMutation = useMutation({
     mutationFn: (credentials: { email: string; password: string }) => authApi.login(credentials),
     onSuccess: (data) => {
-      console.log('Login response received:', data);
-      console.log('User admin status from response:', data.user?.isAdmin);
-      
       // Ensure we're storing the complete user object with admin status
       const userData = {
         ...data.user,
@@ -109,9 +103,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       // Set admin check as performed since we have the status from login
       setAdminCheckPerformed(true);
-      
-      // Log the user state after update
-      console.log('User state after login:', userData);
     }
   });
 

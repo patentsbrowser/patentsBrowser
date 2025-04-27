@@ -36,8 +36,6 @@ if (!userEmail) {
 // Connect to MongoDB and update user
 mongoose.connect(MONGODB_URI)
   .then(async () => {
-    console.log('Connected to MongoDB');
-    
     try {
       // Find user by email
       const user = await User.findOne({ email: userEmail });
@@ -51,7 +49,6 @@ mongoose.connect(MONGODB_URI)
       user.isAdmin = true;
       await user.save();
       
-      console.log(`User ${userEmail} is now an admin`);
       process.exit(0);
     } catch (error) {
       console.error('Error updating user:', error);

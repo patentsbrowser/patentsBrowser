@@ -21,8 +21,6 @@ export const getPricingPlans = async (req: Request, res: Response) => {
 
     // Check if we have a valid cache
     if (plansCache.data && (now - plansCache.timestamp) < CACHE_EXPIRY) {
-      console.log('Returning cached pricing plans');
-      
       return res.status(200).json({
         success: true,
         data: plansCache.data
@@ -30,7 +28,6 @@ export const getPricingPlans = async (req: Request, res: Response) => {
     }
 
     // If no valid cache, fetch from database
-    console.log('Fetching pricing plans from database');
     const plans = await PricingPlan.find({}).sort({ price: 1 });
     
     // Update cache
@@ -38,8 +35,6 @@ export const getPricingPlans = async (req: Request, res: Response) => {
       data: plans,
       timestamp: now
     };
-    
-    console.log(`Returning ${plans.length} pricing plans from database`);
     
     return res.status(200).json({
       success: true,

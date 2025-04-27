@@ -41,14 +41,11 @@ export const authApi = {
   login: async (credentials: { email: string; password: string }) => {
     try {
       const response = await api.post('/auth/login', credentials);
-      console.log('Login API response:', response.data);
       
       // If login is successful, save the token
       if (response.data.statusCode === 200) {
         localStorage.setItem('token', response.data.data.token);
         const user = response.data.data.user;
-        console.log('User data from login:', user);
-        console.log('Admin status from login:', user.isAdmin);
         
         // Set the user in localStorage (for persistence)
         localStorage.setItem('user', JSON.stringify(user));
@@ -61,7 +58,6 @@ export const authApi = {
         statusCode: response.data.statusCode
       };
     } catch (error: any) {
-      console.error('Login API error:', error);
       const errorResponse = error.response?.data || { statusCode: 500, message: 'Server error' };
       return {
         data: null,

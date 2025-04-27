@@ -21,7 +21,6 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 export const auth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    console.log('Auth middleware - token received:', token ? `${token.substring(0, 10)}...` : 'No token');
     
     if (!token) {
       return res.status(401).json({
@@ -35,13 +34,11 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
     // Verify token signature
     try {
       const decoded: any = jwt.verify(token, JWT_SECRET);
-      console.log('Auth middleware - decoded token:', { ...decoded, userId: decoded.userId });
       
       // Check if user exists and if the token matches the active token
       const user = await User.findById(decoded.userId);
       
       if (!user) {
-        console.log('User not found for ID:', decoded.userId);
         return res.status(401).json({
           statusCode: 401,
           message: 'User not found',
@@ -50,14 +47,10 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
         });
       }
       
-      console.log('User found:', { id: user._id, email: user.email });
-      console.log('Token verification - Active token:', user.activeToken ? `${user.activeToken.substring(0, 10)}...` : 'None');
-      
       // TEMPORARY FIX: Skip token matching check
       // This should be re-enabled once token handling is fixed
       /*
       if (user.activeToken !== token) {
-        console.log('Token mismatch - Session expired');
         return res.status(401).json({ 
           statusCode: 401,
           message: 'Session expired. Please login again.',
@@ -74,10 +67,8 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
         email: user.email
       };
       
-      console.log('Auth middleware - user set on request:', req.user);
       next();
     } catch (jwtError: any) {
-      console.error('JWT verification error:', jwtError.message);
       return res.status(401).json({ 
         statusCode: 401,
         message: 'Invalid token',
@@ -86,8 +77,6 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
       });
     }
   } catch (error: any) {
-    console.error('Auth middleware error:', error.message);
-    
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return res.status(401).json({ 
         statusCode: 401,

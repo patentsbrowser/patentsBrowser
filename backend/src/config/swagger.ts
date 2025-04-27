@@ -22,7 +22,6 @@ export const setupSwagger = (app: any) => {
       res.send(swaggerDocument);
     });
 
-    console.log('Swagger UI setup complete');
   } catch (error) {
     console.error('Error setting up Swagger UI:', error);
   }

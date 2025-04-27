@@ -25,22 +25,17 @@ const __dirname = path.dirname(__filename);
 
 // Ensure uploads directory exists
 const uploadDir = path.join(__dirname, '../../uploadedImages');
-console.log("Upload directory path: ", uploadDir);
 
 // Make sure directory has correct permissions
 if (!fs.existsSync(uploadDir)) {
-  console.log("Creating upload directory");
   fs.mkdirSync(uploadDir, { recursive: true, mode: 0o755 }); // Added mode for proper permissions
 } else {
-  console.log("Upload directory already exists");
-  // Update permissions on existing directory
   fs.chmodSync(uploadDir, 0o755);
 }
 
 // Configure storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    console.log("Saving file to: ", uploadDir);  // Log where files are being saved
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
