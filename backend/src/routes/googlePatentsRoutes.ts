@@ -1,5 +1,5 @@
 import express from 'express';
-import { searchGooglePatents } from '../controllers/googlePatentsController';
+import { searchGooglePatents } from '../controllers/googlePatentsController.js';
 
 const router = express.Router();
 

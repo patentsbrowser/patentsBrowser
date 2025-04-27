@@ -1,5 +1,5 @@
 import swaggerUi from 'swagger-ui-express';
-import swaggerDocument from '../swagger.json' assert { type: "json" };
+import swaggerDocument from '../swagger.json' with { type: "json" };
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -8,8 +8,6 @@ const __dirname = path.dirname(__filename);
 
 export const setupSwagger = (app: any) => {
   try {
-    console.log('Setting up Swagger UI...');
-    console.log('Swagger document:', JSON.stringify(swaggerDocument, null, 2));
 
     // Serve Swagger UI
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
