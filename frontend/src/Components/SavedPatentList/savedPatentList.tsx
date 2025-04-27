@@ -163,12 +163,9 @@ const SavedPatentList = () => {
         // Use the patent IDs directly as they come from the file
         const extractedIds = response.data.patentIds;
         
-        console.log('Extracted Patent IDs:', extractedIds);
-        
         if (extractedIds.length > 0) {
           // Transform patent IDs using Unified Patents API
           const transformedResponse = await patentApi.transformPatentIds(extractedIds);
-          console.log('Transformed Response:', transformedResponse);
           
           // Check if we have a valid array of transformed IDs
           if (Array.isArray(transformedResponse)) {
@@ -183,7 +180,6 @@ const SavedPatentList = () => {
             setShowFolderModal(true);
             toast.success(`Added ${transformedResponse.length} new patents`);
           } else {
-            console.error('Invalid transformed response:', transformedResponse);
             toast.error('Failed to transform patent IDs');
           }
         } else {
@@ -213,8 +209,6 @@ const SavedPatentList = () => {
       try {
         // Transform patent IDs using Unified Patents API
         const transformedResponse = await patentApi.transformPatentIds(patentIds);
-        console.log('Original IDs:', patentIds);
-        console.log('Transformed Response:', transformedResponse);
         
         // Check if we have a valid array of transformed IDs
         if (Array.isArray(transformedResponse)) {
@@ -225,7 +219,6 @@ const SavedPatentList = () => {
           await searchPatentsMutation.mutateAsync(transformedResponse);
           setShowFolderModal(true);
         } else {
-          console.error('Invalid transformed response:', transformedResponse);
           toast.error('Failed to transform patent IDs');
         }
       } catch (error) {
@@ -239,7 +232,6 @@ const SavedPatentList = () => {
 
   const handleFolderSelection = async (folderName: string, workfileName: string, filterDuplicates: boolean, filterFamily: boolean, foundPatentIds: string[]) => {
     const combinedFolderName = `${folderName}/${workfileName}`;
-    console.log('Saving final found patents:', foundPatentIds);
     savePatentMutation.mutate(
       { ids: foundPatentIds, folderName: combinedFolderName },
       {

@@ -44,8 +44,6 @@ export const savePatent = async (req: AuthRequest, res: Response) => {
   try {
     const { patentIds, folderName } = req.body;
     const userId: any = req.user?.userId;
-    console.log('userId', userId);
-    console.log('folderName provided:', folderName);
     
     // Validate both patentIds array and userId
     if (!patentIds || !Array.isArray(patentIds) || patentIds.length === 0) {
@@ -66,7 +64,6 @@ export const savePatent = async (req: AuthRequest, res: Response) => {
 
     // Standardize all patent IDs
     const standardizedPatentIds = patentIds.map(id => standardizePatentNumber(id.trim()));
-    console.log('Standardized patent IDs:', standardizedPatentIds);
 
     const savedPatents: any[] = [];
 
@@ -95,7 +92,6 @@ export const savePatent = async (req: AuthRequest, res: Response) => {
     // Create a custom patent list if a folder name was provided
     let customList = null;
     if (folderName && patentIds.length > 0) {
-      console.log(`Creating custom list "${folderName}" with ${standardizedPatentIds.length} patents`);
       
       // Split folderName into main folder and workfile name
       const [mainFolderName, workfileName] = folderName.split('/');

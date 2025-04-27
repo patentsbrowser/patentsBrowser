@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { useMutation } from '@tanstack/react-query';
 import { authApi } from './api/auth';
-import { toast } from 'react-hot-toast';
 
 interface User {
   id: string;
@@ -65,9 +64,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginMutation = useMutation({
     mutationFn: (credentials: { email: string; password: string }) => authApi.login(credentials),
     onSuccess: (data) => {
-      console.log('Login response received:', data);
-      console.log('User admin status from response:', data.user?.isAdmin);
-      
       // Ensure we're storing the complete user object with admin status
       const userData = {
         ...data.user,
@@ -80,9 +76,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       // Set admin check as performed since we have the status from login
       setAdminCheckPerformed(true);
-      
-      // Log the user state after update
-      console.log('User state after login:', userData);
     }
   });
 
