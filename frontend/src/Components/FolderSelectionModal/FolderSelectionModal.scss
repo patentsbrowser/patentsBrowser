@@ -475,7 +475,7 @@
           justify-content: space-between;
           align-items: center;
           padding: 1.5rem;
-          background: rgba(239, 68, 68, 0.1);
+          background: var(--secondary-bg);
           border-bottom: 1px solid var(--border-color);
 
           h4 {
@@ -490,12 +490,13 @@
             align-items: center;
             gap: 1rem;
 
-            .parse-button {
+            .parse-button,
+            .submit-corrections-button {
               min-width: 100px;
               height: 42px;
               padding: 0 1.25rem;
               border-radius: 8px;
-              background: #2563eb;
+              background: var(--accent-color);
               color: white;
               border: none;
               font-weight: 500;
@@ -508,7 +509,7 @@
               transition: all 0.2s ease;
 
               &:hover:not(:disabled) {
-                background: #1d4ed8;
+                background: var(--accent-hover);
               }
 
               &:disabled {
@@ -519,44 +520,6 @@
 
             .submit-corrections-button {
               min-width: 160px;
-              height: 42px;
-              padding: 0 1.25rem;
-              border-radius: 8px;
-              background: #2563eb;
-              color: white;
-              border: none;
-              font-weight: 500;
-              font-size: 0.9375rem;
-              display: inline-flex;
-              align-items: center;
-              justify-content: center;
-              gap: 0.5rem;
-              cursor: pointer;
-              transition: all 0.2s ease;
-
-              &:hover:not(:disabled) {
-                background: #1d4ed8;
-              }
-
-              &:disabled {
-                opacity: 0.7;
-                cursor: not-allowed;
-              }
-
-              .loader {
-                width: 16px;
-                height: 16px;
-                border: 2px solid rgba(255, 255, 255, 0.3);
-                border-radius: 50%;
-                border-top-color: white;
-                animation: spin 0.8s linear infinite;
-              }
-
-              @keyframes spin {
-                to {
-                  transform: rotate(360deg);
-                }
-              }
             }
           }
         }
@@ -567,31 +530,29 @@
           padding: 1.5rem;
 
           .not-found-item {
-            background: var(--secondary-bg);
+            margin: 8px 0;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            margin-bottom: 1rem;
 
             .patent-id-edit {
               display: flex;
               align-items: center;
-              padding: 0.75rem;
-              gap: 0.75rem;
+              gap: 8px;
 
-              input {
-                height: 42px;
-                padding: 0 1rem;
-                font-family: "SF Mono", "Consolas", monospace;
-                font-size: 0.9375rem;
+              .patent-id-input {
+                flex: 1;
+                padding: 6px 12px;
                 border: 1px solid var(--border-color);
-                border-radius: 6px;
-                background: var(--primary-bg);
+                border-radius: 4px;
+                font-size: 14px;
+                background-color: var(--input-bg);
                 color: var(--text-color);
-                transition: all 0.2s ease;
-
-                &:focus {
-                  border-color: #2563eb;
-                  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+                
+                &:read-only {
+                  background-color: var(--secondary-bg);
+                  cursor: not-allowed;
                 }
 
                 &::placeholder {
@@ -599,28 +560,27 @@
                 }
               }
 
-              button {
-                width: 36px;
-                height: 36px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border: 1px solid var(--border-color);
-                border-radius: 6px;
-                background: var(--secondary-bg);
-                color: var(--text-color);
+              .edit-button {
+                padding: 6px;
+                border: none;
+                border-radius: 4px;
+                background-color: transparent;
+                color: var(--text-secondary);
                 cursor: pointer;
                 transition: all 0.2s ease;
+                font-size: 16px;
 
                 &:hover {
-                  background: var(--hover-bg);
-                  border-color: #2563eb;
+                  background-color: var(--hover-bg);
+                  color: var(--text-color);
                 }
 
                 &.editing {
-                  background: #2563eb;
-                  border-color: #2563eb;
-                  color: white;
+                  color: var(--success-color);
+                  
+                  &:hover {
+                    background-color: var(--success-bg);
+                  }
                 }
               }
             }
@@ -684,10 +644,10 @@
 // Dark theme adjustments
 [data-theme="dark"] {
   .folder-selection-modal {
-    background: #111827;
+    background: var(--primary-bg);
 
     .modal-header {
-      background: #1f2937;
+      background: var(--secondary-bg);
     }
 
     .modal-body {
@@ -695,76 +655,74 @@
         .main-content {
           .existing-folders-section {
             select.folder-select {
-              background-color: #0a0f1d !important;
-              color: #f8fafc !important;
-              border: 1px solid rgba(59, 130, 246, 0.1) !important;
+              background-color: var(--input-bg);
+              color: var(--text-color);
+              border: 1px solid var(--border-color);
 
               &:hover:not(:disabled) {
-                background-color: #131b2e !important;
-                border-color: rgba(59, 130, 246, 0.2) !important;
+                background-color: var(--hover-bg);
+                border-color: var(--accent-color);
               }
 
               &:focus {
-                background-color: #131b2e !important;
-                border-color: rgba(59, 130, 246, 0.3) !important;
-                box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3),
-                  inset 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+                background-color: var(--hover-bg);
+                border-color: var(--accent-color);
+                box-shadow: 0 0 0 1px var(--accent-color);
               }
 
               &:disabled {
-                background-color: rgba(15, 23, 42, 0.5) !important;
-                opacity: 0.7 !important;
+                background-color: var(--secondary-bg);
+                opacity: 0.7;
               }
 
               option {
-                background-color: #0a0f1d !important;
-                color: #f8fafc !important;
-                padding: 8px 12px !important;
+                background-color: var(--input-bg);
+                color: var(--text-color);
               }
             }
 
             label {
-              color: #e2e8f0 !important;
+              color: var(--text-color);
             }
           }
 
           .patent-ids-summary {
-            background: #1f2937;
+            background: var(--secondary-bg);
           }
 
           .compact-input {
-            background: #111827;
-            border-color: #374151;
-            color: #f3f4f6;
-            width: 500px;
+            background: var(--input-bg);
+            border-color: var(--border-color);
+            color: var(--text-color);
 
             &::placeholder {
-              color: #9ca3af;
+              color: var(--text-secondary);
             }
 
             &:focus {
-              border-color: #3b82f6;
+              border-color: var(--accent-color);
             }
 
             &:disabled {
-              background: #1f2937;
+              background: var(--secondary-bg);
             }
           }
         }
 
         .not-found-section {
-          background: #1f2937;
+          background: var(--secondary-bg);
 
           .not-found-item {
-            background: #1f2937;
+            background: var(--card-bg);
+            border-color: var(--border-color);
 
             input {
-              background: #1f2937;
-              border-color: #374151;
-              color: #f3f4f6;
+              background: var(--input-bg);
+              border-color: var(--border-color);
+              color: var(--text-color);
 
               &::placeholder {
-                color: #9ca3af;
+                color: var(--text-secondary);
               }
             }
           }
@@ -773,15 +731,15 @@
     }
 
     .modal-actions {
-      background: #1f2937;
+      background: var(--secondary-bg);
 
       .cancel-button {
-        background: #1f2937;
-        color: #f3f4f6;
-        border-color: #374151;
+        background: var(--secondary-bg);
+        color: var(--text-color);
+        border-color: var(--border-color);
 
         &:hover {
-          background: #2d3748;
+          background: var(--hover-bg);
         }
       }
     }

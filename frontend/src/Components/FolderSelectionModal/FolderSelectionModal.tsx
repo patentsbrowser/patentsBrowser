@@ -59,8 +59,8 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
   const [isFiltering, setIsFiltering] = useState(false);
   const [allDuplicates, setAllDuplicates] = useState(false);
   const [showNotFound, setShowNotFound] = useState(true);
-  const [editedPatents, setEditedPatents] = useState<{ [key: string]: string }>({});
-  const [editingPatents, setEditingPatents] = useState<Set<string>>(new Set());
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editedValues, setEditedValues] = useState<{ [key: string]: string }>({});
   const [isSubmittingCorrections, setIsSubmittingCorrections] = useState(false);
 
   useEffect(() => {
@@ -72,8 +72,8 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
       setFilterFamily(true);
       setAllDuplicates(false);
       setShowNotFound(true);
-      setEditedPatents({});
-      setEditingPatents(new Set());
+      setEditedValues({});
+      setEditingIndex(null);
       updateFilteredPatents(true, true);
     }
   }, [isOpen, patentIds]);
@@ -208,36 +208,25 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
     }
   };
 
-  const toggleEdit = (id: string) => {
-    setEditingPatents(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
+  const toggleEdit = (index: number) => {
+    setEditingIndex(editingIndex === index ? null : index);
   };
 
   const handlePatentEdit = (originalId: string, newId: string) => {
-    setEditedPatents(prev => ({
+    setEditedValues(prev => ({
       ...prev,
       [originalId]: newId
     }));
   };
 
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, id: string) => {
-    if (e.key === 'Enter') {
-      toggleEdit(id);
-    } else if (e.key === 'Escape') {
-      // Reset to original value and disable editing
-      setEditedPatents(prev => {
-        const newEdited = { ...prev };
-        delete newEdited[id];
-        return newEdited;
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === 'Escape') {
+      setEditingIndex(null);
+      setEditedValues(prev => {
+        const newValues = { ...prev };
+        delete newValues[notFoundPatents[index]];
+        return newValues;
       });
-      toggleEdit(id);
     }
   };
 
@@ -301,7 +290,7 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
     }
     
     // Update the edited patents state
-    setEditedPatents(prev => {
+    setEditedValues(prev => {
       const newState = {
         ...prev,
         ...updatedPatents
@@ -323,9 +312,7 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
     setIsSubmittingCorrections(true);
     try {
       // Get all edited patent IDs that have been parsed/changed
-      const correctedPatents = Object.entries(editedPatents)
-        .filter(([originalId, newId]) => newId.trim() !== '') // Include all parsed patents
-        .map(([_, newId]) => newId.trim());
+      const correctedPatents = Object.values(editedValues).filter(id => id.trim() !== '');
 
       if (correctedPatents.length === 0) {
         toast.error('No changes to submit');
@@ -345,22 +332,22 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
 
         // Remove all successfully parsed patents from notFoundPatents list
         const updatedNotFoundPatents = notFoundPatents.filter(id => {
-          const correctedId = editedPatents[id];
+          const correctedId = editedValues[id];
           // Keep only patents that weren't parsed or were parsed but still not found
           return !correctedId || stillNotFound.includes(correctedId);
         });
         setNotFoundPatents(updatedNotFoundPatents);
         
         // Clear the edited status for all parsed patents that were found
-        const updatedEditedPatents = { ...editedPatents };
-        Object.keys(editedPatents).forEach(originalId => {
-          const correctedId = editedPatents[originalId];
+        const updatedEditedValues = { ...editedValues };
+        Object.keys(editedValues).forEach(originalId => {
+          const correctedId = editedValues[originalId];
           if (newFoundPatents.includes(correctedId)) {
-            delete updatedEditedPatents[originalId];
+            delete updatedEditedValues[originalId];
           }
         });
-        setEditedPatents(updatedEditedPatents);
-        setEditingPatents(new Set());
+        setEditedValues(updatedEditedValues);
+        setEditingIndex(null);
         
         // Show success message with updated counts
         if (newFoundPatents.length > 0) {
@@ -527,7 +514,7 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
                     >
                       Parse IDs
                     </button>
-                    {Object.keys(editedPatents).length > 0 && (
+                    {Object.keys(editedValues).length > 0 && (
                       <button
                         className="submit-corrections-button"
                         onClick={handleSubmitCorrections}
@@ -539,18 +526,27 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
                   </div>
                 </div>
                 <div className="not-found-list">
-                  {notFoundPatents.map((id, index) => (
+                  {notFoundPatents.map((patentId, index) => (
                     <div key={index} className="not-found-item">
                       <div className="patent-id-edit">
                         <input
                           type="text"
-                          value={editedPatents[id] || id}
-                          onChange={(e) => handlePatentEdit(id, e.target.value)}
-                          onKeyDown={(e) => handleInputKeyDown(e, id)}
+                          value={editedValues[patentId] || patentId}
+                          readOnly={editingIndex !== index}
                           className="patent-id-input"
-                          placeholder="Enter correct patent ID"
-                          readOnly={!editingPatents.has(id)}
+                          onChange={(e) => handlePatentEdit(patentId, e.target.value)}
+                          onKeyDown={(e) => handleInputKeyDown(e, index)}
                         />
+                        <button
+                          className={`edit-button ${editingIndex === index ? 'editing' : ''}`}
+                          onClick={() => toggleEdit(index)}
+                        >
+                          {editingIndex === index ? (
+                            <i className="fas fa-check" />
+                          ) : (
+                            <i className="fas fa-edit" />
+                          )}
+                        </button>
                       </div>
                     </div>
                   ))}
