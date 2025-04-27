@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { useMutation } from '@tanstack/react-query';
 import { authApi } from './api/auth';
+import { toast } from 'react-hot-toast';
 
 interface User {
   id: string;
@@ -70,8 +71,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  // Add a new state variable to track when admin check has already been performed
-  const [adminCheckPerformed, setAdminCheckPerformed] = useState<boolean>(false);
+// Define useAuth hook before the provider
+const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [adminCheckPerformed, setAdminCheckPerformed] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Function to check admin status (to be called only once)
   const checkAdminStatus = async () => {
@@ -160,10 +172,5 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-}; 
+// Export useAuth separately
+export { useAuth }; 

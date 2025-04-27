@@ -35,7 +35,7 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const decoded: any = jwt.verify(token, JWT_SECRET);
       
-      // Check if user exists and if the token matches the active token
+      // Check if user exists
       const user = await User.findById(decoded.userId);
       
       if (!user) {
@@ -47,22 +47,9 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
         });
       }
       
-      // TEMPORARY FIX: Skip token matching check
-      // This should be re-enabled once token handling is fixed
-      /*
-      if (user.activeToken !== token) {
-        return res.status(401).json({ 
-          statusCode: 401,
-          message: 'Session expired. Please login again.',
-          data: null,
-          code: 'SESSION_EXPIRED'
-        });
-      }
-      */
-      
       // Set user data on the request
       req.user = {
-        _id: user._id,  // Ensure we're setting the MongoDB ID object directly
+        _id: user._id,
         userId: decoded.userId,
         email: user.email
       };
