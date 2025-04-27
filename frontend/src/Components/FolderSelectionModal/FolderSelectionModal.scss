@@ -553,6 +553,12 @@
                 &:read-only {
                   background-color: var(--secondary-bg);
                   cursor: not-allowed;
+                transition: all 0.2s ease;
+                flex: 1;
+
+                &:focus {
+                  border-color: #2563eb;
+                  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
                 }
 
                 &::placeholder {
@@ -581,6 +587,40 @@
                   &:hover {
                     background-color: var(--success-bg);
                   }
+=======
+                width: 36px;
+                height: 36px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                background: var(--secondary-bg);
+                color: var(--text-color);
+                cursor: pointer;
+                transition: all 0.2s ease;
+                padding: 0;
+
+                &:hover {
+                  background: var(--hover-bg);
+                  border-color: #2563eb;
+                  color: #2563eb;
+                }
+
+                &.editing {
+                  background: #2563eb;
+                  border-color: #2563eb;
+                  color: white;
+
+                  &:hover {
+                    background: #1d4ed8;
+                    color: white;
+                  }
+                }
+
+                svg {
+                  width: 16px;
+                  height: 16px;
                 }
               }
             }
