@@ -46,6 +46,7 @@ const SavedPatentList = () => {
     }
     return [];
   });
+  const [transformedPatentIds, setTransformedPatentIds] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -159,18 +160,34 @@ const SavedPatentList = () => {
       const response = await authApi.uploadPatentFile(file);
       
       if (response.data && Array.isArray(response.data.patentIds)) {
-        const extractedIds: string[] = response.data.patentIds;
+        // Use the patent IDs directly as they come from the file
+        const extractedIds = response.data.patentIds;
         
-        // Search patents in Unified Patents API
-        setIsSearching(true);
-        await searchPatentsMutation.mutateAsync(extractedIds);
+        console.log('Extracted Patent IDs:', extractedIds);
         
         if (extractedIds.length > 0) {
-          setPatentIds(extractedIds);
-          setShowFolderModal(true);
-          toast.success(`Added ${extractedIds.length} new patents`);
+          // Transform patent IDs using Unified Patents API
+          const transformedResponse = await patentApi.transformPatentIds(extractedIds);
+          console.log('Transformed Response:', transformedResponse);
+          
+          // Check if we have a valid array of transformed IDs
+          if (Array.isArray(transformedResponse)) {
+            // Set both original and transformed IDs
+            setPatentIds(extractedIds);
+            setTransformedPatentIds(transformedResponse);
+            
+            // Search patents in Unified Patents API using transformed IDs
+            setIsSearching(true);
+            await searchPatentsMutation.mutateAsync(transformedResponse);
+            
+            setShowFolderModal(true);
+            toast.success(`Added ${transformedResponse.length} new patents`);
+          } else {
+            console.error('Invalid transformed response:', transformedResponse);
+            toast.error('Failed to transform patent IDs');
+          }
         } else {
-          toast.success('All patents from this file have already been added');
+          toast.error('No patent IDs found in file');
         }
       }
     } catch (error: any) {
@@ -194,9 +211,23 @@ const SavedPatentList = () => {
     if (patentIds.length > 0) {
       setIsSearching(true);
       try {
-        // Search patents in Unified Patents API
-        await searchPatentsMutation.mutateAsync(patentIds);
-        setShowFolderModal(true);
+        // Transform patent IDs using Unified Patents API
+        const transformedResponse = await patentApi.transformPatentIds(patentIds);
+        console.log('Original IDs:', patentIds);
+        console.log('Transformed Response:', transformedResponse);
+        
+        // Check if we have a valid array of transformed IDs
+        if (Array.isArray(transformedResponse)) {
+          // Set transformed IDs
+          setTransformedPatentIds(transformedResponse);
+          
+          // Search patents in Unified Patents API using transformed IDs
+          await searchPatentsMutation.mutateAsync(transformedResponse);
+          setShowFolderModal(true);
+        } else {
+          console.error('Invalid transformed response:', transformedResponse);
+          toast.error('Failed to transform patent IDs');
+        }
       } catch (error) {
         console.error('Error validating patents:', error);
         toast.error('Failed to validate patents. Please try again.');
@@ -208,14 +239,16 @@ const SavedPatentList = () => {
 
   const handleFolderSelection = async (folderName: string, workfileName: string, filterDuplicates: boolean, filterFamily: boolean, foundPatentIds: string[]) => {
     const combinedFolderName = `${folderName}/${workfileName}`;
+    console.log('Saving patents with transformed IDs:', transformedPatentIds);
     savePatentMutation.mutate(
-      { ids: foundPatentIds, folderName: combinedFolderName },
+      { ids: transformedPatentIds, folderName: combinedFolderName },
       {
         onSuccess: () => {
           localStorage.removeItem(getUserStorageKey(user?.id || ''));
           setPatentIds([]);
+          setTransformedPatentIds([]);
           setInputValue('');
-          toast.success(`Saved ${foundPatentIds.length} patents to ${folderName}`);
+          toast.success(`Saved ${transformedPatentIds.length} patents to ${folderName}`);
         }
       }
     );
@@ -227,6 +260,7 @@ const SavedPatentList = () => {
       localStorage.removeItem(getUserStorageKey(user.id));
     }
     setPatentIds([]);
+    setTransformedPatentIds([]);
     setInputValue('');
     toast.success('Cleared all unsaved patents');
   };
@@ -339,7 +373,7 @@ const SavedPatentList = () => {
         onClose={() => setShowFolderModal(false)}
         onSubmit={handleFolderSelection}
         existingFolders={existingFolders}
-        patentIds={patentIds}
+        patentIds={transformedPatentIds}
         familyPatents={familyPatents}
         notFoundPatents={notFoundPatents}
         setNotFoundPatents={setNotFoundPatents}

@@ -450,6 +450,14 @@ export const patentApi = {
       not_found: notFoundPatents
     };
   },
+
+  // New method for transforming patent IDs
+  transformPatentIds: async (ids: string[]) => {
+    const response = await axios.post('https://api.unifiedpatents.com/helpers/transform-publication-numbers', {
+      publications: ids
+    });
+    return response.data;
+  },
 };
 
 export type ApiSource = 'serpapi' | 'unified'; 
