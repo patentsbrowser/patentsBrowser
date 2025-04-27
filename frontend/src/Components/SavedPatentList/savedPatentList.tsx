@@ -239,16 +239,16 @@ const SavedPatentList = () => {
 
   const handleFolderSelection = async (folderName: string, workfileName: string, filterDuplicates: boolean, filterFamily: boolean, foundPatentIds: string[]) => {
     const combinedFolderName = `${folderName}/${workfileName}`;
-    console.log('Saving patents with transformed IDs:', transformedPatentIds);
+    console.log('Saving final found patents:', foundPatentIds);
     savePatentMutation.mutate(
-      { ids: transformedPatentIds, folderName: combinedFolderName },
+      { ids: foundPatentIds, folderName: combinedFolderName },
       {
         onSuccess: () => {
           localStorage.removeItem(getUserStorageKey(user?.id || ''));
           setPatentIds([]);
           setTransformedPatentIds([]);
           setInputValue('');
-          toast.success(`Saved ${transformedPatentIds.length} patents to ${folderName}`);
+          toast.success(`Saved ${foundPatentIds.length} patents to ${folderName}`);
         }
       }
     );

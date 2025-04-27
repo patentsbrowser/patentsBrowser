@@ -230,11 +230,66 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
     }
   };
 
-  const handleParsePatents = async () => {
-    const updatedPatents: { [key: string]: string } = {};
-    const newEditingPatents = new Set<string>();
+  const variationCorrection = (patentId: string): string => {
+    // Remove any spaces and convert to uppercase
+    const cleanId = patentId.replace(/\s+/g, '').toUpperCase();
     
-    // Make Google Patents API call through backend proxy
+    // Handle KR patents (e.g., KR1020130000660A -> KR-20130000660-A)
+    if (cleanId.startsWith('KR')) {
+      // Remove '10' after country code if present
+      const without10 = cleanId.replace(/^KR10/, 'KR');
+      // Add hyphens in the correct positions
+      return without10.replace(/^KR(\d{4})(\d+)([A-Z])$/, 'KR-$1$2-$3');
+    }
+
+    // Handle US patents (e.g., US8125463B2 -> US-8125463-B2)
+    if (cleanId.startsWith('US')) {
+      return cleanId.replace(/^US(\d+)([A-Z]\d?)$/, 'US-$1-$2');
+    }
+
+    // Handle EP patents (e.g., EP1234567A1 -> EP-1234567-A1)
+    if (cleanId.startsWith('EP')) {
+      return cleanId.replace(/^EP(\d+)([A-Z]\d?)$/, 'EP-$1-$2');
+    }
+
+    // Handle WO patents (e.g., WO2010123456A1 -> WO-2010/123456-A1)
+    if (cleanId.startsWith('WO')) {
+      return cleanId.replace(/^WO(\d{4})(\d+)([A-Z]\d?)$/, 'WO-$1/$2-$3');
+    }
+
+    // Handle JP patents (e.g., JP2010123456A -> JP-2010-123456-A)
+    if (cleanId.startsWith('JP')) {
+      return cleanId.replace(/^JP(\d{4})(\d+)([A-Z])$/, 'JP-$1-$2-$3');
+    }
+
+    // Handle CN patents (e.g., CN1020130000660A -> CN-20130000660-A)
+    if (cleanId.startsWith('CN')) {
+      const without10 = cleanId.replace(/^CN10/, 'CN');
+      return without10.replace(/^CN(\d{4})(\d+)([A-Z])$/, 'CN-$1$2-$3');
+    }
+
+    // Handle DE patents (e.g., DE1020130000660A1 -> DE-1020130000660-A1)
+    if (cleanId.startsWith('DE')) {
+      return cleanId.replace(/^DE(\d+)([A-Z]\d?)$/, 'DE-$1-$2');
+    }
+
+    // Handle GB patents (e.g., GB20130000660A -> GB-20130000660-A)
+    if (cleanId.startsWith('GB')) {
+      return cleanId.replace(/^GB(\d+)([A-Z])$/, 'GB-$1-$2');
+    }
+
+    // Handle FR patents (e.g., FR20130000660A1 -> FR-20130000660-A1)
+    if (cleanId.startsWith('FR')) {
+      return cleanId.replace(/^FR(\d+)([A-Z]\d?)$/, 'FR-$1-$2');
+    }
+
+    // If no pattern matches, return the original ID
+    return patentId;
+  };
+
+  const handleParsePatents = async () => {
+    // Comment out Google API code
+    /*
     try {
       // Get only the top 5 not found patents
       const topFivePatents = notFoundPatents.slice(0, 5);
@@ -269,13 +324,11 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
       
       console.log('Google Patents API Response:', data);
       
-      // Handle the response data here if needed
       if (data.error) {
         toast.error(data.error);
         return;
       }
 
-      // If we got a successful response, update the patent IDs
       if (data.success && data.results && data.results.length > 0) {
         data.results.forEach((result: { originalId: string; ucid: string }) => {
           updatedPatents[result.originalId] = result.ucid;
@@ -283,28 +336,33 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
         });
         toast.success(`Found ${data.results.length} patents`);
       }
-      
     } catch (error) {
       console.error('Error calling Google Patents API:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to fetch patent data');
     }
-    
-    // Update the edited patents state
-    setEditedValues(prev => {
-      const newState = {
-        ...prev,
-        ...updatedPatents
-      };
+    */
 
-      return newState;
+    // New implementation using variationCorrection
+    const updatedPatents: { [key: string]: string } = {};
+    
+    notFoundPatents.forEach(patentId => {
+      const correctedId = variationCorrection(patentId);
+      if (correctedId !== patentId) {
+        updatedPatents[patentId] = correctedId;
+      }
     });
 
-    // Set all parsed patents to editing mode automatically
-    setEditingPatents(newEditingPatents);
+    // Update the edited values state
+    setEditedValues(prev => ({
+      ...prev,
+      ...updatedPatents
+    }));
 
     // Show success message
     if (Object.keys(updatedPatents).length > 0) {
-      toast.success(`${Object.keys(updatedPatents).length} patent IDs parsed successfully`);
+      toast.success(`Corrected ${Object.keys(updatedPatents).length} patent IDs`);
+    } else {
+      toast('No patent IDs needed correction');
     }
   };
 
@@ -326,6 +384,9 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
         // Update the found and not found lists
         const newFoundPatents = response.results.map((result: PatentSearchResult) => result.patent_id);
         const stillNotFound = correctedPatents.filter(id => !newFoundPatents.includes(id));
+
+        // Log the patents being saved
+        console.log('Patents being saved:', newFoundPatents);
 
         // Update the filtered patents list with newly found patents
         setFilteredPatentIds(prev => [...prev, ...newFoundPatents]);
@@ -351,10 +412,10 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
         
         // Show success message with updated counts
         if (newFoundPatents.length > 0) {
-          toast.success(`Found ${newFoundPatents.length} corrected patents`);
+          toast.success(`Successfully found and saved ${newFoundPatents.length} patents`);
         }
         if (stillNotFound.length > 0) {
-          toast.error(`${stillNotFound.length} patents still not found`);
+          toast.error(`${stillNotFound.length} patents could not be found in the database`);
         }
       }
     } catch (error) {
@@ -366,7 +427,7 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
   };
 
   const handleSubmit = () => {
-    // No need to filter not-found patents here anymore since filteredPatentIds already excludes them
+    // Use filteredPatentIds which already contains the correct list of found patents
     const foundPatentIds = filteredPatentIds;
     
     if (selectedFolder) {
