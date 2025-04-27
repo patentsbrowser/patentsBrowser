@@ -549,237 +549,239 @@
                 font-size: 14px;
                 background-color: var(--input-bg);
                 color: var(--text-color);
-                
+
                 &:read-only {
                   background-color: var(--secondary-bg);
                   cursor: not-allowed;
-                transition: all 0.2s ease;
-                flex: 1;
+                  transition: all 0.2s ease;
+                  flex: 1;
 
-                &:focus {
-                  border-color: #2563eb;
-                  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+                  &:focus {
+                    border-color: #2563eb;
+                    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+                  }
+
+                  &::placeholder {
+                    color: var(--text-secondary);
+                  }
                 }
+
+                .edit-button {
+                  padding: 6px;
+                  border: none;
+                  border-radius: 4px;
+                  background-color: transparent;
+                  color: var(--text-secondary);
+                  cursor: pointer;
+                  transition: all 0.2s ease;
+                  font-size: 16px;
+
+                  &:hover {
+                    background-color: var(--hover-bg);
+                    color: var(--text-color);
+                  }
+
+                  &.editing {
+                    color: var(--success-color);
+
+                    &:hover {
+                      background-color: var(--success-bg);
+                    }
+
+                    width: 36px;
+                    height: 36px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 1px solid var(--border-color);
+                    border-radius: 6px;
+                    background: var(--secondary-bg);
+                    color: var(--text-color);
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    padding: 0;
+
+                    &:hover {
+                      background: var(--hover-bg);
+                      border-color: #2563eb;
+                      color: #2563eb;
+                    }
+
+                    &.editing {
+                      background: #2563eb;
+                      border-color: #2563eb;
+                      color: white;
+
+                      &:hover {
+                        background: #1d4ed8;
+                        color: white;
+                      }
+                    }
+
+                    svg {
+                      width: 16px;
+                      height: 16px;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      .modal-actions {
+        background: var(--secondary-bg);
+        border-top: 1px solid var(--border-color);
+        padding: 1.25rem 2rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-top: auto;
+
+        button {
+          min-width: 120px;
+          height: 42px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 1.5rem;
+          border-radius: 8px;
+          font-size: 0.9375rem;
+          font-weight: 500;
+          transition: all 0.2s ease;
+          cursor: pointer;
+
+          &.cancel-button {
+            background: var(--secondary-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+
+            &:hover {
+              background: var(--hover-bg);
+              border-color: #2563eb;
+            }
+          }
+
+          &.submit-button {
+            background: #2563eb;
+            color: white;
+            border: none;
+
+            &:hover:not(:disabled) {
+              background: #1d4ed8;
+            }
+
+            &:disabled {
+              opacity: 0.6;
+              cursor: not-allowed;
+            }
+          }
+        }
+      }
+    }
+
+    // Dark theme adjustments
+    [data-theme="dark"] {
+      .folder-selection-modal {
+        background: var(--primary-bg);
+
+        .modal-header {
+          background: var(--secondary-bg);
+        }
+
+        .modal-body {
+          .modal-content-wrapper {
+            .main-content {
+              .existing-folders-section {
+                select.folder-select {
+                  background-color: var(--input-bg);
+                  color: var(--text-color);
+                  border: 1px solid var(--border-color);
+
+                  &:hover:not(:disabled) {
+                    background-color: var(--hover-bg);
+                    border-color: var(--accent-color);
+                  }
+
+                  &:focus {
+                    background-color: var(--hover-bg);
+                    border-color: var(--accent-color);
+                    box-shadow: 0 0 0 1px var(--accent-color);
+                  }
+
+                  &:disabled {
+                    background-color: var(--secondary-bg);
+                    opacity: 0.7;
+                  }
+
+                  option {
+                    background-color: var(--input-bg);
+                    color: var(--text-color);
+                  }
+                }
+
+                label {
+                  color: var(--text-color);
+                }
+              }
+
+              .patent-ids-summary {
+                background: var(--secondary-bg);
+              }
+
+              .compact-input {
+                background: var(--input-bg);
+                border-color: var(--border-color);
+                color: var(--text-color);
 
                 &::placeholder {
                   color: var(--text-secondary);
                 }
-              }
 
-              .edit-button {
-                padding: 6px;
-                border: none;
-                border-radius: 4px;
-                background-color: transparent;
-                color: var(--text-secondary);
-                cursor: pointer;
-                transition: all 0.2s ease;
-                font-size: 16px;
-
-                &:hover {
-                  background-color: var(--hover-bg);
-                  color: var(--text-color);
+                &:focus {
+                  border-color: var(--accent-color);
                 }
 
-                &.editing {
-                  color: var(--success-color);
-                  
-                  &:hover {
-                    background-color: var(--success-bg);
-                  }
-=======
-                width: 36px;
-                height: 36px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border: 1px solid var(--border-color);
-                border-radius: 6px;
-                background: var(--secondary-bg);
-                color: var(--text-color);
-                cursor: pointer;
-                transition: all 0.2s ease;
-                padding: 0;
-
-                &:hover {
-                  background: var(--hover-bg);
-                  border-color: #2563eb;
-                  color: #2563eb;
-                }
-
-                &.editing {
-                  background: #2563eb;
-                  border-color: #2563eb;
-                  color: white;
-
-                  &:hover {
-                    background: #1d4ed8;
-                    color: white;
-                  }
-                }
-
-                svg {
-                  width: 16px;
-                  height: 16px;
+                &:disabled {
+                  background: var(--secondary-bg);
                 }
               }
             }
-          }
-        }
-      }
-    }
-  }
 
-  .modal-actions {
-    background: var(--secondary-bg);
-    border-top: 1px solid var(--border-color);
-    padding: 1.25rem 2rem;
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    margin-top: auto;
-
-    button {
-      min-width: 120px;
-      height: 42px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 1.5rem;
-      border-radius: 8px;
-      font-size: 0.9375rem;
-      font-weight: 500;
-      transition: all 0.2s ease;
-      cursor: pointer;
-
-      &.cancel-button {
-        background: var(--secondary-bg);
-        color: var(--text-color);
-        border: 1px solid var(--border-color);
-
-        &:hover {
-          background: var(--hover-bg);
-          border-color: #2563eb;
-        }
-      }
-
-      &.submit-button {
-        background: #2563eb;
-        color: white;
-        border: none;
-
-        &:hover:not(:disabled) {
-          background: #1d4ed8;
-        }
-
-        &:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-      }
-    }
-  }
-}
-
-// Dark theme adjustments
-[data-theme="dark"] {
-  .folder-selection-modal {
-    background: var(--primary-bg);
-
-    .modal-header {
-      background: var(--secondary-bg);
-    }
-
-    .modal-body {
-      .modal-content-wrapper {
-        .main-content {
-          .existing-folders-section {
-            select.folder-select {
-              background-color: var(--input-bg);
-              color: var(--text-color);
-              border: 1px solid var(--border-color);
-
-              &:hover:not(:disabled) {
-                background-color: var(--hover-bg);
-                border-color: var(--accent-color);
-              }
-
-              &:focus {
-                background-color: var(--hover-bg);
-                border-color: var(--accent-color);
-                box-shadow: 0 0 0 1px var(--accent-color);
-              }
-
-              &:disabled {
-                background-color: var(--secondary-bg);
-                opacity: 0.7;
-              }
-
-              option {
-                background-color: var(--input-bg);
-                color: var(--text-color);
-              }
-            }
-
-            label {
-              color: var(--text-color);
-            }
-          }
-
-          .patent-ids-summary {
-            background: var(--secondary-bg);
-          }
-
-          .compact-input {
-            background: var(--input-bg);
-            border-color: var(--border-color);
-            color: var(--text-color);
-
-            &::placeholder {
-              color: var(--text-secondary);
-            }
-
-            &:focus {
-              border-color: var(--accent-color);
-            }
-
-            &:disabled {
+            .not-found-section {
               background: var(--secondary-bg);
+
+              .not-found-item {
+                background: var(--card-bg);
+                border-color: var(--border-color);
+
+                input {
+                  background: var(--input-bg);
+                  border-color: var(--border-color);
+                  color: var(--text-color);
+
+                  &::placeholder {
+                    color: var(--text-secondary);
+                  }
+                }
+              }
             }
           }
         }
 
-        .not-found-section {
+        .modal-actions {
           background: var(--secondary-bg);
 
-          .not-found-item {
-            background: var(--card-bg);
+          .cancel-button {
+            background: var(--secondary-bg);
+            color: var(--text-color);
             border-color: var(--border-color);
 
-            input {
-              background: var(--input-bg);
-              border-color: var(--border-color);
-              color: var(--text-color);
-
-              &::placeholder {
-                color: var(--text-secondary);
-              }
+            &:hover {
+              background: var(--hover-bg);
             }
           }
-        }
-      }
-    }
-
-    .modal-actions {
-      background: var(--secondary-bg);
-
-      .cancel-button {
-        background: var(--secondary-bg);
-        color: var(--text-color);
-        border-color: var(--border-color);
-
-        &:hover {
-          background: var(--hover-bg);
         }
       }
     }
