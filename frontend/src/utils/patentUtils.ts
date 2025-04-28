@@ -165,49 +165,199 @@ export const variationCorrection = (patentId: string): string => {
   const cleanId = patentId.replace(/\s+/g, '').toUpperCase();
   console.log('Clean ID:', cleanId);
   
+  // More flexible patterns for different patent formats
+  const patterns = {
+    US: {
+      from: /^US(\d+)([A-Z]+\d*)$/,
+      to: 'US-$1-$2'
+    },
+    EP: {
+      from: /^EP(\d+)([A-Z]+\d*)$/,
+      to: 'EP-$1-$2'
+    },
+    WO: {
+      from: /^WO(\d{4})(\d+)([A-Z]+\d*)$/,
+      to: 'WO-$1/$2-$3'
+    },
+    JP: {
+      from: /^JP(\d{4,})([A-Z]+\d*)$/,
+      to: 'JP-$1-$2'
+    },
+    KR: {
+      from: /^KR(?:10)?(\d{4,})([A-Z]+\d*)$/,
+      to: 'KR-$1-$2'
+    },
+    CN: {
+      from: /^CN(?:10)?(\d{4,})([A-Z]+\d*)$/,
+      to: 'CN-$1-$2'
+    },
+    DE: {
+      from: /^DE(\d+)([A-Z]+\d*)$/,
+      to: 'DE-$1-$2'
+    },
+    GB: {
+      from: /^GB(\d+)([A-Z]+\d*)$/,
+      to: 'GB-$1-$2'
+    },
+    FR: {
+      from: /^FR(\d+)([A-Z]+\d*)$/,
+      to: 'FR-$1-$2'
+    }
+  };
+
   // Get country code from the start of the ID
   const countryCode = cleanId.substring(0, 2);
   
-  // Handle both formats: with and without hyphens
-  if (['KR', 'CN'].includes(countryCode)) {
-    // Remove hyphens first if present
-    const withoutHyphens = cleanId.replace(/-/g, '');
+  // If we have a pattern for this country code
+  if (countryCode in patterns) {
+    const { from, to } = patterns[countryCode as keyof typeof patterns];
+    const corrected = cleanId.replace(from, to);
     
-    // Check if it starts with country code followed by 10 (with or without hyphens)
-    if (withoutHyphens.startsWith(`${countryCode}10`)) {
-      // Remove '10' after country code
-      const correctedId = withoutHyphens.replace(/^([A-Z]{2})10/, '$1');
-      console.log('Removed 10 prefix:', correctedId);
-      return correctedId;
-    }
-
-    // Handle KR patents with full year format (e.g., KR-19950026291)
-    if (countryCode === 'KR' && withoutHyphens.length >= 6) {
-      const yearPart = withoutHyphens.substring(2, 6);
-      // Check if the year part is a valid 4-digit year (1900-2099)
-      if (/^(19|20)\d{2}$/.test(yearPart)) {
-        // Remove first two digits of the year
-        const correctedId = withoutHyphens.substring(0, 2) + withoutHyphens.substring(4);
-        console.log('Removed first two digits of year:', correctedId);
-        return correctedId;
-      }
-    }
-
-    // Handle KR patents with 10 after hyphen (e.g., KR-1020120086963)
-    if (countryCode === 'KR' && cleanId.includes('-')) {
-      const parts = cleanId.split('-');
-      if (parts.length >= 2 && parts[1].startsWith('10')) {
-        // Remove '10' from the part after the hyphen
-        parts[1] = parts[1].substring(2);
-        const correctedId = parts.join('-');
-        console.log('Removed 10 after hyphen:', correctedId);
-        return correctedId;
-      }
+    console.log(`Processing ${countryCode} patent`);
+    console.log('Pattern:', from);
+    console.log('Replacement:', to);
+    console.log('Result:', corrected);
+    
+    // Only return the corrected version if it's different from the input
+    if (corrected !== cleanId) {
+      return corrected;
     }
   }
 
-  // Return original ID if no transformation needed
-  console.log('No transformation needed, returning original:', patentId);
+  // Special case for Japanese era-based patents
+  if (countryCode === 'JP' && /^JP[HSR]\d/.test(cleanId)) {
+    console.log('Processing Japanese era-based patent');
+    const eraLetter = cleanId[2];
+    const restOfId = cleanId.substring(3);
+    const year = parseInt(restOfId.substring(0, 2), 10);
+    let westernYear = year;
+    
+    if (eraLetter === 'H') {
+      westernYear += 1988;
+    } else if (eraLetter === 'S') {
+      westernYear += 1925;
+    } else if (eraLetter === 'R') {
+      westernYear += 2018;
+    }
+    
+    const result = `JP-${westernYear}${restOfId}`;
+    console.log('Japanese era conversion result:', result);
+    return result;
+  }
+
+  console.log('No pattern matched, returning original:', patentId);
+  return patentId;
+};
+
+export const variationCorrectionForSearch = (patentId: string): string => {
+  // Remove any spaces and convert to uppercase
+  const cleanId = patentId.replace(/\s+/g, '').toUpperCase();
+  console.log('Clean ID for search:', cleanId);
+  
+  // Special handling for KR patents first
+  if (cleanId.startsWith('KR')) {
+    console.log('Processing KR patent for search');
+    // Handle both formats: KR10-20130000660 and KR-1020130000660
+    let processedId = cleanId;
+    
+    // Remove '10' after country code if present
+    if (cleanId.startsWith('KR10')) {
+      processedId = 'KR' + cleanId.substring(4);
+    }
+    
+    // Remove '10' after hyphen if present
+    if (processedId.includes('-10')) {
+      processedId = processedId.replace('-10', '-');
+    }
+    
+    // Add proper formatting if needed
+    const match = processedId.match(/^KR-?(\d+)([A-Z]+\d*)?$/);
+    if (match) {
+      const number = match[1];
+      const kindCode = match[2] || '';
+      const formatted = `KR-${number}${kindCode ? '-' + kindCode : ''}`;
+      console.log('KR patent formatted:', formatted);
+      return formatted;
+    }
+  }
+  
+  // More flexible patterns for different patent formats
+  const patterns = {
+    US: {
+      from: /^US(\d+)([A-Z]+\d*)$/,
+      to: 'US-$1-$2'
+    },
+    EP: {
+      from: /^EP(\d+)([A-Z]+\d*)$/,
+      to: 'EP-$1-$2'
+    },
+    WO: {
+      from: /^WO(\d{4})(\d+)([A-Z]+\d*)$/,
+      to: 'WO-$1/$2-$3'
+    },
+    JP: {
+      from: /^JP(\d{4,})([A-Z]+\d*)$/,
+      to: 'JP-$1-$2'
+    },
+    CN: {
+      from: /^CN(?:10)?(\d{4,})([A-Z]+\d*)$/,
+      to: 'CN-$1-$2'
+    },
+    DE: {
+      from: /^DE(\d+)([A-Z]+\d*)$/,
+      to: 'DE-$1-$2'
+    },
+    GB: {
+      from: /^GB(\d+)([A-Z]+\d*)$/,
+      to: 'GB-$1-$2'
+    },
+    FR: {
+      from: /^FR(\d+)([A-Z]+\d*)$/,
+      to: 'FR-$1-$2'
+    }
+  };
+
+  // Get country code from the start of the ID
+  const countryCode = cleanId.substring(0, 2);
+  
+  // If we have a pattern for this country code
+  if (countryCode in patterns) {
+    const { from, to } = patterns[countryCode as keyof typeof patterns];
+    const corrected = cleanId.replace(from, to);
+    
+    console.log(`Processing ${countryCode} patent for search`);
+    console.log('Pattern:', from);
+    console.log('Replacement:', to);
+    console.log('Result:', corrected);
+    
+    // Only return the corrected version if it's different from the input
+    if (corrected !== cleanId) {
+      return corrected;
+    }
+  }
+
+  // Special case for Japanese era-based patents
+  if (countryCode === 'JP' && /^JP[HSR]\d/.test(cleanId)) {
+    console.log('Processing Japanese era-based patent for search');
+    const eraLetter = cleanId[2];
+    const restOfId = cleanId.substring(3);
+    const year = parseInt(restOfId.substring(0, 2), 10);
+    let westernYear = year;
+    
+    if (eraLetter === 'H') {
+      westernYear += 1988;
+    } else if (eraLetter === 'S') {
+      westernYear += 1925;
+    } else if (eraLetter === 'R') {
+      westernYear += 2018;
+    }
+    
+    const result = `JP-${westernYear}${restOfId}`;
+    console.log('Japanese era conversion result for search:', result);
+    return result;
+  }
+
+  console.log('No pattern matched for search, returning original:', patentId);
   return patentId;
 };
   

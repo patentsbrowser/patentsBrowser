@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '../../Redux/hooks';
 import { RootState } from '../../Redux/store';
-import { setFilters, setSmartSearchResults, clearSmartSearchResults, initializeSmartSearchResults } from '../../Redux/slices/patentSlice';
+import { setFilters, clearSmartSearchResults, initializeSmartSearchResults } from '../../Redux/slices/patentSlice';
 import './SmartSearchModal.scss';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faTimesCircle, faEdit, faCheck, faExchangeAlt, faCheckCircle, faMagic } from '@fortawesome/free-solid-svg-icons';
 import toast from 'react-hot-toast';
-import { variationCorrection } from '../../utils/patentUtils';
+import { variationCorrectionForSearch } from '../../utils/patentUtils';
 import { patentApi } from '../../api/patents';
 
 interface SmartSearchModalProps {
@@ -27,10 +27,6 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
   isOpen,
   onClose,
   onApplyFilter,
-  selectedTypes,
-  setSelectedTypes,
-  filterByFamily,
-  setFilterByFamily,
   notFoundPatents,
   onPatentSearch,
   setNotFoundPatents,
@@ -39,7 +35,6 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
   const [filteredPatents, setFilteredPatents] = useState<string[]>([]);
   const [editingPatents, setEditingPatents] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [correctedPatents, setCorrectedPatents] = useState<{ [key: string]: string }>({});
   const [showNotFound, setShowNotFound] = useState(false);
   const [pendingCorrections, setPendingCorrections] = useState<{ [key: string]: string }>({});
   const [isParsing, setIsParsing] = useState(false);
@@ -138,45 +133,34 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
     setIsParsing(true);
     try {
       const updatedPatents: { [key: string]: string } = {};
-      const existingPatents = new Set(filteredPatents);
       
-      // First, remove 10 prefix from KR and CN patents
-      const correctedIds = notFoundPatents.map(patentId => {
-        const correctedId = variationCorrection(patentId);
-        console.log('Original ID:', patentId, 'Corrected ID:', correctedId);
-        if (correctedId !== patentId && !existingPatents.has(correctedId)) {
+      // Process each not found patent using the new function
+      notFoundPatents.forEach(patentId => {
+        const correctedId = variationCorrectionForSearch(patentId);
+        if (correctedId !== patentId) {
           updatedPatents[patentId] = correctedId;
         }
-        return correctedId;
       });
 
-      // Call transform API with corrected IDs
-      const transformedResponse = await patentApi.transformPatentIds(correctedIds);
-      
-      if (Array.isArray(transformedResponse)) {
-        // Update pending corrections with transformed IDs, avoiding duplicates
-        setPendingCorrections(prev => {
-          const newState = { ...prev };
-          Object.entries(updatedPatents).forEach(([originalId, correctedId], index) => {
-            if (!existingPatents.has(transformedResponse[index])) {
-              newState[originalId] = transformedResponse[index];
-            }
-          });
-          return newState;
+      // Update the pending corrections state
+      setPendingCorrections(prev => {
+        const newState = { ...prev };
+        // Add new corrections
+        Object.entries(updatedPatents).forEach(([originalId, correctedId]) => {
+          newState[originalId] = correctedId;
         });
+        return newState;
+      });
 
-        // Show success message with accurate counts
-        if (Object.keys(updatedPatents).length > 0) {
-          toast.success(`Transformed ${Object.keys(updatedPatents).length} patent IDs. Found: ${filteredPatents.length}, Not found: ${notFoundPatents.length}`);
-        } else {
-          toast('No patent IDs needed transformation');
-        }
+      // Show success message
+      if (Object.keys(updatedPatents).length > 0) {
+        toast.success(`Automatically corrected ${Object.keys(updatedPatents).length} patent IDs`);
       } else {
-        toast.error('Failed to transform patent IDs');
+        toast('No patent IDs needed correction');
       }
     } catch (error) {
-      console.error('Error transforming patents:', error);
-      toast.error('Failed to transform patent IDs');
+      console.error('Error parsing patents:', error);
+      toast.error('Failed to parse patent IDs');
     } finally {
       setIsParsing(false);
     }
@@ -192,36 +176,47 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      const result = await onPatentSearch(correctedIds);
+      // Get the original IDs that were corrected
+      const originalIds = Object.keys(pendingCorrections);
+      
+      // Remove corrected patents from notFoundPatents immediately
+      const updatedNotFoundPatents = notFoundPatents.filter(id => !originalIds.includes(id));
+      setNotFoundPatents(updatedNotFoundPatents);
+
+      // First, transform the corrected patent IDs
+      const transformedResponse = await patentApi.transformPatentIds(correctedIds);
+      
+      if (!Array.isArray(transformedResponse)) {
+        // If transform fails, add the patents back to notFoundPatents
+        setNotFoundPatents([...notFoundPatents, ...originalIds]);
+        toast.error('Failed to transform patent IDs');
+        return;
+      }
+
+      console.log('Transformed IDs:', transformedResponse);
+
+      // Then search with the transformed IDs
+      const result = await onPatentSearch(transformedResponse);
       
       if (result.success && result.foundPatentIds && result.foundPatentIds.size > 0) {
-        // Create a Set of existing patent IDs for quick lookup
-        const existingPatents = new Set(filteredPatents);
-        
-        // Only add patents that aren't already in the found section
-        const newFoundPatents = Array.from(result.foundPatentIds).filter(id => !existingPatents.has(id));
-        
-        // Update filteredPatents with new found patents
+        // Add found patents to filteredPatents, avoiding duplicates
+        const newFoundPatents = Array.from(result.foundPatentIds).filter(id => !filteredPatents.includes(id));
         setFilteredPatents(prev => [...prev, ...newFoundPatents]);
         
-        // Remove found patents from notFoundPatents and displayNotFoundPatents
-        const updatedNotFoundPatents = notFoundPatents.filter(id => {
-          const correctedId = pendingCorrections[id];
-          return !(correctedId && result.foundPatentIds?.has(correctedId));
-        });
-        
-        setNotFoundPatents(updatedNotFoundPatents);
-        setDisplayNotFoundPatents(updatedNotFoundPatents);
+        // Clear pending corrections
         setPendingCorrections({});
-        
-        // Show success message with accurate counts
-        toast.success(`${newFoundPatents.length} patent(s) found and added to results. Total found: ${filteredPatents.length + newFoundPatents.length}, Not found: ${updatedNotFoundPatents.length}`);
+        toast.success(`${result.foundPatentIds.size} patent(s) found and added to results`);
       } else {
+        // If search fails, add the patents back to notFoundPatents
+        setNotFoundPatents([...notFoundPatents, ...originalIds]);
         toast.error('No patents found with the corrected IDs');
       }
     } catch (error) {
-      toast.error('Failed to search patents');
-      console.error('Error searching patents:', error);
+      // If any error occurs, add the patents back to notFoundPatents
+      const originalIds = Object.keys(pendingCorrections);
+      setNotFoundPatents([...notFoundPatents, ...originalIds]);
+      console.error('Error in correction process:', error);
+      toast.error('Failed to process corrections');
     } finally {
       setIsSubmitting(false);
     }
