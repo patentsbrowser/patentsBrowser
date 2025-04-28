@@ -2,6 +2,7 @@ import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { patentApi, normalizePatentResponse, ApiSource } from '../../api/patents';
 // import { detectApiType } from '../../Components/Patents/utils';
 import { RootState } from '../../Redux/store';
+import { indexedDBService } from '../../utils/indexedDB';
 
 // Define localStorage keys
 const LOCAL_STORAGE_KEYS = {
@@ -97,69 +98,7 @@ interface PatentState {
     filteredPatents: Patent[] | null;
     filteredPatentIds: string[];
   };
-  smartSearchResults: {
-    hits: {
-      hits: Array<{
-        _id: string;
-        _source: {
-          country: string;
-          assignee_original: string[];
-          family_annuities: number;
-          abstract: string | null;
-          application_date: string;
-          application_number: string;
-          assignee_current: string[];
-          assignee_parent: string[];
-          citations_pat_forward: string[];
-          cpc_codes: string[];
-          expiration_date: string;
-          extended_family_id: string;
-          family_id: string;
-          filing_date: string;
-          grant_date: string | null;
-          grant_number: string;
-          hyperlink_google: string;
-          inventors: string[];
-          is_challenged: string;
-          is_litigated: string;
-          kind_code: string;
-          last_challenged_at: string | null;
-          last_litigated_at: string | null;
-          num_challenged: number;
-          num_cit_npl: number;
-          num_cit_pat: number;
-          num_cit_pat_forward: number;
-          num_litigated: number;
-          portfolio_score: number;
-          priority_date: string;
-          publication_date: string;
-          publication_number: string;
-          publication_status: string;
-          publication_type: string;
-          rating_broadness: string;
-          rating_citation: string;
-          rating_litigation: string | null;
-          rating_validity: string;
-          rnix_score: number;
-          title: string;
-          type: string;
-          ucid_spif: string[];
-        };
-      }>;
-      total: {
-        value: number;
-        relation: string;
-      };
-    };
-    took: number;
-    timed_out: boolean;
-    _shards: {
-      total: number;
-      successful: number;
-      skipped: number;
-      failed: number;
-    };
-  } | null;
+  smartSearchResults: any;
 }
 
 // Function to load state from localStorage
@@ -404,14 +343,21 @@ const patentSlice = createSlice({
       // Save to localStorage
       localStorage.setItem(LOCAL_STORAGE_KEYS.FILTERS, JSON.stringify(state.filters));
     },
-    setSmartSearchResults: (state, action: PayloadAction<PatentState['smartSearchResults']>) => {
+    setSmartSearchResults: (state, action: PayloadAction<any>) => {
       state.smartSearchResults = action.payload;
-      // Save to localStorage
-      if (action.payload) {
-        localStorage.setItem(LOCAL_STORAGE_KEYS.SMART_SEARCH_RESULTS, JSON.stringify(action.payload));
-      } else {
-        localStorage.removeItem(LOCAL_STORAGE_KEYS.SMART_SEARCH_RESULTS);
-      }
+      // Save to IndexedDB instead of localStorage
+      indexedDBService.saveSmartSearchResults('smart_search_results', action.payload)
+        .catch(error => {
+          console.error('Error saving to IndexedDB:', error);
+        });
+    },
+    clearSmartSearchResults: (state) => {
+      state.smartSearchResults = null;
+      // Clear from IndexedDB
+      indexedDBService.clearSmartSearchResults('smart_search_results')
+        .catch(error => {
+          console.error('Error clearing from IndexedDB:', error);
+        });
     },
     markPatentAsViewed: (state, action: PayloadAction<string>) => {
       const patentId = action.payload;
@@ -532,6 +478,18 @@ const patentSlice = createSlice({
   },
 });
 
+// Add a function to initialize smart search results from IndexedDB
+export const initializeSmartSearchResults = () => async (dispatch: any) => {
+  try {
+    const results = await indexedDBService.getSmartSearchResults('smart_search_results');
+    if (results) {
+      dispatch(setSmartSearchResults(results));
+    }
+  } catch (error) {
+    console.error('Error initializing smart search results:', error);
+  }
+};
+
 export const {
   setSelectedPatent,
   setSearchResults,
@@ -540,6 +498,7 @@ export const {
   clearPatentState,
   setFilters,
   setSmartSearchResults,
+  clearSmartSearchResults,
   markPatentAsViewed,
   resetViewedStatus,
   clearViewedPatents,

@@ -246,7 +246,7 @@ export const patentApi = {
             minimum_should_match: 1
           }
         },
-        size: 20,
+        size: 350,
         sort: [
           {
             portfolio_score: "desc"
@@ -283,7 +283,7 @@ export const patentApi = {
             minimum_should_match: 1
           }
         },
-        size: 20,
+        size: 350,
         sort: [
           {
             portfolio_score: "desc"

@@ -291,31 +291,33 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
       if (searchType === 'smart' && selectedApi === 'unified') {
         // For smart search with unified API
         try {
-          setShowSmartSearchModal(true);
+          // First transform the patent IDs
+          const transformedResponse = await patentApi.transformPatentIds(formattedIds);
           
-          // Call patent API directly instead of handleSearch
-          const result = await patentApi.searchMultiplePatentsUnified(formattedIds, 'smart');
-          
-          // Check for patents that weren't found
-          if (result?.hits?.hits) {
-            const foundPatentIds = new Set(result.hits.hits.map((hit: any) => 
-              hit._source?.publication_number || hit._id
-            ));
+          if (Array.isArray(transformedResponse)) {
+            // Search with transformed IDs
+            const result = await patentApi.searchMultiplePatentsUnified(transformedResponse, 'smart');
             
-            const notFound = formattedIds.filter(id => !foundPatentIds.has(id));
-            if (notFound.length > 0) {
-              setNotFoundPatents(notFound);
+            // Check for patents that weren't found
+            if (result?.hits?.hits) {
+              const foundPatentIds = new Set(result.hits.hits.map((hit: any) => 
+                hit._source?.publication_number || hit._id
+              ));
+              
+              const notFound = transformedResponse.filter(id => !foundPatentIds.has(id));
+              if (notFound.length > 0) {
+                setNotFoundPatents(notFound);
+              }
             }
+            
+            dispatch(setSmartSearchResults(result));
+            setShowSmartSearchModal(true);
+          } else {
+            toast.error('Failed to transform patent IDs');
           }
-          
-          dispatch(setSmartSearchResults(result));
-          // Set loading to false after successful API call
-          setIsLoading(false);
-          
         } catch (error) {
           console.error("Smart search error:", error);
           toast.error("Smart search failed. Try again or use regular search.");
-          setIsLoading(false);
         }
       }
       else if (searchType === 'full' && selectedApi === 'unified') {
@@ -399,8 +401,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         } catch (error) {
           console.error("Unified API error:", error);
           toast.error("Search failed. Please check your input and try again.");
-        } finally {
-          setIsLoading(false);
         }
       }
       else {
@@ -460,8 +460,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
           details: result.details || {}
         }));
         dispatch(setSearchResults(reduxResults));
-        
-        setIsLoading(false);
       }
       
       // If we have at least one successful result, call the onSearch callback
@@ -485,6 +483,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     } catch (error) {
       console.error("Search error:", error);
       toast.error("An error occurred during search. Please try again.");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -1024,6 +1023,8 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         <>
           <h2>Patent Search</h2>
           <PatentSearchForm
+            setIsLoading={setIsLoading}
+            
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             patentIds={patentIds}
@@ -1068,6 +1069,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
 
       {/* Smart Search Modal */}
       <SmartSearchModal
+        setIsLoading={setIsLoading}
         isOpen={showSmartSearchModal}
         onClose={handleSmartSearchModalClose}
         onApplyFilter={handleApplyFilter}
