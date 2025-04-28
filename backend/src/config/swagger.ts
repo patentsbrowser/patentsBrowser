@@ -3,12 +3,12 @@ import swaggerDocument from '../swagger.json' with { type: "json" };
 import path from 'path';
 import { fileURLToPath } from 'url';
 import swaggerJsdoc from 'swagger-jsdoc';
-import { Application } from 'express';
+import type { Express } from 'express-serve-static-core';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export const setupSwagger = (app: Application) => {
+export const setupSwagger = (app: Express) => {
   const swaggerOptions = {
     definition: {
       openapi: '3.0.0',
