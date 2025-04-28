@@ -155,3 +155,186 @@ export function normalizePatentIds(rawText: any) {
     return [...new Set(normalized.filter(Boolean))];
   }
   
+/**
+ * Corrects patent ID variations to a standardized format
+ * @param patentId The patent ID to correct
+ * @returns The corrected patent ID in standardized format
+ */
+export const variationCorrection = (patentId: string): string => {
+  // Remove any spaces and convert to uppercase
+  const cleanId = patentId.replace(/\s+/g, '').toUpperCase();
+  
+  // More flexible patterns for different patent formats
+  const patterns = {
+    US: {
+      from: /^US(\d+)([A-Z]+\d*)$/,
+      to: 'US-$1-$2'
+    },
+    EP: {
+      from: /^EP(\d+)([A-Z]+\d*)$/,
+      to: 'EP-$1-$2'
+    },
+    WO: {
+      from: /^WO(\d{4})(\d+)([A-Z]+\d*)$/,
+      to: 'WO-$1/$2-$3'
+    },
+    JP: {
+      from: /^JP(\d{4,})([A-Z]+\d*)$/,
+      to: 'JP-$1-$2'
+    },
+    KR: {
+      from: /^KR(?:10)?(\d{4,})([A-Z]+\d*)$/,
+      to: 'KR-$1-$2'
+    },
+    CN: {
+      from: /^CN(?:10)?(\d{4,})([A-Z]+\d*)$/,
+      to: 'CN-$1-$2'
+    },
+    DE: {
+      from: /^DE(\d+)([A-Z]+\d*)$/,
+      to: 'DE-$1-$2'
+    },
+    GB: {
+      from: /^GB(\d+)([A-Z]+\d*)$/,
+      to: 'GB-$1-$2'
+    },
+    FR: {
+      from: /^FR(\d+)([A-Z]+\d*)$/,
+      to: 'FR-$1-$2'
+    }
+  };
+
+  // Get country code from the start of the ID
+  const countryCode = cleanId.substring(0, 2);
+  
+  // If we have a pattern for this country code
+  if (countryCode in patterns) {
+    const { from, to } = patterns[countryCode as keyof typeof patterns];
+    const corrected = cleanId.replace(from, to);
+    
+    // Only return the corrected version if it's different from the input
+    if (corrected !== cleanId) {
+      return corrected;
+    }
+  }
+
+  // Special case for Japanese era-based patents
+  if (countryCode === 'JP' && /^JP[HSR]\d/.test(cleanId)) {
+    const eraLetter = cleanId[2];
+    const restOfId = cleanId.substring(3);
+    const year = parseInt(restOfId.substring(0, 2), 10);
+    let westernYear = year;
+    
+    if (eraLetter === 'H') {
+      westernYear += 1988;
+    } else if (eraLetter === 'S') {
+      westernYear += 1925;
+    } else if (eraLetter === 'R') {
+      westernYear += 2018;
+    }
+    
+    return `JP-${westernYear}${restOfId}`;
+  }
+
+  return patentId;
+};
+
+export const variationCorrectionForSearch = (patentId: string): string => {
+  // Remove any spaces and convert to uppercase
+  const cleanId = patentId.replace(/\s+/g, '').toUpperCase();
+  
+  // Special handling for KR patents first
+  if (cleanId.startsWith('KR')) {
+    // Handle both formats: KR10-20130000660 and KR-1020130000660
+    let processedId = cleanId;
+    
+    // Remove '10' after country code if present
+    if (cleanId.startsWith('KR10')) {
+      processedId = 'KR' + cleanId.substring(4);
+    }
+    
+    // Remove '10' after hyphen if present
+    if (processedId.includes('-10')) {
+      processedId = processedId.replace('-10', '-');
+    }
+    
+    // Add proper formatting if needed
+    const match = processedId.match(/^KR-?(\d+)([A-Z]+\d*)?$/);
+    if (match) {
+      const number = match[1];
+      const kindCode = match[2] || '';
+      return `KR-${number}${kindCode ? '-' + kindCode : ''}`;
+    }
+  }
+  
+  // More flexible patterns for different patent formats
+  const patterns = {
+    US: {
+      from: /^US(\d+)([A-Z]+\d*)$/,
+      to: 'US-$1-$2'
+    },
+    EP: {
+      from: /^EP(\d+)([A-Z]+\d*)$/,
+      to: 'EP-$1-$2'
+    },
+    WO: {
+      from: /^WO(\d{4})(\d+)([A-Z]+\d*)$/,
+      to: 'WO-$1/$2-$3'
+    },
+    JP: {
+      from: /^JP(\d{4,})([A-Z]+\d*)$/,
+      to: 'JP-$1-$2'
+    },
+    CN: {
+      from: /^CN(?:10)?(\d{4,})([A-Z]+\d*)$/,
+      to: 'CN-$1-$2'
+    },
+    DE: {
+      from: /^DE(\d+)([A-Z]+\d*)$/,
+      to: 'DE-$1-$2'
+    },
+    GB: {
+      from: /^GB(\d+)([A-Z]+\d*)$/,
+      to: 'GB-$1-$2'
+    },
+    FR: {
+      from: /^FR(\d+)([A-Z]+\d*)$/,
+      to: 'FR-$1-$2'
+    }
+  };
+
+  // Get country code from the start of the ID
+  const countryCode = cleanId.substring(0, 2);
+  
+  // If we have a pattern for this country code
+  if (countryCode in patterns) {
+    const { from, to } = patterns[countryCode as keyof typeof patterns];
+    const corrected = cleanId.replace(from, to);
+    
+    // Only return the corrected version if it's different from the input
+    if (corrected !== cleanId) {
+      return corrected;
+    }
+  }
+
+  // Special case for Japanese era-based patents
+  if (countryCode === 'JP' && /^JP[HSR]\d/.test(cleanId)) {
+    const eraLetter = cleanId[2];
+    const restOfId = cleanId.substring(3);
+    const year = parseInt(restOfId.substring(0, 2), 10);
+    let westernYear = year;
+    
+    if (eraLetter === 'H') {
+      westernYear += 1988;
+    } else if (eraLetter === 'S') {
+      westernYear += 1925;
+    } else if (eraLetter === 'R') {
+      westernYear += 2018;
+    }
+    
+    return `JP-${westernYear}${restOfId}`;
+  }
+
+  return patentId;
+};
+  

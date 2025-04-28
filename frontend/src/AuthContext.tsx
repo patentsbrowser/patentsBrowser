@@ -46,6 +46,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [adminCheckPerformed, setAdminCheckPerformed] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  // Initialize auth state from localStorage on mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    
+    if (token && storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setAdminCheckPerformed(true);
+      } catch (error) {
+        console.error('Error parsing stored user data:', error);
+        // Clear invalid data
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+    }
+  }, []);
+
   // Function to check admin status (to be called only once)
   const checkAdminStatus = async () => {
     // Skip if already checked or no user
@@ -92,6 +111,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     onMutate: () => {
       // Clear user state immediately when logout is initiated
       setUser(null);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
     },
     // No need for onSettled since the api logout function handles everything else
   });
@@ -100,7 +121,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const checkAuth = (): boolean => {
     try {
       const token = localStorage.getItem('token');
-      return !!token && !!user && token !== "undefined";
+      const storedUser = localStorage.getItem('user');
+      return !!token && !!storedUser && token !== "undefined";
     } catch (error) {
       return false;
     }

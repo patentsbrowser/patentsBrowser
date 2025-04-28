@@ -3,6 +3,7 @@ import { ApiSource } from './types';
 import { useWindowSize } from './utils';
 import toast from 'react-hot-toast';
 import PatentFigureSearch from './PatentFigureSearch';
+import { patentApi } from '../../api/patents';
 
 interface PatentSearchFormProps {
   searchQuery: string;
@@ -19,6 +20,7 @@ interface PatentSearchFormProps {
   formatPatentId: (id: string, apiType: ApiSource) => string;
   selectedFilter?: 'grant' | 'application';
   setSelectedFilter?: (filter: 'grant' | 'application') => void;
+  setIsLoading: (loading: boolean) => void;
 }
 
 const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
@@ -35,7 +37,8 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
   onSearch,
   formatPatentId,
   selectedFilter = 'grant',
-  setSelectedFilter
+  setSelectedFilter,
+  setIsLoading
 }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const selectRef = useRef<HTMLSelectElement>(null);
@@ -106,7 +109,7 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
     setSelectedApi(e.target.value as ApiSource);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) {
       toast.error('Please enter a patent ID');
@@ -119,13 +122,35 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
     // Format the patent IDs
     const formattedIds = idsToSearch.map(id => formatPatentId(id, selectedApi));
     
-    // If smart search is selected, open the modal after making API call
+    // If smart search is selected, transform IDs and search
     if (searchType === 'smart' && selectedApi === 'unified') {
-      // First, make the API call to load the data
-      onSearch(formattedIds);
-      
-      // Then show the modal to filter the results
+      try {
+        // Show loader before starting API calls
+        setIsLoading(true);
+        
+        // First transform the patent IDs
+        const transformedResponse = await patentApi.transformPatentIds(formattedIds);
+        
+        if (Array.isArray(transformedResponse)) {
+          // Show the modal after successful transformation
       setShowSmartSearchModal(true);
+          
+          // Search with transformed IDs
+          const searchResult = await patentApi.searchMultiplePatentsUnified(transformedResponse, 'smart');
+          
+          // Call onSearch with the transformed IDs
+          onSearch(transformedResponse);
+          
+          // Don't hide loader here - it will be hidden when results are received in the modal
+        } else {
+          toast.error('Failed to transform patent IDs');
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error in smart search:', error);
+        toast.error('Smart search failed. Please try again.');
+        setIsLoading(false);
+      }
       return;
     }
     

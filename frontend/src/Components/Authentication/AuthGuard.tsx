@@ -1,5 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../AuthContext';
+import { useEffect, useState } from 'react';
+import Loader from '../Common/Loader';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -7,14 +9,23 @@ interface AuthGuardProps {
 
 export const AuthGuard = ({ children }: AuthGuardProps) => {
   const { checkAuth } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check if the user is authenticated using our improved method
-  const isAuthenticated = checkAuth();
-  
+  useEffect(() => {
+    // Check authentication status
+    const authStatus = checkAuth();
+    setIsAuthenticated(authStatus);
+    setIsLoading(false);
+  }, [checkAuth]);
+
+  if (isLoading) {
+    return <Loader fullScreen text="Checking authentication..." />;
+  }
+
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/auth/login" replace />;
   }
   
-  // Render children if authenticated
   return <>{children}</>;
 }; 
