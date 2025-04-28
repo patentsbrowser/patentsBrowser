@@ -31,6 +31,11 @@ const createTransporter = async () => {
         return {
           verify: () => Promise.resolve(true),
           sendMail: (options) => {
+            console.log('MOCK EMAIL SENT:', {
+              to: options.to,
+              subject: options.subject,
+              otp: options.html.match(/\d{6}/)?.[0] || 'MOCK_OTP'
+            });
             return Promise.resolve({ messageId: 'mock-message-id' });
           }
         } as any;
@@ -53,6 +58,7 @@ const createTransporter = async () => {
 
     // Verify transporter
     await transporter.verify();
+    console.log('Email transporter is ready to send emails');
     return transporter;
   } catch (error) {
     console.error('Failed to create email transporter:', error);
@@ -63,6 +69,11 @@ const createTransporter = async () => {
       return {
         verify: () => Promise.resolve(true),
         sendMail: (options) => {
+          console.log('MOCK EMAIL SENT:', {
+            to: options.to,
+            subject: options.subject,
+            otp: options.html.match(/\d{6}/)?.[0] || 'MOCK_OTP'
+          });
           return Promise.resolve({ messageId: 'mock-message-id' });
         }
       } as any;
@@ -83,19 +94,25 @@ let transporter: nodemailer.Transporter | null = null;
 
 export const generateOTP = () => {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  console.log('Generated new OTP:', otp);
   return otp;
 };
 
 export const sendOTP = async (email: string, otp: string) => {
+  console.log('Starting OTP sending process for email:', email);
+  
   if (!transporter) {
+    console.log('Attempting to recreate transporter...');
     try {
       transporter = await createTransporter();
+      console.log('Transporter recreated successfully');
     } catch (error) {
       console.error('Failed to recreate transporter:', error);
       if (env === 'production') {
         throw new Error('Email service is not available');
       } else {
         console.warn('Using mock email in development');
+        console.log(`MOCK OTP for ${email}: ${otp}`);
         return true;
       }
     }
@@ -132,7 +149,14 @@ export const sendOTP = async (email: string, otp: string) => {
   };
 
   try {
+    console.log('Sending email with options:', {
+      from: mailOptions.from,
+      to: mailOptions.to,
+      subject: mailOptions.subject
+    });
+    
     const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully:', info.messageId);
     return true;
   } catch (error) {
     console.error('Failed to send OTP email:', error);
@@ -142,44 +166,55 @@ export const sendOTP = async (email: string, otp: string) => {
       throw new Error('Failed to send OTP email. Please try again.');
     } else {
       console.warn('Using mock email in development after send failure');
+      console.log(`MOCK OTP for ${email}: ${otp}`);
       return true;
     }
   }
 };
 
 export const storeOTP = (email: string, otp: string) => {
+  console.log('Storing OTP for email:', email);
   otpStore.set(email, {
     otp,
     timestamp: Date.now()
   });
+  console.log('OTP stored successfully');
 };
 
 export const verifyOTP = (email: string, otp: string): boolean => {
+  console.log('Verifying OTP for email:', email);
   const storedData = otpStore.get(email);
   
   if (!storedData) {
+    console.log('No OTP found for email:', email);
     return false;
   }
 
   // Check if OTP has expired (5 minutes)
   if (Date.now() - storedData.timestamp > 5 * 60 * 1000) {
+    console.log('OTP has expired for email:', email);
     otpStore.delete(email);
     return false;
   }
 
   const isValid = storedData.otp === otp;
   if (isValid) {
+    console.log('OTP verified successfully for email:', email);
     otpStore.delete(email);
+  } else {
+    console.log('Invalid OTP for email:', email);
   }
   
   return isValid;
 };
 
 export const resendOTP = async (email: string) => {
+  console.log('Resending OTP for email:', email);
   try {
     const otp = generateOTP();
     await sendOTP(email, otp);
     storeOTP(email, otp);
+    console.log('OTP resent successfully');
     return true;
   } catch (error) {
     console.error('Failed to resend OTP:', error);

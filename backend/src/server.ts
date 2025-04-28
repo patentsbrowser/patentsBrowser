@@ -15,7 +15,6 @@ import googlePatentsRoutes from './routes/googlePatentsRoutes.js';
 import { createDefaultPlans } from './models/PricingPlan.js';
 import { setupSwagger } from './config/swagger.js';
 import { startSubscriptionCron } from './cron/subscriptionCron.js';
-import fs from 'fs';
 
 // Get current directory in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -31,21 +30,16 @@ if (env === 'production') {
 } else {
   dotenv.config();
 }
-
 // Verify required environment variables
-const requiredEnvVars = [
-  'PORT',
-  'MONGODB_URI',
-  'JWT_SECRET',
-  'JWT_REFRESH_SECRET',
-  'NODE_ENV'
-];
-
+const requiredEnvVars = ['JWT_SECRET', 'MONGODB_URI'];
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingEnvVars.length > 0) {
-  console.error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
-  process.exit(1);
+  if (env === 'production') {
+    process.exit(1); // Only exit in production
+  } else {
+    console.warn('Continuing without required environment variables. Some features may not work properly.');
+  }
 }
 
 // Optional environment variables check
@@ -102,6 +96,7 @@ app.use('/api/google-patents', googlePatentsRoutes);
 const uploadDir = path.join(__dirname, '../uploadedImages');
 
 // Ensure upload directory exists
+import fs from 'fs';
 if (!fs.existsSync(uploadDir)) {
   console.log('Creating upload directory');
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -202,40 +197,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Print registered routes
-const printRoutes = (app: any) => {
-  const authRouter = app._router.stack.find((layer: any) => layer.name === 'router' && layer.regexp.test('/api/auth'));
-  
-  if (authRouter) {
-    const authRoutes = authRouter.handle.stack
-      .filter((layer: any) => layer.route)
-      .map((layer: any) => {
-        const methods = Object.keys(layer.route.methods).map(method => method.toUpperCase()).join(',');
-        const fullPath = layer.route.path;
-        return { methods, path: fullPath };
-      });
-  }
+const PORT = process.env.PORT || 5000;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/patent_db';
 
-  // Print all routes
-  app._router.stack.forEach((layer: any) => {
-    if (layer.route) {
-      const methods = Object.keys(layer.route.methods).map(method => method.toUpperCase()).join(',');
-      const path = layer.route.path;
-    } else if (layer.name === 'router') {
-      const routerPath = layer.regexp.toString().split('?')[0].replace(/\\\//g, '/').replace(/[^/]/g, '');
-      layer.handle.stack.forEach((routeLayer: any) => {
-        if (routeLayer.route) {
-          const methods = Object.keys(routeLayer.route.methods).map(method => method.toUpperCase()).join(',');
-          const fullPath = routeLayer.route.path;
-          const basePath = routerPath;
-        }
-      });
-    }
-  });
-};
+// Check if the connection string is for MongoDB Atlas
+const isAtlasConnection = MONGODB_URI.includes('mongodb+srv://');
+console.log(`Using ${isAtlasConnection ? 'MongoDB Atlas' : 'local MongoDB'} database`);
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI!)
+mongoose.connect(MONGODB_URI)
   .then(async () => {
     console.log('Connected to MongoDB');
     
@@ -249,11 +219,6 @@ mongoose.connect(process.env.MONGODB_URI!)
     // Start subscription status update cron job
     startSubscriptionCron();
     
-    // Print registered routes
-    printRoutes(app);
-    
-    // Start server
-    const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       
@@ -262,12 +227,11 @@ mongoose.connect(process.env.MONGODB_URI!)
       console.log(`API URL: ${apiUrl}`);
     });
   })
-  .catch((error) => {
-    console.error('MongoDB connection error:', error);
-    if (process.env.MONGODB_URI!.includes('mongodb.net') && error.name === 'MongoTimeoutError') {
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    if (isAtlasConnection && err.name === 'MongoTimeoutError') {
       console.error('Connection to MongoDB Atlas timed out. Check your network and connection string.');
-    } else if (error.name === 'MongoParseError') {
+    } else if (err.name === 'MongoParseError') {
       console.error('Invalid MongoDB connection string. Please check the format.');
     }
-    process.exit(1);
   }); 

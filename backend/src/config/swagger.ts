@@ -2,31 +2,28 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerDocument from '../swagger.json' with { type: "json" };
 import path from 'path';
 import { fileURLToPath } from 'url';
-import swaggerJsdoc from 'swagger-jsdoc';
-import type { Express } from 'express-serve-static-core';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export const setupSwagger = (app: Express) => {
-  const swaggerOptions = {
-    definition: {
-      openapi: '3.0.0',
-      info: {
-        title: 'PatentsBrowser API',
-        version: '1.0.0',
-        description: 'API documentation for PatentsBrowser',
-      },
-      servers: [
-        {
-          url: `http://localhost:${process.env.PORT || 3000}/api`,
-          description: 'Development server',
-        },
-      ],
-    },
-    apis: ['./src/routes/*.ts'],
-  };
+export const setupSwagger = (app: any) => {
+  try {
 
-  const swaggerDocs = swaggerJsdoc(swaggerOptions);
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+    // Serve Swagger UI
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+      customCss: '.swagger-ui .topbar { display: none }',
+      customSiteTitle: "Patents Browser API Documentation",
+      customfavIcon: "/favicon.ico"
+    }));
+
+    // Serve the raw swagger.json file
+    app.get('/api-docs.json', (req: any, res: any) => {
+      res.setHeader('Content-Type', 'application/json');
+      res.send(swaggerDocument);
+    });
+
+    console.log('Swagger UI setup complete');
+  } catch (error) {
+    console.error('Error setting up Swagger UI:', error);
+  }
 }; 
