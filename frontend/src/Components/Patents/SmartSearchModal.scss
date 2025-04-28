@@ -178,6 +178,49 @@
       opacity: 1;
     }
   }
+
+  .edit-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+
+    .edit-patent-input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 14px;
+      background-color: var(--input-background);
+      color: var(--text-color);
+
+      &:focus {
+        outline: none;
+        border-color: var(--accent-color);
+      }
+    }
+
+    .confirm-edit-button {
+      background: none;
+      border: none;
+      color: var(--accent-color);
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s;
+
+      &:hover {
+        transform: scale(1.1);
+      }
+
+      &:disabled {
+        color: var(--border-color);
+        cursor: not-allowed;
+      }
+    }
+  }
 }
 
 .edit-patent-input {
