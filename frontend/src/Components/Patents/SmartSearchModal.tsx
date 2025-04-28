@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '../../Redux/hooks';
 import { RootState } from '../../Redux/store';
-import { setFilters, setSmartSearchResults } from '../../Redux/slices/patentSlice';
+import { setFilters  } from '../../Redux/slices/patentSlice';
 import './SmartSearchModal.scss';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faTimesCircle, faEdit, faCheck } from '@fortawesome/free-solid-svg-icons';
-import { patentApi } from '../../api/patents';
 import toast from 'react-hot-toast';
 
 interface SmartSearchModalProps {
