@@ -6,6 +6,7 @@ import { faEllipsisVertical, faTrash, faSearch } from '@fortawesome/free-solid-s
 // import { authApi } from '../../../../api/auth';
 import toast from 'react-hot-toast';
 import { authApi } from '../../../api/auth';
+import Loader from '../../Common/Loader';
 
 interface WorkFile {
   _id: string;
@@ -47,6 +48,7 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
   const [selectedWorkFiles, setSelectedWorkFiles] = useState<Map<string, Set<number>>>(new Map());
   const [showCombineModal, setShowCombineModal] = useState(false);
   const [selectedFolderForCombine, setSelectedFolderForCombine] = useState<CustomFolder | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Add new state variables for menu functionality
   const [showMenu, setShowMenu] = useState<{
@@ -190,11 +192,11 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
     }
   };
 
-  // Update handleDelete function to handle workfile deletion correctly
   const handleDelete = async () => {
     if (!itemToDelete) return;
 
     try {
+      setIsDeleting(true);
       switch (itemToDelete.type) {
         case 'folder':
           await authApi.deleteItem({
@@ -204,11 +206,10 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
           toast.success('Folder deleted successfully');
           break;
         case 'workfile':
-          // Delete specific workfile using workFileId
           await authApi.deleteItem({
             itemType: 'workfile',
             folderId: itemToDelete.parentId!,
-            workFileId: itemToDelete.id  // Use workFileId instead of workFileName
+            workFileId: itemToDelete.id
           });
           toast.success(`Workfile "${itemToDelete.name}" deleted successfully`);
           break;
@@ -222,7 +223,6 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
           break;
       }
 
-      // Dispatch event to refresh the folder list
       const refreshEvent = new CustomEvent('refresh-custom-folders');
       window.dispatchEvent(refreshEvent);
       
@@ -231,6 +231,8 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
     } catch (error) {
       console.error('Error deleting item:', error);
       toast.error('Failed to delete item');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -293,6 +295,7 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
 
   return (
     <div className="imported-folders-section">
+      {isDeleting && <Loader fullScreen text="Deleting item..." />}
       <div className="folders-header">
         <h3 className="folders-title">Imported Lists</h3>
       </div>
