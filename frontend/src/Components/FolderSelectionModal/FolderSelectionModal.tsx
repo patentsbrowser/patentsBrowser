@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './FolderSelectionModal.scss';
 import { toast } from 'react-hot-toast';
 import { patentApi } from '../../api/patents';
-import { normalizePatentIds } from '../../utils/patentUtils';
+import { variationCorrection } from '../../utils/patentUtils';
 
 interface WorkFile {
   name: string;
@@ -230,119 +230,7 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
     }
   };
 
-  const variationCorrection = (patentId: string): string => {
-    // Remove any spaces and convert to uppercase
-    const cleanId = patentId.replace(/\s+/g, '').toUpperCase();
-    
-    // Handle KR patents (e.g., KR1020130000660A -> KR-20130000660-A)
-    if (cleanId.startsWith('KR')) {
-      // Remove '10' after country code if present
-      const without10 = cleanId.replace(/^KR10/, 'KR');
-      // Add hyphens in the correct positions
-      return without10.replace(/^KR(\d{4})(\d+)([A-Z])$/, 'KR-$1$2-$3');
-    }
-
-    // Handle US patents (e.g., US8125463B2 -> US-8125463-B2)
-    if (cleanId.startsWith('US')) {
-      return cleanId.replace(/^US(\d+)([A-Z]\d?)$/, 'US-$1-$2');
-    }
-
-    // Handle EP patents (e.g., EP1234567A1 -> EP-1234567-A1)
-    if (cleanId.startsWith('EP')) {
-      return cleanId.replace(/^EP(\d+)([A-Z]\d?)$/, 'EP-$1-$2');
-    }
-
-    // Handle WO patents (e.g., WO2010123456A1 -> WO-2010/123456-A1)
-    if (cleanId.startsWith('WO')) {
-      return cleanId.replace(/^WO(\d{4})(\d+)([A-Z]\d?)$/, 'WO-$1/$2-$3');
-    }
-
-    // Handle JP patents (e.g., JP2010123456A -> JP-2010-123456-A)
-    if (cleanId.startsWith('JP')) {
-      return cleanId.replace(/^JP(\d{4})(\d+)([A-Z])$/, 'JP-$1-$2-$3');
-    }
-
-    // Handle CN patents (e.g., CN1020130000660A -> CN-20130000660-A)
-    if (cleanId.startsWith('CN')) {
-      const without10 = cleanId.replace(/^CN10/, 'CN');
-      return without10.replace(/^CN(\d{4})(\d+)([A-Z])$/, 'CN-$1$2-$3');
-    }
-
-    // Handle DE patents (e.g., DE1020130000660A1 -> DE-1020130000660-A1)
-    if (cleanId.startsWith('DE')) {
-      return cleanId.replace(/^DE(\d+)([A-Z]\d?)$/, 'DE-$1-$2');
-    }
-
-    // Handle GB patents (e.g., GB20130000660A -> GB-20130000660-A)
-    if (cleanId.startsWith('GB')) {
-      return cleanId.replace(/^GB(\d+)([A-Z])$/, 'GB-$1-$2');
-    }
-
-    // Handle FR patents (e.g., FR20130000660A1 -> FR-20130000660-A1)
-    if (cleanId.startsWith('FR')) {
-      return cleanId.replace(/^FR(\d+)([A-Z]\d?)$/, 'FR-$1-$2');
-    }
-
-    // If no pattern matches, return the original ID
-    return patentId;
-  };
-
   const handleParsePatents = async () => {
-    // Comment out Google API code
-    /*
-    try {
-      // Get only the top 5 not found patents
-      const topFivePatents = notFoundPatents.slice(0, 5);
-      
-      // Create multiple num parameters for each patent
-      const numParams = topFivePatents.map(id => `num=${encodeURIComponent(id)}`).join('&');
-      
-      const params = new URLSearchParams({
-        country: '',
-        country_pref: 'US, EP, WO, JP, CN',
-        type: '',
-        exp: '',
-        peid: '6339e0742a368:b:86a73150'
-      });
-      
-      const response = await fetch(`http://localhost:5000/api/google-patents/search?${numParams}&${params.toString()}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.error || `HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json().catch(error => {
-        console.error('Error parsing JSON response:', error);
-        throw new Error('Invalid JSON response from server');
-      });
-      
-      console.log('Google Patents API Response:', data);
-      
-      if (data.error) {
-        toast.error(data.error);
-        return;
-      }
-
-      if (data.success && data.results && data.results.length > 0) {
-        data.results.forEach((result: { originalId: string; ucid: string }) => {
-          updatedPatents[result.originalId] = result.ucid;
-          newEditingPatents.add(result.originalId);
-        });
-        toast.success(`Found ${data.results.length} patents`);
-      }
-    } catch (error) {
-      console.error('Error calling Google Patents API:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to fetch patent data');
-    }
-    */
-
-    // New implementation using variationCorrection
     const updatedPatents: { [key: string]: string } = {};
     
     notFoundPatents.forEach(patentId => {

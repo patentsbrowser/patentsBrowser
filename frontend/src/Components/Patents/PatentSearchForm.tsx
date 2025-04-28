@@ -133,7 +133,7 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
         
         if (Array.isArray(transformedResponse)) {
           // Show the modal after successful transformation
-          setShowSmartSearchModal(true);
+      setShowSmartSearchModal(true);
           
           // Search with transformed IDs
           const searchResult = await patentApi.searchMultiplePatentsUnified(transformedResponse, 'smart');

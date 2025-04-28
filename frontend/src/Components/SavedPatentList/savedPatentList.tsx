@@ -331,7 +331,7 @@ const SavedPatentList = () => {
           </div>
         </div>
         
-        {patentIds.length > 0 && (
+        {/* {patentIds.length > 0 && (
           <div className="patent-ids-list">
             <p>Patents to save: <span className="count">({patentIds.length})</span></p>
             <ul>
@@ -349,7 +349,7 @@ const SavedPatentList = () => {
               ))}
             </ul>
           </div>
-        )}
+        )} */}
         
         <button 
           type="submit" 

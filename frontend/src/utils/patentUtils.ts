@@ -155,3 +155,59 @@ export function normalizePatentIds(rawText: any) {
     return [...new Set(normalized.filter(Boolean))];
   }
   
+/**
+ * Corrects patent ID variations to a standardized format
+ * @param patentId The patent ID to correct
+ * @returns The corrected patent ID in standardized format
+ */
+export const variationCorrection = (patentId: string): string => {
+  // Remove any spaces and convert to uppercase
+  const cleanId = patentId.replace(/\s+/g, '').toUpperCase();
+  console.log('Clean ID:', cleanId);
+  
+  // Get country code from the start of the ID
+  const countryCode = cleanId.substring(0, 2);
+  
+  // Handle both formats: with and without hyphens
+  if (['KR', 'CN'].includes(countryCode)) {
+    // Remove hyphens first if present
+    const withoutHyphens = cleanId.replace(/-/g, '');
+    
+    // Check if it starts with country code followed by 10 (with or without hyphens)
+    if (withoutHyphens.startsWith(`${countryCode}10`)) {
+      // Remove '10' after country code
+      const correctedId = withoutHyphens.replace(/^([A-Z]{2})10/, '$1');
+      console.log('Removed 10 prefix:', correctedId);
+      return correctedId;
+    }
+
+    // Handle KR patents with full year format (e.g., KR-19950026291)
+    if (countryCode === 'KR' && withoutHyphens.length >= 6) {
+      const yearPart = withoutHyphens.substring(2, 6);
+      // Check if the year part is a valid 4-digit year (1900-2099)
+      if (/^(19|20)\d{2}$/.test(yearPart)) {
+        // Remove first two digits of the year
+        const correctedId = withoutHyphens.substring(0, 2) + withoutHyphens.substring(4);
+        console.log('Removed first two digits of year:', correctedId);
+        return correctedId;
+      }
+    }
+
+    // Handle KR patents with 10 after hyphen (e.g., KR-1020120086963)
+    if (countryCode === 'KR' && cleanId.includes('-')) {
+      const parts = cleanId.split('-');
+      if (parts.length >= 2 && parts[1].startsWith('10')) {
+        // Remove '10' from the part after the hyphen
+        parts[1] = parts[1].substring(2);
+        const correctedId = parts.join('-');
+        console.log('Removed 10 after hyphen:', correctedId);
+        return correctedId;
+      }
+    }
+  }
+
+  // Return original ID if no transformation needed
+  console.log('No transformation needed, returning original:', patentId);
+  return patentId;
+};
+  
