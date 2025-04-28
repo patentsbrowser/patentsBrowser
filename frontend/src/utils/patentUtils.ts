@@ -163,7 +163,6 @@ export function normalizePatentIds(rawText: any) {
 export const variationCorrection = (patentId: string): string => {
   // Remove any spaces and convert to uppercase
   const cleanId = patentId.replace(/\s+/g, '').toUpperCase();
-  console.log('Clean ID:', cleanId);
   
   // More flexible patterns for different patent formats
   const patterns = {
@@ -213,11 +212,6 @@ export const variationCorrection = (patentId: string): string => {
     const { from, to } = patterns[countryCode as keyof typeof patterns];
     const corrected = cleanId.replace(from, to);
     
-    console.log(`Processing ${countryCode} patent`);
-    console.log('Pattern:', from);
-    console.log('Replacement:', to);
-    console.log('Result:', corrected);
-    
     // Only return the corrected version if it's different from the input
     if (corrected !== cleanId) {
       return corrected;
@@ -226,7 +220,6 @@ export const variationCorrection = (patentId: string): string => {
 
   // Special case for Japanese era-based patents
   if (countryCode === 'JP' && /^JP[HSR]\d/.test(cleanId)) {
-    console.log('Processing Japanese era-based patent');
     const eraLetter = cleanId[2];
     const restOfId = cleanId.substring(3);
     const year = parseInt(restOfId.substring(0, 2), 10);
@@ -240,23 +233,18 @@ export const variationCorrection = (patentId: string): string => {
       westernYear += 2018;
     }
     
-    const result = `JP-${westernYear}${restOfId}`;
-    console.log('Japanese era conversion result:', result);
-    return result;
+    return `JP-${westernYear}${restOfId}`;
   }
 
-  console.log('No pattern matched, returning original:', patentId);
   return patentId;
 };
 
 export const variationCorrectionForSearch = (patentId: string): string => {
   // Remove any spaces and convert to uppercase
   const cleanId = patentId.replace(/\s+/g, '').toUpperCase();
-  console.log('Clean ID for search:', cleanId);
   
   // Special handling for KR patents first
   if (cleanId.startsWith('KR')) {
-    console.log('Processing KR patent for search');
     // Handle both formats: KR10-20130000660 and KR-1020130000660
     let processedId = cleanId;
     
@@ -275,9 +263,7 @@ export const variationCorrectionForSearch = (patentId: string): string => {
     if (match) {
       const number = match[1];
       const kindCode = match[2] || '';
-      const formatted = `KR-${number}${kindCode ? '-' + kindCode : ''}`;
-      console.log('KR patent formatted:', formatted);
-      return formatted;
+      return `KR-${number}${kindCode ? '-' + kindCode : ''}`;
     }
   }
   
@@ -325,11 +311,6 @@ export const variationCorrectionForSearch = (patentId: string): string => {
     const { from, to } = patterns[countryCode as keyof typeof patterns];
     const corrected = cleanId.replace(from, to);
     
-    console.log(`Processing ${countryCode} patent for search`);
-    console.log('Pattern:', from);
-    console.log('Replacement:', to);
-    console.log('Result:', corrected);
-    
     // Only return the corrected version if it's different from the input
     if (corrected !== cleanId) {
       return corrected;
@@ -338,7 +319,6 @@ export const variationCorrectionForSearch = (patentId: string): string => {
 
   // Special case for Japanese era-based patents
   if (countryCode === 'JP' && /^JP[HSR]\d/.test(cleanId)) {
-    console.log('Processing Japanese era-based patent for search');
     const eraLetter = cleanId[2];
     const restOfId = cleanId.substring(3);
     const year = parseInt(restOfId.substring(0, 2), 10);
@@ -352,12 +332,9 @@ export const variationCorrectionForSearch = (patentId: string): string => {
       westernYear += 2018;
     }
     
-    const result = `JP-${westernYear}${restOfId}`;
-    console.log('Japanese era conversion result for search:', result);
-    return result;
+    return `JP-${westernYear}${restOfId}`;
   }
 
-  console.log('No pattern matched for search, returning original:', patentId);
   return patentId;
 };
   

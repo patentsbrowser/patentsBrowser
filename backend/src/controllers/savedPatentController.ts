@@ -182,16 +182,11 @@ export const getSavedPatents = async (req: AuthRequest, res: Response) => {
 
 export const saveCustomPatentList = async (req: AuthRequest, res: Response) => {
   try {
-    console.log('customPatentList controller called');
-    // console.log('Request body:', req.body);
-    console.log('User:', req.user);
-    
     const { name, patentIds, source } = req.body;
     const userId = req.user?.userId;
 
     // Validate required fields
     if (!name || !patentIds || !Array.isArray(patentIds) || patentIds.length === 0) {
-      console.log('Validation failed:', { name, patentIds });
       return res.status(400).json({
         statusCode: 400,
         message: 'Name and at least one patent ID are required',
@@ -200,7 +195,6 @@ export const saveCustomPatentList = async (req: AuthRequest, res: Response) => {
     }
 
     if (!userId) {
-      console.log('No userId found');
       return res.status(401).json({
         statusCode: 401,
         message: 'User not authenticated',
@@ -213,9 +207,6 @@ export const saveCustomPatentList = async (req: AuthRequest, res: Response) => {
     
     // Standardize all patent IDs
     const standardizedPatentIds = patentIds.map(id => standardizePatentNumber(id.trim()));
-    console.log('Standardized patent IDs:', standardizedPatentIds);
-    
-    console.log('Creating custom list with:', { userId, name, patentIds: standardizedPatentIds, source: folderSource });
     
     // Create and save the custom patent list
     const customList = new CustomPatentList({
@@ -227,7 +218,6 @@ export const saveCustomPatentList = async (req: AuthRequest, res: Response) => {
     });
 
     await customList.save();
-    console.log('Custom list saved successfully:', customList);
 
     res.status(201).json({
       statusCode: 201,
@@ -585,8 +575,6 @@ export const extractPatentIdsFromFile = async (req: AuthRequest, res: Response) 
         });
       }
 
-      console.log('Found column indices:', { pubNumIndex, kindCodeIndex });
-      
       if (pubNumIndex === -1) {
         throw new Error('Could not find "Earliest publication number" column');
       }
@@ -615,15 +603,10 @@ export const extractPatentIdsFromFile = async (req: AuthRequest, res: Response) 
           }
         }
       }
-
-      console.log('Extracted data:', extractedData);
-
       // Convert to arrays for response
       const processedPatentIds = Object.entries(extractedData).map(([pubNum, kindCode]) => {
         return kindCode ? `${pubNum}${kindCode}` : pubNum;
       });
-
-      console.log('Processed Patent IDs:', processedPatentIds);
 
       // Return the extracted patent IDs
       res.status(200).json({
@@ -660,8 +643,6 @@ export const extractPatentIdsFromFile = async (req: AuthRequest, res: Response) 
       }
       return patentId;
     });
-
-    console.log('Processed Patent IDs:', processedPatentIds);
 
     // Return the extracted patent IDs along with raw data for reference
     res.status(200).json({
@@ -875,12 +856,9 @@ export const addToSearchHistory = async (req: AuthRequest, res: Response) => {
   try {
     const { patentId, source } = req.body;
     
-    console.log('Adding to search history:', { patentId, source });
-    
     // Check if userId is present
     const userId = req.user?.userId;
     if (!userId) {
-      console.log('No userId found in decoded token');
       return res.status(400).json({
         statusCode: 400,
         message: 'User ID is required',
@@ -910,7 +888,6 @@ export const addToSearchHistory = async (req: AuthRequest, res: Response) => {
 
     // Standardize patent ID (remove hyphens)
     const standardizedPatentId = patentId.replace(/-/g, '');
-    console.log('Standardized patent ID:', standardizedPatentId);
 
     // Use findOneAndUpdate with upsert to handle duplicates
     const result = await SearchHistory.findOneAndUpdate(
@@ -923,8 +900,6 @@ export const addToSearchHistory = async (req: AuthRequest, res: Response) => {
       },
       { upsert: true, new: true }
     );
-
-    console.log('Search history entry saved:', result);
 
     res.status(201).json({
       statusCode: 201,

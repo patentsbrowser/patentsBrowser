@@ -191,11 +191,7 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
         setNotFoundPatents([...notFoundPatents, ...originalIds]);
         toast.error('Failed to transform patent IDs');
         return;
-      }
-
-      console.log('Transformed IDs:', transformedResponse);
-
-      // Then search with the transformed IDs
+      }      // Then search with the transformed IDs
       const result = await onPatentSearch(transformedResponse);
       
       if (result.success && result.foundPatentIds && result.foundPatentIds.size > 0) {
