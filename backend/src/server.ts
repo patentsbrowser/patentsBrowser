@@ -203,7 +203,7 @@ app.use((err, req, res, next) => {
 });
 
 // Print registered routes
-const printRoutes = (app: ReturnType<typeof express>) => {
+const printRoutes = (app: any) => {
   const authRouter = app._router.stack.find((layer: any) => layer.name === 'router' && layer.regexp.test('/api/auth'));
   
   if (authRouter) {
