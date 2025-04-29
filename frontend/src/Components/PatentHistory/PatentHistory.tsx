@@ -16,7 +16,6 @@ interface GroupedPatents {
 const PatentHistory: React.FC = () => {
   const [searchHistory, setSearchHistory] = useState<PatentHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
   const apiCallInProgress = useRef(false);
   const lastUpdateTime = useRef<number>(0);
@@ -61,7 +60,6 @@ const PatentHistory: React.FC = () => {
     }
   };
 
-
   const clearSearchHistory = async () => {
     try {
       await authApi.clearSearchHistory();
@@ -69,11 +67,6 @@ const PatentHistory: React.FC = () => {
     } catch (error) {
       console.error('Failed to clear search history:', error);
     }
-  };
-
-  const handlePatentClick = (patentId: string) => {
-    // Navigate to patent search page with this ID
-    window.location.href = `/auth/patents?id=${patentId}`;
   };
 
   const toggleDateExpansion = (date: string) => {
@@ -114,42 +107,8 @@ const PatentHistory: React.FC = () => {
     return grouped;
   };
 
-  // Filter patents based on search query
-  const filteredGroupedPatents = (): GroupedPatents => {
-    if (!searchQuery.trim()) {
-      return groupPatentsByDate();
-    }
-    
-    const grouped: GroupedPatents = {};
-    const query = searchQuery.toLowerCase();
-    
-    searchHistory.forEach(item => {
-      if (item.patentId.toLowerCase().includes(query)) {
-        const date = new Date(item.timestamp).toLocaleDateString();
-        
-        if (!grouped[date]) {
-          grouped[date] = [];
-        }
-        
-        // Check if this patent was searched within 5 seconds of the previous one
-        const lastGroup = grouped[date][grouped[date].length - 1];
-        if (lastGroup && 
-            Math.abs(lastGroup[0].timestamp - item.timestamp) < 5000 && 
-            lastGroup[0].source === item.source) {
-          // Add to existing group
-          lastGroup.push(item);
-        } else {
-          // Create new group
-          grouped[date].push([item]);
-        }
-      }
-    });
-    
-    return grouped;
-  };
-
   // Sort dates in descending order (newest first)
-  const sortedDates = Object.keys(filteredGroupedPatents()).sort((a, b) => {
+  const sortedDates = Object.keys(groupPatentsByDate()).sort((a, b) => {
     return new Date(b).getTime() - new Date(a).getTime();
   });
 
@@ -157,21 +116,11 @@ const PatentHistory: React.FC = () => {
     <div className="patent-history-container">
       <div className="patent-history-header">
         <h2>Patent Search History</h2>
-        {searchHistory.length > 0 && (
+        {searchHistory?.length > 0 && (
           <button onClick={clearSearchHistory} className="clear-button">
-            Clear History
+            Delete All History
           </button>
         )}
-      </div>
-
-      <div className="search-container">
-        <input
-          type="text"
-          placeholder="Search patents..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="patent-search-input"
-        />
       </div>
 
       {isLoading ? (
@@ -180,8 +129,8 @@ const PatentHistory: React.FC = () => {
         <div className="empty-message">No search history available.</div>
       ) : (
         <div className="history-list">
-          {sortedDates.map(date => {
-            const patentGroups = filteredGroupedPatents()[date];
+          {sortedDates?.map(date => {
+            const patentGroups = groupPatentsByDate()[date];
             const isExpanded = expandedDates.includes(date);
             
             return (
@@ -192,7 +141,7 @@ const PatentHistory: React.FC = () => {
                 >
                   <span className="date-label">{date}</span>
                   <span className="patent-count">
-                    ({patentGroups.reduce((sum, group) => sum + group.length, 0)} patent{patentGroups.reduce((sum, group) => sum + group.length, 0) !== 1 ? 's' : ''})
+                    ({patentGroups?.reduce((sum, group) => sum + group.length, 0)} patent{patentGroups.reduce((sum, group) => sum + group.length, 0) !== 1 ? 's' : ''})
                   </span>
                   <span className="expansion-icon">
                     {isExpanded ? '▼' : '▶'}
@@ -201,7 +150,7 @@ const PatentHistory: React.FC = () => {
                 
                 {isExpanded && (
                   <div className="patent-items">
-                    {patentGroups.map((group, groupIndex) => (
+                    {patentGroups?.map((group, groupIndex) => (
                       <div key={`group-${groupIndex}`} className="patent-group">
                         {group.length > 1 ? (
                           <div className="group-header">
@@ -215,11 +164,10 @@ const PatentHistory: React.FC = () => {
                           </div>
                         ) : null}
                         <div className="patent-items-in-group">
-                          {group.map((item, index) => (
+                          {group?.map((item, index) => (
                             <div 
                               key={`${item.patentId}-${index}`}
                               className="patent-item"
-                              onClick={() => handlePatentClick(item.patentId)}
                             >
                               <span className="patent-id">{item.patentId}</span>
                               {group.length === 1 && (

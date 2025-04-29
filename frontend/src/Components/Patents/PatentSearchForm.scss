@@ -1,0 +1,143 @@
+.search-form {
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  .search-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+    align-items: flex-start;
+    width: 100%;
+    box-sizing: border-box;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+  }
+
+  .api-select-container {
+    display: flex;
+    flex-direction: column;
+    width: 180px;
+
+    @media (max-width: 768px) {
+      width: 100%;
+    }
+  }
+
+  .api-select {
+    width: 100%;
+    height: 40px;
+    margin-bottom: 8px;
+  }
+
+  .search-type-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 4px;
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+  }
+
+  .input-buttons-container {
+    display: flex;
+    flex: 1;
+    min-width: 200px;
+    max-width: calc(100% - 320px);
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      max-width: 100%;
+    }
+  }
+
+  .input-field-container {
+    flex: 1;
+    max-width: 900px;
+
+    @media (max-width: 768px) {
+      max-width: 100%;
+    }
+  }
+
+  .search-input {
+    width: 98%;
+    min-height: 120px;
+    font-size: 1.1rem;
+    resize: vertical;
+    box-sizing: border-box;
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 0.5rem;
+  }
+
+  .patent-ids-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+
+    .patent-id-tag {
+      background-color: var(--tag-bg);
+      color: var(--tag-text);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+  }
+
+  .helper-text {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .buttons-column {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: flex-start;
+    min-width: 200px;
+    width: 200px;
+    gap: 0.25rem;
+
+    @media (max-width: 768px) {
+      width: 100%;
+      margin-left: 0;
+    }
+  }
+
+  .search-button {
+    width: 200px;
+    min-width: 120px;
+    height: 40px;
+    padding: 0 1rem;
+    flex-shrink: 0;
+    background-color: var(--accent-color);
+    color: var(--button-text);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+  }
+
+  .figures-button-container {
+    width: 200px;
+  }
+} 

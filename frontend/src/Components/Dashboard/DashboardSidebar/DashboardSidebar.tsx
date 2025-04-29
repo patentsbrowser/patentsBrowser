@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { authApi } from "../../../api/auth";
 import "./DashboardSidebar.scss";
-// import RecentPatentIds from "./RecentPatentIds";
-import CustomSearch from "./CustomSearch";
 import ImportedFolders from "./ImportedFolders";
 import { Link } from "react-router-dom";
 
@@ -333,45 +331,6 @@ const DashboardSidebar = ({
           isLoading={isLoading}
           onModalStateChange={handleModalStateChange}
         />
-
-        {/* <CustomSearch
-          recentSearches={recentSearches}
-          customPatentLists={customPatentLists
-            .filter(list => list.source === 'folderName')
-            .map(list => ({
-              _id: list._id,
-              name: list.name,
-              patentIds: list.patentIds,
-              isSubfolder: false,
-              parentFolderId: null
-            }))}
-          onAddCustomFolder={async (name, patentIds) => {
-            if (onAddCustomFolder) {
-              await onAddCustomFolder(name, patentIds);
-              await refreshCustomPatentLists();
-            }
-          }}
-          onPatentClick={onPatentClick}
-          onPatentWithFolderClick={handlePatentClickWithFolder}
-          onRemovePatentFromFolder={handleRemovePatentFromFolder}
-          onDeleteFolder={handleDeleteFolder}
-          onCreateSubfolder={handleCreateSubfolder}
-          onAddPatentToSubfolder={handleAddPatentToSubfolder}
-        /> */}
-
-        <div className="patent-history-link-section">
-          <Link to="/auth/patent-history" className="patent-history-link">
-            <span className="history-icon">🕒</span>
-            <span className="link-text">View Complete Patent History</span>
-          </Link>
-        </div>
-
-        <div className="payment-history-link-section highlight-section">
-          <Link to="/auth/payment-history" className="payment-history-link highlight-link">
-            <span className="payment-icon">💳</span>
-            <span className="link-text">View Payment History</span>
-          </Link>
-        </div>
       </div>
     </div>
   );

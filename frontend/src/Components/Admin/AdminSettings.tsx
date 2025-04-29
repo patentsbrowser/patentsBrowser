@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import Loader from '../Common/Loader';
 import './Admin.scss';
 
 // Default pagination options
@@ -9,6 +10,7 @@ const DEFAULT_PAGINATION_OPTIONS = [10, 25, 50, 100];
 
 const AdminSettings = () => {
   const [defaultPaginationLimit, setDefaultPaginationLimit] = useState(10);
+  const [initialPaginationLimit, setInitialPaginationLimit] = useState(10);
   const [isSaving, setIsSaving] = useState(false);
 
   // In a real app, you'd load these settings from an API
@@ -16,7 +18,9 @@ const AdminSettings = () => {
   useEffect(() => {
     const savedLimit = localStorage.getItem('adminDefaultPaginationLimit');
     if (savedLimit) {
-      setDefaultPaginationLimit(Number(savedLimit));
+      const limit = Number(savedLimit);
+      setDefaultPaginationLimit(limit);
+      setInitialPaginationLimit(limit);
     }
   }, []);
 
@@ -34,6 +38,7 @@ const AdminSettings = () => {
     // Simulate API call
     setTimeout(() => {
       setIsSaving(false);
+      setInitialPaginationLimit(defaultPaginationLimit);
       toast.success('Settings saved successfully');
       
       // Dispatch a custom event so other components can update
@@ -42,6 +47,8 @@ const AdminSettings = () => {
       }));
     }, 500);
   };
+
+  const hasChanges = defaultPaginationLimit !== initialPaginationLimit;
 
   return (
     <div className="admin-settings-container">
@@ -72,11 +79,13 @@ const AdminSettings = () => {
         <button 
           className="btn btn-primary" 
           onClick={saveSettings}
-          disabled={isSaving}
+          disabled={isSaving || !hasChanges}
         >
-          {isSaving ? 'Saving...' : 'Save Settings'}
+          Save Settings
         </button>
       </div>
+
+      {isSaving && <Loader fullScreen text="Saving settings..." />}
     </div>
   );
 };

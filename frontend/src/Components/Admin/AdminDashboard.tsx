@@ -143,9 +143,6 @@ const AdminDashboard = () => {
   return (
     <div className="admin-dashboard">
       <div className="admin-content">
-        <div className="admin-header">
-          <h2>Admin Panel</h2>
-        </div>
         
         <div className="admin-section">
           {activeTab === AdminTab.DASHBOARD && <DashboardSummary />}

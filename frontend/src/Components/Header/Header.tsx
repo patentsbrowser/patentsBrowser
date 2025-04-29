@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate, useLocation, NavLink } from 'react-router-dom';
 import './Header.scss';
 import { useAuth } from "../../AuthContext";
 import { useTheme } from '../../context/ThemeContext';
@@ -17,8 +17,19 @@ interface ProfileResponse {
   message?: string;
 }
 
-const Header = () => {
-  const { logout }:any = useAuth();
+interface MenuItem {
+  path: string;
+  label: string;
+  icon: string;
+  exact?: boolean;
+}
+
+interface HeaderProps {
+  isVisible?: boolean;
+}
+
+const Header: React.FC<HeaderProps> = ({ isVisible = true }) => {
+  const { logout, user }:any = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -28,6 +39,7 @@ const Header = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
+  const { isAdminMode } = useAdmin();
 
   // Get profile from Redux store
   const reduxProfile = useSelector((state:any) => state.auth.profile);
@@ -126,66 +138,96 @@ const Header = () => {
     }
   }, [location, queryClient]);
 
+  const userMenuItems: MenuItem[] = [
+    { path: '/auth/dashboard', label: 'Dashboard', icon: '📊', exact: false },
+    { path: '/auth/patent-history', label: 'Patent History', icon: '🕒', exact: false },
+    { path: '/auth/patentSaver', label: 'Upload Files', icon: '📑', exact: false },
+    { path: '/auth/subscription', label: 'Subscription', icon: '💎', exact: false },
+    { path: '/auth/payment-history', label: 'Payment History', icon: '💳', exact: false },
+    { path: '/auth/update-profile', label: 'Update Profile', icon: '👤', exact: false },
+    { path: '/auth/settings', label: 'Settings', icon: '📝', exact: false },
+  ];
+
+  const adminMenuItems: MenuItem[] = [
+    { path: '/auth/dashboard', exact: true, label: 'Admin Dashboard', icon: '⚙️' },
+    { path: '/auth/admin/users', label: 'Manage Users', icon: '👥' },
+    { path: '/auth/admin/subscriptions', label: 'Subscriptions', icon: '💰' },
+    { path: '/auth/admin/settings', label: 'Admin Settings', icon: '🔧' },
+  ];
+
+  const shouldShowAdminMenu = user?.isAdmin && isAdminMode;
+
   return (
-    <header className="header">
+    <header className={`header ${!isVisible ? 'header-hidden' : ''}`}>
       <div className="header-left">
-        <h1>{isAdmin && useAdmin().isAdminMode ? 'Admin Dashboard' : 'Patent Search Tool'}</h1>
+        <h1>{isAdmin && isAdminMode ? 'Admin Dashboard' : 'User Dashboard'}</h1>
+        <nav className="header-nav">
+          {(shouldShowAdminMenu ? adminMenuItems : userMenuItems)?.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) => {
+                if (item.exact) {
+                  return isActive && location.pathname === item.path ? 'active' : '';
+                }
+                return isActive ? 'active' : '';
+              }}
+            >
+              <span className="icon">{item.icon}</span>
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
       </div>
       <div className="header-right">
         {isAdmin && <ModeSwitcher />}
         <button className="theme-toggle" onClick={toggleTheme}>
           {theme === 'dark' ? '☀️' : '🌙'}
         </button>
-        {(
-          <div className="user-profile" ref={dropdownRef}>
-            <div className="profile-icon" onClick={toggleDropdown}>
-              {profileImage ? (
-                <img 
-                  src={`http://localhost:5000${profileImage}`} 
-                  alt="Profile" 
-                  className="profile-image" 
-                  key={profileImage} // Force re-render when image changes
-                />
-              ) : (
-                <div className="profile-image-placeholder">
-                  <span>{profileName.charAt(0) || '👤'}</span>
-                </div>
-              )}
-            </div>
-            {showDropdown && (
-              <div className="dropdown-menu">
-                <Link to="/auth/profile" className="dropdown-item" onClick={() => setShowDropdown(false)}>
-                  Profile
-                </Link>
-                <button 
-                  className="dropdown-item" 
-                  onClick={() => {
-                    setShowChangePassword(true);
-                    setShowDropdown(false);
-                  }}
-                >
-                  Change Password
-                </button>
-                <button className="dropdown-item logout" onClick={() => {
-                  setShowLogoutModal(true);
-                  setShowDropdown(false);
-                }}>
-                  Logout
-                </button>
+        <div className="user-profile" ref={dropdownRef}>
+          <div className="profile-icon" onClick={toggleDropdown}>
+            {profileImage ? (
+              <img 
+                src={`http://localhost:5000${profileImage}`} 
+                alt="Profile" 
+                className="profile-image" 
+                key={profileImage}
+              />
+            ) : (
+              <div className="profile-image-placeholder">
+                <span>{profileName.charAt(0) || '👤'}</span>
               </div>
             )}
           </div>
-        )}
+          {showDropdown && (
+            <div className="dropdown-menu">
+              <Link to="/auth/profile" className="dropdown-item" onClick={() => setShowDropdown(false)}>
+                Profile
+              </Link>
+              <button 
+                className="dropdown-item" 
+                onClick={() => {
+                  setShowChangePassword(true);
+                  setShowDropdown(false);
+                }}
+              >
+                Change Password
+              </button>
+              <button className="dropdown-item logout" onClick={() => {
+                setShowLogoutModal(true);
+                setShowDropdown(false);
+              }}>
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-
-      {/* Use our new LogoutModal component */}
       <LogoutModal 
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
         onLogout={handleLogout}
       />
-
-      {/* Add ChangePassword component */}
       <ChangePassword
         isOpen={showChangePassword}
         onClose={() => setShowChangePassword(false)}

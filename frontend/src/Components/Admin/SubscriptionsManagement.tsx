@@ -4,6 +4,7 @@ import axios from "axios";
 import "./Admin.scss";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
+import Loader from "../Common/Loader";
 
 interface Payment {
   id: string;
@@ -511,6 +512,13 @@ const SubscriptionsManagement = () => {
       toast.error('Failed to process the file. Please try again.');
     } finally {
       setIsProcessing(false);
+      // Clear the file input after processing
+      setBankStatementFile(null);
+      // Reset the file input element
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
     }
   };
   
@@ -594,42 +602,62 @@ const SubscriptionsManagement = () => {
         
         <div className="utr-upload-container">
           <div className="file-input-wrapper">
-            <input
-              type="file"
-              accept=".pdf,.csv,.xlsx,.xls,.txt"
-              onChange={(e) => setBankStatementFile(e.target.files?.[0] || null)}
-              disabled={isProcessing}
-            />
+            <label className="custom-file-label">
+              Choose File
+              <input
+                type="file"
+                accept=".pdf,.csv,.xlsx,.xls,.txt"
+                onChange={(e) => setBankStatementFile(e.target.files?.[0] || null)}
+                disabled={isProcessing}
+              />
+            </label>
             {bankStatementFile && (
-              <span className="selected-file">Selected: {bankStatementFile.name}</span>
+              <>
+                <span className="selected-file">{bankStatementFile.name}</span>
+                <button
+                  className="clear-file-btn"
+                  onClick={() => {
+                    setBankStatementFile(null);
+                    const fileInput = document.querySelector('input[type=\"file\"]') as HTMLInputElement;
+                    if (fileInput) fileInput.value = '';
+                  }}
+                  disabled={isProcessing}
+                  title="Clear file"
+                >
+                  ×
+                </button>
+              </>
             )}
+            <button
+              className={`upload-btn${!bankStatementFile || isProcessing ? ' disabled' : ''}`}
+              onClick={extractReferencesFromFile}
+              disabled={!bankStatementFile || isProcessing}
+            >
+              Extract References
+            </button>
           </div>
           
-          <button 
-            className="upload-btn"
-            onClick={extractReferencesFromFile}
-            disabled={!bankStatementFile || isProcessing}
-          >
-            {isProcessing ? 'Processing...' : 'Extract References'}
-          </button>
-        </div>
-        
-        {processingResults.success > 0 && (
-          <div className="extracted-utrs-container">
-            <div className="process-utr-actions">
-              <div className="processing-result">
-                <span className="success-count">
-                  ✓ {processingResults.success} payments verified
-                </span>
-                {processingResults.failed > 0 && (
-                  <span className="failed-count">
-                    ✗ {processingResults.failed} failed
+          {isProcessing && (
+            <Loader fullScreen text="Processing bank statement..." />
+          )}
+          
+          {processingResults.success > 0 && (
+            <div className="extracted-utrs-container">
+              <div className="process-utr-actions">
+                <div className="processing-result">
+                  <span className="success-count">
+                    ✓ {processingResults.success} payments verified
                   </span>
-                )}
+                  {processingResults.failed > 0 && (
+                    <span className="failed-count">
+                      ✗ {processingResults.failed} failed
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
       
       {/* The rest of your component */}

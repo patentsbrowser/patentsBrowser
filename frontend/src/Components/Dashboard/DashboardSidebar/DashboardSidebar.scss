@@ -1,31 +1,29 @@
 .dashboard-sidebar {
-  position: relative;
-  height: 100%;
-  overflow: hidden;
-  transition: width 0.3s ease, background-color 0.3s ease;
+  position: fixed;
+  top: 78px; // Match header height
+  left: 0;
+  width: 300px;
+  height: calc(100vh - 78px); // Adjust height accordingly
   background-color: var(--secondary-bg);
   border-right: 1px solid var(--border-color);
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-  z-index: 10;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  z-index: 800;
+  transition: all 0.3s ease;
+  padding-top: 10px; // Add some padding at the top
+  display: flex;
+  flex-direction: column;
 
   &.expanded {
-    width: 300px;
-
     .sidebar-content {
       opacity: 1;
       visibility: visible;
       transform: translateX(0);
       pointer-events: all;
     }
-
-    .toggle-icon {
-      right: 10px;
-      opacity: 0.7;
-    }
   }
 
   &.collapsed {
-    width: 20px;
+    width: 40px;
     background-color: rgba(var(--accent-rgb), 0.3);
     cursor: pointer;
     border-right: 1px solid rgba(var(--accent-rgb), 0.2);
@@ -33,62 +31,12 @@
     .sidebar-content {
       opacity: 0;
       visibility: hidden;
-      transform: translateX(-50px);
+      transform: translateX(-20px);
       pointer-events: none;
-    }
-
-    .toggle-icon {
-      right: 3px;
-      opacity: 0;
-      color: rgba(var(--accent-secondary-rgb), 0.7);
     }
 
     &:hover {
       background-color: rgba(var(--accent-rgb), 0.5);
-      
-      .toggle-icon {
-        opacity: 1;
-        color: var(--accent-secondary);
-      }
-    }
-  }
-
-  /* Manual mode styles */
-  &.manual-mode {
-    &.collapsed {
-      .pin-icon {
-        right: 3px;
-        opacity: 0;
-        color: rgba(var(--accent-secondary-rgb), 0.7);
-      }
-
-      &:hover {
-        .pin-icon {
-          opacity: 1;
-          color: var(--accent-secondary);
-        }
-      }
-    }
-
-    &.expanded.pinned {
-      .pin-icon {
-        opacity: 1;
-        color: var(--accent-secondary);
-        transform: rotate(0deg);
-        animation: pin-bounce 0.5s ease;
-      }
-    }
-
-    &.expanded:not(.pinned) {
-      .pin-icon {
-        opacity: 0.5;
-        transform: rotate(45deg);
-        
-        &:hover {
-          opacity: 0.8;
-          transform: rotate(30deg);
-        }
-      }
     }
   }
 
@@ -96,27 +44,25 @@
     position: absolute;
     top: 20px;
     right: 0;
-    z-index: 11;
+    z-index: 801;
     width: 24px;
     height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
+    flex-shrink: 0;
 
     .toggle-icon {
-      position: absolute;
       color: var(--text-secondary);
       font-size: 14px;
       transition: all 0.3s ease;
     }
 
     .pin-icon {
-      position: absolute;
       font-size: 16px;
       cursor: pointer;
       transition: all 0.3s ease;
-      right: 10px;
       
       &:hover {
         transform: scale(1.2);
@@ -125,14 +71,34 @@
   }
 
   .sidebar-content {
-    width: 300px;
-    height: 100%;
+    width: 100%;
+    flex: 1;
     display: flex;
     flex-direction: column;
     transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
     box-sizing: border-box;
-    padding: 1rem 0;
+    padding: 1rem;
     overflow-y: auto;
+    background-color: var(--secondary-bg);
+    position: relative;
+    
+    /* Add custom scrollbar styling */
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: var(--secondary-bg);
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+      
+      &:hover {
+        background: var(--accent-color);
+      }
+    }
   }
 }
 
@@ -584,63 +550,59 @@
     
     .folder-header {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      padding: 0.75rem;
-      border-radius: 6px;
-      cursor: pointer;
+      align-items: center;
+      padding: 0.75rem 1rem;
       background-color: var(--primary-bg);
-      border: 1px solid var(--border-color);
-      margin-bottom: 0.5rem;
+      cursor: pointer;
       transition: all 0.2s ease;
       position: relative;
-      overflow: hidden;
-      
-      /* Add purple/gold accent on the left side */
-      &::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 3px;
-        background: linear-gradient(to bottom, var(--accent-color), var(--accent-secondary));
-        opacity: 0;
-        transition: opacity 0.3s ease;
-      }
-      
+
       &:hover {
-        border-color: var(--accent-color);
-        background-color: rgba(var(--accent-rgb), 0.03);
-        box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.2);
-        
-        &::before {
-          opacity: 1;
-        }
-        
-        .folder-name {
-          color: var(--accent-color);
-        }
+        background-color: var(--hover-bg);
       }
-      
+
       .folder-info {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        
+        flex: 1;
+        position: relative;
+        padding-right: 40px; // Make space for the actions
+
         .folder-icon {
+          font-size: 1.1rem;
           color: var(--accent-color);
+          flex-shrink: 0;
         }
-        
+
         .folder-name {
           font-weight: 500;
-          transition: color 0.2s ease;
+          color: var(--text-color);
+          flex: 1;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
-        
-        .folder-count {
-          color: var(--text-secondary);
-          font-size: 0.85rem;
+
+        .folder-actions {
+          position: absolute;
+          right: 0;
+          top: 50%;
+          transform: translateY(-50%);
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          z-index: 2;
         }
+      }
+
+      .expand-icon {
+        font-size: 0.8rem;
+        transition: transform 0.2s ease;
+        flex-shrink: 0;
+        margin-left: 8px;
       }
     }
   

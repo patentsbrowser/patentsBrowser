@@ -75,25 +75,29 @@ const PaymentHistory: React.FC = () => {
   };
 
   const getDisplayStatus = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return 'Active';
-      case 'payment_pending':
-      case 'pending':
-        return 'Approval Pending';
-      case 'rejected':
-        return 'Rejected';
-      case 'cancelled':
-        return 'Cancelled';
-      case 'paid':
-        return 'Paid';
-      case 'inactive':
-        return 'Inactive';
-      case 'trial':
-        return 'Trial';
-      default:
-        return status.charAt(0).toUpperCase() + status.slice(1);
-    }
+    const statusText = (() => {
+      switch (status.toLowerCase()) {
+        case 'active':
+          return 'Active';
+        case 'payment_pending':
+        case 'pending':
+          return 'Approval Pending';
+        case 'rejected':
+          return 'Rejected';
+        case 'cancelled':
+          return 'Cancelled';
+        case 'paid':
+          return 'Paid';
+        case 'inactive':
+          return 'Inactive';
+        case 'trial':
+          return 'Trial';
+        default:
+          return status.charAt(0).toUpperCase() + status.slice(1);
+      }
+    })();
+
+    return <span className="status-badge">{statusText}</span>;
   };
 
   // Pagination logic
@@ -192,86 +196,88 @@ const PaymentHistory: React.FC = () => {
   };
 
   return (
-    <div className="payment-history-container">
-      <div className="payment-history-header">
-        <h2>Payment History</h2>
-      </div>
-
-      {isLoading ? (
-        <Loader fullScreen={true} text="Loading payment history..." />
-      ) : error ? (
-        <div className="error-message">{error}</div>
-      ) : paymentHistory.length === 0 ? (
-        <div className="empty-state">
-          <div className="book-icon">
-            <div className="book-cover">
-              <div className="book-page"></div>
-              <div className="book-page"></div>
-              <div className="book-page"></div>
-            </div>
-          </div>
-          <h3>No Payment Records Found</h3>
-          <p>Your payment history is currently empty. Any payments you make will appear here.</p>
+    <div className="payment-history-page">
+      <div className="payment-history-container">
+        <div className="payment-history-header">
+          <h2>Payment History</h2>
         </div>
-      ) : (
-        <>
-          <div className="payment-list">
-            <table className="payment-table">
-              <thead>
-                <tr>
-                  <th>Sr No</th>
-                  <th>Plan</th>
-                  <th>Amount</th>
-                  <th>Transaction ID</th>
-                  <th>Date</th>
-                  <th>Expiry</th>
-                  <th>Status</th>
-                  <th>Admin Message</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentItems.map((payment, index) => (
-                  <tr key={payment.id}>
-                    <td className="sr-no">{indexOfFirstItem + index + 1}</td>
-                    <td className="plan-info">
-                      <span className="plan-name">{payment.planName}</span>
-                    </td>
-                    <td className="amount">
-                      {payment.currency} {payment.amount}
-                    </td>
-                    <td className="reference-number">
-                      {payment.referenceNumber}
-                    </td>
-                    <td className="transaction-date">
-                      {formatDate(payment.transactionDate)}
-                    </td>
-                    <td className="end-date">
-                      {payment.status.toLowerCase() === 'rejected' ? '-' : formatDate(payment.endDate)}
-                    </td>
-                    <td className={`status ${getStatusClass(payment.status)}`}>
-                      {getDisplayStatus(payment.status)}
-                    </td>
-                    <td className="admin-message">
-                      {payment.adminMessage ? (
-                        <div className="message-tooltip">
-                          <span className="message-icon">ℹ️</span>
-                          <div className="tooltip-content">
-                            {payment.adminMessage}
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="no-message">-</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+        {isLoading ? (
+          <Loader fullScreen={true} text="Loading payment history..." />
+        ) : error ? (
+          <div className="error-message">{error}</div>
+        ) : paymentHistory.length === 0 ? (
+          <div className="empty-state">
+            <div className="book-icon">
+              <div className="book-cover">
+                <div className="book-page"></div>
+                <div className="book-page"></div>
+                <div className="book-page"></div>
+              </div>
+            </div>
+            <h3>No Payment Records Found</h3>
+            <p>Your payment history is currently empty. Any payments you make will appear here.</p>
           </div>
-          
-          {renderPagination()}
-        </>
-      )}
+        ) : (
+          <>
+            <div className="payment-list">
+              <table className="payment-table">
+                <thead>
+                  <tr>
+                    <th>Sr No</th>
+                    <th>Plan</th>
+                    <th>Amount</th>
+                    <th>Transaction ID</th>
+                    <th>Date</th>
+                    <th>Expiry</th>
+                    <th>Status</th>
+                    <th>Admin Message</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentItems.map((payment, index) => (
+                    <tr key={payment.id}>
+                      <td className="sr-no">{indexOfFirstItem + index + 1}</td>
+                      <td className="plan-info">
+                        <span className="plan-name">{payment.planName}</span>
+                      </td>
+                      <td className="amount">
+                        {payment.currency} {payment.amount}
+                      </td>
+                      <td className="reference-number">
+                        {payment.referenceNumber}
+                      </td>
+                      <td className="transaction-date">
+                        {formatDate(payment.transactionDate)}
+                      </td>
+                      <td className="end-date">
+                        {payment.status.toLowerCase() === 'rejected' ? '-' : formatDate(payment.endDate)}
+                      </td>
+                      <td className={`status ${getStatusClass(payment.status)}`}>
+                        {getDisplayStatus(payment.status)}
+                      </td>
+                      <td className="admin-message">
+                        {payment.adminMessage ? (
+                          <div className="message-tooltip">
+                            <span className="message-icon">ℹ️</span>
+                            <div className="tooltip-content">
+                              {payment.adminMessage}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="no-message">-</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            {renderPagination()}
+          </>
+        )}
+      </div>
     </div>
   );
 };
