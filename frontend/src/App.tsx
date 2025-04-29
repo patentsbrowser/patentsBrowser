@@ -1,9 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { useState, Component, ReactNode, useContext } from "react";
+import { useState, Component, ReactNode } from "react";
 import { AuthProvider, useAuth } from "./AuthContext";
 import { AdminProvider, useAdmin } from "./context/AdminContext";
 import Header from "./Components/Header/Header";
-import Sidebar from "./Components/Sidebar/Sidebar";
 import Dashboard from "./Components/Dashboard/Dashboard";
 import Authentication from "./Components/Authentication/Authentication";
 import Settings from "./Components/Settings/Settings";
@@ -150,7 +149,6 @@ const App = () => {
                           <AuthGuard>
                             <div className="app-container patent-browser-app">
                               <Header />
-                              <Sidebar />
                               <main className="main-content">
                                 <Routes>
                                   {/* Root path redirects to dashboard */}
