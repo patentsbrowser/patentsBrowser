@@ -69,11 +69,6 @@ const PatentHistory: React.FC = () => {
     }
   };
 
-  const handlePatentClick = (patentId: string) => {
-    // Navigate to patent search page with this ID
-    window.location.href = `/auth/patents?id=${patentId}`;
-  };
-
   const toggleDateExpansion = (date: string) => {
     setExpandedDates(prevDates => 
       prevDates.includes(date)
@@ -121,7 +116,7 @@ const PatentHistory: React.FC = () => {
     <div className="patent-history-container">
       <div className="patent-history-header">
         <h2>Patent Search History</h2>
-        {searchHistory.length > 0 && (
+        {searchHistory?.length > 0 && (
           <button onClick={clearSearchHistory} className="clear-button">
             Delete All History
           </button>
@@ -146,7 +141,7 @@ const PatentHistory: React.FC = () => {
                 >
                   <span className="date-label">{date}</span>
                   <span className="patent-count">
-                    ({patentGroups.reduce((sum, group) => sum + group.length, 0)} patent{patentGroups.reduce((sum, group) => sum + group.length, 0) !== 1 ? 's' : ''})
+                    ({patentGroups?.reduce((sum, group) => sum + group.length, 0)} patent{patentGroups.reduce((sum, group) => sum + group.length, 0) !== 1 ? 's' : ''})
                   </span>
                   <span className="expansion-icon">
                     {isExpanded ? '▼' : '▶'}
@@ -173,7 +168,6 @@ const PatentHistory: React.FC = () => {
                             <div 
                               key={`${item.patentId}-${index}`}
                               className="patent-item"
-                              onClick={() => handlePatentClick(item.patentId)}
                             >
                               <span className="patent-id">{item.patentId}</span>
                               {group.length === 1 && (
