@@ -664,7 +664,8 @@ const UsersList = () => {
                 {
                   users.filter(
                     (user: User) =>
-                      user.subscriptionStatus?.toLowerCase() === "trial"
+                      user.subscriptionStatus?.toLowerCase() === "trial" ||
+                      user.subscriptionStatus?.toLowerCase() === "inactive"
                   ).length
                 }
               </p>
