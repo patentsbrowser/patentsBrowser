@@ -163,7 +163,10 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
     }
   };
 
-  // Handle folder creation
+  // Add new state for modal
+  const [showNewFolderModal, setShowNewFolderModal] = useState(false);
+
+  // Modify the existing folder creation logic
   const handleCreateFolder = async () => {
     if (!folderName.trim()) {
       toast.error('Please enter a folder name');
@@ -179,7 +182,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
       const refreshEvent = new CustomEvent('refresh-custom-folders');
       window.dispatchEvent(refreshEvent);
       
-      setIsCreatingFolder(false);
+      setShowNewFolderModal(false);
       setFolderName('');
       setSelectedPatentIds([]);
     } catch (error) {
@@ -484,10 +487,10 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
               <span className="selected-count">{selectedPatentIds.length} patents selected</span>
               <button 
                 className="folder-action-btn custom-folder-btn"
-                onClick={() => setShowSaveToCustomFolder(true)}
-                title="Save to Custom folder in Dashboard"
+                onClick={() => setShowNewFolderModal(true)}
+                title="Create new folder"
               >
-                <FontAwesomeIcon icon={faSave} /> New Folder
+                <FontAwesomeIcon icon={faFolderPlus} /> New Folder
               </button>
               <button 
                 className="folder-action-btn workfile-btn"
@@ -515,29 +518,51 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
         </div>
       </div>
 
-      {isCreatingFolder && (
-        <div className="create-folder-panel">
-          <div className="create-folder-form">
-            <input
-              type="text"
-              placeholder="Enter folder name"
-              value={folderName}
-              onChange={(e) => setFolderName(e.target.value)}
-              className="folder-name-input"
-            />
-            <button 
-              className="create-btn" 
-              onClick={handleCreateFolder}
-              disabled={!folderName.trim() || selectedPatentIds.length === 0}
-            >
-              <FontAwesomeIcon icon={faCheck} /> Create
-            </button>
-            <button 
-              className="cancel-btn"
-              onClick={() => setIsCreatingFolder(false)}
-            >
-              Cancel
-            </button>
+      {/* Replace the existing create folder panel with a modal */}
+      {showNewFolderModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Create New Folder</h3>
+              <button 
+                className="close-button"
+                onClick={() => setShowNewFolderModal(false)}
+                aria-label="Close modal"
+              >
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label htmlFor="folderName">Folder Name</label>
+                <input
+                  id="folderName"
+                  type="text"
+                  placeholder="Enter folder name"
+                  value={folderName}
+                  onChange={(e) => setFolderName(e.target.value)}
+                  className="folder-name-input"
+                />
+              </div>
+              <div className="selected-patents-info">
+                <p>{selectedPatentIds.length} patents selected</p>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="create-btn" 
+                onClick={handleCreateFolder}
+                disabled={!folderName.trim() || selectedPatentIds.length === 0}
+              >
+                <FontAwesomeIcon icon={faCheck} /> Create Folder
+              </button>
+              <button 
+                className="cancel-btn"
+                onClick={() => setShowNewFolderModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

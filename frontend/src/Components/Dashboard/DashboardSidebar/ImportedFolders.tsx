@@ -280,7 +280,7 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
     <div className="imported-folders-section">
       {isDeleting && <Loader fullScreen text="Deleting item..." />}
       <div className="folders-header">
-        <h3 className="folders-title">Imported Lists</h3>
+        <h3 className="folders-title">Files</h3>
       </div>
       
       {isLoading ? (
