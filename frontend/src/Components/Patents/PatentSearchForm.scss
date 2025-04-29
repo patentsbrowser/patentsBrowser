@@ -63,7 +63,7 @@
 
   .input-field-container {
     flex: 1;
-    max-width: 1000px;
+    max-width: 900px;
 
     @media (max-width: 768px) {
       max-width: 100%;
@@ -71,7 +71,7 @@
   }
 
   .search-input {
-    width: 100%;
+    width: 98%;
     min-height: 120px;
     font-size: 1.1rem;
     resize: vertical;

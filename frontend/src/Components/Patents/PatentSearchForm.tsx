@@ -220,15 +220,7 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
               className="search-input patent-textarea"
               rows={5}
             />
-            {searchType === "full" && patentIds.length > 0 && (
-              <div className="patent-ids-preview">
-                {patentIds.map((id, index) => (
-                  <div key={index} className="patent-id-tag">
-                    {id}
-                  </div>
-                ))}
-              </div>
-            )}
+
             {searchType === "smart" && (
               <small className="helper-text">
                 Smart search enables you to find patents using keywords,
