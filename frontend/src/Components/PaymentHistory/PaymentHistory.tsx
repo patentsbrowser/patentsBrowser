@@ -75,25 +75,29 @@ const PaymentHistory: React.FC = () => {
   };
 
   const getDisplayStatus = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return 'Active';
-      case 'payment_pending':
-      case 'pending':
-        return 'Approval Pending';
-      case 'rejected':
-        return 'Rejected';
-      case 'cancelled':
-        return 'Cancelled';
-      case 'paid':
-        return 'Paid';
-      case 'inactive':
-        return 'Inactive';
-      case 'trial':
-        return 'Trial';
-      default:
-        return status.charAt(0).toUpperCase() + status.slice(1);
-    }
+    const statusText = (() => {
+      switch (status.toLowerCase()) {
+        case 'active':
+          return 'Active';
+        case 'payment_pending':
+        case 'pending':
+          return 'Approval Pending';
+        case 'rejected':
+          return 'Rejected';
+        case 'cancelled':
+          return 'Cancelled';
+        case 'paid':
+          return 'Paid';
+        case 'inactive':
+          return 'Inactive';
+        case 'trial':
+          return 'Trial';
+        default:
+          return status.charAt(0).toUpperCase() + status.slice(1);
+      }
+    })();
+
+    return <span className="status-badge">{statusText}</span>;
   };
 
   // Pagination logic
