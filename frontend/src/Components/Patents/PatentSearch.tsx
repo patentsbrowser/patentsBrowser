@@ -39,7 +39,6 @@ const LOCAL_STORAGE_KEYS = {
 const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId = '' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [patentIds, setPatentIds] = useState<string[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedApi, setSelectedApi] = useState<ApiSource>('unified');
   const [searchType, setSearchType] = useState<'full' | 'smart'>('full');
@@ -810,7 +809,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     return () => {
       // Clear any search state
       setIsLoading(false);
-      setIsSearching(false);
       setShowSmartSearchModal(false);
     };
   }, []); // Empty dependency array means this runs only on mount/unmount
@@ -984,7 +982,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
   // Add event listener for "search-patents" event from sidebar
   useEffect(() => {
     const handleSearchPatentsEvent = (event: CustomEvent) => {
-      const { patentIds, source } = event.detail;
+      const { patentIds } = event.detail;
       
       if (!patentIds || patentIds.length === 0) return;
       

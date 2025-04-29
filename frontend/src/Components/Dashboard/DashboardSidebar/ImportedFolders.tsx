@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './DashboardSidebar.scss';
 import CombineWorkfilesModal from './CombineWorkfilesModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEllipsisVertical, faTrash, faSearch } from '@fortawesome/free-solid-svg-icons';
-// import { authApi } from '../../../../api/auth';
+import {faTrash, faSearch } from '@fortawesome/free-solid-svg-icons';
 import toast from 'react-hot-toast';
 import { authApi } from '../../../api/auth';
 import Loader from '../../Common/Loader';
@@ -51,13 +50,6 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Add new state variables for menu functionality
-  const [showMenu, setShowMenu] = useState<{
-    type: 'folder' | 'workfile' | 'patent' | null;
-    id: string;
-    parentId?: string;
-    name?: string;
-    position?: { x: number; y: number };
-  } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{
     type: 'folder' | 'workfile' | 'patent';
@@ -140,42 +132,33 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
     }
   };
 
-  const handleCombineConfirm = async (uniquePatentIds: string[], duplicateIds: string[], invalidIds: string[]) => {
+  const handleCombineConfirm = async (uniquePatentIds: string[]) => {
     if (!selectedFolderForCombine) return;
 
-    // Get all selected workfiles
-    const selectedIndices = selectedWorkFiles.get(selectedFolderForCombine._id) || new Set();
-    const selectedWorkFilesList = Array.from(selectedIndices).map(index => selectedFolderForCombine.workFiles[index]);
+    try {
+      // Create new workfile name based on existing workfiles count
+      const newWorkFileName = `Workfile ${selectedFolderForCombine.workFiles.length + 1}`;
 
-    // Create new workfile name based on existing workfiles count
-    const newWorkFileName = `Workfile ${selectedFolderForCombine.workFiles.length + 1}`;
+      // Save the new workfile to the backend
+      await authApi.addPatentsToWorkFile(
+        selectedFolderForCombine._id,
+        newWorkFileName,
+        uniquePatentIds
+      );
 
-    const newWorkFile: WorkFile = {
-      _id: new Date().getTime().toString(), // Generate a temporary ID
-      name: newWorkFileName,
-      patentIds: uniquePatentIds,
-      timestamp: Date.now(),
-      isCombined: true
-    };
+      // Dispatch event to refresh the folder list
+      const refreshEvent = new CustomEvent('refresh-custom-folders');
+      window.dispatchEvent(refreshEvent);
 
-    // Here you would typically make an API call to save the new workfile
-    // For now, we'll just update the local state
-    const updatedLists = customPatentLists.map(f => {
-      if (f._id === selectedFolderForCombine._id) {
-        return {
-          ...f,
-          workFiles: [...f.workFiles, newWorkFile]
-        };
-      }
-      return f;
-    });
-
-    // You would typically have a prop to update the parent state
-    // onUpdateCustomPatentLists(updatedLists);
-    
-    // Clear selections and close modal
-    setSelectedWorkFiles(new Map());
-    handleModalClose();
+      toast.success('Workfiles combined successfully');
+      
+      // Clear selections and close modal
+      setSelectedWorkFiles(new Map());
+      handleModalClose();
+    } catch (error) {
+      console.error('Error combining workfiles:', error);
+      toast.error('Failed to combine workfiles');
+    }
   };
 
   const handlePatentClick = (patentId: string, folderName: string) => {
@@ -454,45 +437,6 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
         </div>
       )}
       
-      {/* Menu Popup */}
-      {showMenu && (
-        <div 
-          className="menu-popup"
-          style={{
-            position: 'absolute',
-            left: showMenu.position?.x + 'px',
-            top: showMenu.position?.y + 'px'
-          }}
-        >
-          <div className="menu-options">
-            <button 
-              className="menu-option"
-              onClick={() => {
-                handleSearch(showMenu.type!, showMenu.id, showMenu.parentId, showMenu.name);
-                setShowMenu(null);
-              }}
-            >
-              <FontAwesomeIcon icon={faSearch} /> Search
-            </button>
-            <button 
-              className="menu-option delete"
-              onClick={() => {
-                setItemToDelete({
-                  type: showMenu.type!,
-                  id: showMenu.id,
-                  parentId: showMenu.parentId,
-                  name: showMenu.name
-                });
-                setShowDeleteModal(true);
-                setShowMenu(null);
-              }}
-            >
-              <FontAwesomeIcon icon={faTrash} /> Delete
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Delete Confirmation Modal */}
       {showDeleteModal && itemToDelete && (
         <div className="delete-modal">
