@@ -548,7 +548,7 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
         
         <div className="modal-actions">
           <button 
-            className="cancel-button" 
+            className="submit-button" 
             onClick={onClose}
           >
             Cancel

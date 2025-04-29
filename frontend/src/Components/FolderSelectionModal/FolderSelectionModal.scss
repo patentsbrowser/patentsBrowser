@@ -605,56 +605,67 @@
     }
   }
 
-      .modal-actions {
-        background: var(--secondary-bg);
-        border-top: 1px solid var(--border-color);
-        padding: 1.25rem 2rem;
-        display: flex;
-        justify-content: flex-end;
-        gap: 1rem;
-        margin-top: auto;
+  .modal-actions {
+    background: var(--secondary-bg);
+    border-top: 1px solid var(--border-color);
+    padding: 1.25rem 2rem;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1.5rem;
+    margin-top: auto;
 
-        button {
-          min-width: 120px;
-          height: 42px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0 1.5rem;
-          border-radius: 8px;
-          font-size: 0.9375rem;
-          font-weight: 500;
-          transition: all 0.2s ease;
-          cursor: pointer;
+    button {
+      min-width: 160px;
+      width: 160px;
+      height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 1.5rem;
+      border-radius: 8px;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      text-transform: capitalize;
 
-          &.cancel-button {
-            background: var(--secondary-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
+      &.cancel-button {
+        background: transparent;
+        color: #dc2626; // Red color
+        border: 2px solid #dc2626;
 
-            &:hover {
-              background: var(--hover-bg);
-              border-color: #2563eb;
-            }
-          }
+        &:hover {
+          background: rgba(220, 38, 38, 0.1);
+        }
 
-          &.submit-button {
-            background: #2563eb;
-            color: white;
-            border: none;
+        &:active {
+          background: rgba(220, 38, 38, 0.2);
+        }
+      }
 
-            &:hover:not(:disabled) {
-              background: #1d4ed8;
-            }
+      &.submit-button {
+        background: #22c55e; // Green color
+        color: white;
+        border: none;
 
-            &:disabled {
-              opacity: 0.6;
-              cursor: not-allowed;
-            }
-          }
+        &:hover:not(:disabled) {
+          background: #16a34a;
+        }
+
+        &:active:not(:disabled) {
+          background: #15803d;
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          background: #22c55e;
         }
       }
     }
+  }
+}
 
 // Dark theme adjustments
 [data-theme="dark"] {
