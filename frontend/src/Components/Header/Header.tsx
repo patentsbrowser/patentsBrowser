@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation, NavLink } from 'react-router-dom';
 import './Header.scss';
 import { useAuth } from "../../AuthContext";
@@ -24,7 +24,11 @@ interface MenuItem {
   exact?: boolean;
 }
 
-const Header = () => {
+interface HeaderProps {
+  isVisible?: boolean;
+}
+
+const Header: React.FC<HeaderProps> = ({ isVisible = true }) => {
   const { logout, user }:any = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [showDropdown, setShowDropdown] = useState(false);
@@ -154,7 +158,7 @@ const Header = () => {
   const shouldShowAdminMenu = user?.isAdmin && isAdminMode;
 
   return (
-    <header className="header">
+    <header className={`header ${!isVisible ? 'header-hidden' : ''}`}>
       <div className="header-left">
         <h1>{isAdmin && isAdminMode ? 'Admin Dashboard' : 'User Dashboard'}</h1>
         <nav className="header-nav">

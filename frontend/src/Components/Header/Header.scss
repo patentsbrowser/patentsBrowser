@@ -13,6 +13,12 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   border-bottom: 1px solid var(--border-color);
   box-sizing: border-box;
+  transition: transform 0.3s ease;
+  
+  &.header-hidden {
+    transform: translateY(-100%);
+    pointer-events: none;
+  }
   
   &::before {
     content: '';

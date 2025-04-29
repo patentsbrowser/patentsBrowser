@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { useState, Component, ReactNode } from "react";
+import { useState, Component, ReactNode, useEffect } from "react";
 import { AuthProvider, useAuth } from "./AuthContext";
 import { AdminProvider, useAdmin } from "./context/AdminContext";
 import Header from "./Components/Header/Header";
@@ -99,10 +99,28 @@ const App = () => {
     return (saved === 'auto' || saved === 'manual') ? saved : 'auto';
   });
 
+  // Add state for modal visibility
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Make setIsModalOpen available globally
+  useEffect(() => {
+    (window as any).setIsModalOpen = setIsModalOpen;
+    return () => {
+      delete (window as any).setIsModalOpen;
+    };
+  }, []);
+
   // Handle sidebar behavior change
   const handleSidebarBehaviorChange = (behavior: 'auto' | 'manual') => {
     setSidebarBehavior(behavior);
   };
+
+  // Create a context value for modal state
+  const modalContextValue = {
+    isModalOpen,
+    setIsModalOpen
+  };
+
   return (
     <ErrorBoundary>
       <Provider store={store}>
@@ -148,7 +166,7 @@ const App = () => {
                         element={
                           <AuthGuard>
                             <div className="app-container patent-browser-app">
-                              <Header />
+                              <Header isVisible={!isModalOpen} />
                               <main className="main-content">
                                 <Routes>
                                   {/* Root path redirects to dashboard */}

@@ -3,6 +3,7 @@ import './FolderSelectionModal.scss';
 import { toast } from 'react-hot-toast';
 import { patentApi } from '../../api/patents';
 import { variationCorrection } from '../../utils/patentUtils';
+import Loader from '../Loader/Loader';
 
 interface WorkFile {
   name: string;
@@ -62,6 +63,7 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editedValues, setEditedValues] = useState<{ [key: string]: string }>({});
   const [isSubmittingCorrections, setIsSubmittingCorrections] = useState(false);
+  const [showSubmitButton, setShowSubmitButton] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -83,6 +85,20 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
       updateFilteredPatents(filterDuplicates, filterFamily);
     }
   }, [selectedFolder, filterDuplicates, filterFamily]);
+
+  useEffect(() => {
+    // Get the setIsModalOpen function from App.tsx
+    const setIsModalOpen = (window as any).setIsModalOpen;
+    if (setIsModalOpen) {
+      setIsModalOpen(isOpen);
+    }
+    
+    return () => {
+      if (setIsModalOpen) {
+        setIsModalOpen(false);
+      }
+    };
+  }, [isOpen]);
 
   const updateFilteredPatents = async (shouldFilterDuplicates: boolean, shouldFilterFamily: boolean) => {
     setIsFiltering(true);
@@ -217,6 +233,7 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
       ...prev,
       [originalId]: newId
     }));
+    setShowSubmitButton(true);
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
@@ -245,6 +262,9 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
       ...prev,
       ...updatedPatents
     }));
+
+    // Show submit button if there are corrections
+    setShowSubmitButton(Object.keys(updatedPatents).length > 0);
 
     // Show success message
     if (Object.keys(updatedPatents).length > 0) {
@@ -295,6 +315,9 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
         setEditedValues(updatedEditedValues);
         setEditingIndex(null);
         
+        // Hide submit button after successful submission
+        setShowSubmitButton(false);
+        
         // Show success message with updated counts
         if (newFoundPatents.length > 0) {
           toast.success(`Successfully found and saved ${newFoundPatents.length} patents`);
@@ -328,6 +351,7 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
 
   return (
     <div className="folder-selection-modal-overlay">
+      <Loader isLoading={isSubmittingCorrections} />
       <div className="folder-selection-modal">
         <div className="modal-header">
           <h3>Select Folder</h3>
@@ -460,13 +484,13 @@ const FolderSelectionModal: React.FC<FolderSelectionModalProps> = ({
                     >
                       Parse IDs
                     </button>
-                    {Object.keys(editedValues).length > 0 && (
+                    {Object.keys(editedValues).length > 0 && showSubmitButton && (
                       <button
                         className="submit-corrections-button"
                         onClick={handleSubmitCorrections}
                         disabled={isSubmittingCorrections}
                       >
-                        {isSubmittingCorrections ? 'Submitting...' : 'Submit Corrections'}
+                        Submit Corrections
                       </button>
                     )}
                   </div>
