@@ -1,12 +1,20 @@
 .subscription-page-wrapper {
-  margin-top: 78px;
-  min-height: calc(100vh - 78px);
   width: 100%;
-  overflow-y: auto;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  margin-top: 78px;
   background: var(--sub-bg);
   background-image: 
     radial-gradient(circle at 10% 20%, rgba(124, 77, 255, 0.05) 0%, transparent 20%),
     radial-gradient(circle at 90% 80%, rgba(68, 138, 255, 0.05) 0%, transparent 20%);
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 .subscription-page {
@@ -81,6 +89,7 @@
       justify-content: space-between;
       align-items: flex-start;
       transition: background 0.3s;
+      overflow: hidden;
     }
 
     .section {
@@ -95,6 +104,7 @@
       flex-direction: column;
       min-width: 0;
       transition: background 0.3s;
+      overflow: hidden;
     }
 
     .current-plan, .stacked-plans, .total-benefits {
@@ -545,6 +555,7 @@
     box-shadow: 0 25px 50px var(--shadow-color);
     animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid var(--border-color);
+    overflow: hidden;
   }
 
   @keyframes modalSlideIn {
@@ -569,6 +580,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    overflow: hidden;
 
     h2 {
       margin: 0;
@@ -603,6 +615,7 @@
       padding: 2rem;
       margin-bottom: 2rem;
       box-shadow: 0 8px 16px var(--shadow-color);
+      overflow: hidden;
       
       .qr-code-wrapper {
         background: white;
@@ -611,6 +624,7 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         margin-bottom: 1.5rem;
         transition: transform 0.3s ease;
+        overflow: hidden;
         
         &:hover {
           transform: scale(1.02);

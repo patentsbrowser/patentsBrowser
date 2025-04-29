@@ -3,23 +3,22 @@
   padding: 1.5rem;
   box-sizing: border-box;
   max-width: 100%;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 64px);
-  margin-top: 64px;
+  height: calc(100vh - 64px); /* Account for header height */
+  margin-top: 64px; /* Add margin for header */
   background-color: var(--primary-bg);
   color: var(--text-color);
 
   @media (min-width: 768px) {
     padding: 2rem;
-    max-width: 90%;
+    max-width: 100%;
   }
 
   @media (min-width: 1200px) {
     padding: 2.5rem;
-    max-width: 85%;
+    max-width: 100%;
   }
 
   .patent-history-header {
