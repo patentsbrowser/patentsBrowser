@@ -189,34 +189,6 @@ const Settings: React.FC<SettingsProps> = ({
               </select>
             </div>
           </div>
-          <div className="setting-option">
-            <div className="setting-label">Field format for document:</div>
-            <div className="setting-input-control">
-              <select 
-                value={fieldFormatDoc}
-                onChange={(e) => isResultsEditMode && setFieldFormatDoc(e.target.value)}
-                className="settings-dropdown"
-                disabled={!isResultsEditMode}
-              >
-                <option value="Detailed (spelled out)">Detailed (spelled out)</option>
-                <option value="Abbreviated">Abbreviated</option>
-              </select>
-            </div>
-          </div>
-          <div className="setting-option">
-            <div className="setting-label">Field format for hitlist:</div>
-            <div className="setting-input-control">
-              <select 
-                value={fieldFormatHitlist}
-                onChange={(e) => isResultsEditMode && setFieldFormatHitlist(e.target.value)}
-                className="settings-dropdown"
-                disabled={!isResultsEditMode}
-              >
-                <option value="Detailed (spelled out)">Detailed (spelled out)</option>
-                <option value="Abbreviated">Abbreviated</option>
-              </select>
-            </div>
-          </div>
           {isResultsEditMode && (
             <div className="settings-action-buttons">
               <button className="restore-button" onClick={handleRestoreResultsDefaults}>
@@ -265,60 +237,6 @@ const Settings: React.FC<SettingsProps> = ({
                   Set to default
                 </button>
               )}
-            </div>
-          </div>
-          <div className="setting-option">
-            <div className="setting-label">Preferred publication stage:</div>
-            <div className="radio-group">
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  name="publicationStage"
-                  value="application"
-                  checked={preferredPublicationStage === 'application'}
-                  onChange={() => isRecordEditMode && setPreferredPublicationStage('application')}
-                  disabled={!isRecordEditMode}
-                />
-                application
-              </label>
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  name="publicationStage"
-                  value="grant"
-                  checked={preferredPublicationStage === 'grant'}
-                  onChange={() => isRecordEditMode && setPreferredPublicationStage('grant')}
-                  disabled={!isRecordEditMode}
-                />
-                grant
-              </label>
-            </div>
-          </div>
-          <div className="setting-option">
-            <div className="setting-label">Publication list display order:</div>
-            <div className="radio-group">
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  name="listOrder"
-                  value="ascending"
-                  checked={publicationListOrder === 'ascending'}
-                  onChange={() => isRecordEditMode && setPublicationListOrder('ascending')}
-                  disabled={!isRecordEditMode}
-                />
-                ascending
-              </label>
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  name="listOrder"
-                  value="descending"
-                  checked={publicationListOrder === 'descending'}
-                  onChange={() => isRecordEditMode && setPublicationListOrder('descending')}
-                  disabled={!isRecordEditMode}
-                />
-                descending
-              </label>
             </div>
           </div>
           <div className="setting-option">
