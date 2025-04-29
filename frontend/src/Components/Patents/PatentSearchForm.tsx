@@ -1,9 +1,10 @@
-import React, { useRef, useEffect } from 'react';
-import { ApiSource } from './types';
-import { useWindowSize } from './utils';
-import toast from 'react-hot-toast';
-import PatentFigureSearch from './PatentFigureSearch';
-import { patentApi } from '../../api/patents';
+import React, { useRef, useEffect } from "react";
+import { ApiSource } from "./types";
+import { useWindowSize } from "./utils";
+import toast from "react-hot-toast";
+import PatentFigureSearch from "./PatentFigureSearch";
+import { patentApi } from "../../api/patents";
+import "./PatentSearchForm.scss";
 
 interface PatentSearchFormProps {
   searchQuery: string;
@@ -13,13 +14,13 @@ interface PatentSearchFormProps {
   isLoading: boolean;
   selectedApi: ApiSource;
   setSelectedApi: (api: ApiSource) => void;
-  searchType: 'full' | 'smart';
-  setSearchType: (type: 'full' | 'smart') => void;
+  searchType: "full" | "smart";
+  setSearchType: (type: "full" | "smart") => void;
   setShowSmartSearchModal: (show: boolean) => void;
   onSearch: (ids: string[]) => void;
   formatPatentId: (id: string, apiType: ApiSource) => string;
-  selectedFilter?: 'grant' | 'application';
-  setSelectedFilter?: (filter: 'grant' | 'application') => void;
+  selectedFilter?: "grant" | "application";
+  setSelectedFilter?: (filter: "grant" | "application") => void;
   setIsLoading: (loading: boolean) => void;
 }
 
@@ -36,9 +37,9 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
   setShowSmartSearchModal,
   onSearch,
   formatPatentId,
-  selectedFilter = 'grant',
+  selectedFilter = "grant",
   setSelectedFilter,
-  setIsLoading
+  setIsLoading,
 }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const selectRef = useRef<HTMLSelectElement>(null);
@@ -47,25 +48,33 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
 
   // Detect theme changes and update select element
   useEffect(() => {
-    const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+    const isDarkTheme =
+      document.documentElement.getAttribute("data-theme") === "dark";
     if (selectRef.current) {
-      selectRef.current.setAttribute('data-theme', isDarkTheme ? 'dark' : 'light');
+      selectRef.current.setAttribute(
+        "data-theme",
+        isDarkTheme ? "dark" : "light"
+      );
     }
-    
+
     // Optional: Watch for theme changes
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'data-theme') {
-          const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (mutation.attributeName === "data-theme") {
+          const isDark =
+            document.documentElement.getAttribute("data-theme") === "dark";
           if (selectRef.current) {
-            selectRef.current.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            selectRef.current.setAttribute(
+              "data-theme",
+              isDark ? "dark" : "light"
+            );
           }
         }
       });
     });
-    
+
     observer.observe(document.documentElement, { attributes: true });
-    
+
     return () => observer.disconnect();
   }, []);
 
@@ -77,13 +86,13 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
     const processPatentIds = (input: string): string[] => {
       // First split by newlines
       const lines = input.split(/\n/);
-      
+
       // Process each line - split by commas or spaces if present
-      const processedIds = lines.flatMap(line => 
+      const processedIds = lines.flatMap((line) =>
         line
           .split(/[,\s]+/)
-          .map(id => id.trim())
-          .filter(id => id)
+          .map((id) => id.trim())
+          .filter((id) => id)
       );
 
       // Remove duplicates and empty strings
@@ -98,10 +107,10 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
     }
   };
 
-  const handleSearchTypeChange = (type: 'full' | 'smart') => {
+  const handleSearchTypeChange = (type: "full" | "smart") => {
     setSearchType(type);
     // Clear the search query and patent IDs when switching search types
-    setSearchQuery('');
+    setSearchQuery("");
     setPatentIds([]);
   };
 
@@ -112,212 +121,146 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) {
-      toast.error('Please enter a patent ID');
+      toast.error("Please enter a patent ID");
       return;
     }
 
     // For patentIds list (multiple IDs detected) or single unified patent
     const idsToSearch = patentIds.length > 0 ? patentIds : [searchQuery];
-    
+
     // Format the patent IDs
-    const formattedIds = idsToSearch.map(id => formatPatentId(id, selectedApi));
-    
+    const formattedIds = idsToSearch.map((id) =>
+      formatPatentId(id, selectedApi)
+    );
+
     // If smart search is selected, transform IDs and search
-    if (searchType === 'smart' && selectedApi === 'unified') {
+    if (searchType === "smart" && selectedApi === "unified") {
       try {
         // Show loader before starting API calls
         setIsLoading(true);
-        
+
         // First transform the patent IDs
-        const transformedResponse = await patentApi.transformPatentIds(formattedIds);
-        
+        const transformedResponse = await patentApi.transformPatentIds(
+          formattedIds
+        );
+
         if (Array.isArray(transformedResponse)) {
           // Show the modal after successful transformation
-      setShowSmartSearchModal(true);
-          
+          setShowSmartSearchModal(true);
           // Search with transformed IDs
-          const searchResult = await patentApi.searchMultiplePatentsUnified(transformedResponse, 'smart');
-          
+          await patentApi.searchMultiplePatentsUnified(
+            transformedResponse,
+            "smart"
+          );
           // Call onSearch with the transformed IDs
           onSearch(transformedResponse);
-          
+
           // Don't hide loader here - it will be hidden when results are received in the modal
         } else {
-          toast.error('Failed to transform patent IDs');
+          toast.error("Failed to transform patent IDs");
           setIsLoading(false);
         }
       } catch (error) {
-        console.error('Error in smart search:', error);
-        toast.error('Smart search failed. Please try again.');
+        console.error("Error in smart search:", error);
+        toast.error("Smart search failed. Please try again.");
         setIsLoading(false);
       }
       return;
     }
-    
+
     // For direct search, just call onSearch
     onSearch(formattedIds);
   };
 
   return (
-    <form 
-      onSubmit={handleSearch} 
-      className="search-form" 
-      style={{
-        maxWidth: '100%',
-        width: '100%',
-        boxSizing: 'border-box',
-        overflow: 'hidden'
-      }}
-    >
-      <div 
-        className="search-controls"
-        style={{ 
-          display: 'flex', 
-          flexDirection: isMobile ? 'column' : 'row',
-          gap: isMobile ? '0.75rem' : '1rem',
-          marginBottom: '0.5rem',
-          alignItems: 'flex-start',
-          width: '100%',
-          boxSizing: 'border-box'
-        }}
-      >
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          width: isMobile ? '100%' : '180px',
-        }}>
-          <select 
+    <form onSubmit={handleSearch} className="search-form">
+      <div className="search-controls">
+        <div className="api-select-container">
+          <select
             value={selectedApi}
             onChange={handleApiChange}
             className="api-select"
             data-theme="light"
             ref={selectRef}
-            style={{ 
-              width: '100%',
-              height: '40px',
-              marginBottom: '8px'
-            }}
           >
             <option value="unified">Unified Patents Database</option>
             <option value="serpapi">Google Patents (SerpAPI)</option>
           </select>
-          <div className="search-type-selector" style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '0 4px'
-          }}>
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '0.9rem',
-              cursor: 'pointer'
-            }}>
+          <div className="search-type-selector">
+            <label>
               <input
                 type="radio"
                 name="searchType"
-                checked={searchType === 'full'}
-                onChange={() => handleSearchTypeChange('full')}
+                checked={searchType === "full"}
+                onChange={() => handleSearchTypeChange("full")}
               />
               Full Search
             </label>
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '0.9rem',
-              cursor: 'pointer'
-            }}>
+            <label>
               <input
                 type="radio"
                 name="searchType"
-                checked={searchType === 'smart'}
-                onChange={() => handleSearchTypeChange('smart')}
+                checked={searchType === "smart"}
+                onChange={() => handleSearchTypeChange("smart")}
               />
               Smart Search
             </label>
           </div>
         </div>
-        <div 
-          className="search-input-container" 
-          ref={dropdownRef}
-          style={{ 
-            flex: '1', 
-            minWidth: '200px',
-            maxWidth: isMobile ? '100%' : 'calc(100% - 320px)'
-          }}
-        >
-          <textarea
-            value={searchQuery}
-            onChange={handleInputChange}
-            placeholder={searchType === 'full' 
-              ? "Enter patent numbers (separated by commas, spaces, or new lines)" 
-              : "Enter keywords, inventor name, assignee, or other search terms"}
-            className="search-input patent-textarea"
-            rows={3}
-            style={{ 
-              width: '100%',
-              minHeight: '80px',
-              resize: 'vertical',
-              boxSizing: 'border-box',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '4px',
-              border: '1px solid var(--border-color)'
-            }}
-          />
-          {searchType === 'full' && patentIds.length > 0 && (
-            <div className="patent-ids-preview">
-              {patentIds.map((id, index) => (
-                <div key={index} className="patent-id-tag">
-                  {id}
-                </div>
-              ))}
-            </div>
-          )}
-          {searchType === 'smart' && (
-            <small className="helper-text" style={{ display: 'block', marginTop: '4px', fontSize: '0.8rem' }}>
-              Smart search enables you to find patents using keywords, inventors, assignees, and more.
-            </small>
-          )}
+        <div className="input-buttons-container">
+          <div className="input-field-container">
+            <textarea
+              value={searchQuery}
+              onChange={handleInputChange}
+              placeholder={
+                searchType === "full"
+                  ? "Enter patent numbers (separated by commas, spaces, or new lines)"
+                  : "Enter keywords, inventor name, assignee, or other search terms"
+              }
+              className="search-input patent-textarea"
+              rows={5}
+            />
+            {searchType === "full" && patentIds.length > 0 && (
+              <div className="patent-ids-preview">
+                {patentIds.map((id, index) => (
+                  <div key={index} className="patent-id-tag">
+                    {id}
+                  </div>
+                ))}
+              </div>
+            )}
+            {searchType === "smart" && (
+              <small className="helper-text">
+                Smart search enables you to find patents using keywords,
+                inventors, assignees, and more.
+              </small>
+            )}
+          </div>
+          <div className="buttons-column">
+            <button
+              type="submit"
+              className="search-button"
+              disabled={isLoading || !searchQuery.trim()}
+            >
+              {isLoading ? "Searching..." : "Search"}
+            </button>
+            {searchType === "full" && (
+              <div className="figures-button-container">
+                <PatentFigureSearch patentIds={patentIds} />
+              </div>
+            )}
+          </div>
         </div>
-        <button 
-          type="submit" 
-          disabled={
-            isLoading || 
-            !searchQuery.trim()
-          }
-          style={{ 
-            width: isMobile ? '100%' : 'auto',
-            minWidth: '120px',
-            height: '40px',
-            marginTop: isMobile ? '0.5rem' : '0',
-            padding: '0 1rem',
-            flexShrink: 0,
-            backgroundColor: 'var(--accent-color)',
-            color: 'var(--button-text)',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: !isLoading && searchQuery.trim() ? 'pointer' : 'not-allowed',
-            opacity: isLoading || !searchQuery.trim() ? 0.7 : 1
-          }}
-        >
-          {isLoading ? 'Searching...' : 'Search'}
-        </button>
       </div>
-      {searchType === 'full' && patentIds.length > 0 && (
+      {searchType === "full" && patentIds.length > 0 && (
         <small className="helper-text">
-          {patentIds.length} patent ID{patentIds.length > 1 ? 's' : ''} detected. 
-          Click Search to view results or use the View Figures button below.
+          {patentIds.length} patent ID{patentIds.length > 1 ? "s" : ""}{" "}
+          detected. Click Search to view results or use the View Figures button
+          below.
         </small>
-      )}
-      
-      {/* Add Patent Figure Search Component */}
-      {searchType === 'full' && (
-        <PatentFigureSearch patentIds={patentIds} />
       )}
     </form>
   );
 };
 
-export default PatentSearchForm; 
+export default PatentSearchForm;
