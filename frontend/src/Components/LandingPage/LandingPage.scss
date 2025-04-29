@@ -17,6 +17,7 @@ html, body {
   --sub-label: #b39ddb;
   --sub-section-bg: linear-gradient(135deg, #232326 80%, #2a2a3a 100%);
 }
+
 [data-theme="light"] {
   --sub-bg: #f5f6fa;
   --sub-card-bg: #ffffff;
@@ -301,178 +302,155 @@ html, body {
     }
     
     .pricing-cards {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 2rem;
+      padding: 1rem;
       
       .pricing-card {
+        background: var(--sub-card-bg);
+        border-radius: 20px;
+        padding: 2.5rem;
         display: flex;
         flex-direction: column;
-        background: var(--sub-card-bg);
-        border-radius: 1.2rem;
-        padding: 2rem;
-        flex: 1;
-        min-width: 250px;
-        max-width: 300px;
-        min-height: 500px;
-        box-shadow: var(--sub-card-shadow);
-        transition: all 0.4s ease;
-        border: 1px solid var(--sub-border);
         position: relative;
+        border: 1px solid var(--sub-border);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         overflow: hidden;
         
         &::before {
           content: '';
           position: absolute;
-          top: -100%;
-          left: -100%;
-          width: 300%;
-          height: 300%;
-          background: linear-gradient(135deg, 
-            rgba(255, 215, 0, 0) 0%, 
-            rgba(255, 215, 0, 0.1) 50%, 
-            rgba(255, 215, 0, 0) 100%);
-          transition: all 0.8s ease;
-          transform: rotate(45deg);
-          z-index: 1;
-          pointer-events: none;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: var(--gradient-primary);
+          opacity: 0;
+          transition: opacity 0.3s ease;
         }
         
         &:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 10px 20px rgba(89, 46, 131, 0.1), 0 0 15px rgba(255, 215, 0, 0.2);
-          border-color: rgba(255, 215, 0, 0.3);
+          transform: translateY(-8px);
+          background: var(--sub-card-bg-hover);
+          box-shadow: 0 20px 40px var(--shadow-color);
           
           &::before {
-            top: -30%;
-            left: -30%;
+            opacity: 1;
           }
           
-          .amount {
-            color: var(--sub-success) !important;
+          .btn {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(124, 77, 255, 0.3);
           }
         }
 
         &.popular {
-          border-top: 5px solid var(--sub-success);
-          position: relative;
+          border: 2px solid var(--sub-success);
           
-          &:before {
-            content: '';
+          &::before {
+            opacity: 1;
+          }
+          
+          .popular-badge {
             position: absolute;
-            top: -100%;
-            left: -100%;
-            width: 300%;
-            height: 300%;
-            background: linear-gradient(135deg, 
-              rgba(255, 215, 0, 0) 0%, 
-              rgba(255, 215, 0, 0.1) 50%, 
-              rgba(255, 215, 0, 0) 100%);
-            transition: all 0.8s ease;
+            top: 1rem;
+            right: -2rem;
+            background: var(--gradient-primary);
+            color: var(--sub-text-on-accent);
+            padding: 0.5rem 3rem;
             transform: rotate(45deg);
-            z-index: 0;
-          }
-          
-          &:hover::before {
-            top: -30%;
-            left: -30%;
-          }
-          
-          &::after {
-            content: 'POPULAR';
-            position: absolute;
-            top: -12px;
-            right: 20px;
-            background: linear-gradient(135deg, var(--sub-success), var(--sub-accent));
-            color: white;
-            font-size: 0.75rem;
-            font-weight: bold;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            z-index: 2;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(124, 77, 255, 0.3);
           }
         }
         
         h3 {
-          font-size: 1.5rem;
-          margin-bottom: 1rem;
-          font-weight: 600;
-          color: var(--sub-accent);
+          font-size: 2rem;
+          font-weight: 700;
+          margin-bottom: 1.5rem;
+          background: var(--gradient-primary);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
         }
         
         .price {
-          margin-bottom: 1.5rem;
-          position: relative;
-          z-index: 2;
-          
-          .dollar-sign {
-            font-size: 1.5rem;
+          text-align: center;
+          margin-bottom: 2.5rem;
+
+          .currency {
+            font-size: 1.8rem;
             vertical-align: top;
-            position: relative;
-            top: 0.5rem;
-            color: var(--sub-success);
+            margin-right: 0.2rem;
+            background: var(--gradient-success);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
           }
-          
+
           .amount {
-            font-size: 3rem;
-            font-weight: 700;
-            color: var(--sub-success);
-            transition: color 0.3s ease;
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: var(--gradient-success);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
           }
-          
+
           .period {
-            font-size: 1rem;
             color: var(--sub-text-secondary);
+            font-size: 1.1rem;
+            margin-left: 0.3rem;
           }
         }
         
         .features {
-          margin: 2rem 0;
-          text-align: left;
-          list-style-type: none;
-          position: relative;
-          z-index: 2;
+          list-style: none;
+          padding: 0;
+          margin: 0 0 2.5rem 0;
           flex-grow: 1;
-          display: flex;
-          flex-direction: column;
-          
+
           li {
-            margin-bottom: 0.8rem;
+            color: var(--sub-text);
+            margin-bottom: 1.2rem;
+            padding-left: 2rem;
             position: relative;
-            padding-left: 1.5rem;
-            
-            &:before {
+            font-size: 1.1rem;
+
+            &::before {
               content: "✓";
               position: absolute;
               left: 0;
               color: var(--sub-success);
-            }
-            
-            &:hover {
-              color: var(--sub-accent);
-              
-              &:before {
-                color: #ffd700;
-              }
+              font-weight: bold;
+              font-size: 1.2rem;
             }
           }
         }
         
         .btn {
+          background: var(--gradient-primary);
+          color: var(--sub-text-on-accent);
+          border: none;
+          padding: 1.2rem;
+          border-radius: 12px;
+          font-size: 1.2rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           width: 100%;
-          padding: 0.8rem;
-          margin-top: auto;
-          position: relative;
-          z-index: 2;
-          background: var(--sub-success);
-          color: #fff;
-          border: 1.5px solid var(--sub-success);
-          
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+
           &:hover {
-            background: #009e3a;
-            border-color: var(--sub-accent);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(124, 77, 255, 0.3);
+          }
+
+          &:disabled {
+            background: var(--disabled-color);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
           }
         }
       }
