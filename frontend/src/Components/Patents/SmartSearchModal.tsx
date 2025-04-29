@@ -39,6 +39,8 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
   const [pendingCorrections, setPendingCorrections] = useState<{ [key: string]: string }>({});
   const [isParsing, setIsParsing] = useState(false);
   const [displayNotFoundPatents, setDisplayNotFoundPatents] = useState<string[]>([]);
+  const [foundSearch, setFoundSearch] = useState('');
+  const [notFoundSearch, setNotFoundSearch] = useState('');
   
   const dispatch = useAppDispatch();
   const { smartSearchResults } = useAppSelector((state: RootState) => state.patents);
@@ -256,58 +258,83 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
                     </button>
                   )}
                 </div>
-                
+                {!showNotFound && (
+                  <div className="found-section-search">
+                    <input
+                      className="found-search-input"
+                      type="text"
+                      placeholder="Search found patents..."
+                      value={foundSearch}
+                      onChange={e => setFoundSearch(e.target.value)}
+                    />
+                  </div>
+                )}
+                {showNotFound && (
+                  <div className="not-found-section-search">
+                    <input
+                      className="not-found-search-input"
+                      type="text"
+                      placeholder="Search not found patents..."
+                      value={notFoundSearch}
+                      onChange={e => setNotFoundSearch(e.target.value)}
+                    />
+                  </div>
+                )}
                 <div className="patents-grid">
                   {showNotFound ? (
-                    displayNotFoundPatents.length === 0 ? (
+                    (displayNotFoundPatents.filter(id => id.toLowerCase().includes(notFoundSearch.toLowerCase())).length === 0) ? (
                       <div className="no-results">
                         <p>No patents found matching the selected filter criteria.</p>
                       </div>
                     ) : (
-                      displayNotFoundPatents.map(patentId => (
-                        <div key={patentId} className="patent-card not-found">
-                          {editingPatents[patentId] !== undefined ? (
-                            <div className="edit-container">
-                              <input
-                                type="text"
-                                className="edit-patent-input"
-                                value={editingPatents[patentId]}
-                                onChange={(e) => handleUpdatePatent(patentId, e.target.value)}
-                                placeholder="Enter corrected patent ID"
-                              />
-                              <button
-                                className="confirm-edit-button"
-                                onClick={() => handleConfirmEdit(patentId)}
-                              >
-                                <FontAwesomeIcon icon={faCheckCircle} />
-                              </button>
-                            </div>
-                          ) : (
-                            <>
-                              <div className="patent-id">
-                                {pendingCorrections[patentId] || patentId}
+                      displayNotFoundPatents
+                        .filter(id => id.toLowerCase().includes(notFoundSearch.toLowerCase()))
+                        .map(patentId => (
+                          <div key={patentId} className="patent-card not-found">
+                            {editingPatents[patentId] !== undefined ? (
+                              <div className="edit-container">
+                                <input
+                                  type="text"
+                                  className="edit-patent-input"
+                                  value={editingPatents[patentId]}
+                                  onChange={(e) => handleUpdatePatent(patentId, e.target.value)}
+                                  placeholder="Enter corrected patent ID"
+                                />
+                                <button
+                                  className="confirm-edit-button"
+                                  onClick={() => handleConfirmEdit(patentId)}
+                                >
+                                  <FontAwesomeIcon icon={faCheckCircle} />
+                                </button>
                               </div>
-                              <div className="patent-actions">
-                                {!editingPatents[patentId] && (
-                                  <button
-                                    className="edit-button"
-                                    onClick={() => handleEditPatent(patentId)}
-                                  >
-                                    <FontAwesomeIcon icon={faEdit} />
-                                  </button>
-                                )}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      ))
+                            ) : (
+                              <>
+                                <div className="patent-id">
+                                  {pendingCorrections[patentId] || patentId}
+                                </div>
+                                <div className="patent-actions">
+                                  {!editingPatents[patentId] && (
+                                    <button
+                                      className="edit-button"
+                                      onClick={() => handleEditPatent(patentId)}
+                                    >
+                                      <FontAwesomeIcon icon={faEdit} />
+                                    </button>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        ))
                     )
                   ) : (
-                    filteredPatents.map(patentId => (
-                      <div key={patentId} className="patent-card">
-                        <div className="patent-id">{patentId}</div>
-                      </div>
-                    ))
+                    filteredPatents
+                      .filter(id => id.toLowerCase().includes(foundSearch.toLowerCase()))
+                      .map(patentId => (
+                        <div key={patentId} className="patent-card found">
+                          <div className="patent-id">{patentId}</div>
+                        </div>
+                      ))
                   )}
                 </div>
               </div>

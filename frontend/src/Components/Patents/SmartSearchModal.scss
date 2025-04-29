@@ -16,6 +16,13 @@
   --error-border: rgba(255, 0, 0, 0.3);
   --hover-background: rgba(255, 255, 255, 0.05);
   --input-background: var(--bg-color);
+  --premium-gradient: linear-gradient(135deg, #7c4dff 0%, #448aff 100%);
+  --premium-card-bg: #232326;
+  --premium-border: #353545;
+  --premium-accent: #7c4dff;
+  --premium-accent-light: #b39ddb;
+  --premium-text: #f5f5f7;
+  --premium-text-secondary: #bdbdbd;
 }
 
 .smart-search-modal-overlay {
@@ -43,17 +50,49 @@
 }
 
 .modal-header {
-  padding: 1rem;
-  border-bottom: 1px solid var(--border-color);
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  border-bottom: 1px solid var(--premium-border);
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-end;
   flex-shrink: 0;
+  background: var(--premium-card-bg);
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 2px 12px rgba(124,77,255,0.06);
+  position: relative;
+  gap: 2rem;
 
   h3 {
     margin: 0;
-    font-size: 1.25rem;
-    color: var(--text-color);
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: var(--premium-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .patent-counts {
+    display: flex;
+    gap: 2.5rem;
+    align-items: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    background: var(--premium-accent-light);
+    border-radius: 8px;
+    padding: 0.5rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(124,77,255,0.08);
+    margin-bottom: 0.2rem;
+    .found-count {
+      color: var(--premium-accent);
+      letter-spacing: 0.5px;
+    }
+    .not-found-count {
+      color: #ff6b6b;
+      letter-spacing: 0.5px;
+    }
   }
 
   .close-button {
@@ -61,9 +100,13 @@
     border: none;
     font-size: 1.5rem;
     cursor: pointer;
-    color: var(--text-color);
+    color: var(--premium-text);
     padding: 0.5rem;
     line-height: 1;
+    transition: color 0.2s;
+    &:hover {
+      color: var(--premium-accent);
+    }
   }
 }
 
@@ -141,12 +184,13 @@
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1rem;
   padding: 1rem;
-  background-color: var(--card-background);
+  background-color: var(--premium-card-bg);
   border-radius: 8px;
-  border: 1px solid var(--border-color);
+  border: 1.5px solid var(--premium-border);
   overflow-y: auto;
   max-height: calc(90vh - 200px); // Adjust based on header and footer height
   min-height: 200px;
+  box-shadow: 0 2px 12px rgba(124,77,255,0.06);
 
   &::-webkit-scrollbar {
     width: 8px;
@@ -162,96 +206,120 @@
   }
 }
 
-.patent-card {
+.patent-card.found, .patent-card.not-found {
   padding: 1rem;
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  transition: all 0.2s;
+  min-height: unset;
+  height: auto;
+  box-sizing: border-box;
+  background: var(--premium-card-bg);
+  transition: background 0.2s, border 0.2s, color 0.2s;
+}
 
-  &.found {
-    background-color: var(--success-background);
-    border: 1px solid var(--success-border);
-  }
-
-  &.not-found {
-    background-color: var(--error-background);
-    border: 1px solid var(--error-border);
-  }
-
+.patent-card.found {
+  border: 1.5px solid var(--premium-accent);
+  box-shadow: 0 2px 8px rgba(124,77,255,0.08);
   .patent-id {
+    color: var(--premium-accent);
+    font-weight: 600;
+  }
+}
+
+.patent-card.not-found {
+  border: 1.5px solid #ff6b6b;
+  box-shadow: 0 2px 8px rgba(255,107,107,0.08);
+  .patent-id {
+    color: #ff6b6b;
+    font-weight: 600;
+  }
+}
+
+[data-theme="light"] .patent-card.found, 
+[data-theme="light"] .patent-card.not-found {
+  background: #f5f6fa;
+  box-shadow: 0 2px 8px rgba(124,77,255,0.04);
+}
+[data-theme="light"] .patent-card.found {
+  border: 1.5px solid #7c4dff;
+  .patent-id {
+    color: #7c4dff;
+  }
+}
+[data-theme="light"] .patent-card.not-found {
+  border: 1.5px solid #ffb3b3;
+  .patent-id {
+    color: #e53935;
+  }
+}
+
+.patent-id {
+  flex: 1;
+  padding: 0.5rem;
+  font-family: monospace;
+  color: var(--text-color);
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--accent-color);
+  }
+}
+
+.edit-button {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  cursor: pointer;
+  padding: 0.25rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.edit-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+
+  .edit-patent-input {
     flex: 1;
-    padding: 0.5rem;
-    font-family: monospace;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: var(--input-background);
     color: var(--text-color);
-    transition: color 0.2s;
 
-    &:hover {
-      color: var(--accent-color);
+    &:focus {
+      outline: none;
+      border-color: var(--accent-color);
     }
   }
 
-  &.not-found {
-    .patent-id {
-      color: #ff6b6b;
-    }
-  }
-
-  .edit-button {
+  .confirm-edit-button {
     background: none;
     border: none;
-    color: var(--text-color);
+    color: var(--accent-color);
     cursor: pointer;
-    padding: 0.25rem;
-    opacity: 0.7;
-    transition: opacity 0.2s;
-
-    &:hover {
-      opacity: 1;
-    }
-  }
-
-  .edit-container {
+    padding: 4px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    width: 100%;
+    justify-content: center;
+    transition: transform 0.2s;
 
-    .edit-patent-input {
-      flex: 1;
-      padding: 8px;
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      font-size: 14px;
-      background-color: var(--input-background);
-      color: var(--text-color);
-
-      &:focus {
-        outline: none;
-        border-color: var(--accent-color);
-      }
+    &:hover {
+      transform: scale(1.1);
     }
 
-    .confirm-edit-button {
-      background: none;
-      border: none;
-      color: var(--accent-color);
-      cursor: pointer;
-      padding: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.2s;
-
-      &:hover {
-        transform: scale(1.1);
-      }
-
-      &:disabled {
-        color: var(--border-color);
-        cursor: not-allowed;
-      }
+    &:disabled {
+      color: var(--border-color);
+      cursor: not-allowed;
     }
   }
 }
@@ -712,4 +780,80 @@ input[type="radio"] {
   &:focus {
     box-shadow: 0 0 0 2px rgba(201, 125, 255, 0.3);
   }
+}
+
+.found-section-search {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 1.5rem 1rem 1.5rem;
+  .found-search-input {
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    border: 1px solid var(--premium-border);
+    background: var(--bg-secondary);
+    color: var(--premium-text);
+    font-size: 1rem;
+    min-width: 220px;
+    transition: border 0.2s;
+    &:focus {
+      outline: none;
+      border: 1.5px solid var(--premium-accent);
+    }
+  }
+}
+
+.not-found-section-search {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 1.5rem 1rem 1.5rem;
+  .not-found-search-input {
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    border: 1px solid var(--premium-border);
+    background: var(--bg-secondary);
+    color: #ff6b6b;
+    font-size: 1rem;
+    min-width: 220px;
+    transition: border 0.2s;
+    &:focus {
+      outline: none;
+      border: 1.5px solid #ff6b6b;
+    }
+  }
+}
+
+[data-theme="light"] .smart-search-modal {
+  background: #f8f9fb;
+}
+
+[data-theme="light"] .modal-header {
+  background: linear-gradient(90deg, #f8f9fb 80%, #ede7f6 100%);
+}
+[data-theme="light"] .patent-counts {
+  background: linear-gradient(90deg, #ede7f6 60%, #ffe0e0 100%);
+  box-shadow: 0 2px 8px rgba(124,77,255,0.06);
+}
+[data-theme="light"] .patent-counts .found-count {
+  color: #7c4dff;
+}
+[data-theme="light"] .patent-counts .not-found-count {
+  color: #e53935;
+}
+
+[data-theme="light"] .toggle-button {
+  background: #ede7f6;
+  color: #7c4dff;
+}
+[data-theme="light"] .parse-button {
+  background: #43a047;
+  color: #fff;
+}
+[data-theme="light"] .apply-button {
+  background: #7c4dff;
+  color: #fff;
+}
+[data-theme="light"] .cancel-button {
+  background: none;
+  border: 1px solid #e0e0e0;
+  color: #333;
 } 
