@@ -1,18 +1,28 @@
 .dashboard {
   display: flex;
-  height: calc(100vh - 60px); // Adjust based on your header height
+  min-height: calc(100vh - 138px);
   position: relative;
+  z-index: 1;
+  margin-top: 138px;
+  overflow: hidden;
+  background-color: var(--primary-bg);
   
   .dashboard-content {
     flex: 1;
     padding: 2rem;
     overflow-y: auto;
+    height: calc(100vh - 138px);
     transition: margin-left 0.3s ease, padding 0.3s ease;
-    margin-left: 300px; // Add margin for the left sidebar
+    background-color: var(--primary-bg);
+    position: relative;
+    z-index: 1;
 
-    h1 {
-      color: var(--text-color);
-      margin-bottom: 2rem;
+    &.expanded {
+      padding-left: 320px;
+    }
+
+    &.collapsed {
+      padding-left: 30px;
     }
 
     .dashboard-section {
@@ -21,54 +31,44 @@
       padding: 1.5rem;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       border: 1px solid var(--border-color);
-      max-width: 1200px;
+      width: 100%;
+      max-width: 1500px;
       margin: 0 auto;
-      overflow-x: hidden;
+      overflow: hidden;
+      position: relative;
+      z-index: 2;
+      box-sizing: border-box;
     }
   }
 }
 
 // Media Query for smaller screens
 @media (max-width: 992px) {
-  .dashboard {
-    .dashboard-content {
-      padding: 1.5rem;
-      margin-left: 250px;
-      
-      .dashboard-section {
-        padding: 1.25rem;
-      }
+  .dashboard-content {
+    padding: 1.5rem;
+    
+    .dashboard-section {
+      padding: 1.25rem;
     }
   }
 }
 
 @media (max-width: 768px) {
-  .dashboard {
-    .dashboard-content {
+  .dashboard-content {
+    padding: 1rem;
+    
+    .dashboard-section {
       padding: 1rem;
-      margin-left: 200px;
-      
-      .dashboard-section {
-        padding: 1rem;
-      }
     }
   }
 }
 
 @media (max-width: 576px) {
-  .dashboard {
-    .dashboard-content {
+  .dashboard-content {
+    padding: 0.75rem;
+    
+    .dashboard-section {
       padding: 0.75rem;
-      margin-left: 0;
-      
-      h1 {
-        margin-bottom: 1rem;
-        font-size: 1.5rem;
-      }
-      
-      .dashboard-section {
-        padding: 0.75rem;
-      }
     }
   }
 } 

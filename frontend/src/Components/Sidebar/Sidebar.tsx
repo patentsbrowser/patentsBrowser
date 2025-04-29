@@ -41,7 +41,7 @@ const Sidebar = () => {
           </div>
         )}
         <nav>
-          {menuItems.map((item) => (
+          {menuItems?.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}

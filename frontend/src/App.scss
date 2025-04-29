@@ -4,30 +4,144 @@
 body {
   background-color: var(--primary-bg);
   color: var(--text-color);
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden;
   
   &.figure-viewer-open {
     overflow: hidden;
-    position: fixed; /* Fix body position when figure viewer is open */
+    position: fixed;
     width: 100%;
     height: 100%;
   }
 }
 
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--primary-bg);
+  overflow: hidden;
+
+  .app-content {
+    display: flex;
+    flex: 1;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+    
+    .main-content {
+      flex: 1;
+      position: relative;
+      z-index: 1;
+      background-color: var(--primary-bg);
+      display: flex;
+      flex-direction: column;
+    }
+  }
+}
+
 .app-container {
-  min-height: 100vh;
+  height: 100vh;
   position: relative;
-  z-index: 1; // Ensure z-index stacking context
+  display: flex;
+  flex-direction: column;
+  background-color: var(--primary-bg);
+  overflow: hidden;
 
   &.patent-browser-app {
-    z-index: 1;
     position: relative;
   }
 
-  .main-content {
-    margin-left: 250px;
-    margin-top: 60px;
-    padding: 2rem;
-    width: calc(100% - 250px);
-    box-sizing: border-box;
+  .app-header {
+    flex-shrink: 0;
+    height: 78px;
+    z-index: 1000;
+    background-color: var(--primary-bg);
+    border-bottom: 1px solid var(--border-color);
   }
+
+  .app-sidebar {
+    flex-shrink: 0;
+    height: 60px;
+    z-index: 900;
+    background-color: var(--primary-bg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    padding: 0 2rem;
+  }
+
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+    background-color: var(--primary-bg);
+    padding: 2rem;
+    box-sizing: border-box;
+    overflow: hidden;
+
+    .patent-search-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      
+      .search-form {
+        flex-shrink: 0;
+        margin-bottom: 2rem;
+      }
+      
+      .search-results {
+        flex: 1;
+        overflow-y: auto;
+        min-height: 0;
+      }
+    }
+
+    &.with-dashboard-sidebar {
+      padding-left: calc(300px + 2rem);
+    }
+  }
+
+  // Ensure all route components have proper spacing
+  .dashboard-page,
+  .subscription-page,
+  .settings-page,
+  .patent-history-page,
+  .payment-history-page,
+  .update-profile-page {
+    height: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+// Dark mode styles
+.dark-mode {
+  --primary-bg: #1a1a1a;
+  --secondary-bg: #2d2d2d;
+  --text-color: #ffffff;
+  --border-color: #404040;
+  --hover-bg: #3d3d3d;
+  --link-color: #66b3ff;
+  --error-color: #ff6b6b;
+  --success-color: #69db7c;
+}
+
+// Light mode styles
+.light-mode {
+  --primary-bg: #ffffff;
+  --secondary-bg: #f8f9fa;
+  --text-color: #333333;
+  --border-color: #e9ecef;
+  --hover-bg: #e9ecef;
+  --link-color: #0066cc;
+  --error-color: #dc3545;
+  --success-color: #28a745;
 } 

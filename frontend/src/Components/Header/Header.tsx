@@ -129,7 +129,7 @@ const Header = () => {
   return (
     <header className="header">
       <div className="header-left">
-        <h1>{isAdmin && useAdmin().isAdminMode ? 'Admin Dashboard' : 'Patent Search Tool'}</h1>
+        <h1>{isAdmin && useAdmin().isAdminMode ? 'Admin Dashboard' : 'User Dashboard'}</h1>
       </div>
       <div className="header-right">
         {isAdmin && <ModeSwitcher />}

@@ -1,7 +1,11 @@
 .patent-history-container {
+  margin-top: 138px;
+  width: 100%;
   padding: 2rem;
+  box-sizing: border-box;
   max-width: 1200px;
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
 
   .patent-history-header {
     display: flex;
@@ -338,4 +342,14 @@
   --hover-bg: #363636;
   --secondary-bg: #333333;
   --input-bg: #2d2d2d;
+}
+
+.dashboard-section > .patent-history-container {
+  max-width: none !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
 } 

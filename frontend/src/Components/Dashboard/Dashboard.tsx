@@ -257,23 +257,8 @@ const Dashboard = () => {
         onAddCustomFolder={handleAddCustomFolder}
         sidebarBehavior={sidebarBehavior}
       />
-      <div 
-        className="dashboard-content"
-        style={{ 
-          marginLeft: sidebarExpanded ? '0' : '0', 
-          paddingLeft: sidebarExpanded ? '320px' : '30px'
-        }}
-      >
-        <h1>Patent Dashboard</h1>
-        <div 
-          className="dashboard-section"
-          style={{
-            width: '100%',
-            maxWidth: '1200px',
-            overflow: 'hidden',
-            boxSizing: 'border-box'
-          }}
-        >
+      <div className={`dashboard-content ${sidebarExpanded ? 'expanded' : 'collapsed'}`}>
+        <div className="dashboard-section">
           <PatentSearch 
             onSearch={handlePatentSearch}
             initialPatentId={currentPatentId} 
