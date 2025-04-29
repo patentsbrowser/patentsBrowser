@@ -306,8 +306,16 @@ const UsersList = () => {
                 text-align: left;
               }
               th {
-                background-color: #f8f9fa;
-                font-weight: bold;
+                background: none;
+                color: #a259f7;
+                font-weight: 700;
+                border-radius: 0;
+                border-bottom: 2.5px solid #a259f7;
+                box-shadow: none;
+                padding-top: 1.1rem;
+                padding-bottom: 1.1rem;
+                letter-spacing: 0.01em;
+                font-size: 1.08rem;
               }
               tr:nth-child(even) {
                 background-color: #f2f2f2;

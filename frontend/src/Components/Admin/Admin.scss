@@ -1351,8 +1351,8 @@
         background-repeat: no-repeat;
         background-position: right 1rem center;
         padding-right: 2.5rem;
-
-        &:focus {
+      
+      &:focus {
           border: 2px solid #7c3aed;
           box-shadow: 0 0 0 3px #a78bfa44;
           background: linear-gradient(90deg, #f3e8ff 0%, #ede9fe 100%);
@@ -1647,4 +1647,103 @@
   font-weight: 500;
   border-radius: 0.5rem;
   padding: 0.5rem 1rem;
+}
+
+// Premium violet look for all admin containers
+.admin-users-container,
+.admin-settings-container,
+.admin-section {
+  background: linear-gradient(145deg, var(--secondary-bg), var(--primary-bg));
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+// Premium select styles for all filters and pagination
+.admin-filters select,
+.subscription-filter select,
+.items-per-page-control select,
+.settings-select {
+  min-width: 140px;
+  padding: 0.45rem 1.2rem;
+  border-radius: 1.2rem;
+  border: 2px solid #a78bfa;
+  background: linear-gradient(90deg, #ede9fe 0%, #f3e8ff 100%);
+  color: #7c3aed;
+  font-size: 1rem;
+  font-weight: 500;
+  appearance: none;
+  outline: none;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.06);
+  transition: border 0.2s, box-shadow 0.2s, background 0.2s;
+  background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' fill='none' stroke='%237c3aed' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
+
+  &:focus {
+    border: 2px solid #7c3aed;
+    box-shadow: 0 0 0 3px #a78bfa44;
+    background: linear-gradient(90deg, #f3e8ff 0%, #ede9fe 100%);
+  }
+  &:hover {
+    border: 2px solid #7c3aed;
+  }
+}
+
+.admin-filters select option,
+.subscription-filter select option,
+.items-per-page-control select option,
+.settings-select option {
+  background: #ede9fe;
+  color: #7c3aed;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+}
+
+// Premium button styles for all main actions
+.export-btn,
+.pagination-btn,
+.btn,
+.action-btn {
+  padding: 0.45rem 1.2rem;
+  border-radius: 1.2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: linear-gradient(90deg, #a78bfa 0%, #7c3aed 100%);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.10);
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%);
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.18);
+    transform: translateY(-2px) scale(1.04);
+  }
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+  &.disabled, &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: linear-gradient(90deg, #c4b5fd 0%, #a5b4fc 100%);
+    color: #ede9fe;
+    box-shadow: none;
+    transform: none;
+  }
+}
+
+// Premium table headers and stat boxes
+.users-table th,
+.stat-box {
+  background: linear-gradient(90deg, #ede9fe 0%, #f3e8ff 100%);
+  color: #7c3aed;
+  font-weight: 700;
+  border-radius: 0.7rem;
+  border-bottom: 2px solid #a78bfa;
 } 
