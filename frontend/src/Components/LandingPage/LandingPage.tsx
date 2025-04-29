@@ -4,15 +4,13 @@ import './LandingPage.scss';
 import * as SubscriptionService from '../../services/SubscriptionService';
 
 const LandingPage = () => {
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+
   const [plans, setPlans] = useState<any[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [plansError, setPlansError] = useState<string | null>(null);
   const navigate = useNavigate();
   
   const handleAuthClick = (mode: 'login' | 'signup') => {
-    setAuthMode(mode);
     navigate(mode === 'login' ? '/auth/login' : '/auth/signup');
   };
 
