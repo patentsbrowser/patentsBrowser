@@ -3,9 +3,12 @@
 .admin-dashboard {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 78px);
+  min-height: calc(100vh - 78px);
+  margin-top: 78px; // Add margin-top equal to header height
   background-color: var(--primary-bg);
   color: var(--text-color);
+  position: relative;
+  z-index: 1;
 }
 
 .admin-header {
