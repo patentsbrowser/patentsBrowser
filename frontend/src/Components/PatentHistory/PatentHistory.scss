@@ -1,13 +1,27 @@
 .patent-history-container {
-  margin-top: 138px;
   width: 100%;
-  padding: 2rem;
+  padding: 1rem;
   box-sizing: border-box;
-  max-width: 1200px;
+  max-width: 100%;
   margin-left: auto;
   margin-right: auto;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 64px);
+  margin-top: 64px;
+
+  @media (min-width: 768px) {
+    padding: 1.5rem;
+    max-width: 90%;
+  }
+
+  @media (min-width: 1200px) {
+    padding: 2rem;
+    max-width: 85%;
+  }
 
   .patent-history-header {
+    flex-shrink: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -67,6 +81,28 @@
   }
   
   .history-list {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+    
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: var(--secondary-bg);
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+      
+      &:hover {
+        background: var(--text-secondary);
+      }
+    }
+    
     .date-group {
       margin-bottom: 1rem;
       border: 1px solid var(--border-color);
