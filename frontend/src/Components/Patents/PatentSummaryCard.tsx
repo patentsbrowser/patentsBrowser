@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from '../../Redux/hooks';
 import { markPatentAsViewed } from '../../Redux/slices/patentSlice';
 import { RootState } from '../../Redux/store';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileImport } from '@fortawesome/free-solid-svg-icons';
+import { faFileImport, faImage } from '@fortawesome/free-solid-svg-icons';
 import WorkFileSelector from './WorkFileSelector';
 import { authApi } from '../../api/auth';
 import toast from 'react-hot-toast';
@@ -19,6 +19,7 @@ interface PatentSummaryCardProps {
   apiSource?: ApiSource;
   isSelected?: boolean;
   onSelect?: (patentId: string, selected: boolean) => void;
+  onViewFigures?: (patent: PatentSummary) => void;
 }
 
 const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
@@ -29,6 +30,7 @@ const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
   apiSource,
   isSelected = false,
   onSelect,
+  onViewFigures,
 }) => {
   const dispatch = useAppDispatch();
   const viewedPatents = useAppSelector((state: RootState) => state.patents.viewedPatents);
@@ -148,6 +150,17 @@ const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
                 >
                   <FontAwesomeIcon icon={faFileImport} /> Workfile Addition
                 </button>
+                {onViewFigures && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onViewFigures(summary);
+                    }}
+                    className="view-figures"
+                  >
+                    <FontAwesomeIcon icon={faImage} /> View Figures
+                  </button>
+                )}
               </div>
             </div>
           ) : (

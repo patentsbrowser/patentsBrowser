@@ -454,17 +454,10 @@
       }
 
       &.viewed {
-        border-left: 4px solid var(--accent-color, #2196F3);
-        background-color: rgba(33, 150, 243, 0.05);
-
         .status-indicator {
           color: var(--accent-color, #2196F3);
           animation: none;
           font-weight: bold;
-        }
-
-        .patent-id {
-          font-weight: 600;
         }
       }
 

@@ -654,14 +654,8 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
                   apiSource={apiSource}
                   isSelected={selectedPatentIds.includes(summary.patentId)}
                   onSelect={handlePatentSelection}
+                  onViewFigures={handleViewFigures}
                 />
-                <button
-                  className="view-figures-button"
-                  onClick={() => handleViewFigures(summary)}
-                  title="View Patent Figures"
-                >
-                  <FontAwesomeIcon icon={faImage} /> View Figures
-                </button>
               </div>
             ))
         ) : (
@@ -676,14 +670,8 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
                 apiSource={apiSource}
                 isSelected={selectedPatentIds.includes(summary.patentId)}
                 onSelect={handlePatentSelection}
+                onViewFigures={handleViewFigures}
               />
-              <button
-                className="view-figures-button"
-                onClick={() => handleViewFigures(summary)}
-                title="View Patent Figures"
-              >
-                <FontAwesomeIcon icon={faImage} /> View Figures
-              </button>
             </div>
           ))
         )}
