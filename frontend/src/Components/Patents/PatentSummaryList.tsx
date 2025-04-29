@@ -6,7 +6,7 @@ import PatentSummaryCard from './PatentSummaryCard';
 import { ApiSource } from '../../api/patents';
 import { useAppSelector, useAppDispatch } from '../../Redux/hooks';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faChevronLeft, faChevronRight, faFolderPlus, faCheck, faSave, faCog, faFilter, faFileImport } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faChevronLeft, faChevronRight, faFolderPlus, faCheck, faSave, faCog, faFilter, faFileImport, faImage } from '@fortawesome/free-solid-svg-icons';
 import { authApi } from '../../api/auth';
 import { toast } from 'react-toastify';
 import PatentHighlighter from './PatentHighlighter';
@@ -15,6 +15,7 @@ import MultiFolderSelector from './MultiFolderSelector';
 import WorkFileSelector from './WorkFileSelector';
 import { setSearchResults } from '../../Redux/slices/patentSlice';
 import { patentApi } from '../../api/patents';
+import FigureViewer from './FigureViewer';
 
 interface PatentSummaryListProps {
   patentSummaries: PatentSummary[];
@@ -88,6 +89,10 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
     const savedState = localStorage.getItem('patentHighlighterOpen');
     return savedState ? JSON.parse(savedState) : false;
   });
+
+  // Add state for FigureViewer
+  const [showFigureViewer, setShowFigureViewer] = useState(false);
+  const [selectedPatentForFigures, setSelectedPatentForFigures] = useState<PatentSummary | null>(null);
 
   // Save highlighter state to localStorage when it changes
   useEffect(() => {
@@ -440,6 +445,18 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
     }
   };
 
+  // Add handler for viewing figures
+  const handleViewFigures = (patent: PatentSummary) => {
+    setSelectedPatentForFigures(patent);
+    setShowFigureViewer(true);
+  };
+
+  // Add handler for closing FigureViewer
+  const handleCloseFigureViewer = () => {
+    setShowFigureViewer(false);
+    setSelectedPatentForFigures(null);
+  };
+
   if (patentSummaries.length === 0) return null;
 
   return (
@@ -472,13 +489,6 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
               >
                 <FontAwesomeIcon icon={faSave} /> New Folder
               </button>
-              {/* <button 
-                className="folder-action-btn existing-folder-btn"
-                onClick={handleAddToExistingFolder}
-                title="Add to existing folder"
-              >
-                <FontAwesomeIcon icon={faFolderPlus} /> Add to Folder
-              </button> */}
               <button 
                 className="folder-action-btn workfile-btn"
                 onClick={handleAddToWorkFile}
@@ -610,8 +620,30 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
               pagination.currentPage * pagination.resultsPerPage
             )
             .map((summary) => (
+              <div key={summary.patentId} className="patent-summary-card">
+                <PatentSummaryCard
+                  summary={summary}
+                  onViewDetails={handleViewDetails}
+                  formatDate={formatDate}
+                  onPatentSelect={onPatentSelect}
+                  apiSource={apiSource}
+                  isSelected={selectedPatentIds.includes(summary.patentId)}
+                  onSelect={handlePatentSelection}
+                />
+                <button
+                  className="view-figures-button"
+                  onClick={() => handleViewFigures(summary)}
+                  title="View Patent Figures"
+                >
+                  <FontAwesomeIcon icon={faImage} /> View Figures
+                </button>
+              </div>
+            ))
+        ) : (
+          // If no pagination info, show all results
+          patentSummaries.map((summary) => (
+            <div key={summary.patentId} className="patent-summary-card">
               <PatentSummaryCard
-                key={summary.patentId}
                 summary={summary}
                 onViewDetails={handleViewDetails}
                 formatDate={formatDate}
@@ -620,37 +652,17 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
                 isSelected={selectedPatentIds.includes(summary.patentId)}
                 onSelect={handlePatentSelection}
               />
-            ))
-        ) : (
-          // If no pagination info, show all results
-          patentSummaries.map((summary) => (
-            <PatentSummaryCard
-              key={summary.patentId}
-              summary={summary}
-              onViewDetails={handleViewDetails}
-              formatDate={formatDate}
-              onPatentSelect={onPatentSelect}
-              apiSource={apiSource}
-              isSelected={selectedPatentIds.includes(summary.patentId)}
-              onSelect={handlePatentSelection}
-            />
+              <button
+                className="view-figures-button"
+                onClick={() => handleViewFigures(summary)}
+                title="View Patent Figures"
+              >
+                <FontAwesomeIcon icon={faImage} /> View Figures
+              </button>
+            </div>
           ))
         )}
       </div>
-
-      {/* Results per page selector */}
-      {/* <div className="results-per-page">
-        <span className="results-label">Results per page:</span>
-        <select 
-          value={itemsPerPage.toString()} 
-          onChange={handleResultsPerPageChange}
-        >
-          <option value="10">10</option>
-          <option value="25">25</option>
-          <option value="50">50</option>
-          <option value="100">100</option>
-        </select>
-      </div> */}
 
       {/* Pagination Controls */}
       {pagination && pagination.totalPages > 1 && (
@@ -789,6 +801,23 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Add FigureViewer component */}
+      {showFigureViewer && selectedPatentForFigures && (
+        <FigureViewer
+          patentId={selectedPatentForFigures.patentId}
+          onClose={handleCloseFigureViewer}
+          onNextRequested={() => {
+            // Find the next patent in the list
+            const currentIndex = patentSummaries.findIndex(p => p.patentId === selectedPatentForFigures.patentId);
+            if (currentIndex < patentSummaries.length - 1) {
+              handleViewFigures(patentSummaries[currentIndex + 1]);
+            }
+          }}
+          patentIndex={patentSummaries.findIndex(p => p.patentId === selectedPatentForFigures.patentId) + 1}
+          totalPatents={patentSummaries.length}
+        />
       )}
     </div>
   );
