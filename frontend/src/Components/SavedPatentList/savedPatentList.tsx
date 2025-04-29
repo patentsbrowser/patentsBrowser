@@ -272,7 +272,7 @@ const SavedPatentList = () => {
             text={isUploading ? "Processing file..." : isSearching ? "Validating patents..." : "Saving patents..."} 
           />
         )}
-        <h2>Save Patents</h2>
+        <h2 className="saved-patents-title">Upload File to Save Patents</h2>
         {!user?.id && (
           <div className="login-notice">
             <p>Please log in to save your patent list across devices</p>
