@@ -628,37 +628,36 @@ const SubscriptionsManagement = () => {
                 </button>
               </>
             )}
+            <button
+              className={`upload-btn${!bankStatementFile || isProcessing ? ' disabled' : ''}`}
+              onClick={extractReferencesFromFile}
+              disabled={!bankStatementFile || isProcessing}
+            >
+              Extract References
+            </button>
           </div>
           
-          <button 
-            className={`upload-btn ${!bankStatementFile || isProcessing ? 'disabled' : ''}`}
-            onClick={extractReferencesFromFile}
-            disabled={!bankStatementFile || isProcessing}
-          >
-            Extract References
-          </button>
-        </div>
-        
-        {isProcessing && (
-          <Loader fullScreen text="Processing bank statement..." />
-        )}
-        
-        {processingResults.success > 0 && (
-          <div className="extracted-utrs-container">
-            <div className="process-utr-actions">
-              <div className="processing-result">
-                <span className="success-count">
-                  ✓ {processingResults.success} payments verified
-                </span>
-                {processingResults.failed > 0 && (
-                  <span className="failed-count">
-                    ✗ {processingResults.failed} failed
+          {isProcessing && (
+            <Loader fullScreen text="Processing bank statement..." />
+          )}
+          
+          {processingResults.success > 0 && (
+            <div className="extracted-utrs-container">
+              <div className="process-utr-actions">
+                <div className="processing-result">
+                  <span className="success-count">
+                    ✓ {processingResults.success} payments verified
                   </span>
-                )}
+                  {processingResults.failed > 0 && (
+                    <span className="failed-count">
+                      ✗ {processingResults.failed} failed
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
       
       {/* The rest of your component */}
