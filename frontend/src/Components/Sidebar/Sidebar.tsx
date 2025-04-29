@@ -11,11 +11,11 @@ const Sidebar = () => {
   const userMenuItems = [
     { path: '/auth/dashboard', label: 'Dashboard', icon: '📊', exact: false },
     { path: '/auth/patent-history', label: 'Patent History', icon: '🕒', exact: false },
-    { path: '/auth/payment-history', label: 'Payment History', icon: '💳', exact: false },
-    { path: '/auth/patentSaver', label: 'Saved Patents', icon: '📑', exact: false },
+    { path: '/auth/patentSaver', label: 'Upload Files', icon: '📑', exact: false },
     { path: '/auth/subscription', label: 'Subscription', icon: '💎', exact: false },
-    { path: '/auth/settings', label: 'Settings', icon: '📝', exact: false },
+    { path: '/auth/payment-history', label: 'Payment History', icon: '💳', exact: false },
     { path: '/auth/update-profile', label: 'Update Profile', icon: '👤', exact: false },
+    { path: '/auth/settings', label: 'Settings', icon: '📝', exact: false },
   ];
 
   const adminMenuItems = [
