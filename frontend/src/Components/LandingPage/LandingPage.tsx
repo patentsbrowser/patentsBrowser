@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './LandingPage.scss';
+import * as SubscriptionService from '../../services/SubscriptionService';
 
 const LandingPage = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [plans, setPlans] = useState<any[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
+  const [plansError, setPlansError] = useState<string | null>(null);
   const navigate = useNavigate();
   
   const handleAuthClick = (mode: 'login' | 'signup') => {
@@ -20,12 +24,26 @@ const LandingPage = () => {
     navigate('/auth/signup');
   };
 
-  const subscriptionPlans = [
-    { id: 1, name: 'Monthly', price: 150, period: 'month', features: ['Full search access', 'Save up to 50 patents', 'Basic support'], popular: false },
-    { id: 2, name: 'Quarterly', price: 400, period: '3 months', features: ['Full search access', 'Save up to 200 patents', 'Priority support', '10% discount'], popular: true },
-    { id: 3, name: 'Half-Yearly', price: 750, period: '6 months', features: ['Full search access', 'Unlimited patent saves', 'Premium support', '15% discount'], popular: false },
-    { id: 4, name: 'Yearly', price: 1200, period: 'year', features: ['Full search access', 'Unlimited patent saves', 'Premium support', 'API access', '20% discount'], popular: false },
-  ];
+  // Fetch subscription plans from backend
+  useEffect(() => {
+    const fetchPlans = async () => {
+      setLoadingPlans(true);
+      setPlansError(null);
+      try {
+        const result = await SubscriptionService.getSubscriptionPlans();
+        if (result.success) {
+          setPlans(result.data);
+        } else {
+          setPlansError('Failed to load plans');
+        }
+      } catch (error) {
+        setPlansError('Failed to load plans');
+      } finally {
+        setLoadingPlans(false);
+      }
+    };
+    fetchPlans();
+  }, []);
 
   const trialFeatures = [
     'Full search functionality',
@@ -33,6 +51,22 @@ const LandingPage = () => {
     'Basic analytics tools',
     'Email support'
   ];
+
+  // Helper for plan period display
+  const getPlanTypeDisplay = (planType: string) => {
+    switch (planType) {
+      case 'monthly':
+        return 'month';
+      case 'quarterly':
+        return '3 months';
+      case 'half_yearly':
+        return '6 months';
+      case 'yearly':
+        return 'year';
+      default:
+        return planType;
+    }
+  };
 
   return (
     <div className="landing-page">
@@ -97,16 +131,21 @@ const LandingPage = () => {
         <h2>Subscription Plans</h2>
         <p className="pricing-subtitle">Choose the perfect plan for your needs after your free trial</p>
         <div className="pricing-cards">
-          {subscriptionPlans.map(plan => (
-            <div key={plan.id} className={`pricing-card ${plan.popular ? 'popular' : ''}`}>
+          {loadingPlans && <div>Loading plans...</div>}
+          {plansError && <div style={{ color: 'red' }}>{plansError}</div>}
+          {!loadingPlans && !plansError && plans.map(plan => (
+            <div key={plan._id} className={`pricing-card ${plan.popular ? 'popular' : ''}`}>
               <h3>{plan.name}</h3>
               <div className="price">
-                <span className="dollar-sign">$</span>
-                <span className="amount">{plan.price}</span>
-                <span className="period">/{plan.period}</span>
+                <span className="currency">₹</span>
+                <span className="amount">{plan.price.toLocaleString('en-IN')}</span>
+                <span className="period">/{getPlanTypeDisplay(plan.type)}</span>
               </div>
+              {plan.discountPercentage > 0 && (
+                <div className="discount">{plan.discountPercentage}% discount</div>
+              )}
               <ul className="features">
-                {plan.features.map((feature, index) => (
+                {plan.features.map((feature: string, index: number) => (
                   <li key={index}>{feature}</li>
                 ))}
               </ul>

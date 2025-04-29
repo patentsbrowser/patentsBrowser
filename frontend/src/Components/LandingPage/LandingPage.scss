@@ -1,18 +1,53 @@
+html, body {
+  height: 100%;
+  overflow-y: auto;
+}
+
+:root {
+  // Premium theme variables (same as subscription page)
+  --sub-bg: #18171b;
+  --sub-card-bg: #232326;
+  --sub-card-shadow: 0 8px 32px rgba(0,0,0,0.28);
+  --sub-border: #353545;
+  --sub-accent: #7c4dff;
+  --sub-accent-light: #b39ddb;
+  --sub-success: #00c853;
+  --sub-text: #f5f5f7;
+  --sub-text-secondary: #bdbdbd;
+  --sub-label: #b39ddb;
+  --sub-section-bg: linear-gradient(135deg, #232326 80%, #2a2a3a 100%);
+}
+[data-theme="light"] {
+  --sub-bg: #f5f6fa;
+  --sub-card-bg: #ffffff;
+  --sub-card-shadow: 0 8px 32px rgba(124,77,255,0.08);
+  --sub-border: #e0e0e0;
+  --sub-accent: #7c4dff;
+  --sub-accent-light: #ede7f6;
+  --sub-success: #00c853;
+  --sub-text: #232326;
+  --sub-text-secondary: #666;
+  --sub-label: #7c4dff;
+  --sub-section-bg: linear-gradient(135deg, #fff 80%, #ede7f6 100%);
+}
+
 .landing-page {
-  min-height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: var(--primary-bg, #ffffff);
-  color: var(--text-color, #333333);
+  background: var(--sub-bg);
+  color: var(--sub-text);
+  overflow-y: auto;
 
   .landing-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 1.5rem 2rem;
-    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    border-bottom: 1px solid var(--sub-border);
     background-color: rgba(89, 46, 131, 0.03);
     position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     
     &::after {
       content: '';
@@ -27,8 +62,8 @@
     .logo {
       font-size: 1.5rem;
       font-weight: 700;
-      color: #592e83; // Royal violet
-      text-shadow: 0 0 2px rgba(255, 215, 0, 0.3);
+      color: var(--sub-accent);
+      text-shadow: 0 0 2px var(--sub-accent-light);
       
       &:hover {
         color: #ffd700; // Gold
@@ -47,6 +82,9 @@
         transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
+        background: var(--sub-section-bg);
+        color: var(--sub-accent);
+        border: 1px solid var(--sub-accent);
         
         &::before {
           content: '';
@@ -106,14 +144,13 @@
         }
         
         &.btn-primary {
-          background-color: #28a745; // Royal green
-          border: 1px solid #28a745;
-          color: white;
+          background: var(--sub-success);
+          color: #fff;
+          border: 1px solid var(--sub-success);
           
           &:hover {
-            background-color: #218838; // Darker green (10% darker than #28a745)
-            box-shadow: 0 0 15px rgba(40, 167, 69, 0.5), 0 0 5px rgba(255, 215, 0, 0.5);
-            border-color: #ffd700; // Gold
+            background: #009e3a;
+            border-color: var(--sub-accent);
           }
         }
       }
@@ -125,9 +162,12 @@
     align-items: center;
     justify-content: center;
     padding: 5rem 2rem;
-    background: linear-gradient(135deg, rgba(89, 46, 131, 0.1) 0%, rgba(40, 167, 69, 0.05) 100%);
+    background: var(--sub-section-bg);
     text-align: center;
     position: relative;
+    box-shadow: 0 4px 24px rgba(124,77,255,0.08);
+    border-radius: 0 0 2rem 2rem;
+    margin-bottom: 2rem;
     
     &::after {
       content: '';
@@ -149,8 +189,8 @@
         font-size: 3rem;
         font-weight: 700;
         margin-bottom: 1.5rem;
-        color: #592e83; // Royal violet
-        text-shadow: 0 0 3px rgba(255, 215, 0, 0.2);
+        color: var(--sub-accent);
+        text-shadow: 0 0 3px var(--sub-accent-light);
         position: relative;
         
         &::after {
@@ -168,27 +208,26 @@
       p {
         font-size: 1.2rem;
         margin-bottom: 2rem;
-        color: var(--text-secondary, #64748b);
+        color: var(--sub-text-secondary);
       }
       
       .trial-info {
         margin-top: 1.5rem;
         padding: 1rem;
         border-radius: 8px;
-        background-color: rgba(40, 167, 69, 0.1);
-        color: #28a745;
+        background: var(--sub-accent-light);
+        color: var(--sub-accent);
         font-weight: 500;
         display: inline-block;
-        border: 1px solid rgba(40, 167, 69, 0.2);
+        border: 1px solid var(--sub-accent);
         position: relative;
         overflow: hidden;
         cursor: pointer;
         transition: all 0.3s ease;
         
         &:hover {
-          background-color: rgba(40, 167, 69, 0.15);
-          border-color: #ffd700;
-          box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+          background: var(--sub-accent);
+          color: var(--sub-card-bg);
         }
         
         &::before {
@@ -220,6 +259,10 @@
     padding: 5rem 2rem;
     text-align: center;
     position: relative;
+    background: var(--sub-section-bg);
+    border-radius: 2rem;
+    box-shadow: 0 4px 24px rgba(124,77,255,0.08);
+    margin: 2rem 0;
     
     &::before {
       content: '';
@@ -235,9 +278,10 @@
       font-size: 2.5rem;
       margin-bottom: 1rem;
       font-weight: 700;
-      color: #592e83; // Royal violet
+      color: var(--sub-accent);
       position: relative;
       display: inline-block;
+      text-shadow: 0 0 2px var(--sub-accent-light);
       
       &::after {
         content: '';
@@ -253,7 +297,7 @@
     .pricing-subtitle {
       font-size: 1.2rem;
       margin-bottom: 3rem;
-      color: var(--text-secondary, #64748b);
+      color: var(--sub-text-secondary);
     }
     
     .pricing-cards {
@@ -263,15 +307,18 @@
       gap: 2rem;
       
       .pricing-card {
-        background-color: var(--secondary-bg, #f8fafc);
-        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        background: var(--sub-card-bg);
+        border-radius: 1.2rem;
         padding: 2rem;
         flex: 1;
         min-width: 250px;
         max-width: 300px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        min-height: 500px;
+        box-shadow: var(--sub-card-shadow);
         transition: all 0.4s ease;
-        border: 1px solid rgba(89, 46, 131, 0.1);
+        border: 1px solid var(--sub-border);
         position: relative;
         overflow: hidden;
         
@@ -303,12 +350,12 @@
           }
           
           .amount {
-            color: #ffd700 !important;
+            color: var(--sub-success) !important;
           }
         }
 
         &.popular {
-          border-top: 5px solid #28a745;
+          border-top: 5px solid var(--sub-success);
           position: relative;
           
           &:before {
@@ -337,7 +384,7 @@
             position: absolute;
             top: -12px;
             right: 20px;
-            background: linear-gradient(135deg, #28a745, #ffd700);
+            background: linear-gradient(135deg, var(--sub-success), var(--sub-accent));
             color: white;
             font-size: 0.75rem;
             font-weight: bold;
@@ -352,7 +399,7 @@
           font-size: 1.5rem;
           margin-bottom: 1rem;
           font-weight: 600;
-          color: #592e83; // Royal violet
+          color: var(--sub-accent);
         }
         
         .price {
@@ -365,19 +412,19 @@
             vertical-align: top;
             position: relative;
             top: 0.5rem;
-            color: #28a745; // Royal green
+            color: var(--sub-success);
           }
           
           .amount {
             font-size: 3rem;
             font-weight: 700;
-            color: #28a745; // Royal green
+            color: var(--sub-success);
             transition: color 0.3s ease;
           }
           
           .period {
             font-size: 1rem;
-            color: var(--text-secondary, #64748b);
+            color: var(--sub-text-secondary);
           }
         }
         
@@ -387,6 +434,9 @@
           list-style-type: none;
           position: relative;
           z-index: 2;
+          flex-grow: 1;
+          display: flex;
+          flex-direction: column;
           
           li {
             margin-bottom: 0.8rem;
@@ -397,14 +447,14 @@
               content: "✓";
               position: absolute;
               left: 0;
-              color: #28a745; // Royal green
+              color: var(--sub-success);
             }
             
             &:hover {
-              color: #592e83;
+              color: var(--sub-accent);
               
               &:before {
-                color: #ffd700; // Gold
+                color: #ffd700;
               }
             }
           }
@@ -413,13 +463,16 @@
         .btn {
           width: 100%;
           padding: 0.8rem;
-          margin-top: 1rem;
+          margin-top: auto;
           position: relative;
           z-index: 2;
+          background: var(--sub-success);
+          color: #fff;
+          border: 1.5px solid var(--sub-success);
           
           &:hover {
-            border-color: #ffd700;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+            background: #009e3a;
+            border-color: var(--sub-accent);
           }
         }
       }
@@ -430,7 +483,10 @@
     padding: 5rem 2rem;
     text-align: center;
     position: relative;
-    background: linear-gradient(135deg, rgba(89, 46, 131, 0.05) 0%, rgba(40, 167, 69, 0.05) 100%);
+    background: var(--sub-section-bg);
+    border-radius: 2rem;
+    box-shadow: 0 4px 24px rgba(124,77,255,0.08);
+    margin: 2rem 0;
     
     // Gold shimmer border effect
     &::before, &::after {
@@ -468,8 +524,8 @@
       font-size: 2.5rem;
       margin-bottom: 1rem;
       font-weight: 700;
-      color: #592e83; // Royal violet
-      text-shadow: 0 0 3px rgba(255, 215, 0, 0.2);
+      color: var(--sub-accent);
+      text-shadow: 0 0 2px var(--sub-accent-light);
       position: relative;
       display: inline-block;
       z-index: 1;
@@ -489,20 +545,20 @@
       font-size: 1.2rem;
       max-width: 800px;
       margin: 0 auto 2.5rem;
-      color: var(--text-secondary, #64748b);
+      color: var(--sub-text-secondary);
       position: relative;
       z-index: 1;
     }
     
     .trial-card {
-      background-color: #fffcf0;
-      border-radius: 10px;
+      background: var(--sub-card-bg);
+      border-radius: 1.2rem;
       padding: 2.5rem;
       max-width: 800px;
       margin: 0 auto;
-      box-shadow: 0 8px 25px rgba(89, 46, 131, 0.15);
+      box-shadow: var(--sub-card-shadow);
       position: relative;
-      border: 1px solid rgba(255, 215, 0, 0.3);
+      border: 1px solid var(--sub-border);
       transition: all 0.4s ease;
       z-index: 1;
       overflow: hidden;
@@ -537,7 +593,7 @@
       }
       
       h3 {
-        color: #592e83;
+        color: var(--sub-accent);
         font-size: 1.8rem;
         font-weight: 600;
         position: relative;
@@ -572,14 +628,14 @@
           transition: all 0.3s ease;
           padding: 1rem;
           border-radius: 8px;
-          background-color: rgba(255, 255, 255, 0.7);
-          border: 1px solid rgba(40, 167, 69, 0.1);
+          background: var(--sub-accent-light);
+          border: 1px solid var(--sub-accent);
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
           
           &:hover {
             transform: translateX(5px);
-            background-color: rgba(255, 215, 0, 0.1);
-            border-color: rgba(255, 215, 0, 0.3);
+            background: var(--sub-accent);
+            color: var(--sub-card-bg);
             
             .icon {
               color: #ffd700; // Gold
@@ -588,7 +644,7 @@
           }
           
           .icon {
-            color: #28a745;
+            color: var(--sub-accent);
             font-size: 1.5rem;
             margin-right: 0.8rem;
             transition: all 0.3s ease;
@@ -600,7 +656,7 @@
           span {
             vertical-align: middle;
             font-weight: 500;
-            color: #333;
+            color: var(--sub-text);
             font-size: 1.1rem;
           }
         }
@@ -614,9 +670,9 @@
         position: relative;
         overflow: hidden;
         z-index: 1;
-        background-color: #28a745;
-        border: 2px solid #28a745;
-        color: white;
+        background: var(--sub-success);
+        color: #fff;
+        border: 2px solid var(--sub-success);
         font-weight: 600;
         letter-spacing: 0.5px;
         
@@ -638,7 +694,7 @@
         
         &:hover {
           box-shadow: 0 0 20px rgba(40, 167, 69, 0.5), 0 0 10px rgba(255, 215, 0, 0.3);
-          border-color: #ffd700;
+          border-color: var(--sub-accent);
           
           &::before {
             top: -30%;
@@ -653,10 +709,11 @@
     margin-top: auto;
     padding: 2rem;
     text-align: center;
-    border-top: 1px solid var(--border-color, #e0e0e0);
-    color: var(--text-secondary, #64748b);
-    background-color: rgba(89, 46, 131, 0.03);
+    border-top: 1px solid var(--sub-border);
+    color: var(--sub-text-secondary);
+    background: var(--sub-card-bg);
     position: relative;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
     
     &::before {
       content: '';
@@ -670,8 +727,8 @@
     
     p {
       &:hover {
-        color: #592e83;
-        text-shadow: 0 0 2px rgba(255, 215, 0, 0.2);
+        color: var(--sub-accent);
+        text-shadow: 0 0 2px var(--sub-accent-light);
       }
     }
   }
@@ -679,6 +736,13 @@
 
 @media (max-width: 768px) {
   .landing-page {
+    .hero-section, .trial-section, .pricing-section {
+      border-radius: 0;
+      margin: 0;
+    }
+    .trial-section, .pricing-section {
+      box-shadow: none;
+    }
     .hero-section {
       padding: 3rem 1rem;
       
