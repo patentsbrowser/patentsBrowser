@@ -875,165 +875,167 @@ const SubscriptionPage: React.FC = () => {
   }
 
   return (
-    <div className="subscription-page">
-      <div className="subscription-header">
-        <h1>Subscription Plans</h1>
-        <p>Choose the perfect plan for your patent search needs</p>
-      </div>
+    <div className="subscription-page-wrapper">
+      <div className="subscription-page">
+        <div className="subscription-header">
+          <h1>Subscription Plans</h1>
+          <p>Choose the perfect plan for your patent search needs</p>
+        </div>
 
-      {isLoadingSubscription ? (
-        <div className="loading-subscription">Loading your subscription details...</div>
-      ) : (
-        <>
-          {userSubscription && userSubscription.status !== 'trial' && (
-            <div className="current-subscription-container">
-              <div className="subscription-box">
-                <div className="section current-plan">
-                  <h2>Current Subscription</h2>
-                  <div className="subscription-details">
-                    <div className="plan-name">
-                      <h3>{userSubscription.planName}</h3>
-                      <div className="plan-type">
-                        {getPlanTypeDisplay(userSubscription.plan.type)}
+        {isLoadingSubscription ? (
+          <div className="loading-subscription">Loading your subscription details...</div>
+        ) : (
+          <>
+            {userSubscription && userSubscription.status !== 'trial' && (
+              <div className="current-subscription-container">
+                <div className="subscription-box">
+                  <div className="section current-plan">
+                    <h2>Current Subscription</h2>
+                    <div className="subscription-details">
+                      <div className="plan-name">
+                        <h3>{userSubscription.planName}</h3>
+                        <div className="plan-type">
+                          {getPlanTypeDisplay(userSubscription.plan.type)}
+                        </div>
                       </div>
-                    </div>
-                    <div className="date-info">
-                      <div className="date-item">
-                        <span className="date-label">Started:</span>
-                        <span className="date-value">{formatDate(userSubscription.startDate)}</span>
+                      <div className="date-info">
+                        <div className="date-item">
+                          <span className="date-label">Started:</span>
+                          <span className="date-value">{formatDate(userSubscription.startDate)}</span>
+                        </div>
+                        <div className="date-item">
+                          <span className="date-label">Expires:</span>
+                          <span className="date-value">{formatDate(userSubscription.endDate)}</span>
+                        </div>
                       </div>
-                      <div className="date-item">
-                        <span className="date-label">Expires:</span>
-                        <span className="date-value">{formatDate(userSubscription.endDate)}</span>
+                      <div className="time-remaining">
+                        <div className="days-left">{calculateDaysLeft(userSubscription.endDate)}</div>
+                        <div className="days-label">days remaining</div>
                       </div>
-                    </div>
-                    <div className="time-remaining">
-                      <div className="days-left">{calculateDaysLeft(userSubscription.endDate)}</div>
-                      <div className="days-label">days remaining</div>
                     </div>
                   </div>
-                </div>
 
-                <div className="section stacked-plans">
-                  {stackedPlans.length > 0 && (
-                    <div className="stacked-plans">
-                      <h3>Stacked Plans</h3>
-                      <div className="stacked-plans-list">
-                        {stackedPlans.map((plan) => (
-                          <div key={plan._id} className="stacked-plan-card">
-                            <h4>{plan.plan.name} Plan</h4>
-                            <div className="plan-type">
-                              {getPlanTypeDisplay(plan.plan.type)}
-                            </div>
-                            <div className="date-info">
-                              <div className="date-item">
-                                <span className="date-label">Started:</span>
-                                <span className="date-value">{formatDate(plan.startDate)}</span>
+                  <div className="section stacked-plans">
+                    {stackedPlans.length > 0 && (
+                      <div className="stacked-plans">
+                        <h3>Stacked Plans</h3>
+                        <div className="stacked-plans-list">
+                          {stackedPlans.map((plan) => (
+                            <div key={plan._id} className="stacked-plan-card">
+                              <h4>{plan.plan.name} Plan</h4>
+                              <div className="plan-type">
+                                {getPlanTypeDisplay(plan.plan.type)}
                               </div>
-                              <div className="date-item">
-                                <span className="date-label">Expires:</span>
-                                <span className="date-value">{formatDate(plan.endDate)}</span>
+                              <div className="date-info">
+                                <div className="date-item">
+                                  <span className="date-label">Started:</span>
+                                  <span className="date-value">{formatDate(plan.startDate)}</span>
+                                </div>
+                                <div className="date-item">
+                                  <span className="date-label">Expires:</span>
+                                  <span className="date-value">{formatDate(plan.endDate)}</span>
+                                </div>
+                              </div>
+                              <div className="time-remaining">
+                                <div className="days-left">{calculateDaysLeft(plan.endDate)}</div>
+                                <div className="days-label">days remaining</div>
                               </div>
                             </div>
-                            <div className="time-remaining">
-                              <div className="days-left">{calculateDaysLeft(plan.endDate)}</div>
-                              <div className="days-label">days remaining</div>
-                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="section total-benefits">
+                    {totalBenefits && (
+                      <div className="total-benefits">
+                        <h3>Total Benefits</h3>
+                        <div className="benefits-details">
+                          <div className="benefit-item">
+                            <span className="benefit-label">Total Amount:</span>
+                            <span className="benefit-value">₹{formatIndianPrice(totalBenefits.totalAmount)}</span>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="section total-benefits">
-                  {totalBenefits && (
-                    <div className="total-benefits">
-                      <h3>Total Benefits</h3>
-                      <div className="benefits-details">
-                        <div className="benefit-item">
-                          <span className="benefit-label">Total Amount:</span>
-                          <span className="benefit-value">₹{formatIndianPrice(totalBenefits.totalAmount)}</span>
-                        </div>
-                        <div className="benefit-item">
-                          <span className="benefit-label">Total Days:</span>
-                          <span className="benefit-value">{totalBenefits.totalDays} days</span>
+                          <div className="benefit-item">
+                            <span className="benefit-label">Total Days:</span>
+                            <span className="benefit-value">{totalBenefits.totalDays} days</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Show free trial section if user is on trial or has no subscription */}
-          {(!userSubscription || userSubscription.status === 'trial') && (
-            <FreeTrialSection 
-              isTrialActive={isTrialActive} 
-              trialDaysRemaining={trialDaysRemaining} 
-            />
-          )}
-
-          {/* Show pending payment banner if applicable */}
-          {hasPendingPayment && (
-            <div className="pending-payment-banner">
-              <p>You have a pending payment. Your subscription will be activated once the admin verifies your payment.</p>
-              <p>You can continue using the trial version until then.</p>
-            </div>
-          )}
-
-          <div className="subscription-plans">
-            {plans.map((plan) => (
-              <div 
-                key={plan._id} 
-                className={`plan-card ${plan.popular ? 'popular' : ''}`}
-              >
-                {plan.popular && <div className="popular-badge">Most Popular</div>}
-                <h3>{plan.name}</h3>
-                <div className="price">
-                  <span className="currency">₹</span>
-                  <span className="amount">{formatIndianPrice(plan.price)}</span>
-                  <span className="period">/{getPlanTypeDisplay(plan.type)}</span>
-                </div>
-                {plan.discountPercentage > 0 && (
-                  <div className="discount">{plan.discountPercentage}% discount</div>
-                )}
-                <ul className="features">
-                  {plan.features.map((feature, index) => (
-                    <li key={index}>{feature}</li>
-                  ))}
-                </ul>
-                <button 
-                  className="subscribe-btn"
-                  onClick={() => handleSubscribeClick(plan)}
-                  disabled={hasPendingPayment}
-                >
-                  {hasPendingPayment ? 'Payment Pending' :
-                    userSubscription?.status === 'trial' ? 'Upgrade Now' :
-                    userSubscription?.status === 'active' ? 'Add Plan' : 'Subscribe Now'}
-                </button>
-                {isTrialActive && !hasPendingPayment && trialDaysRemaining > 0 && (
-                  <div className="trial-upgrade-note">
-                    {trialDaysRemaining} trial days will be added to your subscription
+                    )}
                   </div>
-                )}
+                </div>
               </div>
-            ))}
-          </div>
-        </>
-      )}
-      
-      {selectedPlan && (
-        <PaymentModal 
-          isOpen={isPaymentModalOpen} 
-          onClose={closePaymentModal} 
-          plan={selectedPlan}
-          onPaymentComplete={handlePaymentComplete}
-          isTrialActive={isTrialActive}
-          trialDaysRemaining={trialDaysRemaining}
-        />
-      )}
+            )}
+
+            {/* Show free trial section if user is on trial or has no subscription */}
+            {(!userSubscription || userSubscription.status === 'trial') && (
+              <FreeTrialSection 
+                isTrialActive={isTrialActive} 
+                trialDaysRemaining={trialDaysRemaining} 
+              />
+            )}
+
+            {/* Show pending payment banner if applicable */}
+            {hasPendingPayment && (
+              <div className="pending-payment-banner">
+                <p>You have a pending payment. Your subscription will be activated once the admin verifies your payment.</p>
+                <p>You can continue using the trial version until then.</p>
+              </div>
+            )}
+
+            <div className="subscription-plans">
+              {plans.map((plan) => (
+                <div 
+                  key={plan._id} 
+                  className={`plan-card ${plan.popular ? 'popular' : ''}`}
+                >
+                  {plan.popular && <div className="popular-badge">Most Popular</div>}
+                  <h3>{plan.name}</h3>
+                  <div className="price">
+                    <span className="currency">₹</span>
+                    <span className="amount">{formatIndianPrice(plan.price)}</span>
+                    <span className="period">/{getPlanTypeDisplay(plan.type)}</span>
+                  </div>
+                  {plan.discountPercentage > 0 && (
+                    <div className="discount">{plan.discountPercentage}% discount</div>
+                  )}
+                  <ul className="features">
+                    {plan.features.map((feature, index) => (
+                      <li key={index}>{feature}</li>
+                    ))}
+                  </ul>
+                  <button 
+                    className="subscribe-btn"
+                    onClick={() => handleSubscribeClick(plan)}
+                    disabled={hasPendingPayment}
+                  >
+                    {hasPendingPayment ? 'Payment Pending' :
+                      userSubscription?.status === 'trial' ? 'Upgrade Now' :
+                      userSubscription?.status === 'active' ? 'Add Plan' : 'Subscribe Now'}
+                  </button>
+                  {isTrialActive && !hasPendingPayment && trialDaysRemaining > 0 && (
+                    <div className="trial-upgrade-note">
+                      {trialDaysRemaining} trial days will be added to your subscription
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+        
+        {selectedPlan && (
+          <PaymentModal 
+            isOpen={isPaymentModalOpen} 
+            onClose={closePaymentModal} 
+            plan={selectedPlan}
+            onPaymentComplete={handlePaymentComplete}
+            isTrialActive={isTrialActive}
+            trialDaysRemaining={trialDaysRemaining}
+          />
+        )}
+      </div>
     </div>
   );
 };

@@ -1,5 +1,11 @@
 @use 'sass:color';
 
+.settings-page-wrapper {
+  margin-top: 78px;
+  min-height: calc(100vh - 78px);
+  width: 100%;
+}
+
 .settings-container {
   padding: 25px;
   max-width: 900px;

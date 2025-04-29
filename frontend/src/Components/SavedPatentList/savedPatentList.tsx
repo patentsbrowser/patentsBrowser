@@ -264,112 +264,114 @@ const SavedPatentList = () => {
   };
 
   return (
-    <div className="saved-patent-list">
-      {(savePatentMutation.isPending || isUploading || isSearching) && (
-        <Loader 
-          fullScreen={true} 
-          text={isUploading ? "Processing file..." : isSearching ? "Validating patents..." : "Saving patents..."} 
-        />
-      )}
-      <h2>Save Patents</h2>
-      {!user?.id && (
-        <div className="login-notice">
-          <p>Please log in to save your patent list across devices</p>
-        </div>
-      )}
-      {user?.id && patentIds.length > 0 && (
-        <div className="unsaved-patents-notice">
-          <p>You have {patentIds.length} unsaved patents from your previous session</p>
-          <button 
-            onClick={clearUnsavedPatents}
-            className="clear-button"
-          >
-            Clear All
-          </button>
-        </div>
-      )}
-      <form onSubmit={handleSubmit} className="save-patent-form">
-        <div className="input-container">
-          <input
-            type="text"
-            value={inputValue}
-            onChange={handleInputChange}
-            onKeyDown={handleInputKeyDown}
-            placeholder="Enter Patent ID (e.g., US-8125463-B2) and press Enter or comma to add multiple"
-            className="patent-input"
+    <div className="saved-patent-list-page">
+      <div className="saved-patent-list">
+        {(savePatentMutation.isPending || isUploading || isSearching) && (
+          <Loader 
+            fullScreen={true} 
+            text={isUploading ? "Processing file..." : isSearching ? "Validating patents..." : "Saving patents..."} 
           />
-          <button 
-            type="button" 
-            onClick={addPatentId}
-            className="add-button"
-          >
-            Add
-          </button>
-        </div>
-        
-        <div className="file-upload-container">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept=".txt,.doc,.docx,.xls,.xlsx,.csv"
-            className="file-input"
-            style={{ display: 'none' }}
-          />
-          <button 
-            type="button" 
-            onClick={triggerFileInput}
-            className="file-upload-button"
-            disabled={isUploading}
-          >
-            Upload File (.txt, .doc, .docx, .xls, .xlsx, .csv)
-          </button>
-          <div className="file-upload-info">
-            <p>The system will extract patent IDs from the uploaded file</p>
-            <p>For spreadsheet files (Excel/CSV): Looks for columns with "Earliest publication number" and "Publication kind codes" headers</p>
-            <p>When multiple kind codes are found (like "A1, A, T5"), the system will prioritize A1, B1, B2, A, B in that order and combine without spaces (e.g., US8125463A1)</p>
+        )}
+        <h2>Save Patents</h2>
+        {!user?.id && (
+          <div className="login-notice">
+            <p>Please log in to save your patent list across devices</p>
           </div>
-        </div>
-        
-        {/* {patentIds.length > 0 && (
-          <div className="patent-ids-list">
-            <p>Patents to save: <span className="count">({patentIds.length})</span></p>
-            <ul>
-              {patentIds.map((id, index) => (
-                <li key={index}>
-                  {id}
-                  <button 
-                    type="button" 
-                    onClick={() => removePatentId(id)}
-                    className="remove-button"
-                  >
-                    ✕
-                  </button>
-                </li>
-              ))}
-            </ul>
+        )}
+        {user?.id && patentIds.length > 0 && (
+          <div className="unsaved-patents-notice">
+            <p>You have {patentIds.length} unsaved patents from your previous session</p>
+            <button 
+              onClick={clearUnsavedPatents}
+              className="clear-button"
+            >
+              Clear All
+            </button>
           </div>
-        )} */}
-        
-        <button 
-          type="submit" 
-          disabled={savePatentMutation.isPending || (!inputValue.trim() && patentIds.length === 0)}
-          className="submit-button"
-        >
-          Proceed
-        </button>
-      </form>
+        )}
+        <form onSubmit={handleSubmit} className="save-patent-form">
+          <div className="input-container">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={handleInputChange}
+              onKeyDown={handleInputKeyDown}
+              placeholder="Enter Patent ID (e.g., US-8125463-B2) and press Enter or comma to add multiple"
+              className="patent-input"
+            />
+            <button 
+              type="button" 
+              onClick={addPatentId}
+              className="add-button"
+            >
+              Add
+            </button>
+          </div>
+          
+          <div className="file-upload-container">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept=".txt,.doc,.docx,.xls,.xlsx,.csv"
+              className="file-input"
+              style={{ display: 'none' }}
+            />
+            <button 
+              type="button" 
+              onClick={triggerFileInput}
+              className="file-upload-button"
+              disabled={isUploading}
+            >
+              Upload File (.txt, .doc, .docx, .xls, .xlsx, .csv)
+            </button>
+            <div className="file-upload-info">
+              <p>The system will extract patent IDs from the uploaded file</p>
+              <p>For spreadsheet files (Excel/CSV): Looks for columns with "Earliest publication number" and "Publication kind codes" headers</p>
+              <p>When multiple kind codes are found (like "A1, A, T5"), the system will prioritize A1, B1, B2, A, B in that order and combine without spaces (e.g., US8125463A1)</p>
+            </div>
+          </div>
+          
+          {/* {patentIds.length > 0 && (
+            <div className="patent-ids-list">
+              <p>Patents to save: <span className="count">({patentIds.length})</span></p>
+              <ul>
+                {patentIds.map((id, index) => (
+                  <li key={index}>
+                    {id}
+                    <button 
+                      type="button" 
+                      onClick={() => removePatentId(id)}
+                      className="remove-button"
+                    >
+                      ✕
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )} */}
+          
+          <button 
+            type="submit" 
+            disabled={savePatentMutation.isPending || (!inputValue.trim() && patentIds.length === 0)}
+            className="submit-button"
+          >
+            Proceed
+          </button>
+        </form>
 
-      <FolderSelectionModal
-        isOpen={showFolderModal}
-        onClose={() => setShowFolderModal(false)}
-        onSubmit={handleFolderSelection}
-        existingFolders={existingFolders}
-        patentIds={transformedPatentIds}
-        familyPatents={familyPatents}
-        notFoundPatents={notFoundPatents}
-        setNotFoundPatents={setNotFoundPatents}
-      />
+        <FolderSelectionModal
+          isOpen={showFolderModal}
+          onClose={() => setShowFolderModal(false)}
+          onSubmit={handleFolderSelection}
+          existingFolders={existingFolders}
+          patentIds={transformedPatentIds}
+          familyPatents={familyPatents}
+          notFoundPatents={notFoundPatents}
+          setNotFoundPatents={setNotFoundPatents}
+        />
+      </div>
     </div>
   );
 };

@@ -1,9 +1,9 @@
 .dashboard-sidebar {
   position: fixed;
-  top: 140px; // Increased spacing from top (60px header + 60px sidebar + 20px gap)
+  top: 78px; // Match header height
   left: 0;
   width: 300px;
-  height: calc(100vh - 140px); // Adjust height accordingly
+  height: calc(100vh - 78px); // Adjust height accordingly
   background-color: var(--secondary-bg);
   border-right: 1px solid var(--border-color);
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);

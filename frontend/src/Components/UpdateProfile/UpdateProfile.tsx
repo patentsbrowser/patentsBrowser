@@ -262,201 +262,203 @@ const UpdateProfile = () => {
   }  
 
   return (
-    <div className="update-profile">
-      <h2>Update Profile</h2>
-      
-      <form onSubmit={formik.handleSubmit}>
-        <div className="profile-image-container" onClick={handleImageClick}>
-          {previewImage ? (
-            <img 
-              src={previewImage} 
-              alt="Profile Preview" 
-              className="profile-image" 
-            />
-          ) : profile?.imageUrl || formik.values.imageUrl ? (
-            <img 
-              src={`http://localhost:5000${profile?.imageUrl || formik.values.imageUrl}`} 
-              alt="Profile" 
-              className="profile-image" 
-            />
-          ) : (
-            <div className="profile-image-placeholder">
-              <span>{formik.values.name?.charAt(0)}</span>
-              <div className="image-upload-icon">📷</div>
-            </div>
-          )}
-          <input
-            type="file"
-            id="profileImageInput"
-            accept="image/*"
-            onChange={handleImageChange}
-            style={{ display: 'none' }}
-          />
-        </div>
+    <div className="update-profile-page">
+      <div className="update-profile">
+        <h2>Update Profile</h2>
         
-        {/* Display current subscription status */}
-        <div className="subscription-banner">
-          <span className="subscription-label">Current Subscription:</span>
-          <span className={`payment-status ${
-            paymentStatus === 'active' ? 'paid' : 
-            paymentStatus === 'pending' ? 'pending' : 'free'
-          }`}>
-            {formatPaymentStatus(paymentStatus)}
-          </span>
-        </div>
-        
-        <div className="form-fields">
-          <label>
-            Name
-            <input
-              type="text"
-              name="name"
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              value={formik.values.name}
-            />
-            {formik.touched.name && formik.errors.name ? (
-              <div className="error">{formik.errors.name as string}</div>
-            ) : null}
-          </label>
-          
-          <label>
-            Email
-            <input
-              type="email"
-              name="email"
-              onBlur={formik.handleBlur}
-              value={formik.values.email}
-              disabled={true}
-            />
-            {formik.touched.email && formik.errors.email ? (
-              <div className="error">{formik.errors.email as string}</div>
-            ) : null}
-          </label>
-          
-          <label>
-            Phone Number
-            <div className="phone-input-container">
-              <PhoneInput
-                international
-                countryCallingCodeEditable={true}
-                defaultCountry="IN"
-                value={phoneValue}
-                onChange={(value) => {
-                  setPhoneValue(value || '');
-                }}
-                className="phone-input"
+        <form onSubmit={formik.handleSubmit}>
+          <div className="profile-image-container" onClick={handleImageClick}>
+            {previewImage ? (
+              <img 
+                src={previewImage} 
+                alt="Profile Preview" 
+                className="profile-image" 
               />
-            </div>
-            {formik.touched.number && formik.errors.number ? (
-              <div className="error">{formik.errors.number as string}</div>
-            ) : null}
-          </label>
-          
-          <label>
-            Nationality
-            <div className="country-selector" ref={dropdownRef}>
-              <div 
-                className="country-input-container" 
-                onClick={handleInputClick}
-              >
-                {selectedCountry ? (
-                  <div className="selected-country">
-                    <span className="country-flag">
-                      {getCountryFlagEmoji(selectedCountry.isoCode)}
-                    </span>
-                    <span className="country-name">{selectedCountry.name}</span>
-                  </div>
-                ) : (
-                  <div className="country-placeholder">Select a country</div>
-                )}
+            ) : profile?.imageUrl || formik.values.imageUrl ? (
+              <img 
+                src={`http://localhost:5000${profile?.imageUrl || formik.values.imageUrl}`} 
+                alt="Profile" 
+                className="profile-image" 
+              />
+            ) : (
+              <div className="profile-image-placeholder">
+                <span>{formik.values.name?.charAt(0)}</span>
+                <div className="image-upload-icon">📷</div>
               </div>
-              
-              {showDropdown && (
-                <div className="country-dropdown">
-                  <div className="search-container">
-                    <input
-                      type="text"
-                      ref={searchInputRef}
-                      className="country-search"
-                      placeholder="Search countries..."
-                      value={searchTerm}
-                      onChange={handleSearchChange}
-                    />
-                  </div>
-                  <div className="country-list">
-                    {filteredCountries.length > 0 ? (
-                      filteredCountries.map(country => (
-                        <div
-                          key={country.isoCode}
-                          className={`country-item ${selectedCountry?.isoCode === country.isoCode ? 'selected' : ''}`}
-                          onClick={() => handleCountryClick(country)}
-                        >
-                          <span className="country-flag">
-                            {getCountryFlagEmoji(country.isoCode)}
-                          </span>
-                          <span className="country-name">{country.name}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="no-results">No countries found</div>
-                    )}
-                  </div>
-                </div>
-              )}
-              
-              {/* Hidden input to store the country name for form submission */}
-              <input
-                type="hidden"
-                name="nationality"
-                value={formik.values.nationality}
-              />
-            </div>
-            {formik.touched.nationality && formik.errors.nationality ? (
-              <div className="error">{formik.errors.nationality as string}</div>
-            ) : null}
-          </label>
-          
-          <label>
-            Address
+            )}
             <input
-              type="text"
-              name="address"
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              value={formik.values.address}
+              type="file"
+              id="profileImageInput"
+              accept="image/*"
+              onChange={handleImageChange}
+              style={{ display: 'none' }}
             />
-            {formik.touched.address && formik.errors.address ? (
-              <div className="error">{formik.errors.address as string}</div>
-            ) : null}
-          </label>
+          </div>
           
-          <label>
-            Gender
-            <select
-              name="gender"
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              value={formik.values.gender}
-              className="gender-select"
-            >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="prefer_not_to_say">Prefer not to say</option>
-            </select>
-            {formik.touched.gender && formik.errors.gender ? (
-              <div className="error">{formik.errors.gender as string}</div>
-            ) : null}
-          </label>
-        </div>
-        
-        <button 
-          type="submit" 
-          disabled={updateProfileMutation.isPending}
-        >
-          {updateProfileMutation.isPending ? 'Updating...' : 'Update Profile'}
-        </button>
-      </form>
+          {/* Display current subscription status */}
+          <div className="subscription-banner">
+            <span className="subscription-label">Current Subscription:</span>
+            <span className={`payment-status ${
+              paymentStatus === 'active' ? 'paid' : 
+              paymentStatus === 'pending' ? 'pending' : 'free'
+            }`}>
+              {formatPaymentStatus(paymentStatus)}
+            </span>
+          </div>
+          
+          <div className="form-fields">
+            <label>
+              Name
+              <input
+                type="text"
+                name="name"
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                value={formik.values.name}
+              />
+              {formik.touched.name && formik.errors.name ? (
+                <div className="error">{formik.errors.name as string}</div>
+              ) : null}
+            </label>
+            
+            <label>
+              Email
+              <input
+                type="email"
+                name="email"
+                onBlur={formik.handleBlur}
+                value={formik.values.email}
+                disabled={true}
+              />
+              {formik.touched.email && formik.errors.email ? (
+                <div className="error">{formik.errors.email as string}</div>
+              ) : null}
+            </label>
+            
+            <label>
+              Phone Number
+              <div className="phone-input-container">
+                <PhoneInput
+                  international
+                  countryCallingCodeEditable={true}
+                  defaultCountry="IN"
+                  value={phoneValue}
+                  onChange={(value) => {
+                    setPhoneValue(value || '');
+                  }}
+                  className="phone-input"
+                />
+              </div>
+              {formik.touched.number && formik.errors.number ? (
+                <div className="error">{formik.errors.number as string}</div>
+              ) : null}
+            </label>
+            
+            <label>
+              Nationality
+              <div className="country-selector" ref={dropdownRef}>
+                <div 
+                  className="country-input-container" 
+                  onClick={handleInputClick}
+                >
+                  {selectedCountry ? (
+                    <div className="selected-country">
+                      <span className="country-flag">
+                        {getCountryFlagEmoji(selectedCountry.isoCode)}
+                      </span>
+                      <span className="country-name">{selectedCountry.name}</span>
+                    </div>
+                  ) : (
+                    <div className="country-placeholder">Select a country</div>
+                  )}
+                </div>
+                
+                {showDropdown && (
+                  <div className="country-dropdown">
+                    <div className="search-container">
+                      <input
+                        type="text"
+                        ref={searchInputRef}
+                        className="country-search"
+                        placeholder="Search countries..."
+                        value={searchTerm}
+                        onChange={handleSearchChange}
+                      />
+                    </div>
+                    <div className="country-list">
+                      {filteredCountries.length > 0 ? (
+                        filteredCountries.map(country => (
+                          <div
+                            key={country.isoCode}
+                            className={`country-item ${selectedCountry?.isoCode === country.isoCode ? 'selected' : ''}`}
+                            onClick={() => handleCountryClick(country)}
+                          >
+                            <span className="country-flag">
+                              {getCountryFlagEmoji(country.isoCode)}
+                            </span>
+                            <span className="country-name">{country.name}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="no-results">No countries found</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Hidden input to store the country name for form submission */}
+                <input
+                  type="hidden"
+                  name="nationality"
+                  value={formik.values.nationality}
+                />
+              </div>
+              {formik.touched.nationality && formik.errors.nationality ? (
+                <div className="error">{formik.errors.nationality as string}</div>
+              ) : null}
+            </label>
+            
+            <label>
+              Address
+              <input
+                type="text"
+                name="address"
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                value={formik.values.address}
+              />
+              {formik.touched.address && formik.errors.address ? (
+                <div className="error">{formik.errors.address as string}</div>
+              ) : null}
+            </label>
+            
+            <label>
+              Gender
+              <select
+                name="gender"
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                value={formik.values.gender}
+                className="gender-select"
+              >
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="prefer_not_to_say">Prefer not to say</option>
+              </select>
+              {formik.touched.gender && formik.errors.gender ? (
+                <div className="error">{formik.errors.gender as string}</div>
+              ) : null}
+            </label>
+          </div>
+          
+          <button 
+            type="submit" 
+            disabled={updateProfileMutation.isPending}
+          >
+            {updateProfileMutation.isPending ? 'Updating...' : 'Update Profile'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
