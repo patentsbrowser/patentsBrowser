@@ -1,31 +1,26 @@
 .dashboard-sidebar {
-  position: relative;
-  height: 100%;
-  overflow: hidden;
-  transition: width 0.3s ease, background-color 0.3s ease;
+  position: fixed;
+  top: 60px; // Position below header
+  left: 0;
+  width: 300px;
+  height: calc(100vh - 60px);
   background-color: var(--secondary-bg);
   border-right: 1px solid var(--border-color);
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
   z-index: 10;
+  transition: all 0.3s ease;
 
   &.expanded {
-    width: 300px;
-
     .sidebar-content {
       opacity: 1;
       visibility: visible;
       transform: translateX(0);
       pointer-events: all;
     }
-
-    .toggle-icon {
-      right: 10px;
-      opacity: 0.7;
-    }
   }
 
   &.collapsed {
-    width: 20px;
+    width: 40px;
     background-color: rgba(var(--accent-rgb), 0.3);
     cursor: pointer;
     border-right: 1px solid rgba(var(--accent-rgb), 0.2);
@@ -33,62 +28,12 @@
     .sidebar-content {
       opacity: 0;
       visibility: hidden;
-      transform: translateX(-50px);
+      transform: translateX(-20px);
       pointer-events: none;
-    }
-
-    .toggle-icon {
-      right: 3px;
-      opacity: 0;
-      color: rgba(var(--accent-secondary-rgb), 0.7);
     }
 
     &:hover {
       background-color: rgba(var(--accent-rgb), 0.5);
-      
-      .toggle-icon {
-        opacity: 1;
-        color: var(--accent-secondary);
-      }
-    }
-  }
-
-  /* Manual mode styles */
-  &.manual-mode {
-    &.collapsed {
-      .pin-icon {
-        right: 3px;
-        opacity: 0;
-        color: rgba(var(--accent-secondary-rgb), 0.7);
-      }
-
-      &:hover {
-        .pin-icon {
-          opacity: 1;
-          color: var(--accent-secondary);
-        }
-      }
-    }
-
-    &.expanded.pinned {
-      .pin-icon {
-        opacity: 1;
-        color: var(--accent-secondary);
-        transform: rotate(0deg);
-        animation: pin-bounce 0.5s ease;
-      }
-    }
-
-    &.expanded:not(.pinned) {
-      .pin-icon {
-        opacity: 0.5;
-        transform: rotate(45deg);
-        
-        &:hover {
-          opacity: 0.8;
-          transform: rotate(30deg);
-        }
-      }
     }
   }
 
@@ -105,18 +50,15 @@
     transition: all 0.3s ease;
 
     .toggle-icon {
-      position: absolute;
       color: var(--text-secondary);
       font-size: 14px;
       transition: all 0.3s ease;
     }
 
     .pin-icon {
-      position: absolute;
       font-size: 16px;
       cursor: pointer;
       transition: all 0.3s ease;
-      right: 10px;
       
       &:hover {
         transform: scale(1.2);
@@ -125,13 +67,13 @@
   }
 
   .sidebar-content {
-    width: 300px;
+    width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
     transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
     box-sizing: border-box;
-    padding: 1rem 0;
+    padding: 1rem;
     overflow-y: auto;
   }
 }

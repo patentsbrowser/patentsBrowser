@@ -8,7 +8,7 @@
     padding: 2rem;
     overflow-y: auto;
     transition: margin-left 0.3s ease, padding 0.3s ease;
-    margin-left: 0;
+    margin-left: 300px; // Add margin for the left sidebar
 
     h1 {
       color: var(--text-color);
@@ -33,6 +33,7 @@
   .dashboard {
     .dashboard-content {
       padding: 1.5rem;
+      margin-left: 250px;
       
       .dashboard-section {
         padding: 1.25rem;
@@ -45,6 +46,7 @@
   .dashboard {
     .dashboard-content {
       padding: 1rem;
+      margin-left: 200px;
       
       .dashboard-section {
         padding: 1rem;
@@ -57,6 +59,7 @@
   .dashboard {
     .dashboard-content {
       padding: 0.75rem;
+      margin-left: 0;
       
       h1 {
         margin-bottom: 1rem;
