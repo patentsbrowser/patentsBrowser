@@ -34,30 +34,32 @@ const Sidebar = () => {
 
   return (
     <div className="sidebar">
-      {user?.isAdmin && (
-        <div className="mode-indicator">
-          <span>{isAdminMode ? 'Admin Mode' : 'User Mode'}</span>
-        </div>
-      )}
-      <nav>
-        {menuItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) => {
-              // For items marked as exact, only highlight if path matches exactly
-              if (item.exact) {
-                return location.pathname === item.path ? 'active' : '';
-              }
-              // For other items, use the default isActive from NavLink
-              return isActive ? 'active' : '';
-            }}
-          >
-            <span className="icon">{item.icon}</span>
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
+      <div className="sidebar-content">
+        {user?.isAdmin && (
+          <div className="mode-indicator">
+            <span>{isAdminMode ? 'Admin Mode' : 'User Mode'}</span>
+          </div>
+        )}
+        <nav>
+          {menuItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) => {
+                // For items marked as exact, only highlight if path matches exactly
+                if (item.exact) {
+                  return location.pathname === item.path ? 'active' : '';
+                }
+                // For other items, use the default isActive from NavLink
+                return isActive ? 'active' : '';
+              }}
+            >
+              <span className="icon">{item.icon}</span>
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+      </div>
     </div>
   );
 };
