@@ -41,9 +41,15 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
   const [displayNotFoundPatents, setDisplayNotFoundPatents] = useState<string[]>([]);
   const [foundSearch, setFoundSearch] = useState('');
   const [notFoundSearch, setNotFoundSearch] = useState('');
+  const [filterByFamily, setFilterByFamily] = useState(false);
+  const [familyFilteredPatents, setFamilyFilteredPatents] = useState<string[]>([]);
   
   const dispatch = useAppDispatch();
   const { smartSearchResults } = useAppSelector((state: RootState) => state.patents);
+
+  // Get preferred patent authority from localStorage
+  const preferredPatentAuthority = localStorage.getItem('preferredPatentAuthority') || 'US WO EP GB FR DE CH JP RU SU';
+  const preferredAuthorities = preferredPatentAuthority.split(' ');
 
   // Initialize smart search results from IndexedDB when component mounts
   useEffect(() => {
@@ -62,17 +68,48 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
     }
   }, [isOpen, smartSearchResults, setIsLoading]);
 
-  // Clear smart search results when modal closes
+  // Filter patents by family ID when filterByFamily changes
   useEffect(() => {
-    if (!isOpen) {
-      dispatch(clearSmartSearchResults());
+    if (filterByFamily && smartSearchResults?.hits?.hits) {
+      const familyMap = new Map<string, any[]>();
+      
+      // Group patents by family ID
+      smartSearchResults.hits.hits.forEach((hit: any) => {
+        const familyId = hit._source.family_id;
+        if (familyId) {
+          if (!familyMap.has(familyId)) {
+            familyMap.set(familyId, []);
+          }
+          familyMap.get(familyId)?.push(hit);
+        }
+      });
+
+      // For each family, select the patent with the highest preferred authority
+      const filteredPatents = Array.from(familyMap.values()).map(familyPatents => {
+        // Sort patents by preferred authority order
+        const sortedPatents = familyPatents.sort((a, b) => {
+          const aCountry = a._source.publication_number?.substring(0, 2) || '';
+          const bCountry = b._source.publication_number?.substring(0, 2) || '';
+          const aIndex = preferredAuthorities.indexOf(aCountry);
+          const bIndex = preferredAuthorities.indexOf(bCountry);
+          return aIndex - bIndex;
+        });
+
+        // Return the patent with the highest preferred authority
+        return sortedPatents[0]._source.publication_number || sortedPatents[0]._id;
+      });
+
+      setFamilyFilteredPatents(filteredPatents);
+    } else {
+      setFamilyFilteredPatents([]);
     }
-  }, [isOpen, dispatch]);
+  }, [filterByFamily, smartSearchResults, preferredAuthorities]);
 
   // Save filtered patent IDs to Redux whenever they change
   useEffect(() => {
-    dispatch(setFilters({ filteredPatentIds: filteredPatents }));
-  }, [filteredPatents, dispatch]);
+    const patentsToSave = filterByFamily ? familyFilteredPatents : filteredPatents;
+    dispatch(setFilters({ filteredPatentIds: patentsToSave }));
+  }, [filteredPatents, familyFilteredPatents, filterByFamily, dispatch]);
 
   // Update display patents when notFoundPatents changes
   useEffect(() => {
@@ -131,38 +168,36 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
     }
   };
 
-  const handleParsePatents = async () => {
+  const handleParseIds = async () => {
     setIsParsing(true);
     try {
-      const updatedPatents: { [key: string]: string } = {};
+      // Get all not found patents
+      const patentsToCheck = displayNotFoundPatents;
       
-      // Process each not found patent using the new function
-      notFoundPatents.forEach(patentId => {
-        const correctedId = variationCorrectionForSearch(patentId);
-        if (correctedId !== patentId) {
-          updatedPatents[patentId] = correctedId;
+      if (patentsToCheck.length === 0) {
+        toast.error('No patents to parse');
+        return;
+      }
+
+      // Try to correct each patent ID
+      const corrections: { [key: string]: string } = {};
+      for (const patentId of patentsToCheck) {
+        const corrected = await variationCorrectionForSearch(patentId);
+        if (corrected && corrected !== patentId) {
+          corrections[patentId] = corrected;
         }
-      });
+      }
 
-      // Update the pending corrections state
-      setPendingCorrections(prev => {
-        const newState = { ...prev };
-        // Add new corrections
-        Object.entries(updatedPatents).forEach(([originalId, correctedId]) => {
-          newState[originalId] = correctedId;
-        });
-        return newState;
-      });
-
-      // Show success message
-      if (Object.keys(updatedPatents).length > 0) {
-        toast.success(`Automatically corrected ${Object.keys(updatedPatents).length} patent IDs`);
+      // If we found any corrections, update the pending corrections
+      if (Object.keys(corrections).length > 0) {
+        setPendingCorrections(prev => ({ ...prev, ...corrections }));
+        toast.success(`Found ${Object.keys(corrections).length} possible corrections`);
       } else {
-        toast('No patent IDs needed correction');
+        toast.error('No corrections found for the patent IDs');
       }
     } catch (error) {
-      console.error('Error parsing patents:', error);
-      toast.error('Failed to parse patent IDs');
+      console.error('Error parsing patent IDs:', error);
+      toast.error('Error parsing patent IDs');
     } finally {
       setIsParsing(false);
     }
@@ -185,7 +220,7 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
       const updatedNotFoundPatents = notFoundPatents.filter(id => !originalIds.includes(id));
       setNotFoundPatents(updatedNotFoundPatents);
 
-      // First, transform the corrected patent IDs
+      // Transform the corrected patent IDs
       const transformedResponse = await patentApi.transformPatentIds(correctedIds);
       
       if (!Array.isArray(transformedResponse)) {
@@ -193,14 +228,12 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
         setNotFoundPatents([...notFoundPatents, ...originalIds]);
         toast.error('Failed to transform patent IDs');
         return;
-      }      // Then search with the transformed IDs
+      }
+
+      // Search with transformed IDs
       const result = await onPatentSearch(transformedResponse);
       
       if (result.success && result.foundPatentIds && result.foundPatentIds.size > 0) {
-        // Add found patents to filteredPatents, avoiding duplicates
-        const newFoundPatents = Array.from(result.foundPatentIds).filter(id => !filteredPatents.includes(id));
-        setFilteredPatents(prev => [...prev, ...newFoundPatents]);
-        
         // Clear pending corrections
         setPendingCorrections({});
         toast.success(`${result.foundPatentIds.size} patent(s) found and added to results`);
@@ -210,11 +243,9 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
         toast.error('No patents found with the corrected IDs');
       }
     } catch (error) {
-      // If any error occurs, add the patents back to notFoundPatents
-      const originalIds = Object.keys(pendingCorrections);
-      setNotFoundPatents([...notFoundPatents, ...originalIds]);
-      console.error('Error in correction process:', error);
-      toast.error('Failed to process corrections');
+      console.error('Error submitting corrections:', error);
+      toast.error('Error submitting corrections');
+      setIsSubmitting(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -229,7 +260,7 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
             Patent IDs
           </h3>
           <div className="patent-counts">
-            <span className="found-count">Found: {filteredPatents.length}</span>
+            <span className="found-count">Found: {filterByFamily ? familyFilteredPatents.length : filteredPatents.length}</span>
             <span className="not-found-count">Not Found: {notFoundPatents.length}</span>
           </div>
           <button className="close-button" onClick={onClose}>×</button>
@@ -240,17 +271,29 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
             <div className="modal-content">
               <div className="patents-section">
                 <div className="patents-header">
-                  <button 
-                    className="toggle-button"
-                    onClick={() => setShowNotFound(!showNotFound)}
-                  >
-                    <FontAwesomeIcon icon={faExchangeAlt} />
-                    {showNotFound ? 'Show Found Patents' : 'Show Not Found Patents'}
-                  </button>
+                  <div className="patents-header-left">
+                    <button 
+                      className="toggle-button"
+                      onClick={() => setShowNotFound(!showNotFound)}
+                    >
+                      <FontAwesomeIcon icon={faExchangeAlt} />
+                      {showNotFound ? 'Show Found Patents' : 'Show Not Found Patents'}
+                    </button>
+                    {!showNotFound && (
+                      <label className="family-filter-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={filterByFamily}
+                          onChange={(e) => setFilterByFamily(e.target.checked)}
+                        />
+                        Filter by Family ID (using preferred authorities)
+                      </label>
+                    )}
+                  </div>
                   {showNotFound && notFoundPatents.length > 0 && (
                     <button
                       className="parse-button"
-                      onClick={handleParsePatents}
+                      onClick={handleParseIds}
                       disabled={isParsing}
                     >
                       <FontAwesomeIcon icon={faMagic} />

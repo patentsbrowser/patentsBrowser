@@ -665,10 +665,13 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         // Get the filtered patent IDs directly from Redux
         const filteredPatentIds = filters.filteredPatentIds || [];
         
-        // Find the full patent data from the IDs
+        // Create a Set to ensure uniqueness of patent IDs
+        const uniquePatentIds = new Set<string>(filteredPatentIds);
+        
+        // Find the full patent data from the IDs, ensuring no duplicates
         const filteredHits = smartSearchResults.hits.hits.filter((hit: any) => {
           const hitId = hit._source.publication_number || hit._id;
-          return filteredPatentIds.includes(hitId);
+          return uniquePatentIds.has(hitId);
         });
         
         if (filteredHits.length === 0) {
@@ -736,7 +739,9 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         dispatch(setFilters({
           showGrantPatents: selectedTypes.grant,
           showApplicationPatents: selectedTypes.application,
-          filteredPatents: patents
+          filteredPatents: patents,
+          // Use the unique set of IDs to prevent duplicates
+          filteredPatentIds: Array.from(uniquePatentIds)
         }));
         
         // Update local state with the filtered patents
@@ -759,9 +764,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
             if (patentIds.length > 1) {
               // Generate a folder name with date and time
               const folderName = `Patent Search ${new Date().toLocaleString()}`;
-              
-              // Create a custom patent list for multiple patents
-              // await authApi.saveCustomPatentList(folderName, patentIds, 'search');
               
               // Show success message about folder creation
               toast.success(
@@ -838,20 +840,20 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         // Get existing results from Redux
         const existingResults = smartSearchResults || { hits: { hits: [] } };
         const existingHits = existingResults.hits.hits || [];
-        const newHits = result.hits.hits;
         
-        // Combine results, avoiding duplicates
-        const combinedHits = [...existingHits];
-        const foundPatentIds = new Set<string>();
+        // Create a Set of existing patent IDs for O(1) lookup
+        const existingPatentIds = new Set<string>(
+          existingHits.map((hit: any) => String(hit._source?.publication_number || hit._id))
+        );
         
-        newHits.forEach((newHit: any) => {
-          const exists = combinedHits.some(existingHit => existingHit._id === newHit._id);
-          if (!exists) {
-            combinedHits.push(newHit);
-          }
-          foundPatentIds.add(newHit._id);
-        });
-
+        // Only add new hits that don't exist in current results
+        const newUniqueHits = result.hits.hits.filter(
+          (newHit: any) => !existingPatentIds.has(String(newHit._source?.publication_number || newHit._id))
+        );
+        
+        // Combine results, only adding unique new hits
+        const combinedHits = [...existingHits, ...newUniqueHits];
+        
         // Update Redux with combined results
         const updatedResults = {
           ...result,
@@ -866,30 +868,18 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         };
         dispatch(setSmartSearchResults(updatedResults));
 
-        // Update filters in Redux to include new patents
-        const currentFilters = filters || {
-          showGrantPatents: true,
-          showApplicationPatents: true,
-          filteredPatentIds: []
-        };
-
-        const updatedFilteredPatentIds = [
-          ...(currentFilters.filteredPatentIds || []),
-          ...Array.from(foundPatentIds)
-        ];
-
-        dispatch(setFilters({
-          ...currentFilters,
-          filteredPatentIds: [...new Set(updatedFilteredPatentIds)] // Remove duplicates
-        }));
+        // Get the IDs of newly found patents
+        const newlyFoundPatentIds = new Set<string>(
+          newUniqueHits.map((hit: any) => String(hit._source?.publication_number || hit._id))
+        );
 
         // Show success/error messages
-        const foundCount = foundPatentIds.size;
+        const foundCount = newlyFoundPatentIds.size;
         const notFoundCount = formattedIds.length - foundCount;
 
         if (foundCount > 0) {
           toast.success(
-            `Found ${foundCount} patent${foundCount > 1 ? 's' : ''} and added to results`
+            `Found ${foundCount} new patent${foundCount > 1 ? 's' : ''} and added to results`
           );
         }
         if (notFoundCount > 0) {
@@ -899,7 +889,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         }
 
         // Return the found patent IDs
-        return { success: true, foundPatentIds };
+        return { success: true, foundPatentIds: newlyFoundPatentIds };
       }
       return { success: false };
     } catch (error: any) {
