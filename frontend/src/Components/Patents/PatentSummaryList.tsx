@@ -131,6 +131,18 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
     }
   }, [pagination?.currentPage]);
 
+  // Add effect to handle body class for full details view
+  useEffect(() => {
+    if (selectedPatent) {
+      document.body.classList.add('patent-details-open');
+    } else {
+      document.body.classList.remove('patent-details-open');
+    }
+    return () => {
+      document.body.classList.remove('patent-details-open');
+    };
+  }, [selectedPatent]);
+
   // Handle patent selection
   const handlePatentSelection = (patentId: string, selected: boolean) => {
     if (selected) {
