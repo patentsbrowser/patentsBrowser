@@ -7,6 +7,7 @@ import Dashboard from "./Components/Dashboard/Dashboard";
 import Authentication from "./Components/Authentication/Authentication";
 import Settings from "./Components/Settings/Settings";
 import './App.scss';
+import './styles/global.scss';
 import { ThemeProvider } from "./context/ThemeContext";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';

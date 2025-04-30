@@ -5,9 +5,6 @@
   padding: 0;
   margin-top: 78px;
   background: var(--sub-bg);
-  background-image: 
-    radial-gradient(circle at 10% 20%, rgba(124, 77, 255, 0.05) 0%, transparent 20%),
-    radial-gradient(circle at 90% 80%, rgba(68, 138, 255, 0.05) 0%, transparent 20%);
   overflow-y: auto;
   overflow-x: hidden;
   position: fixed;
@@ -15,6 +12,10 @@
   left: 0;
   right: 0;
   bottom: 0;
+
+  [data-theme="light"] & {
+    background: #ffffff;
+  }
 }
 
 .subscription-page {
@@ -399,9 +400,7 @@
         font-size: 2rem;
         font-weight: 700;
         margin-bottom: 1.5rem;
-        background: var(--gradient-primary);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: var(--text-color-strong);
       }
 
       .price {
@@ -412,17 +411,13 @@
           font-size: 1.8rem;
           vertical-align: top;
           margin-right: 0.2rem;
-          background: var(--gradient-success);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+          color: var(--accent-color);
         }
 
         .amount {
           font-size: 3.5rem;
           font-weight: 800;
-          background: var(--gradient-success);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+          color: var(--accent-color);
         }
 
         .period {
@@ -439,7 +434,7 @@
         flex-grow: 1;
 
         li {
-          color: var(--text-primary);
+          color: var(--text-color);
           margin-bottom: 1.2rem;
           padding-left: 2rem;
           position: relative;
@@ -457,7 +452,7 @@
       }
 
       .subscribe-btn {
-        background: var(--gradient-primary);
+        background: var(--accent-color);
         color: var(--text-on-accent);
         border: none;
         padding: 1.2rem;
@@ -472,6 +467,7 @@
 
         &:hover {
           transform: translateY(-2px);
+          background: var(--accent-hover);
           box-shadow: 0 8px 20px rgba(124, 77, 255, 0.3);
         }
 
@@ -481,6 +477,17 @@
           transform: none;
           box-shadow: none;
         }
+      }
+
+      .trial-upgrade-note {
+        color: var(--success-color);
+        background-color: var(--success-bg);
+        border: 1px solid var(--success-border);
+        padding: 0.75rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+        text-align: center;
+        font-weight: 500;
       }
     }
   }

@@ -1,0 +1,160 @@
+/* Global styles for light theme */
+:root {
+  /* Smooth transitions for theme switching */
+  * {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  /* Card styles */
+  .card {
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--border-color);
+    padding: 1.5rem;
+  }
+
+  /* Button styles */
+  .button {
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: var(--button-hover);
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  /* Input styles */
+  input, textarea, select {
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    color: var(--text-color);
+    transition: all 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--input-focus);
+      box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.1);
+    }
+  }
+
+  /* Tag styles */
+  .tag {
+    background-color: var(--tag-bg);
+    color: var(--text-color);
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  /* Table styles */
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+
+    th, td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      background-color: var(--bg-secondary);
+      font-weight: 600;
+      text-align: left;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover {
+      background-color: var(--hover-bg);
+    }
+  }
+
+  /* Status indicators */
+  .status {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+
+    &.success {
+      background-color: var(--success-color);
+      color: white;
+    }
+
+    &.error {
+      background-color: var(--error-color);
+      color: white;
+    }
+
+    &.warning {
+      background-color: var(--warning-color);
+      color: white;
+    }
+
+    &.info {
+      background-color: var(--info-color);
+      color: white;
+    }
+  }
+
+  /* Navigation styles */
+  .nav-link {
+    color: var(--text-color);
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: var(--hover-bg);
+      color: var(--accent-color);
+    }
+
+    &.active {
+      background-color: var(--accent-color);
+      color: white;
+    }
+  }
+
+  /* Scrollbar styles */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+
+    &:hover {
+      background: var(--text-secondary);
+    }
+  }
+} 
