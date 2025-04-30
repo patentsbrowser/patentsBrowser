@@ -212,11 +212,11 @@ export const authApi = {
     }
   },
   
-  saveCustomPatentList: async (name: string, patentIds: string[], source?: string) => {
+  saveCustomPatentList: async (name: string, patentIds: string[], source?: string, workFileName?: string) => {
     try {
       const response = await api.post(
         `/saved-patents/save-custom-list`, 
-        { name, patentIds, source }
+        { name, patentIds, source, workFileName }
       );
       return response.data;
     } catch (error) {

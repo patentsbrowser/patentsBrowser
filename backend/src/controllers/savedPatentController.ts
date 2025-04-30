@@ -183,10 +183,9 @@ export const getSavedPatents = async (req: AuthRequest, res: Response) => {
 export const saveCustomPatentList = async (req: AuthRequest, res: Response) => {
   try {
     console.log('customPatentList controller called');
-    // console.log('Request body:', req.body);
     console.log('User:', req.user);
     
-    const { name, patentIds, source } = req.body;
+    const { name, patentIds, source, workFileName } = req.body;
     const userId = req.user?.userId;
 
     // Validate required fields
@@ -215,13 +214,22 @@ export const saveCustomPatentList = async (req: AuthRequest, res: Response) => {
     
     console.log('Creating custom list with:', { userId, name, patentIds: standardizedPatentIds, source: folderSource });
     
-    // Create and save the custom patent list
+    // Create workfile with user-provided name or default
+    const workFile = {
+      _id: new mongoose.Types.ObjectId().toString(),
+      name: workFileName || 'Workfile 1',
+      patentIds: standardizedPatentIds,
+      timestamp: Date.now()
+    };
+
+    // Create and save the custom patent list with workfile
     const customList = new CustomPatentList({
       userId,
       name,
       patentIds: standardizedPatentIds,
       timestamp: Date.now(),
-      source: folderSource // Store the source information
+      source: folderSource,
+      workFiles: [workFile] // Initialize with the workfile
     });
 
     await customList.save();

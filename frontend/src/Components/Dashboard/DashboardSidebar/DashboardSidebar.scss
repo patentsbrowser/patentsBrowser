@@ -1378,20 +1378,15 @@
   
   .folders-header {
     margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     
     .folders-title {
       font-size: 1.1rem;
       font-weight: 600;
       color: var(--text-color);
     }
-  }
-
-  .loading-message,
-  .no-folders-message {
-    padding: 1rem;
-    color: var(--text-secondary);
-    text-align: center;
-    font-style: italic;
   }
 
   .imported-folders-list {
@@ -1404,6 +1399,7 @@
       border-radius: 6px;
       overflow: hidden;
       transition: all 0.2s ease;
+      background-color: var(--primary-bg);
 
       &.expanded {
         border-color: var(--accent-color);
@@ -1427,6 +1423,7 @@
           display: flex;
           align-items: center;
           gap: 0.5rem;
+          flex: 1;
 
           .folder-icon {
             font-size: 1.1rem;
@@ -1436,37 +1433,32 @@
           .folder-name {
             font-weight: 500;
             color: var(--text-color);
+            flex: 1;
+          }
+
+          .folder-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-left: auto;
           }
         }
 
-        .folder-meta {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
+        .expand-icon {
+          margin-left: 0.5rem;
           color: var(--text-secondary);
-          font-size: 0.9rem;
-
-          .folder-count {
-            color: var(--text-secondary);
-          }
-
-          .expand-icon {
-            font-size: 0.8rem;
-            transition: transform 0.2s ease;
-          }
+          transition: transform 0.2s ease;
         }
       }
 
       .folder-content {
-        padding: 0.75rem;
         background-color: var(--secondary-bg);
+        border-top: 1px solid var(--border-color);
 
         .workfiles-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 0.5rem 0;
-          margin-bottom: 0.75rem;
+          padding: 0.75rem 1rem;
           border-bottom: 1px solid var(--border-color);
 
           .selection-info {
@@ -1491,132 +1483,175 @@
           }
         }
 
-        .workfile-item {
-          margin-bottom: 0.75rem;
-          border: 1px solid var(--border-color);
-          border-radius: 4px;
-          overflow: hidden;
-          transition: all 0.2s ease;
+        .workfiles-list {
+          padding: 0.75rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
 
-          &:last-child {
-            margin-bottom: 0;
-          }
-
-          &.selected {
-            border-color: var(--accent-color);
-            background-color: rgba(var(--accent-rgb), 0.05);
-            box-shadow: 0 2px 4px rgba(var(--accent-rgb), 0.1);
-
-            .workfile-header {
-              background-color: rgba(var(--accent-rgb), 0.1);
-            }
-          }
-
-          &.combined {
-            position: relative;
-            overflow: visible;
-
-            &::before {
-              content: '🔄';
-              position: absolute;
-              top: -8px;
-              right: -8px;
-              background-color: var(--accent-color);
-              color: white;
-              padding: 4px;
-              border-radius: 50%;
-              font-size: 12px;
-              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-              z-index: 1;
-            }
-
-            .workfile-header {
-              background: linear-gradient(45deg, 
-                rgba(var(--accent-rgb), 0.1), 
-                rgba(var(--accent-secondary-rgb), 0.1)
-              );
-              border-left: 3px solid var(--accent-color);
-            }
-          }
-
-          .workfile-header {
-            display: flex;
-            align-items: center;
-            padding: 0.5rem 0.75rem;
+          .workfile-item {
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
             background-color: var(--primary-bg);
             transition: all 0.2s ease;
 
-            .workfile-select {
-              margin-right: 0.75rem;
-              
-              input[type="checkbox"] {
-                width: 16px;
-                height: 16px;
-                cursor: pointer;
-                accent-color: var(--accent-color);
-              }
+            &.selected {
+              border-color: var(--accent-color);
+              background-color: rgba(var(--accent-rgb), 0.05);
             }
 
-            .workfile-info {
-              flex: 1;
+            &.combined {
+              border-left: 3px solid var(--accent-color);
+            }
+
+            .workfile-header {
               display: flex;
               align-items: center;
-              gap: 0.5rem;
-              cursor: pointer;
-              padding: 0.25rem 0;
-
-              &:hover {
-                color: var(--accent-color);
-              }
-
-              .workfile-icon {
-                font-size: 0.9rem;
-                color: var(--accent-secondary);
-                transition: transform 0.2s ease;
-              }
-
-              .workfile-name {
-                font-size: 0.9rem;
-                color: var(--text-color);
-              }
-            }
-
-            .workfile-count {
-              font-size: 0.8rem;
-              color: var(--text-secondary);
-              background-color: var(--hover-bg);
-              padding: 0.2rem 0.5rem;
-              border-radius: 10px;
-            }
-          }
-
-          .patents-list {
-            padding: 0.5rem;
-            background-color: var(--secondary-bg);
-
-            .patent-item {
-              padding: 0.4rem 0.75rem;
-              margin: 0.25rem 0;
-              border-radius: 4px;
+              padding: 0.75rem;
               background-color: var(--primary-bg);
-              cursor: pointer;
               transition: all 0.2s ease;
-              border: 1px solid var(--border-color);
 
               &:hover {
                 background-color: var(--hover-bg);
-                border-color: var(--accent-color);
               }
 
-              .patent-id {
-                font-family: monospace;
-                font-size: 0.9rem;
-                color: var(--accent-color);
+              .workfile-select {
+                margin-right: 0.75rem;
+
+                input[type="checkbox"] {
+                  width: 16px;
+                  height: 16px;
+                  cursor: pointer;
+                  accent-color: var(--accent-color);
+                }
+              }
+
+              .workfile-info {
+                display: flex;
+                align-items: center;
+                flex: 1;
+                gap: 0.75rem;
+                cursor: pointer;
+
+                .workfile-icon {
+                  font-size: 1rem;
+                  color: var(--accent-color);
+                }
+
+                .workfile-name {
+                  flex: 1;
+                  color: var(--text-color);
+                  font-weight: 500;
+                }
+
+                .workfile-count {
+                  font-size: 0.85rem;
+                  color: var(--text-secondary);
+                  background-color: var(--hover-bg);
+                  padding: 0.2rem 0.5rem;
+                  border-radius: 10px;
+                }
+
+                .workfile-actions {
+                  display: flex;
+                  gap: 0.5rem;
+                  margin-left: auto;
+                }
+              }
+            }
+
+            .patents-list {
+              padding: 0.75rem;
+              background-color: var(--secondary-bg);
+              border-top: 1px solid var(--border-color);
+              display: flex;
+              flex-direction: column;
+              gap: 0.5rem;
+
+              .patent-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.5rem 0.75rem;
+                border-radius: 4px;
+                background-color: var(--primary-bg);
+                border: 1px solid var(--border-color);
+                cursor: pointer;
+                transition: all 0.2s ease;
+
+                &:hover {
+                  background-color: var(--hover-bg);
+                  border-color: var(--accent-color);
+                }
+
+                .patent-id {
+                  color: var(--text-color);
+                  font-size: 0.9rem;
+                  font-family: monospace;
+                }
+
+                .patent-actions {
+                  display: flex;
+                  gap: 0.5rem;
+                  opacity: 0.7;
+                  transition: opacity 0.2s ease;
+                }
+
+                &:hover .patent-actions {
+                  opacity: 1;
+                }
               }
             }
           }
         }
+
+        .no-workfiles-message {
+          padding: 1rem;
+          text-align: center;
+          color: var(--text-secondary);
+          font-style: italic;
+        }
       }
+    }
+  }
+
+  .loading-message,
+  .no-folders-message {
+    padding: 1rem;
+    color: var(--text-secondary);
+    text-align: center;
+    font-style: italic;
+  }
+}
+
+.action-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+  
+  &.search-button {
+    color: var(--accent-color);
+    
+    &:hover {
+      background-color: rgba(var(--accent-rgb), 0.1);
+      transform: scale(1.1);
+    }
+  }
+  
+  &.delete-button {
+    color: var(--error-color);
+    
+    &:hover {
+      background-color: rgba(244, 67, 54, 0.1);
+      transform: scale(1.1);
     }
   }
 }

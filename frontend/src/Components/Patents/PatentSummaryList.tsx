@@ -16,6 +16,7 @@ import WorkFileSelector from './WorkFileSelector';
 import { setSearchResults } from '../../Redux/slices/patentSlice';
 import { patentApi } from '../../api/patents';
 import FigureViewer from './FigureViewer';
+// import { CustomPatentList } from '../../api/patents';
 
 interface PatentSummaryListProps {
   patentSummaries: PatentSummary[];
@@ -185,10 +186,20 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
       return;
     }
 
+    if (!workFileName.trim()) {
+      toast.error('Please enter a workfile name');
+      return;
+    }
+
     try {
-      // Use saveCustomPatentList with source parameter set to 'folderName' to ensure it appears in CustomSearch
-      await authApi.saveCustomPatentList(folderName, selectedPatentIds, 'folderName');
-      toast.success(`Created folder "${folderName}" with ${selectedPatentIds.length} patents`);
+      // Create the folder with a single workfile
+      const response = await authApi.saveCustomPatentList(folderName, selectedPatentIds, 'folderName', workFileName);
+      
+      if (!response.data || !response.data._id) {
+        throw new Error('Failed to create folder: No folder ID returned');
+      }
+      
+      toast.success(`Created folder "${folderName}" with workfile "${workFileName}" containing ${selectedPatentIds.length} patents`);
       
       // Dispatch a custom event to notify the DashboardSidebar to refresh
       const refreshEvent = new CustomEvent('refresh-custom-folders');
@@ -196,6 +207,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
       
       setShowNewFolderModal(false);
       setFolderName('');
+      setWorkFileName('workfile1'); // Reset workfile name
       setSelectedPatentIds([]);
     } catch (error) {
       console.error('Error creating folder:', error);
@@ -221,21 +233,14 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
     }
 
     try {
-      // Create a new folder in Import Lists with the selected patents
-      const response = await authApi.saveCustomPatentList(folderName, selectedPatentIds, 'importedList');
+      // Create a new folder with the specified workfile name
+      const response = await authApi.saveCustomPatentList(folderName, selectedPatentIds, 'importedList', workFileName);
       
       if (!response.data || !response.data._id) {
         throw new Error('Failed to create folder: No folder ID returned');
       }
       
-      // Create a workfile in the new folder with user-provided name
-      const workFileResponse = await authApi.addPatentsToWorkFile(response.data._id, workFileName, selectedPatentIds);
-      
-      if (!workFileResponse.data) {
-        throw new Error('Failed to create workfile: No response data');
-      }
-      
-      toast.success(`Created folder "${folderName}" with ${selectedPatentIds.length} patents and added them to workfile "${workFileName}"`);
+      toast.success(`Created folder "${folderName}" with workfile "${workFileName}" containing ${selectedPatentIds.length} patents`);
       
       // Dispatch a custom event to notify the DashboardSidebar to refresh
       const refreshEvent = new CustomEvent('refresh-custom-folders');
@@ -245,10 +250,9 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
       setFolderName('');
       setWorkFileName('workfile1'); // Reset workfile name
       setSelectedPatentIds([]);
-    } catch (error: any) {
-      console.error('Error saving to Custom folder:', error);
-      console.error('Error details:', error.response?.data || error.message);
-      toast.error(`Failed to save to Custom folder: ${error.response?.data?.message || error.message}`);
+    } catch (error) {
+      console.error('Error creating folder:', error);
+      toast.error('Failed to create folder. Please try again.');
     }
   };
 
@@ -556,21 +560,33 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
                   className="folder-name-input"
                 />
               </div>
-              <div className="selected-patents-info">
-                <p>{selectedPatentIds.length} patents selected</p>
+              <div className="form-group">
+                <label htmlFor="workFileName">Workfile Name</label>
+                <input
+                  id="workFileName"
+                  type="text"
+                  placeholder="Enter workfile name"
+                  value={workFileName}
+                  onChange={(e) => setWorkFileName(e.target.value)}
+                  className="folder-name-input"
+                />
               </div>
+          
             </div>
             <div className="modal-footer">
               <button 
                 className="create-btn" 
                 onClick={handleCreateFolder}
-                disabled={!folderName.trim() || selectedPatentIds.length === 0}
+                disabled={!folderName.trim() || !workFileName.trim() || selectedPatentIds.length === 0}
               >
                 <FontAwesomeIcon icon={faCheck} /> Create Folder
               </button>
               <button 
                 className="cancel-btn"
-                onClick={() => setShowNewFolderModal(false)}
+                onClick={() => {
+                  setShowNewFolderModal(false);
+                  setWorkFileName('workfile1'); // Reset workfile name when canceling
+                }}
               >
                 Cancel
               </button>
