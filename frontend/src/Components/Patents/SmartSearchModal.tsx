@@ -41,9 +41,15 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
   const [displayNotFoundPatents, setDisplayNotFoundPatents] = useState<string[]>([]);
   const [foundSearch, setFoundSearch] = useState('');
   const [notFoundSearch, setNotFoundSearch] = useState('');
+  const [filterByFamily, setFilterByFamily] = useState(false);
+  const [familyFilteredPatents, setFamilyFilteredPatents] = useState<string[]>([]);
   
   const dispatch = useAppDispatch();
   const { smartSearchResults } = useAppSelector((state: RootState) => state.patents);
+
+  // Get preferred patent authority from localStorage
+  const preferredPatentAuthority = localStorage.getItem('preferredPatentAuthority') || 'US WO EP GB FR DE CH JP RU SU';
+  const preferredAuthorities = preferredPatentAuthority.split(' ');
 
   // Initialize smart search results from IndexedDB when component mounts
   useEffect(() => {
@@ -62,17 +68,48 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
     }
   }, [isOpen, smartSearchResults, setIsLoading]);
 
-  // Clear smart search results when modal closes
+  // Filter patents by family ID when filterByFamily changes
   useEffect(() => {
-    if (!isOpen) {
-      dispatch(clearSmartSearchResults());
+    if (filterByFamily && smartSearchResults?.hits?.hits) {
+      const familyMap = new Map<string, any[]>();
+      
+      // Group patents by family ID
+      smartSearchResults.hits.hits.forEach((hit: any) => {
+        const familyId = hit._source.family_id;
+        if (familyId) {
+          if (!familyMap.has(familyId)) {
+            familyMap.set(familyId, []);
+          }
+          familyMap.get(familyId)?.push(hit);
+        }
+      });
+
+      // For each family, select the patent with the highest preferred authority
+      const filteredPatents = Array.from(familyMap.values()).map(familyPatents => {
+        // Sort patents by preferred authority order
+        const sortedPatents = familyPatents.sort((a, b) => {
+          const aCountry = a._source.publication_number?.substring(0, 2) || '';
+          const bCountry = b._source.publication_number?.substring(0, 2) || '';
+          const aIndex = preferredAuthorities.indexOf(aCountry);
+          const bIndex = preferredAuthorities.indexOf(bCountry);
+          return aIndex - bIndex;
+        });
+
+        // Return the patent with the highest preferred authority
+        return sortedPatents[0]._source.publication_number || sortedPatents[0]._id;
+      });
+
+      setFamilyFilteredPatents(filteredPatents);
+    } else {
+      setFamilyFilteredPatents([]);
     }
-  }, [isOpen, dispatch]);
+  }, [filterByFamily, smartSearchResults, preferredAuthorities]);
 
   // Save filtered patent IDs to Redux whenever they change
   useEffect(() => {
-    dispatch(setFilters({ filteredPatentIds: filteredPatents }));
-  }, [filteredPatents, dispatch]);
+    const patentsToSave = filterByFamily ? familyFilteredPatents : filteredPatents;
+    dispatch(setFilters({ filteredPatentIds: patentsToSave }));
+  }, [filteredPatents, familyFilteredPatents, filterByFamily, dispatch]);
 
   // Update display patents when notFoundPatents changes
   useEffect(() => {
@@ -223,7 +260,7 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
             Patent IDs
           </h3>
           <div className="patent-counts">
-            <span className="found-count">Found: {filteredPatents.length}</span>
+            <span className="found-count">Found: {filterByFamily ? familyFilteredPatents.length : filteredPatents.length}</span>
             <span className="not-found-count">Not Found: {notFoundPatents.length}</span>
           </div>
           <button className="close-button" onClick={onClose}>×</button>
@@ -234,13 +271,25 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
             <div className="modal-content">
               <div className="patents-section">
                 <div className="patents-header">
-                  <button 
-                    className="toggle-button"
-                    onClick={() => setShowNotFound(!showNotFound)}
-                  >
-                    <FontAwesomeIcon icon={faExchangeAlt} />
-                    {showNotFound ? 'Show Found Patents' : 'Show Not Found Patents'}
-                  </button>
+                  <div className="patents-header-left">
+                    <button 
+                      className="toggle-button"
+                      onClick={() => setShowNotFound(!showNotFound)}
+                    >
+                      <FontAwesomeIcon icon={faExchangeAlt} />
+                      {showNotFound ? 'Show Found Patents' : 'Show Not Found Patents'}
+                    </button>
+                    {!showNotFound && (
+                      <label className="family-filter-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={filterByFamily}
+                          onChange={(e) => setFilterByFamily(e.target.checked)}
+                        />
+                        Filter by Family ID (using preferred authorities)
+                      </label>
+                    )}
+                  </div>
                   {showNotFound && notFoundPatents.length > 0 && (
                     <button
                       className="parse-button"
