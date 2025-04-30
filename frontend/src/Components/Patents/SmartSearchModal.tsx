@@ -131,38 +131,36 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
     }
   };
 
-  const handleParsePatents = async () => {
+  const handleParseIds = async () => {
     setIsParsing(true);
     try {
-      const updatedPatents: { [key: string]: string } = {};
+      // Get all not found patents
+      const patentsToCheck = displayNotFoundPatents;
       
-      // Process each not found patent using the new function
-      notFoundPatents.forEach(patentId => {
-        const correctedId = variationCorrectionForSearch(patentId);
-        if (correctedId !== patentId) {
-          updatedPatents[patentId] = correctedId;
+      if (patentsToCheck.length === 0) {
+        toast.error('No patents to parse');
+        return;
+      }
+
+      // Try to correct each patent ID
+      const corrections: { [key: string]: string } = {};
+      for (const patentId of patentsToCheck) {
+        const corrected = await variationCorrectionForSearch(patentId);
+        if (corrected && corrected !== patentId) {
+          corrections[patentId] = corrected;
         }
-      });
+      }
 
-      // Update the pending corrections state
-      setPendingCorrections(prev => {
-        const newState = { ...prev };
-        // Add new corrections
-        Object.entries(updatedPatents).forEach(([originalId, correctedId]) => {
-          newState[originalId] = correctedId;
-        });
-        return newState;
-      });
-
-      // Show success message
-      if (Object.keys(updatedPatents).length > 0) {
-        toast.success(`Automatically corrected ${Object.keys(updatedPatents).length} patent IDs`);
+      // If we found any corrections, update the pending corrections
+      if (Object.keys(corrections).length > 0) {
+        setPendingCorrections(prev => ({ ...prev, ...corrections }));
+        toast.success(`Found ${Object.keys(corrections).length} possible corrections`);
       } else {
-        toast('No patent IDs needed correction');
+        toast.error('No corrections found for the patent IDs');
       }
     } catch (error) {
-      console.error('Error parsing patents:', error);
-      toast.error('Failed to parse patent IDs');
+      console.error('Error parsing patent IDs:', error);
+      toast.error('Error parsing patent IDs');
     } finally {
       setIsParsing(false);
     }
@@ -199,10 +197,6 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
       const result = await onPatentSearch(transformedResponse);
       
       if (result.success && result.foundPatentIds && result.foundPatentIds.size > 0) {
-        // Add found patents to filteredPatents, avoiding duplicates
-        const newFoundPatents = Array.from(result.foundPatentIds).filter(id => !filteredPatents.includes(id));
-        setFilteredPatents(prev => [...prev, ...newFoundPatents]);
-        
         // Clear pending corrections
         setPendingCorrections({});
         toast.success(`${result.foundPatentIds.size} patent(s) found and added to results`);
@@ -212,11 +206,9 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
         toast.error('No patents found with the corrected IDs');
       }
     } catch (error) {
-      // If any error occurs, add the patents back to notFoundPatents
-      const originalIds = Object.keys(pendingCorrections);
-      setNotFoundPatents([...notFoundPatents, ...originalIds]);
-      console.error('Error in correction process:', error);
-      toast.error('Failed to process corrections');
+      console.error('Error submitting corrections:', error);
+      toast.error('Error submitting corrections');
+      setIsSubmitting(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -252,7 +244,7 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
                   {showNotFound && notFoundPatents.length > 0 && (
                     <button
                       className="parse-button"
-                      onClick={handleParsePatents}
+                      onClick={handleParseIds}
                       disabled={isParsing}
                     >
                       <FontAwesomeIcon icon={faMagic} />
