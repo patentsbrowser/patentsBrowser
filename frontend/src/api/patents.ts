@@ -224,83 +224,33 @@ export const patentApi = {
 
   // New method for searching multiple patents using Unified Patents API
   searchMultiplePatentsUnified: async (patentNumbers: string[], searchType: 'smart' | 'direct' = 'smart') => {
-    let payload;
-    
-    if (searchType === 'smart') {
-      // Smart search payload
-      payload = {
-        query: {
-          bool: {
-            should: [
-              {
-                terms: {
-                  ucid_spif: patentNumbers
-                }
-              },
-              {
-                terms: {
-                  publication_number: patentNumbers
-                }
-              }
-            ],
-            minimum_should_match: 1
-          }
-        },
-        size: 350,
-        sort: [
-          {
-            portfolio_score: "desc"
-          }
-        ],
-        track_total_hits: true,
-        _source: {
-          exclude: [
-            "created_at", "updated_at", "id", "*.created_at", "*.updated_at",
-            "*.id", "patent_id", "patent.title",
-            "*.full_text", "citations_npl", "citations_pat",
-            "family_members", "abstract_fulltext",
-            "non_patent_citations"
-          ]
+    const payload = {
+      query: {
+        bool: {
+          must: [{
+            terms: {
+              ucid_spif: patentNumbers
+            }
+          }]
         }
-      };
-    } else {
-      // Direct search payload
-      payload = {
-        query: {
-          bool: {
-            should: [
-              {
-                terms: {
-                  ucid_spif: patentNumbers
-                }
-              },
-              {
-                terms: {
-                  publication_number: patentNumbers
-                }
-              }
-            ],
-            minimum_should_match: 1
-          }
-        },
-        size: 350,
-        sort: [
-          {
-            portfolio_score: "desc"
-          }
-        ],
-        track_total_hits: true,
-        _source: {
-          exclude: [
-            "created_at", "updated_at", "id", "*.created_at", "*.updated_at",
-            "*.id", "patent_id", "patent.title",
-            "*.full_text", "citations_npl", "citations_pat",
-            "abstract_fulltext",
-            "non_patent_citations"
-          ]
+      },
+      size: 350,
+      sort: [
+        {
+          portfolio_score: "desc"
         }
-      };
-    }
+      ],
+      track_total_hits: true,
+      _source: {
+        exclude: [
+          "created_at", "updated_at", "id", "*.created_at", "*.updated_at",
+          "*.id", "patent_id", "patent.title",
+          "*.full_text", "citations_npl", "citations_pat",
+          "abstract_fulltext",
+          "non_patent_citations"
+        ]
+      }
+    };
 
     const response = await axios.post('https://api.unifiedpatents.com/patents/v6/_search', payload);
     
