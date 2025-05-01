@@ -30,7 +30,8 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
   notFoundPatents,
   onPatentSearch,
   setNotFoundPatents,
-  setIsLoading
+  setIsLoading,
+  
 }) => {
   const [filteredPatents, setFilteredPatents] = useState<string[]>([]);
   const [editingPatents, setEditingPatents] = useState<{ [key: string]: string }>({});
