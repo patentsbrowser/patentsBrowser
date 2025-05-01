@@ -77,6 +77,29 @@ const calculateEndDate = (plan: SubscriptionPlan, trialDaysRemaining: number = 0
   return endDate;
 };
 
+/**
+ * Subscription Stacking Logic
+ * 
+ * When a user purchases a new plan while already having an active subscription:
+ * 
+ * 1. Creation Phase (createPendingSubscription or stackNewPlan):
+ *    - A new subscription record is created with parentSubscriptionId referencing the existing subscription
+ *    - The status is set to PAYMENT_PENDING
+ *    - Regular start/end dates are set based on the plan type
+ * 
+ * 2. Verification Phase (verifyPayment):
+ *    - When admin verifies the payment, we check if it's a stacked plan
+ *    - For stacked plans, we use the parent subscription's end date as the start date
+ *    - The end date is calculated based on the plan type from the new start date
+ *    - This ensures plans are properly stacked one after another
+ *    - User's subscription end date is set to the latest end date among all active subscriptions
+ * 
+ * This approach ensures that:
+ * 1. Plans are correctly stacked in sequence
+ * 2. Expiry dates are correctly calculated to reflect the total subscription period
+ * 3. The user's account reflects the latest expiry date from all active subscriptions
+ */
+
 // Create or update a pending subscription with UPI order ID
 export const createPendingSubscription = async (req: Request, res: Response) => {
   try {
@@ -145,21 +168,13 @@ export const createPendingSubscription = async (req: Request, res: Response) => 
 
     // If there's an existing subscription, make this a stacked plan
     if (existingSubscription) {
-      // Calculate the duration of the new plan in days
-      const newPlanDuration = Math.ceil(
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
-
-      // Add the new plan's duration to the existing subscription's end date
-      const stackedEndDate = new Date(existingSubscription.endDate);
-      stackedEndDate.setDate(stackedEndDate.getDate() + newPlanDuration);
-
-      // Create new subscription as a stacked plan
+      // Create new subscription as a stacked plan with the same dates as a normal plan
+      // The actual stacking of dates will happen when the admin verifies the payment
       const newSubscription = new Subscription({
         userId,
         plan: plan.type,
         startDate,
-        endDate: stackedEndDate,
+        endDate,  // Use regular end date calculation - will be updated during verification
         status: SubscriptionStatus.PAYMENT_PENDING,
         upiOrderId,
         amount: plan.price,
@@ -597,19 +612,49 @@ export const verifyPayment = async (req: Request, res: Response) => {
     let startDate = new Date();
     let endDate = new Date();
     
-    // Set subscription duration based on plan type
-    switch (subscription.plan.toLowerCase()) {
-      case 'monthly':
-        endDate.setMonth(endDate.getMonth() + 1);
-        break;
-      case 'quarterly':
-        endDate.setMonth(endDate.getMonth() + 3);
-        break;
-      case 'yearly':
-        endDate.setFullYear(endDate.getFullYear() + 1);
-        break;
-      default:
-        endDate.setMonth(endDate.getMonth() + 1); // Default to monthly
+    // Check if this is a stacked plan (has parentSubscriptionId)
+    if (subscription.parentSubscriptionId && mappedStatus === SubscriptionStatus.ACTIVE) {
+      // Get the parent subscription
+      const parentSubscription = await Subscription.findById(subscription.parentSubscriptionId);
+      
+      if (parentSubscription && parentSubscription.status === SubscriptionStatus.ACTIVE) {
+        // Use the parent subscription's end date as the start date for the calculation
+        startDate = parentSubscription.endDate;
+        
+        // Set subscription duration based on plan type
+        switch (subscription.plan.toLowerCase()) {
+          case 'monthly':
+            endDate = new Date(startDate);
+            endDate.setMonth(endDate.getMonth() + 1);
+            break;
+          case 'quarterly':
+            endDate = new Date(startDate);
+            endDate.setMonth(endDate.getMonth() + 3);
+            break;
+          case 'yearly':
+            endDate = new Date(startDate);
+            endDate.setFullYear(endDate.getFullYear() + 1);
+            break;
+          default:
+            endDate = new Date(startDate);
+            endDate.setMonth(endDate.getMonth() + 1); // Default to monthly
+        }
+      }
+    } else {
+      // Set subscription duration based on plan type for non-stacked plans
+      switch (subscription.plan.toLowerCase()) {
+        case 'monthly':
+          endDate.setMonth(endDate.getMonth() + 1);
+          break;
+        case 'quarterly':
+          endDate.setMonth(endDate.getMonth() + 3);
+          break;
+        case 'yearly':
+          endDate.setFullYear(endDate.getFullYear() + 1);
+          break;
+        default:
+          endDate.setMonth(endDate.getMonth() + 1); // Default to monthly
+      }
     }
 
     // Update subscription status and dates
@@ -650,13 +695,23 @@ export const verifyPayment = async (req: Request, res: Response) => {
       });
       await payment.save();
 
+      // Get all active subscriptions for this user to calculate the final end date
+      const allUserSubscriptions = await Subscription.find({
+        userId: subscription.userId,
+        status: SubscriptionStatus.ACTIVE
+      }).sort({ endDate: -1 });
+      
+      // The subscription with the latest end date determines the user's subscription end date
+      const latestSubscription = allUserSubscriptions[0];
+      const latestEndDate = latestSubscription ? latestSubscription.endDate : endDate;
+
       // Update user's subscription details
       await User.findByIdAndUpdate(
         subscription.userId,
         {
           subscriptionStatus: 'active',
           subscriptionStartDate: startDate,
-          subscriptionEndDate: endDate,
+          subscriptionEndDate: latestEndDate,
           isPendingPayment: false,
           currentPlan: subscription.plan,
           paymentStatus: 'paid',
@@ -745,7 +800,9 @@ export const getUserPaymentHistory = async (req: Request, res: Response) => {
         endDate: sub.endDate,
         transactionDate: sub.createdAt,
         orderId: sub.upiOrderId || 'No Order ID',
-        adminMessage: sub.notes || (sub.status === SubscriptionStatus.REJECTED ? 'Payment was rejected by admin' : undefined)
+        adminMessage: sub.notes,
+        parentSubscriptionId: sub.parentSubscriptionId || null,
+        isStacked: !!sub.parentSubscriptionId
       };
     }));
     
@@ -754,6 +811,7 @@ export const getUserPaymentHistory = async (req: Request, res: Response) => {
       data: paymentHistory
     });
   } catch (error) {
+    console.error('Error fetching payment history:', error);
     return res.status(500).json({
       success: false,
       message: 'Error fetching payment history'
@@ -1018,7 +1076,7 @@ export const stackNewPlan = async (req: Request, res: Response) => {
       });
     }
     
-    // Calculate end date based on plan type
+    // Calculate end date based on plan type - this will be updated during verification
     const endDate = calculateEndDate(plan.type as SubscriptionPlan);
     const startDate = new Date();
     

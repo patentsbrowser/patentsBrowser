@@ -16,6 +16,8 @@ interface PaymentHistoryItem {
   transactionDate: string;
   orderId: string;
   adminMessage?: string;
+  parentSubscriptionId?: string; // Added to track stacked plans
+  isStacked?: boolean; // Added to identify stacked plans
 }
 
 const PaymentHistory: React.FC = () => {
@@ -98,6 +100,11 @@ const PaymentHistory: React.FC = () => {
     })();
 
     return <span className="status-badge">{statusText}</span>;
+  };
+
+  // Helper to determine if a plan is stacked
+  const isStackedPlan = (payment: PaymentHistoryItem): boolean => {
+    return !!payment.parentSubscriptionId || !!payment.isStacked;
   };
 
   // Pagination logic
@@ -236,10 +243,13 @@ const PaymentHistory: React.FC = () => {
                 </thead>
                 <tbody>
                   {currentItems.map((payment, index) => (
-                    <tr key={payment.id}>
+                    <tr key={payment.id} className={isStackedPlan(payment) ? 'stacked-plan-row' : ''}>
                       <td className="sr-no">{indexOfFirstItem + index + 1}</td>
                       <td className="plan-info">
-                        <span className="plan-name">{payment.planName}</span>
+                        <span className="plan-name">
+                          {payment.planName}
+                          {isStackedPlan(payment) && <span className="stacked-badge">Stacked</span>}
+                        </span>
                       </td>
                       <td className="amount">
                         {payment.currency} {payment.amount}

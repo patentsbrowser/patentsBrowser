@@ -532,4 +532,25 @@
       }
     }
   }
+}
+
+// Add styles for stacked plans
+.stacked-plan-row {
+  position: relative;
+  background-color: rgba(0, 128, 0, 0.05);
+  
+  &:hover {
+    background-color: rgba(0, 128, 0, 0.1);
+  }
+}
+
+.stacked-badge {
+  margin-left: 6px;
+  font-size: 0.75rem;
+  background-color: #4CAF50;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: bold;
+  vertical-align: middle;
 } 
