@@ -183,11 +183,6 @@ export const filterPatentsByFamily = async (req: AuthRequest, res: Response) => 
       }
     });
 
-    console.log('Family groups:', {
-      totalFamilies: familyMap.size,
-      familyIds: Array.from(familyMap.keys())
-    });
-
     // For each family, select one representative patent based on preferred authority
     // Use the provided preferred authorities or fall back to default
     const preferredAuthorities = reqPreferredAuthorities && reqPreferredAuthorities.length > 0
