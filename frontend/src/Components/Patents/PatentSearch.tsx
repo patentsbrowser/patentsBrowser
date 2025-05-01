@@ -630,26 +630,14 @@ const PatentSearch: React.FC<PatentSearchProps> = ({
       // Use the original patentId directly without any formatting
       const patentId = summary.patentId;
 
-      // Check if we need to fetch full details and if we haven't already fetched them
-      if (
-        !summary.details?.description ||
-        !summary.details?.claims ||
-        !summary.details?.figures
-      ) {
-        // Add initialFetch flag to prevent repeat API calls
-        if (!summary.initialFetch) {
-          // Set a marker that we've started fetching
-          const updatedSummary = { ...summary, initialFetch: true };
-          setSelectedPatent(updatedSummary);
-
-          dispatch(
-            fetchFullPatentDetails({
-              patentId: patentId,
-              apiType: selectedApi,
-            })
-          );
-        }
-      }
+      // Always fetch full details when View Details is clicked
+      // No checks for existing data or previous fetch attempts
+      dispatch(
+        fetchFullPatentDetails({
+          patentId: patentId,
+          apiType: selectedApi,
+        })
+      );
     }
   };
 
