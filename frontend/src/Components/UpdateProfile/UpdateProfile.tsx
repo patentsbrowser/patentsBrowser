@@ -276,8 +276,8 @@ const UpdateProfile = () => {
               />
             ) : profile?.imageUrl || formik.values.imageUrl ? (
               <img 
-                src={`http://localhost:5000${profile?.imageUrl || formik.values.imageUrl}`} 
-                alt="Profile" 
+                src={`${import.meta.env.VITE_API_URL.replace('/api', '')}${profile?.imageUrl || formik.values.imageUrl}`} 
+                alt="Profile Preview" 
                 className="profile-image" 
               />
             ) : (
