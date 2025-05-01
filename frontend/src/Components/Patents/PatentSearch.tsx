@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../Redux/hooks';
 import { RootState } from '../../Redux/store';
 import { 
-  fetchFullPatentDetails, 
   setFilters, 
   setSmartSearchResults,
   setSearchResults,
@@ -19,8 +18,6 @@ import { detectApiType, formatDate } from './utils';
 import { PatentSummary } from './types';
 import { ApiSource, patentApi, normalizePatentResponse } from '../../api/patents';
 import toast from 'react-hot-toast';
-import { authApi } from '../../api/auth';
-
 interface PatentSearchProps {
   onSearch: (patentIds: string[]) => void;
   initialPatentId?: string;
@@ -248,12 +245,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     return patentId;
   };
 
-  // Helper function to emit 'patent-searched' event
-  const emitPatentSearchedEvent = () => {
-    const event = new CustomEvent('patent-searched');
-    window.dispatchEvent(event);
-  };
-
   // Modify handlePerformSearch to fix the reference to handleSearch
   const handlePerformSearch = async (idsToSearch: string[]) => {
     // Clear previous results when starting a new search
@@ -466,17 +457,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         // Extract successful patent IDs and pass to parent
         const successfulIds = results.map(result => result.patentId);
         onSearch(successfulIds);
-
-        // Add each patent to search history
-        try {
-          for (const patentId of successfulIds) {
-            await authApi.addToSearchHistory(patentId, 'search');
-          }
-          // Dispatch event to notify history component
-          emitPatentSearchedEvent();
-        } catch (error) {
-          console.error("Error adding patents to search history:", error);
-        }
       }
       
     } catch (error) {
@@ -501,7 +481,7 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     });
   };
 
-  // Update the handlePatentSelect function to trigger a direct search when a patent is selected from a folder
+  // Update the handlePatentSelect function to remove search history
   const handlePatentSelect = async (patentId: string) => {
     // Clean up the patent ID if needed
     const cleanedId = patentId.trim();
@@ -517,54 +497,14 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
     // Set patent IDs array
     setPatentIds([cleanedId]);
     
-    // Add to search history when selecting a patent
-    try {
-      await authApi.addToSearchHistory(cleanedId, 'direct-selection');
-      // Dispatch an event to notify that a patent has been searched
-      emitPatentSearchedEvent();
-    } catch (error) {
-      console.error('Error adding patent to search history:', error);
-    }
-    
     // Perform a direct search for this patent ID
     handlePerformSearch([cleanedId]);
   };
 
-
   const handleViewDetails = async (summary: PatentSummary) => {
     // Mark patent as viewed
     dispatch(markPatentAsViewed(summary.patentId));
-    
     setSelectedPatent(summary);
-    
-    // Add to search history when viewing details
-    try {
-      await authApi.addToSearchHistory(summary.patentId, 'view-details');
-      // Dispatch an event to notify that a patent has been searched
-      window.dispatchEvent(new CustomEvent('patent-searched'));
-    } catch (error) {
-      console.error('Error adding patent to search history:', error);
-    }
-    
-    if (selectedApi === 'unified') {
-      // Use the original patentId directly without any formatting
-      const patentId = summary.patentId;
-      
-      // Check if we need to fetch full details and if we haven't already fetched them
-      if (!summary.details?.description || !summary.details?.claims || !summary.details?.figures) {
-        // Add initialFetch flag to prevent repeat API calls
-        if (!summary.initialFetch) {
-          // Set a marker that we've started fetching
-          const updatedSummary = { ...summary, initialFetch: true };
-          setSelectedPatent(updatedSummary);
-
-          dispatch(fetchFullPatentDetails({ 
-            patentId: patentId, 
-            apiType: selectedApi 
-          }));
-        }
-      }
-    }
   };
 
   // Update the useEffect for handling smartSearchResults
@@ -749,32 +689,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({ onSearch, initialPatentId =
         
         // Close the smart search modal
         setShowSmartSearchModal(false);
-        
-        // Add patents to search history and create folder if needed
-        try {
-          const patentIds = patents.map((patent: PatentSummary) => patent.patentId);
-          
-          if (patentIds.length > 0) {
-            // Add each patent to search history individually
-            for (const patentId of patentIds) {
-              await authApi.addToSearchHistory(patentId, 'search');
-            }
-            
-            // If there are multiple patents, create a folder to contain them
-            if (patentIds.length > 1) {
-              // Generate a folder name with date and time
-              const folderName = `Patent Search ${new Date().toLocaleString()}`;
-              
-              // Show success message about folder creation
-              toast.success(
-                `Created folder "${folderName}" with ${patentIds.length} patents`, 
-                { duration: 4000 }
-              );
-            }
-          }
-        } catch (error) {
-          console.error("Error saving patents to history:", error);
-        }
       } else {
         toast.error('No search results available to filter');
       }

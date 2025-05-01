@@ -366,72 +366,71 @@ export const authApi = {
   },
 
   // Patent search history methods
-  getSearchHistory: async (params?: {
-    limit?: number;
-    page?: number;
-    source?: string;
-    sort?: string;
-    order?: 'asc' | 'desc';
-    search?: string;
-  }) => {
-    try {
-      // Build query parameters
-      const queryParams = new URLSearchParams();
+  // getSearchHistory: async (params?: {
+  //   limit?: number;
+  //   page?: number;
+  //   source?: string;
+  //   sort?: string;
+  //   order?: 'asc' | 'desc';
+  //   search?: string;
+  // }) => {
+  //   try {
+  //     const queryParams = new URLSearchParams();
       
-      if (params) {
-        if (params.limit) queryParams.append('limit', params.limit.toString());
-        if (params.page) queryParams.append('page', params.page.toString());
-        if (params.source) queryParams.append('source', params.source);
-        if (params.sort) queryParams.append('sort', params.sort);
-        if (params.order) queryParams.append('order', params.order);
-        if (params.search) queryParams.append('search', params.search);
-      }
+  //     if (params) {
+  //       if (params.limit) queryParams.append('limit', params.limit.toString());
+  //       if (params.page) queryParams.append('page', params.page.toString());
+  //       if (params.source) queryParams.append('source', params.source);
+  //       if (params.sort) queryParams.append('sort', params.sort);
+  //       if (params.order) queryParams.append('order', params.order);
+  //       if (params.search) queryParams.append('search', params.search);
+  //     }
       
-      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+  //     const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
       
-      const response = await api.get(`/saved-patents/search-history${queryString}`);
-      return response.data;
-    } catch (error: any) {
-      console.error('Error getting search history:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
-      throw error;
-    }
-  },
+  //     const response = await api.get(`/saved-patents/search-history${queryString}`);
+  //     return response.data;
+  //   } catch (error: any) {
+  //     console.error('Error getting search history:', {
+  //       message: error.message,
+  //       response: error.response?.data,
+  //       status: error.response?.status
+  //     });
+  //     throw error;
+  //   }
+  // },
 
-  clearSearchHistory: async () => {
-    try {
-      const response = await api.delete(`/saved-patents/search-history`);
-      return response.data;
-    } catch (error) {
-      console.error('Error clearing search history:', error);
-      throw error;
-    }
-  },
+  // clearSearchHistory: async () => {
+  //   try {
+  //     const response = await api.delete(`/saved-patents/search-history`);
+  //     return response.data;
+  //   } catch (error) {
+  //     console.error('Error clearing search history:', error);
+  //     throw error;
+  //   }
+  // },
 
-  addToSearchHistory: async (patentId: string, source?: string) => {
-    try {
-      const response = await api.post(`/saved-patents/search-history`, { 
-        patentId, 
-        source 
-      });
-      return response.data;
-    } catch (error: any) {
-      console.error('Error adding to search history:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          data: error.config?.data
-        }
-      });
-      throw error;
-    }
-  },
+  // addToSearchHistory: async (patentId: string, source?: string) => {
+  //   try {
+  //     const response = await api.post(`/saved-patents/search-history`, { 
+  //       patentId, 
+  //       source 
+  //     });
+  //     return response.data;
+  //   } catch (error: any) {
+  //     console.error('Error adding to search history:', {
+  //       message: error.message,
+  //       response: error.response?.data,
+  //       status: error.response?.status,
+  //       config: {
+  //         url: error.config?.url,
+  //         method: error.config?.method,
+  //         data: error.config?.data
+  //       }
+  //     });
+  //     throw error;
+  //   }
+  // },
 
   deleteItem: async (params: { itemType: 'folder' | 'workfile' | 'patent', folderId: string, workFileId?: string, patentId?: string }) => {
     const response = await axios.post(`${baseURL}/saved-patents/delete-item`, params, {

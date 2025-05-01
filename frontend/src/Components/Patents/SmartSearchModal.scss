@@ -35,18 +35,23 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 9999;
+  padding: 80px 20px 20px;
 }
 
 .smart-search-modal {
   background-color: var(--background-color);
-  border-radius: 8px;
+  border-radius: 12px;
   width: 90%;
   max-width: 800px;
-  max-height: 90vh;
+  max-height: calc(100vh - 140px);
+  min-height: 400px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  margin: 0 auto;
+  position: relative;
+  z-index: 10000;
 }
 
 .modal-header {
@@ -61,6 +66,7 @@
   box-shadow: 0 2px 12px rgba(124,77,255,0.06);
   position: relative;
   gap: 2rem;
+  z-index: 10001;
 
   h3 {
     margin: 0;
@@ -142,7 +148,7 @@
   .patents-header-left {
     display: flex;
     align-items: center;
-    gap: 1rem;
+  gap: 1rem;
   }
 
   .toggle-button {
@@ -235,7 +241,7 @@
   border-radius: 8px;
   border: 1.5px solid var(--premium-border);
   overflow-y: auto;
-  max-height: calc(90vh - 200px); // Adjust based on header and footer height
+  max-height: calc(100vh - 320px);
   min-height: 200px;
   box-shadow: 0 2px 12px rgba(124,77,255,0.06);
 
@@ -474,7 +480,7 @@
 
 .found-patents-section {
   flex: 1;
-  min-width: 0; // Prevent flex item from overflowing
+  min-width: 0;
 }
 
 .not-found-section {
@@ -729,7 +735,6 @@
   }
 }
 
-// Responsive adjustments
 @media (max-width: 600px) {
   .filter-options .filter-controls {
     flex-direction: column;
@@ -747,6 +752,15 @@
 }
 
 @media (max-width: 768px) {
+  .smart-search-modal-overlay {
+    padding: 60px 10px 20px;
+  }
+
+  .smart-search-modal {
+    width: 95%;
+    min-height: 300px;
+  }
+
   .modal-main {
     flex-direction: column;
   }
@@ -762,7 +776,17 @@
   }
 }
 
-// Add specific styles for the filter options container from screenshot
+@media (max-height: 800px) {
+  .smart-search-modal {
+    max-height: calc(100vh - 100px);
+    min-height: 300px;
+  }
+
+  .patents-grid {
+    max-height: calc(100vh - 280px);
+  }
+}
+
 .filter-section {
   background-color: #1e1e1e;
   border-radius: 8px;
@@ -795,7 +819,6 @@
   }
 }
 
-// Add custom styles for radio buttons to override browser defaults
 input[type="radio"] {
   appearance: none;
   -webkit-appearance: none;

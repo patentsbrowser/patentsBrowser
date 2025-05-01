@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '../../Redux/hooks';
 import { RootState } from '../../Redux/store';
-import { setFilters, clearSmartSearchResults, initializeSmartSearchResults } from '../../Redux/slices/patentSlice';
+import { setFilters, initializeSmartSearchResults } from '../../Redux/slices/patentSlice';
 import './SmartSearchModal.scss';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faTimesCircle, faEdit, faCheck, faExchangeAlt, faCheckCircle, faMagic } from '@fortawesome/free-solid-svg-icons';
@@ -272,13 +272,13 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
               <div className="patents-section">
                 <div className="patents-header">
                   <div className="patents-header-left">
-                    <button 
-                      className="toggle-button"
-                      onClick={() => setShowNotFound(!showNotFound)}
-                    >
-                      <FontAwesomeIcon icon={faExchangeAlt} />
-                      {showNotFound ? 'Show Found Patents' : 'Show Not Found Patents'}
-                    </button>
+                  <button 
+                    className="toggle-button"
+                    onClick={() => setShowNotFound(!showNotFound)}
+                  >
+                    <FontAwesomeIcon icon={faExchangeAlt} />
+                    {showNotFound ? 'Show Found Patents' : 'Show Not Found Patents'}
+                  </button>
                     {!showNotFound && (
                       <label className="family-filter-checkbox">
                         <input
