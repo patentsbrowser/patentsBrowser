@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { getJson } from 'serpapi';
 import { standardizePatentNumber } from '../utils/patentUtils.js';
+import axios from 'axios';
 
 const SERP_API_KEY = process.env.SERP_API_KEY;
 const API_URL = process.env.API_URL;
@@ -148,6 +149,82 @@ export const searchMultiplePatents = async (req: AuthRequest, res: Response) => 
     res.status(500).json({
       statusCode: 500,
       message: 'Failed to search patents',
+      data: null
+    });
+  }
+};
+
+export const filterPatentsByFamily = async (req: AuthRequest, res: Response) => {
+  try {
+    const { patents, preferredAuthorities: reqPreferredAuthorities } = req.body;
+
+    if (!patents || !Array.isArray(patents) || patents.length === 0) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'At least one Patent is required',
+        data: null
+      });
+    }
+
+    console.log('Received patents:', patents);
+    if (reqPreferredAuthorities) {
+      console.log('Using custom preferred authorities:', reqPreferredAuthorities);
+    }
+
+    // Group patents by family_id
+    const familyMap = new Map<string, any[]>();
+    patents.forEach((patent: any) => {
+      const familyId = patent.familyId;
+      if (familyId) {
+        if (!familyMap.has(familyId)) {
+          familyMap.set(familyId, []);
+        }
+        familyMap.get(familyId)?.push(patent);
+      }
+    });
+
+    console.log('Family groups:', {
+      totalFamilies: familyMap.size,
+      familyIds: Array.from(familyMap.keys())
+    });
+
+    // For each family, select one representative patent based on preferred authority
+    // Use the provided preferred authorities or fall back to default
+    const preferredAuthorities = reqPreferredAuthorities && reqPreferredAuthorities.length > 0
+      ? reqPreferredAuthorities
+      : ['US', 'WO', 'EP', 'GB', 'FR', 'DE', 'CH', 'JP', 'RU', 'SU'];
+      
+    const filteredPatents = Array.from(familyMap.values()).map(familyPatents => {
+      // Sort patents by preferred authority order
+      const sortedPatents = familyPatents.sort((a, b) => {
+        const aIndex = preferredAuthorities.indexOf(a.country);
+        const bIndex = preferredAuthorities.indexOf(b.country);
+        return aIndex - bIndex;
+      });
+
+      // Return the patent with the highest preferred authority
+      return sortedPatents[0].patentId;
+    });
+
+    console.log('Filtered patents:', {
+      totalFiltered: filteredPatents.length,
+      patents: filteredPatents
+    });
+
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Patents filtered by family successfully',
+      data: {
+        filteredPatents,
+        totalFamilies: familyMap.size,
+        totalOriginalPatents: patents.length
+      }
+    });
+  } catch (error) {
+    console.error('Error filtering patents by family:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to filter patents by family',
       data: null
     });
   }

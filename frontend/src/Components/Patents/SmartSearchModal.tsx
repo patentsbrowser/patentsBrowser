@@ -43,6 +43,7 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
   const [notFoundSearch, setNotFoundSearch] = useState('');
   const [filterByFamily, setFilterByFamily] = useState(false);
   const [familyFilteredPatents, setFamilyFilteredPatents] = useState<string[]>([]);
+  const [isFilteringByFamily, setIsFilteringByFamily] = useState(false);
   
   const dispatch = useAppDispatch();
   const { smartSearchResults } = useAppSelector((state: RootState) => state.patents);
@@ -68,42 +69,79 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
     }
   }, [isOpen, smartSearchResults, setIsLoading]);
 
-  // Filter patents by family ID when filterByFamily changes
-  useEffect(() => {
-    if (filterByFamily && smartSearchResults?.hits?.hits) {
-      const familyMap = new Map<string, any[]>();
+  // New function to handle filtering by family
+  const handleFilterByFamily = async (shouldFilter: boolean) => {
+    // Skip if already filtering
+    if (isFilteringByFamily) {
+      return;
+    }
+    
+    setFilterByFamily(shouldFilter);
+    
+    if (shouldFilter && smartSearchResults?.hits?.hits) {
+      setIsFilteringByFamily(true);
       
-      // Group patents by family ID
-      smartSearchResults.hits.hits.forEach((hit: any) => {
-        const familyId = hit._source.family_id;
-        if (familyId) {
-          if (!familyMap.has(familyId)) {
-            familyMap.set(familyId, []);
-          }
-          familyMap.get(familyId)?.push(hit);
+      try {
+        // Get preferred authorities from localStorage
+        const preferredPatentAuthority = localStorage.getItem('preferredPatentAuthority') || 'US WO EP GB FR DE CH JP RU SU';
+        const preferredAuthorities = preferredPatentAuthority.split(' ');
+        
+        // Prepare data for backend API
+        const patentsForFiltering = smartSearchResults.hits.hits.map((hit: any) => ({
+          patentId: hit._source.publication_number || hit._id,
+          familyId: hit._source.family_id || '',
+          country: (hit._source.publication_number || hit._id)?.substring(0, 2) || ''
+        })).filter((patent: {patentId: string; familyId: string; country: string}) => patent.familyId);
+        
+        // Call backend API with preferred authorities
+        const result = await patentApi.filterPatentsByFamily(patentsForFiltering, preferredAuthorities);
+        
+        if (result && result.filteredPatents) {
+          setFamilyFilteredPatents(result.filteredPatents);
+        } else {
+          // Fallback to client-side filtering if backend fails
+          const familyMap = new Map<string, any[]>();
+          
+          // Group patents by family ID
+          smartSearchResults.hits.hits.forEach((hit: any) => {
+            const familyId = hit._source.family_id;
+            if (familyId) {
+              if (!familyMap.has(familyId)) {
+                familyMap.set(familyId, []);
+              }
+              familyMap.get(familyId)?.push(hit);
+            }
+          });
+
+          // For each family, select the patent with the highest preferred authority
+          const filteredPatents = Array.from(familyMap.values()).map(familyPatents => {
+            // Sort patents by preferred authority order
+            const sortedPatents = familyPatents.sort((a, b) => {
+              const aCountry = a._source.publication_number?.substring(0, 2) || '';
+              const bCountry = b._source.publication_number?.substring(0, 2) || '';
+              const aIndex = preferredAuthorities.indexOf(aCountry);
+              const bIndex = preferredAuthorities.indexOf(bCountry);
+              return aIndex - bIndex;
+            });
+
+            // Return the patent with the highest preferred authority
+            return sortedPatents[0]._source.publication_number || sortedPatents[0]._id;
+          });
+
+          setFamilyFilteredPatents(filteredPatents);
         }
-      });
-
-      // For each family, select the patent with the highest preferred authority
-      const filteredPatents = Array.from(familyMap.values()).map(familyPatents => {
-        // Sort patents by preferred authority order
-        const sortedPatents = familyPatents.sort((a, b) => {
-          const aCountry = a._source.publication_number?.substring(0, 2) || '';
-          const bCountry = b._source.publication_number?.substring(0, 2) || '';
-          const aIndex = preferredAuthorities.indexOf(aCountry);
-          const bIndex = preferredAuthorities.indexOf(bCountry);
-          return aIndex - bIndex;
-        });
-
-        // Return the patent with the highest preferred authority
-        return sortedPatents[0]._source.publication_number || sortedPatents[0]._id;
-      });
-
-      setFamilyFilteredPatents(filteredPatents);
+      } catch (error) {
+        console.error("Error filtering patents by family:", error);
+        toast.error("Failed to filter patents by family");
+        setFamilyFilteredPatents([]);
+      } finally {
+        setIsFilteringByFamily(false);
+      }
     } else {
       setFamilyFilteredPatents([]);
+      setIsFilteringByFamily(false);
     }
-  }, [filterByFamily, smartSearchResults, preferredAuthorities]);
+  };
 
   // Save filtered patent IDs to Redux whenever they change
   useEffect(() => {
@@ -284,9 +322,10 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
                         <input
                           type="checkbox"
                           checked={filterByFamily}
-                          onChange={(e) => setFilterByFamily(e.target.checked)}
+                          onChange={(e) => handleFilterByFamily(e.target.checked)}
+                          disabled={isFilteringByFamily}
                         />
-                        Filter by Family ID (using preferred authorities)
+                        {isFilteringByFamily ? "Filtering by Family ID..." : "Filter by Family ID (using preferred authorities)"}
                       </label>
                     )}
                   </div>
@@ -371,7 +410,7 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
                         ))
                     )
                   ) : (
-                    filteredPatents
+                    (filterByFamily ? familyFilteredPatents : filteredPatents)
                       .filter(id => id.toLowerCase().includes(foundSearch.toLowerCase()))
                       .map(patentId => (
                         <div key={patentId} className="patent-card found">
