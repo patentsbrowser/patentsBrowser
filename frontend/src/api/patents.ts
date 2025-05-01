@@ -408,6 +408,23 @@ export const patentApi = {
     });
     return response.data;
   },
+  
+  // Filter patents by family ID using the backend endpoint
+  filterPatentsByFamily: async (
+    patents: { patentId: string; familyId: string; country: string }[], 
+    preferredAuthorities?: string[]
+  ) => {
+    if (!patents || patents.length === 0) {
+      return { filteredPatents: [] };
+    }
+    
+    const response = await axiosInstance.post(`${API_URL}/patents/filter-by-family`, {
+      patents,
+      preferredAuthorities
+    });
+    
+    return response.data.data;
+  }
 };
 
 export type ApiSource = 'serpapi' | 'unified'; 

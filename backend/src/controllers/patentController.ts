@@ -156,7 +156,7 @@ export const searchMultiplePatents = async (req: AuthRequest, res: Response) => 
 
 export const filterPatentsByFamily = async (req: AuthRequest, res: Response) => {
   try {
-    const { patents } = req.body;
+    const { patents, preferredAuthorities: reqPreferredAuthorities } = req.body;
 
     if (!patents || !Array.isArray(patents) || patents.length === 0) {
       return res.status(400).json({
@@ -167,6 +167,9 @@ export const filterPatentsByFamily = async (req: AuthRequest, res: Response) => 
     }
 
     console.log('Received patents:', patents);
+    if (reqPreferredAuthorities) {
+      console.log('Using custom preferred authorities:', reqPreferredAuthorities);
+    }
 
     // Group patents by family_id
     const familyMap = new Map<string, any[]>();
@@ -186,7 +189,11 @@ export const filterPatentsByFamily = async (req: AuthRequest, res: Response) => 
     });
 
     // For each family, select one representative patent based on preferred authority
-    const preferredAuthorities = ['US', 'WO', 'EP', 'GB', 'FR', 'DE', 'CH', 'JP', 'RU', 'SU'];
+    // Use the provided preferred authorities or fall back to default
+    const preferredAuthorities = reqPreferredAuthorities && reqPreferredAuthorities.length > 0
+      ? reqPreferredAuthorities
+      : ['US', 'WO', 'EP', 'GB', 'FR', 'DE', 'CH', 'JP', 'RU', 'SU'];
+      
     const filteredPatents = Array.from(familyMap.values()).map(familyPatents => {
       // Sort patents by preferred authority order
       const sortedPatents = familyPatents.sort((a, b) => {
