@@ -89,3 +89,17 @@ export const useWindowSize = () => {
   
   return windowSize;
 }; 
+/**
+ * Formats a name by showing first 2 and last 2 characters with '..' in between if name is longer than 5 characters
+ * @param name The name to format
+ * @returns Formatted name string
+ */
+export const formatName = (name: string): string => {
+  if (!name) return '';
+  
+  if (name.length <= 5) {
+    return name;
+  }
+  
+  return `${name.slice(0, 2)}..${name.slice(-2)}`;
+}; 

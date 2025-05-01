@@ -12,6 +12,7 @@ import {
 import toast from "react-hot-toast";
 import { authApi } from "../../../api/auth";
 import Loader from "../../Common/Loader";
+import { formatName } from "../../Patents/utils";
 
 interface WorkFile {
   _id: string;
@@ -511,7 +512,7 @@ const ImportedFolders: React.FC<ImportedFoldersProps> = ({
                                       className="workfile-icon"
                                     />
                                     <span className="workfile-name">
-                                      {workfile.name}
+                                      {formatName(workfile.name)}
                                     </span>
                                     <span className="workfile-count">
                                       {workfile.patentIds.length}

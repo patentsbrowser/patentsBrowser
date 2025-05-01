@@ -177,6 +177,7 @@ const PatentSummaryCard: React.FC<PatentSummaryCardProps> = ({
           isOpen={showWorkFileSelector}
           onClose={() => setShowWorkFileSelector(false)}
           onSelect={handleWorkFileSelect}
+          selectedPatentIds={[summary.patentId]}
         />
       )}
     </>
