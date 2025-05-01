@@ -257,7 +257,7 @@ const PaymentHistory: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {currentItems.map((payment, index) => (
+                  {currentItems?.map((payment, index) => (
                     <tr key={payment.id} className={isStackedPlan(payment) ? 'stacked-plan-row' : ''}>
                       <td className="sr-no">{indexOfFirstItem + index + 1}</td>
                       <td className="plan-info">
