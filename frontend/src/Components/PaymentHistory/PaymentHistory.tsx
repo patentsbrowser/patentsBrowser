@@ -27,6 +27,9 @@ const PaymentHistory: React.FC = () => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
+  // Modal state
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
 
   useEffect(() => {
     fetchPaymentHistory();
@@ -105,6 +108,18 @@ const PaymentHistory: React.FC = () => {
   // Helper to determine if a plan is stacked
   const isStackedPlan = (payment: PaymentHistoryItem): boolean => {
     return !!payment.parentSubscriptionId || !!payment.isStacked;
+  };
+
+  // Open message modal
+  const openMessageModal = (message: string) => {
+    setModalMessage(message);
+    setShowModal(true);
+  };
+  
+  // Close message modal
+  const closeMessageModal = () => {
+    setShowModal(false);
+    setModalMessage('');
   };
 
   // Pagination logic
@@ -248,7 +263,7 @@ const PaymentHistory: React.FC = () => {
                       <td className="plan-info">
                         <span className="plan-name">
                           {payment.planName}
-                          {isStackedPlan(payment) && <span className="stacked-badge">Stacked</span>}
+                          {/* {isStackedPlan(payment) && <span className="stacked-badge">Stacked</span>} */}
                         </span>
                       </td>
                       <td className="amount">
@@ -268,12 +283,12 @@ const PaymentHistory: React.FC = () => {
                       </td>
                       <td className="admin-message">
                         {payment.adminMessage ? (
-                          <div className="message-tooltip">
+                          <button 
+                            className="message-button"
+                            onClick={() => openMessageModal(payment.adminMessage || '')}
+                          >
                             <span className="message-icon">ℹ️</span>
-                            <div className="tooltip-content">
-                              {payment.adminMessage}
-                            </div>
-                          </div>
+                          </button>
                         ) : (
                           <span className="no-message">-</span>
                         )}
@@ -288,6 +303,24 @@ const PaymentHistory: React.FC = () => {
           </>
         )}
       </div>
+      
+      {/* Admin Message Modal - Moved outside the container to avoid rendering issues */}
+      {showModal && (
+        <div className="admin-message-modal-overlay" onClick={closeMessageModal}>
+          <div className="admin-message-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Admin Message</h3>
+              <button className="close-button" onClick={closeMessageModal}>×</button>
+            </div>
+            <div className="modal-content">
+              <p>{modalMessage}</p>
+            </div>
+            <div className="modal-footer">
+              <button className="confirm-button" onClick={closeMessageModal}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
