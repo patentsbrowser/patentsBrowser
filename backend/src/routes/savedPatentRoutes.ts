@@ -9,9 +9,6 @@ import {
   extractPatentIdsFromFile, 
   deleteFolder, 
   getImportedLists,
-  getSearchHistory,
-  clearSearchHistory,
-  addToSearchHistory,
   addPatentToFolder,
   addPatentsToFolder,
   createWorkFile,
@@ -76,11 +73,6 @@ router.post('/remove-from-folder', auth, removePatentFromFolder as any);
 router.post('/delete-folder', auth, deleteFolder as any);
 router.get('/get-custom-patent-list', auth, getCustomPatentList as any);
 router.get('/get-imported-lists', auth, getImportedLists as any);
-
-// Search history routes
-router.get('/search-history', auth, getSearchHistory as any);
-router.delete('/search-history', auth, clearSearchHistory as any);
-router.post('/search-history', auth, addToSearchHistory as any);
 
 // New route for adding a patent to an existing folder
 router.post('/add-to-folder', auth, addPatentToFolder as any);

@@ -24,7 +24,6 @@ import SessionHandler from "./Components/Authentication/SessionHandler";
 import LandingPage from "./Components/LandingPage/LandingPage";
 import Forum from "./Components/Forum/Forum";
 import SubscriptionPage from "./Components/Subscription/SubscriptionPage";
-import PatentHistory from "./Components/PatentHistory";
 import AdminDashboard from "./Components/Admin/AdminDashboard";
 import PaymentHistory from "./Components/PaymentHistory";
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -116,12 +115,6 @@ const App = () => {
     setSidebarBehavior(behavior);
   };
 
-  // Create a context value for modal state
-  const modalContextValue = {
-    isModalOpen,
-    setIsModalOpen
-  };
-
   return (
     <ErrorBoundary>
       <Provider store={store}>
@@ -188,7 +181,6 @@ const App = () => {
                                   <Route path="update-profile" element={<UpdateProfile />} />
                                   <Route path="profile" element={<ProfilePage />} />
                                   <Route path="subscription" element={<SubscriptionPage />} />
-                                  <Route path="patent-history" element={<PatentHistory />} />
                                   <Route path="payment-history" element={<PaymentHistory />} />
                                   
                                   {/* Admin Routes - Protected by AdminGuard */}
