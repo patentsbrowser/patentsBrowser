@@ -24,10 +24,22 @@ interface PBAssistantProps {
 }
 
 const defaultSuggestions = [
-  "Help me to summarize this patent.",
-  "What are some good keywords I can use to find prior art?",
-  "What is the novelty of this patent?"
+  "What features does PatentsBrowser offer?",
+  "How does the Patent Highlighter work?",
+  "Tell me about Smart Search for patent IDs"
 ];
+
+// When viewing a patent, offer patent-specific suggestions
+const getContextualSuggestions = (patentId?: string) => {
+  if (patentId) {
+    return [
+      "Help me to summarize this patent.",
+      "What are some good keywords I can use to find prior art?",
+      "What is the novelty of this patent?"
+    ];
+  }
+  return defaultSuggestions;
+};
 
 const PBAssistant: React.FC<PBAssistantProps> = ({ 
   patentId,
@@ -84,14 +96,16 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
     };
     
     initializeChat();
-  }, []);
+  }, [user, patentId]);
 
   // Add welcome messages based on context
   const addWelcomeMessage = () => {
     const welcomeMessages: Message[] = [
       {
         id: '1',
-        content: `Hello${user ? ', ' + user.name : ''}! I'm PB Assistant, your assistant for patent-related questions. How may I assist you today?`,
+        content: user?.name 
+          ? `Hello, <strong>${user.name}</strong>! I'm PB Assistant, your assistant for patent-related questions. How may I assist you today?`
+          : "Hello! I'm PB Assistant, your assistant for patent-related questions. How may I assist you today?",
         sender: 'assistant',
         timestamp: new Date()
       }
@@ -263,6 +277,9 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
     }
   };
 
+  // Use the appropriate suggestions based on context
+  const currentSuggestions = getContextualSuggestions(patentId);
+
   // If hidden by scroll or modal, don't render
   if (isHidden && isCollapsed) {
     return null;
@@ -312,7 +329,19 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
                   </div>
                 )}
                 <div className="message-content">
-                  <p>{message.content}</p>
+                  {message.content.includes('•') || message.content.includes('\n') ? (
+                    <div 
+                      className="formatted-message"
+                      dangerouslySetInnerHTML={{ 
+                        __html: message.content
+                          .replace(/\n/g, '<br>')
+                          .replace(/•/g, '<span class="bullet">•</span>')
+                          .replace(/\d\)(.*?)(?=\n|\d\)|$)/g, '<div class="feature-item">$&</div>')
+                      }}
+                    />
+                  ) : (
+                    <p dangerouslySetInnerHTML={{ __html: message.content }}></p>
+                  )}
                 </div>
               </div>
             ))}
@@ -321,12 +350,13 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
                 <div className="assistant-icon">
                   <FontAwesomeIcon icon={faQuestionCircle} />
                 </div>
-                <div className="message-content">
+                <div className="message-content typing-container">
                   <div className="typing-indicator">
                     <span></span>
                     <span></span>
                     <span></span>
                   </div>
+                  <p className="typing-text">PB Assistant is thinking...</p>
                 </div>
               </div>
             )}
@@ -353,7 +383,7 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
                 <div className="suggested-questions">
                   <p>Try asking:</p>
                   <div className="suggestions">
-                    {defaultSuggestions.map((suggestion, index) => (
+                    {currentSuggestions.map((suggestion, index) => (
                       <div 
                         key={index} 
                         className="suggestion"

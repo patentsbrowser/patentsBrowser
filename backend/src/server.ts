@@ -16,6 +16,7 @@ import { createDefaultPlans } from './models/PricingPlan.js';
 import { setupSwagger } from './config/swagger.js';
 import { startSubscriptionCron } from './cron/subscriptionCron.js';
 import chatRoutes from './routes/chatRoutes';
+import { initializePredefinedQA } from './models/ChatMessage.js';
 
 // Get current directory in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -216,6 +217,13 @@ mongoose.connect(MONGODB_URI)
       await createDefaultPlans();
     } catch (error) {
       console.error('Error creating default pricing plans:', error);
+    }
+    
+    // Initialize predefined Q&A pairs for the chat assistant
+    try {
+      await initializePredefinedQA();
+    } catch (error) {
+      console.error('Error initializing predefined Q&A pairs:', error);
     }
     
     // Start subscription status update cron job
