@@ -28,6 +28,7 @@ import PatentHistory from "./Components/PatentHistory";
 import AdminDashboard from "./Components/Admin/AdminDashboard";
 import PaymentHistory from "./Components/PaymentHistory";
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { ChatProvider } from './context/ChatContext';
 // import { store } from './Redux/store';
 
 // Error boundary to catch rendering errors
@@ -100,26 +101,25 @@ const App = () => {
     return (saved === 'auto' || saved === 'manual') ? saved : 'auto';
   });
 
-  // Add state for modal visibility
+  // Add state for modal visibility and make it globally accessible
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Make setIsModalOpen available globally
   useEffect(() => {
-    (window as any).setIsModalOpen = setIsModalOpen;
+    (window as any).isModalOpen = isModalOpen;
+    (window as any).setIsModalOpen = (state: boolean) => {
+      setIsModalOpen(state);
+    };
+    
     return () => {
       delete (window as any).setIsModalOpen;
+      delete (window as any).isModalOpen;
     };
-  }, []);
+  }, [isModalOpen]);
 
   // Handle sidebar behavior change
   const handleSidebarBehaviorChange = (behavior: 'auto' | 'manual') => {
     setSidebarBehavior(behavior);
-  };
-
-  // Create a context value for modal state
-  const modalContextValue = {
-    isModalOpen,
-    setIsModalOpen
   };
 
   return (
@@ -130,95 +130,97 @@ const App = () => {
             <AuthProvider>
               <AdminProvider>
                 <ThemeProvider>
-                  <Router>
-                    <SessionHandler />
-                    <Routes>
-                      {/* Landing Page - Public */}
-                      <Route path="/" element={<LandingPage />} />
-                      
-                      {/* Forum Page - Public */}
-                      <Route path="/forum" element={<Forum />} />
-                      
-                      {/* Subscription Page - Public with auth features */}
-                      <Route path="/subscription" element={<SubscriptionPage />} />
-                      
-                      {/* Authentication routes */}
-                      <Route 
-                        path="/auth/login" 
-                        element={
-                          <NoAuthGuard>
-                            <Authentication />
-                          </NoAuthGuard>
-                        } 
-                      />
-                      
-                      <Route 
-                        path="/auth/signup" 
-                        element={
-                          <NoAuthGuard>
-                            <Authentication />
-                          </NoAuthGuard>
-                        } 
-                      />
+                  <ChatProvider>
+                    <Router>
+                      <SessionHandler />
+                      <Routes>
+                        {/* Landing Page - Public */}
+                        <Route path="/" element={<LandingPage />} />
+                        
+                        {/* Forum Page - Public */}
+                        <Route path="/forum" element={<Forum />} />
+                        
+                        {/* Subscription Page - Public with auth features */}
+                        <Route path="/subscription" element={<SubscriptionPage />} />
+                        
+                        {/* Authentication routes */}
+                        <Route 
+                          path="/auth/login" 
+                          element={
+                            <NoAuthGuard>
+                              <Authentication />
+                            </NoAuthGuard>
+                          } 
+                        />
+                        
+                        <Route 
+                          path="/auth/signup" 
+                          element={
+                            <NoAuthGuard>
+                              <Authentication />
+                            </NoAuthGuard>
+                          } 
+                        />
 
-                      {/* Protected routes */}
-                      <Route 
-                        path="/auth/*" 
-                        element={
-                          <AuthGuard>
-                            <div className="app-container patent-browser-app">
-                              <Header isVisible={!isModalOpen} />
-                              <main className="main-content">
-                                <Routes>
-                                  {/* Root path redirects to dashboard */}
-                                  <Route path="" element={<Navigate to="dashboard" replace />} />
-                                  
-                                  {/* User Routes */}
-                                  <Route path="dashboard" element={<DashboardSelector />} />
-                                  <Route 
-                                    path="settings" 
-                                    element={
-                                      <Settings 
-                                        initialSidebarBehavior={sidebarBehavior}
-                                        onSidebarBehaviorChange={handleSidebarBehaviorChange} 
-                                      />
-                                    } 
-                                  />
-                                  <Route path="patentSaver" element={<SavedPatentList />} />
-                                  <Route path="update-profile" element={<UpdateProfile />} />
-                                  <Route path="profile" element={<ProfilePage />} />
-                                  <Route path="subscription" element={<SubscriptionPage />} />
-                                  <Route path="patent-history" element={<PatentHistory />} />
-                                  <Route path="payment-history" element={<PaymentHistory />} />
-                                  
-                                  {/* Admin Routes - Protected by AdminGuard */}
-                                  <Route 
-                                    path="admin" 
-                                    element={
-                                      <AdminGuard>
-                                        <Navigate to="/auth/dashboard" replace />
-                                      </AdminGuard>
-                                    } 
-                                  />
-                                  <Route 
-                                    path="admin/*" 
-                                    element={
-                                      <AdminGuard>
-                                        <AdminDashboard />
-                                      </AdminGuard>
-                                    } 
-                                  />
-                                </Routes>
-                              </main>
-                            </div>
-                          </AuthGuard>
-                        } 
-                      />
+                        {/* Protected routes */}
+                        <Route 
+                          path="/auth/*" 
+                          element={
+                            <AuthGuard>
+                              <div className="app-container patent-browser-app">
+                                <Header isVisible={!isModalOpen} />
+                                <main className="main-content">
+                                  <Routes>
+                                    {/* Root path redirects to dashboard */}
+                                    <Route path="" element={<Navigate to="dashboard" replace />} />
+                                    
+                                    {/* User Routes */}
+                                    <Route path="dashboard" element={<DashboardSelector />} />
+                                    <Route 
+                                      path="settings" 
+                                      element={
+                                        <Settings 
+                                          initialSidebarBehavior={sidebarBehavior}
+                                          onSidebarBehaviorChange={handleSidebarBehaviorChange} 
+                                        />
+                                      } 
+                                    />
+                                    <Route path="patentSaver" element={<SavedPatentList />} />
+                                    <Route path="update-profile" element={<UpdateProfile />} />
+                                    <Route path="profile" element={<ProfilePage />} />
+                                    <Route path="subscription" element={<SubscriptionPage />} />
+                                    <Route path="patent-history" element={<PatentHistory />} />
+                                    <Route path="payment-history" element={<PaymentHistory />} />
+                                    
+                                    {/* Admin Routes - Protected by AdminGuard */}
+                                    <Route 
+                                      path="admin" 
+                                      element={
+                                        <AdminGuard>
+                                          <Navigate to="/auth/dashboard" replace />
+                                        </AdminGuard>
+                                      } 
+                                    />
+                                    <Route 
+                                      path="admin/*" 
+                                      element={
+                                        <AdminGuard>
+                                          <AdminDashboard />
+                                        </AdminGuard>
+                                      } 
+                                    />
+                                  </Routes>
+                                </main>
+                              </div>
+                            </AuthGuard>
+                          } 
+                        />
 
-                      {/* Catch-all route - redirect to landing page */}
-                      <Route path="*" element={<Navigate to="/" replace />} />
-                    </Routes>
-                  </Router>
+                        {/* Catch-all route - redirect to landing page */}
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                      </Routes>
+                    </Router>
+                  </ChatProvider>
                 </ThemeProvider>
               </AdminProvider>
             </AuthProvider>

@@ -8,7 +8,8 @@ import { fetchFullPatentDetails } from '../../Redux/slices/patentSlice';
 import './PatentDetails.scss';
 import { ApiSource } from '../../api/patents';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCog } from '@fortawesome/free-solid-svg-icons';
+import { faCog, faCommentDots } from '@fortawesome/free-solid-svg-icons';
+import { useChat } from '../../context/ChatContext';
 
 interface PatentDetailsProps {
   title: string;
@@ -76,6 +77,9 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
     }
   });
 
+  // Use the chat context
+  const { toggleChat, setPatentInfo, showChat } = useChat();
+
   // Sync highlighter state with localStorage
   useEffect(() => {
     localStorage.setItem('patentHighlighterOpen', JSON.stringify(isHighlighterOpen));
@@ -84,6 +88,18 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
   // Add a check for invalid patent IDs
   const canFetchDetails = patentId && patentId.length > 3;
   
+  // Update patent info in chat context when patent details change
+  useEffect(() => {
+    if (patentId && title) {
+      setPatentInfo({
+        patentId,
+        patentTitle: title,
+        patentAbstract: abstract,
+        patentClaims: claims
+      });
+    }
+  }, [patentId, title, abstract, claims, setPatentInfo]);
+
   useEffect(() => {
     // Reset local fetch status when patent ID changes
     if (patentId) {
@@ -163,6 +179,14 @@ const PatentDetails: React.FC<PatentDetailsProps> = ({
       <div className="patent-header">
         <h3>{title}</h3>
         <div className="header-actions">
+          <button 
+            className="chat-toggle-button"
+            onClick={toggleChat}
+            title="Patent AI Assistant"
+            aria-label="Patent AI Assistant"
+          >
+            <FontAwesomeIcon icon={faCommentDots} /> Ask Patty
+          </button>
           <button 
             className={`highlighter-toggle-button ${isHighlighterOpen ? 'active' : ''}`}
             onClick={() => setIsHighlighterOpen(!isHighlighterOpen)}
