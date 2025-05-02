@@ -52,7 +52,7 @@ export const chatService = {
       }
 
       // Call the backend API
-      const response = await axiosInstance.post('/api/chat/send', {
+      const response = await axiosInstance.post('/chat/send', {
         message,
         patentId,
         sessionId: this._sessionId,
@@ -73,8 +73,12 @@ export const chatService = {
     } catch (error) {
       console.error('Error sending chat message:', error);
       
-      // Fall back to mock response if API call fails
-      return this.mockResponse(message, patentId);
+      // Return an error message instead of using mock response
+      return {
+        message: "I'm having trouble connecting to the server. Please try again later.",
+        messageId: Date.now().toString(),
+        sessionId: this._sessionId
+      };
     }
   },
 
@@ -86,7 +90,7 @@ export const chatService = {
         this.initSession();
       }
 
-      const response = await axiosInstance.get(`/api/chat/session/${this._sessionId}`);
+      const response = await axiosInstance.get(`/chat/session/${this._sessionId}`);
       return response.data.data.messages || [];
     } catch (error) {
       console.error('Error fetching session messages:', error);
@@ -97,7 +101,7 @@ export const chatService = {
   // Get all sessions for the current user (requires authentication)
   async getUserSessions(): Promise<any[]> {
     try {
-      const response = await axiosInstance.get('/api/chat/user/sessions');
+      const response = await axiosInstance.get('/chat/user/sessions');
       return response.data.data.sessions || [];
     } catch (error) {
       console.error('Error fetching user sessions:', error);
@@ -113,50 +117,12 @@ export const chatService = {
         return true; // Nothing to clear
       }
 
-      await axiosInstance.delete(`/api/chat/session/${this._sessionId}`);
+      await axiosInstance.delete(`/chat/session/${this._sessionId}`);
       return true;
     } catch (error) {
       console.error('Error clearing session:', error);
       return false;
     }
-  },
-
-  // Mock response generator for fallback when API is unavailable
-  mockResponse(message: string, patentId?: string): Promise<ChatResponse> {
-    return new Promise((resolve) => {
-      // Simulate network delay
-      setTimeout(() => {
-        let responseText = "I'm processing your question about this patent. Let me analyze the content and get back to you.";
-        
-        // Simple pattern matching for demo purposes
-        const lowerMessage = message.toLowerCase();
-        
-        if (lowerMessage.includes('summarize') || lowerMessage.includes('summary')) {
-          responseText = `This patent (${patentId || 'US-8125463-B2'}) is about a multipoint touchscreen technology. It describes a touch panel with a transparent capacitive sensing medium that includes a first and second set of conductive traces with capacitive coupling nodes.`;
-        }
-        else if (lowerMessage.includes('keywords') || lowerMessage.includes('prior art')) {
-          responseText = "Based on this patent, good keywords for prior art search might include: capacitive touchscreen, multi-touch, transparent conductive traces, mutual capacitance sensing, touch panel, touch sensor.";
-        } 
-        else if (lowerMessage.includes('novelty') || lowerMessage.includes('new') || lowerMessage.includes('innovative')) {
-          responseText = "The novelty appears to be in the specific arrangement of the transparent capacitive sensing medium with two sets of conductive traces forming capacitive coupling nodes to precisely detect multiple touch points simultaneously.";
-        }
-        else if (lowerMessage.includes('inventor') || lowerMessage.includes('who')) {
-          responseText = "The inventors of this patent are Strickon Joshua, Hotelling Steven Porter, and Huppi Brian Q.";
-        }
-        else if (lowerMessage.includes('when') || lowerMessage.includes('date')) {
-          responseText = "This patent was granted on February 27, 2012, with a priority date of May 5, 2004.";
-        }
-        else if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
-          responseText = "Hello! I'm PB Assistant, your patent assistant. How can I help you analyze this patent?";
-        }
-        
-        resolve({
-          message: responseText,
-          messageId: Date.now().toString(),
-          sessionId: this._sessionId
-        });
-      }, 1000);
-    });
   }
 };
 

@@ -1,6 +1,7 @@
 import express from 'express';
 import chatController from '../controllers/chatController';
 import { authenticate, optionalAuthenticate } from '../middleware/authMiddleware';
+import { isAdmin } from '../middleware/adminMiddleware';
 
 const router = express.Router();
 
@@ -19,5 +20,18 @@ router.get('/user/sessions', authenticate, chatController.getUserSessions);
 // Route for clearing a session
 // This requires authentication to prevent unauthorized deletion
 router.delete('/session/:sessionId', authenticate, chatController.clearSession);
+
+// Admin routes for managing predefined Q&A pairs
+// Get all predefined Q&A pairs with pagination and filtering
+router.get('/qa', authenticate, isAdmin, chatController.getPredefinedQAs);
+
+// Create a new predefined Q&A pair
+router.post('/qa', authenticate, isAdmin, chatController.createPredefinedQA);
+
+// Update an existing predefined Q&A pair
+router.put('/qa/:id', authenticate, isAdmin, chatController.updatePredefinedQA);
+
+// Delete a predefined Q&A pair
+router.delete('/qa/:id', authenticate, isAdmin, chatController.deletePredefinedQA);
 
 export default router; 

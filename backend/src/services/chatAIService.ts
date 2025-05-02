@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { PredefinedQA } from '../models/ChatMessage';
+import { PredefinedQA } from '../models/ChatMessage.js';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
@@ -96,12 +96,23 @@ export const findBestMatch = async (userQuery: string, patentId?: string): Promi
 // Function to generate a response using AI when no predefined answer is found
 export const generateAIResponse = async (userQuery: string, patentId?: string): Promise<string | null> => {
   if (!OPENAI_API_KEY) {
+    console.log('No OpenAI API key found in environment variables');
     return null;
   }
 
   try {
-    // Create a context for the AI including what the platform is about
-    const systemPrompt = `You are PB Assistant, a helpful assistant for the PatentsBrowser platform, which offers patent research tools including:
+    // First, check if we have stored Q&A pairs in the database
+    const query: any = { $text: { $search: userQuery } };
+    if (patentId) {
+      query.$or = [{ patentId }, { patentId: { $exists: false } }];
+    }
+    
+    const relevantQAs = await PredefinedQA.find(query)
+      .sort({ score: { $meta: "textScore" } })
+      .limit(3);
+    
+    // Create context for OpenAI with information about patent platform and any relevant stored QAs
+    let systemPrompt = `You are PB Assistant, a helpful assistant for the PatentsBrowser platform, which offers patent research tools including:
     
 1) Patent Highlighter: Complex search patterns to identify text in patents
 2) Smart Search: Automatically transforms patent IDs to proper format
@@ -109,8 +120,19 @@ export const generateAIResponse = async (userQuery: string, patentId?: string): 
 4) AI Assistant: Generate patent summaries and analysis reports
 5) Batch Processing: Upload files to extract multiple patent IDs
 
-Provide a brief, helpful response about these features. Be concise and informative.`;
+`;
 
+    // Add context from our relevant stored Q&A pairs
+    if (relevantQAs.length > 0) {
+      systemPrompt += `\nHere are some relevant stored questions and answers that might help with this query:\n\n`;
+      relevantQAs.forEach((qa, index) => {
+        systemPrompt += `${index + 1}. Q: ${qa.question}\nA: ${qa.answer}\n\n`;
+      });
+    }
+
+    systemPrompt += `\nIf you don't have a good answer for the user's question, admit you don't know rather than making up information. Your response should be concise and direct.`;
+
+    // Call OpenAI API with enhanced context
     const response = await axios.post(
       OPENAI_ENDPOINT,
       {
@@ -119,7 +141,7 @@ Provide a brief, helpful response about these features. Be concise and informati
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userQuery }
         ],
-        max_tokens: 150,
+        max_tokens: 250,
         temperature: 0.7
       },
       {
@@ -130,10 +152,27 @@ Provide a brief, helpful response about these features. Be concise and informati
       }
     );
     
-    return response.data.choices[0].message.content.trim();
+    const answer = response.data.choices[0].message.content.trim();
+    
+    // If the answer contains uncertainty phrases, provide more explicit message
+    const uncertaintyPhrases = [
+      "I don't have information",
+      "I don't know",
+      "I'm not sure",
+      "I don't have enough information",
+      "I cannot provide",
+      "no information available",
+      "cannot find information"
+    ];
+    
+    if (uncertaintyPhrases.some(phrase => answer.toLowerCase().includes(phrase.toLowerCase()))) {
+      return "Sorry, I don't have specific information related to your question. Is there anything else about the PatentsBrowser platform I can help you with?";
+    }
+    
+    return answer;
   } catch (error) {
     console.error('Error generating AI response:', error);
-    return null;
+    return "I'm having trouble connecting to my knowledge base. Please try asking your question again or ask something about the PatentsBrowser platform features.";
   }
 };
 

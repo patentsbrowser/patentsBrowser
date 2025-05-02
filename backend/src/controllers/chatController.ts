@@ -168,162 +168,201 @@ export const clearSession = async (req: Request, res: Response) => {
   }
 };
 
+// Admin methods for managing predefined Q&A pairs
+
+// Get all predefined Q&A pairs with pagination and filtering
+export const getPredefinedQAs = async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const skipIndex = (page - 1) * limit;
+    const category = req.query.category as string;
+    const search = req.query.search as string;
+    
+    const query: any = {};
+    
+    // Apply category filter if provided
+    if (category && category !== 'all') {
+      query.category = category;
+    }
+    
+    // Apply search filter if provided
+    if (search) {
+      query.$text = { $search: search };
+    }
+    
+    const total = await PredefinedQA.countDocuments(query);
+    const totalPages = Math.ceil(total / limit);
+    
+    let qaItems = [];
+    if (search) {
+      // If searching, sort by text score
+      qaItems = await PredefinedQA.find(query)
+        .sort({ score: { $meta: "textScore" } })
+        .skip(skipIndex)
+        .limit(limit);
+    } else {
+      // Otherwise sort by most recent
+      qaItems = await PredefinedQA.find(query)
+        .sort({ updatedAt: -1 })
+        .skip(skipIndex)
+        .limit(limit);
+    }
+    
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Predefined Q&A pairs retrieved successfully',
+      data: {
+        items: qaItems,
+        page,
+        limit,
+        totalPages,
+        total
+      }
+    });
+  } catch (error) {
+    console.error('Error retrieving predefined Q&A pairs:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to retrieve predefined Q&A pairs',
+      data: null
+    });
+  }
+};
+
+// Create a new predefined Q&A pair
+export const createPredefinedQA = async (req: Request, res: Response) => {
+  try {
+    const { question, answer, keywords, category, patentId } = req.body;
+    
+    // Validate required fields
+    if (!question || !answer) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Question and answer fields are required',
+        data: null
+      });
+    }
+    
+    // Create new Q&A pair
+    const newQA = new PredefinedQA({
+      question,
+      answer,
+      keywords: keywords || [],
+      category: category || 'general',
+      patentId: patentId || undefined
+    });
+    
+    await newQA.save();
+    
+    res.status(201).json({
+      statusCode: 201,
+      message: 'Predefined Q&A pair created successfully',
+      data: newQA
+    });
+  } catch (error) {
+    console.error('Error creating predefined Q&A pair:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to create predefined Q&A pair',
+      data: null
+    });
+  }
+};
+
+// Update an existing predefined Q&A pair
+export const updatePredefinedQA = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { question, answer, keywords, category, patentId } = req.body;
+    
+    // Validate required fields
+    if (!question || !answer) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Question and answer fields are required',
+        data: null
+      });
+    }
+    
+    // Find and update the Q&A pair
+    const updatedQA = await PredefinedQA.findByIdAndUpdate(
+      id,
+      {
+        question,
+        answer,
+        keywords: keywords || [],
+        category: category || 'general',
+        patentId: patentId || undefined,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+    
+    if (!updatedQA) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'Predefined Q&A pair not found',
+        data: null
+      });
+    }
+    
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Predefined Q&A pair updated successfully',
+      data: updatedQA
+    });
+  } catch (error) {
+    console.error('Error updating predefined Q&A pair:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to update predefined Q&A pair',
+      data: null
+    });
+  }
+};
+
+// Delete a predefined Q&A pair
+export const deletePredefinedQA = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await PredefinedQA.findByIdAndDelete(id);
+    
+    if (!result) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'Predefined Q&A pair not found',
+        data: null
+      });
+    }
+    
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Predefined Q&A pair deleted successfully',
+      data: null
+    });
+  } catch (error) {
+    console.error('Error deleting predefined Q&A pair:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to delete predefined Q&A pair',
+      data: null
+    });
+  }
+};
+
 // Helper function to process messages and generate responses
 const processMessage = async (message: string, patentId?: string, userId?: string): Promise<string> => {
-  // Special handling for welcome-type messages
-  const lowerMessage = message.toLowerCase();
-  if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage === 'hey') {
-    // If we have a userId, try to get the user's name
-    if (userId) {
-      try {
-        const userDoc = await mongoose.model('User').findById(userId);
-        if (userDoc && userDoc.name) {
-          return `Hello, ${userDoc.name}! I'm PB Assistant, your patent expert. How can I help you today?`;
-        }
-      } catch (error) {
-        console.error('Error fetching user name:', error);
-        // Continue with default response if there's an error
-      }
-    }
-  }
-
-  // Special handling for platform feature questions
-  if (
-    lowerMessage.includes('feature') || 
-    lowerMessage.includes('platform') || 
-    lowerMessage.includes('what can you do') || 
-    lowerMessage.includes('benefits') ||
-    lowerMessage.includes('capabilities')
-  ) {
-    return `
-      PatentsBrowser offers several powerful features to enhance patent research:
-      
-      1) Patent Highlighter: Supports complex search patterns to quickly identify relevant text in patents
-      2) Smart Search: Automatically transforms and corrects patent IDs to proper format
-      3) Workflow Management: Create folders to organize patents and avoid duplicate reviews
-      4) AI Assistant (Beta): Helps generate patent summaries and analysis reports
-      5) Batch Processing: Upload files to extract multiple patent IDs with a single click
-      
-      Which feature would you like to learn more about?
-    `;
-  }
-
-  // Patent Highlighter details
-  if (
-    lowerMessage.includes('highlighter') || 
-    lowerMessage.includes('highlight') || 
-    lowerMessage.includes('search pattern') ||
-    lowerMessage.includes('complex search')
-  ) {
-    return `
-      The Patent Highlighter supports advanced search patterns including:
-      
-      • Boolean operators (AND, OR, NOT)
-      • Proximity search (finding terms within a certain distance)
-      • Wildcard searching (partial term matching)
-      • Phrase matching (exact sequences of words)
-      • Field-specific search (title, abstract, claims, description)
-      • Synonym expansion (finds related terms automatically)
-      
-      This allows researchers to quickly identify relevant sections within lengthy patent documents, significantly reducing manual review time.
-    `;
-  }
-
-  // Smart Search details
-  if (
-    lowerMessage.includes('smart search') || 
-    lowerMessage.includes('patent id') || 
-    lowerMessage.includes('transform') ||
-    lowerMessage.includes('format correction') ||
-    lowerMessage.includes('auto correct')
-  ) {
-    return `
-      The Smart Search feature automatically transforms and corrects patent IDs to their proper format. It can:
-      
-      • Convert between different patent ID formats (US8123456 → US-8,123,456-B2)
-      • Fix common typos and format errors
-      • Add missing country codes or publication details
-      • Normalize different patent ID representations to a standard format
-      • Process multiple IDs at once, even from unstructured text
-      
-      This eliminates manual correction and ensures consistent, accurate patent references throughout your research.
-    `;
-  }
-
-  // Workflow Management details
-  if (
-    lowerMessage.includes('folder') || 
-    lowerMessage.includes('workflow') || 
-    lowerMessage.includes('organize') ||
-    lowerMessage.includes('duplicate')
-  ) {
-    return `
-      The Workflow Management system helps organize your patent research by:
-      
-      • Creating folders for different research projects or topics
-      • Saving patents with notes and custom tags
-      • Automatically detecting duplicates across workfiles
-      • Tracking which patents you've already reviewed
-      • Providing collaboration features for team research
-      
-      When creating a new workfile inside a folder, the system can automatically filter out patents you've already reviewed, ensuring efficient progression through large patent sets.
-    `;
-  }
-
-  // AI features
-  if (
-    lowerMessage.includes('ai') || 
-    lowerMessage.includes('assistant') || 
-    lowerMessage.includes('report') ||
-    lowerMessage.includes('summary') ||
-    lowerMessage.includes('upcoming')
-  ) {
-    return `
-      Our upcoming AI Assistant feature will help with:
-      
-      • Generating concise patent summaries
-      • Identifying key innovations in patent text
-      • Creating comparison reports between multiple patents
-      • Extracting relevant technical information
-      • Suggesting related patents based on content analysis
-      
-      This will significantly reduce the time needed to understand complex patents and produce research reports. The feature is currently in beta and will be fully available soon.
-    `;
-  }
-
-  // Batch processing
-  if (
-    lowerMessage.includes('upload') || 
-    lowerMessage.includes('extract') || 
-    lowerMessage.includes('batch') ||
-    lowerMessage.includes('file') ||
-    lowerMessage.includes('multiple patents')
-  ) {
-    return `
-      The Batch Processing feature allows you to:
-      
-      • Upload documents containing patent references
-      • Automatically extract all patent IDs
-      • Correct and standardize the format of extracted IDs
-      • Import them directly into your workflow
-      • Process hundreds of patents with a single click
-      
-      This is particularly useful when dealing with prior art search results, office actions, or competitor analysis documents that mention multiple patents.
-    `;
-  }
-
   try {
-    // Step 1: Try to find a matching predefined answer using AI
+    // Step 1: Try to find a matching predefined answer using AI and our database
     const aiMatch = await chatAIService.findBestMatch(message, patentId);
     if (aiMatch) {
       console.log('AI found a matching predefined answer');
       return aiMatch;
     }
 
-    // Step 2: If no AI match, check through our special cases
-    // ... (keep all your existing special cases for feature matching)
-
-    // Step 3: If no special case matches, try the database text search
+    // Step 2: If no direct match, try the database text search
     if (patentId) {
       const patentSpecificQA = await PredefinedQA.findOne({
         $and: [
@@ -346,22 +385,15 @@ const processMessage = async (message: string, patentId?: string, userId?: strin
       return generalQA.answer;
     }
 
-    // Step 4: If still no match, try to generate a response with AI
+    // Step 3: If still no match, try to generate a response with AI
     const aiResponse = await chatAIService.generateAIResponse(message, patentId);
     if (aiResponse) {
       console.log('Using AI-generated response');
       return aiResponse;
     }
 
-    // Step 5: Fallback to basic responses
-    const basicResponses = [
-      "I understand you're asking about this patent. Could you clarify what specific information you're looking for?",
-      "That's an interesting question about the patent. I'm processing your query and will have an answer shortly.",
-      "I'm analyzing the patent data to provide you with the most accurate information about your question.",
-      "Let me research this patent further to give you a comprehensive answer to your question."
-    ];
-
-    return basicResponses[Math.floor(Math.random() * basicResponses.length)];
+    // Step 4: Fallback to a simple response
+    return "I'm sorry, I don't have enough information to answer that question. Is there something specific about the PatentsBrowser platform you'd like to know?";
   } catch (error) {
     console.error('Error processing message:', error);
     return "I apologize, but I encountered an issue processing your request. Please try again with a different question.";
@@ -372,5 +404,9 @@ export default {
   sendMessage,
   getSessionMessages,
   getUserSessions,
-  clearSession
+  clearSession,
+  getPredefinedQAs,
+  createPredefinedQA,
+  updatePredefinedQA,
+  deletePredefinedQA
 }; 
