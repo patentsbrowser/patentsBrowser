@@ -3,7 +3,7 @@ import { API_URL } from '../config';
 
 interface ChatMessage {
   content: string;
-  sender: 'user' | 'patty';
+  sender: 'user' | 'assistant';
   timestamp: Date;
 }
 
@@ -62,7 +62,7 @@ export const chatService = {
           responseText = "This patent was granted on February 27, 2012, with a priority date of May 5, 2004.";
         }
         else if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
-          responseText = "Hello! I'm Patty, your patent assistant. How can I help you analyze this patent?";
+          responseText = "Hello! I'm PB Assistant, your patent assistant. How can I help you analyze this patent?";
         }
         
         resolve({

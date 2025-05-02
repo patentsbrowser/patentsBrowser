@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import PattyChat from '../Components/Chat/PattyChat';
+import PBAssistant from '../Components/Chat/PBAssistant';
 import { getModalState } from '../utils/modalHelper';
 
 interface ChatContextType {
@@ -54,7 +54,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       }}
     >
       {children}
-      <PattyChat
+      <PBAssistant
         patentId={patentInfo.patentId}
         patentTitle={patentInfo.patentTitle}
         patentAbstract={patentInfo.patentAbstract}

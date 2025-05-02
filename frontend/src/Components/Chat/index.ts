@@ -1,4 +1,4 @@
-import PattyChat from './PattyChat';
+import PBAssistant from './PBAssistant';
 
-export { PattyChat };
-export default PattyChat; 
+export { PBAssistant };
+export default PBAssistant; 

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPaperPlane, faQuestionCircle, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
-import './PattyChat.scss';
+import './PBAssistant.scss';
 import chatService from '../../services/chatService';
 import { getModalState } from '../../utils/modalHelper';
 
@@ -12,7 +12,7 @@ interface Message {
   timestamp: Date;
 }
 
-interface PattyChatProps {
+interface PBAssistantProps {
   patentId?: string;
   patentTitle?: string;
   patentAbstract?: string;
@@ -27,7 +27,7 @@ const defaultSuggestions = [
   "What is the novelty of this patent?"
 ];
 
-const PattyChat: React.FC<PattyChatProps> = ({ 
+const PBAssistant: React.FC<PBAssistantProps> = ({ 
   patentId,
   patentTitle,
   patentAbstract,
@@ -214,11 +214,11 @@ const PattyChat: React.FC<PattyChatProps> = ({
   return (
     <div 
       ref={chatContainerRef}
-      className={`patty-chat-container ${isCollapsed ? 'collapsed' : ''} ${isHidden ? 'hidden' : ''}`}
+      className={`pb-assistant-container ${isCollapsed ? 'collapsed' : ''} ${isHidden ? 'hidden' : ''}`}
     >
-      <div className="patty-chat-header" onClick={toggleCollapse}>
+      <div className="pb-assistant-header" onClick={toggleCollapse}>
         <div className="header-left">
-          <div className="patty-avatar">
+          <div className="assistant-avatar">
             <FontAwesomeIcon icon={faQuestionCircle} />
           </div>
           <h3>Ask PB Assistant</h3>
@@ -231,7 +231,7 @@ const PattyChat: React.FC<PattyChatProps> = ({
       
       {!isCollapsed && (
         <>
-          <div className="patty-chat-messages">
+          <div className="pb-assistant-messages">
             {messages.map((message) => (
               <div 
                 key={message.id}
@@ -278,7 +278,7 @@ const PattyChat: React.FC<PattyChatProps> = ({
             </div>
           )}
           
-          <div className="patty-chat-input">
+          <div className="pb-assistant-input">
             <input
               ref={inputRef}
               type="text"
@@ -306,4 +306,4 @@ const PattyChat: React.FC<PattyChatProps> = ({
   );
 };
 
-export default PattyChat; 
+export default PBAssistant; 

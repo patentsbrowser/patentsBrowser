@@ -10,7 +10,7 @@ $background-color: #fff;
 // Import SASS color module
 @use "sass:color";
 
-.patty-chat-container {
+.pb-assistant-container {
   position: fixed;
   bottom: 20px;
   right: 20px;
@@ -22,7 +22,7 @@ $background-color: #fff;
   display: flex;
   flex-direction: column;
   transition: all 0.3s ease;
-  z-index: 9999;
+  z-index: 9999; // Increased z-index to be above most elements
   border: 1px solid $border-color;
   overflow: hidden;
   transform: translateY(0);
@@ -39,7 +39,7 @@ $background-color: #fff;
   }
 }
 
-.patty-chat-header {
+.pb-assistant-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -74,7 +74,7 @@ $background-color: #fff;
     margin-left: 4px;
   }
 
-  .patty-avatar {
+  .assistant-avatar {
     width: 24px;
     height: 24px;
     border-radius: 50%;
@@ -87,7 +87,7 @@ $background-color: #fff;
   }
 }
 
-.patty-chat-messages {
+.pb-assistant-messages {
   flex: 1;
   padding: 12px;
   overflow-y: auto;
@@ -168,7 +168,7 @@ $background-color: #fff;
   }
 }
 
-.patty-chat-input {
+.pb-assistant-input {
   display: flex;
   padding: 12px;
   border-top: 1px solid $border-color;
