@@ -55,7 +55,23 @@ $background-color: #fff;
   }
 
   .header-right {
-    color: $lighter-text;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .clear-chat-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.7);
+      cursor: pointer;
+      padding: 5px;
+      font-size: 14px;
+      transition: color 0.2s;
+
+      &:hover {
+        color: #fff;
+      }
+    }
   }
 
   h3 {
@@ -148,22 +164,30 @@ $background-color: #fff;
 }
 
 .suggested-questions {
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  .suggestion-pill {
-    background-color: $secondary-color;
-    color: $text-color;
-    padding: 8px 12px;
-    border-radius: 18px;
+  padding: 10px 15px;
+  
+  p {
     font-size: 13px;
+    color: #888;
+    margin-bottom: 8px;
+  }
+  
+  .suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .suggestion {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 8px 12px;
+    border-radius: 8px;
     cursor: pointer;
+    font-size: 14px;
     transition: background-color 0.2s;
-
+    
     &:hover {
-      background-color: color.adjust($secondary-color, $lightness: -5%);
+      background-color: rgba(0, 0, 0, 0.1);
     }
   }
 }
@@ -313,5 +337,34 @@ $background-color: #fff;
 
   input:checked + .slider:before {
     transform: translateX(20px);
+  }
+}
+
+.message-limit-warning {
+  padding: 15px;
+  background-color: rgba(255, 200, 200, 0.1);
+  border-radius: 8px;
+  margin: 10px;
+  text-align: center;
+
+  p {
+    margin-bottom: 10px;
+    color: #e74c3c;
+    font-size: 14px;
+  }
+
+  .clear-chat-button {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: darken(#e74c3c, 10%);
+    }
   }
 } 

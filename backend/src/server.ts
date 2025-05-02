@@ -15,6 +15,7 @@ import googlePatentsRoutes from './routes/googlePatentsRoutes.js';
 import { createDefaultPlans } from './models/PricingPlan.js';
 import { setupSwagger } from './config/swagger.js';
 import { startSubscriptionCron } from './cron/subscriptionCron.js';
+import chatRoutes from './routes/chatRoutes';
 
 // Get current directory in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -91,6 +92,7 @@ app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/google-patents', googlePatentsRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Make sure uploadedImages directory is served as public
 const uploadDir = path.join(__dirname, '../uploadedImages');
