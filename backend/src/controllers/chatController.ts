@@ -355,61 +355,86 @@ export const deletePredefinedQA = async (req: Request, res: Response) => {
 const processMessage = async (message: string, patentId?: string, userId?: string, sessionId?: string): Promise<{response: string, source: string}> => {
   try {
     // Step 1: Try to find a matching predefined answer using AI and our database
-    const aiMatch = await chatAIService.findBestMatch(message, patentId, sessionId);
-    if (aiMatch.answer) {
-      console.log('AI found a matching predefined answer');
-      return { response: aiMatch.answer, source: aiMatch.source };
+    try {
+      const aiMatch = await chatAIService.findBestMatch(message, patentId, sessionId);
+      if (aiMatch.answer) {
+        console.log('AI found a matching predefined answer');
+        return { response: aiMatch.answer, source: aiMatch.source };
+      }
+    } catch (matchError) {
+      console.error('Error in findBestMatch:', matchError);
+      // Continue to next method if this fails
     }
 
     // Step 2: If no direct match, try the database text search
-    if (patentId) {
-      const patentSpecificQA = await PredefinedQA.findOne({
-        $and: [
-          { patentId },
-          { $text: { $search: message } }
-        ]
+    try {
+      if (patentId) {
+        const patentSpecificQA = await PredefinedQA.findOne({
+          $and: [
+            { patentId },
+            { $text: { $search: message } }
+          ]
+        }).sort({ score: { $meta: "textScore" } });
+
+        if (patentSpecificQA) {
+          // Update usage count
+          await PredefinedQA.findByIdAndUpdate(
+            patentSpecificQA._id,
+            { $inc: { useCount: 1 } }
+          );
+          return { response: patentSpecificQA.answer, source: 'textSearch' };
+        }
+      }
+
+      // Look for general predefined QA
+      const generalQA = await PredefinedQA.findOne({
+        $text: { $search: message }
       }).sort({ score: { $meta: "textScore" } });
 
-      if (patentSpecificQA) {
+      if (generalQA) {
         // Update usage count
         await PredefinedQA.findByIdAndUpdate(
-          patentSpecificQA._id,
+          generalQA._id,
           { $inc: { useCount: 1 } }
         );
-        return { response: patentSpecificQA.answer, source: 'textSearch' };
+        return { response: generalQA.answer, source: 'textSearch' };
       }
-    }
-
-    // Look for general predefined QA
-    const generalQA = await PredefinedQA.findOne({
-      $text: { $search: message }
-    }).sort({ score: { $meta: "textScore" } });
-
-    if (generalQA) {
-      // Update usage count
-      await PredefinedQA.findByIdAndUpdate(
-        generalQA._id,
-        { $inc: { useCount: 1 } }
-      );
-      return { response: generalQA.answer, source: 'textSearch' };
+    } catch (dbError) {
+      console.error('Error in database text search:', dbError);
+      // Continue to next method if this fails
     }
 
     // Step 3: If still no match, try to generate a response with AI
-    const aiResponse = await chatAIService.generateAIResponse(message, patentId, sessionId);
-    if (aiResponse.answer) {
-      console.log('Using AI-generated response');
-      return { response: aiResponse.answer, source: aiResponse.source };
+    try {
+      const aiResponse = await chatAIService.generateAIResponse(message, patentId, sessionId);
+      if (aiResponse.answer) {
+        console.log('Using AI-generated response');
+        return { response: aiResponse.answer, source: aiResponse.source };
+      }
+    } catch (aiError) {
+      console.error('Error in generateAIResponse:', aiError);
+      // Fall through to fallback response
     }
 
-    // Step 4: Fallback to a simple response
+    // Step 4: Fallback to a simple response based on predefined set
+    console.log('Using fallback response');
+    const fallbackResponses = [
+      "I'm here to help with questions about PatentsBrowser. You can ask about the Patent Highlighter, Smart Search, or Workflow Management features.",
+      "PatentsBrowser offers tools like Patent Highlighter, Smart Search, and Workflow Management. Is there anything specific about these features you'd like to know?",
+      "I can help answer questions about PatentsBrowser features. What would you like to know about our patent research tools?",
+      "I'm sorry, I don't have enough information to answer that specific question. I can tell you about PatentsBrowser features like patent highlighting or smart search if you're interested."
+    ];
+    
+    // Select a random fallback response
+    const randomIndex = Math.floor(Math.random() * fallbackResponses.length);
     return { 
-      response: "I'm sorry, I don't have enough information to answer that question. Is there something specific about the PatentsBrowser platform you'd like to know?",
+      response: fallbackResponses[randomIndex],
       source: 'fallback'
     };
   } catch (error) {
     console.error('Error processing message:', error);
     return { 
-      response: "I apologize, but I encountered an issue processing your request. Please try again with a different question.",
+      response: "I'm here to assist with PatentsBrowser. You can ask me about our features like Patent Highlighter or Smart Search.",
       source: 'error'
     };
   }
