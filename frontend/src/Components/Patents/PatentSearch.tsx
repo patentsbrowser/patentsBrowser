@@ -23,7 +23,6 @@ import {
   normalizePatentResponse,
 } from "../../api/patents";
 import toast from "react-hot-toast";
-import { authApi } from "../../api/auth";
 
 interface PatentSearchProps {
   onSearch: (patentIds: string[]) => void;

@@ -4,6 +4,7 @@ import { PredefinedQA } from '../models/ChatMessage.js';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 
+
 // Function to find the best matching predefined answer using AI
 export const findBestMatch = async (userQuery: string, patentId?: string): Promise<string | null> => {
   try {

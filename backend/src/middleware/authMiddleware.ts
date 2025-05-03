@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { User } from '../models/User';
+import { User } from '../models/User.js';
+import mongoose from 'mongoose';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
@@ -8,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 declare global {
   namespace Express {
     interface Request {
-      user?: any;
+      user?: { _id: mongoose.Types.ObjectId; userId: string; email: string; };
     }
   }
 }

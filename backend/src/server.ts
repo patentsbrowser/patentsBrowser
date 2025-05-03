@@ -15,7 +15,7 @@ import googlePatentsRoutes from './routes/googlePatentsRoutes.js';
 import { createDefaultPlans } from './models/PricingPlan.js';
 import { setupSwagger } from './config/swagger.js';
 import { startSubscriptionCron } from './cron/subscriptionCron.js';
-import chatRoutes from './routes/chatRoutes';
+import chatRoutes from './routes/chatRoutes.js';
 import { initializePredefinedQA } from './models/ChatMessage.js';
 
 // Get current directory in ES modules
