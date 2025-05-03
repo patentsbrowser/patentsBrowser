@@ -1,12 +1,6 @@
 import axiosInstance from '../api/axiosConfig';
 import { v4 as uuidv4 } from 'uuid';
 
-interface ChatMessage {
-  content: string;
-  sender: 'user' | 'assistant';
-  timestamp: Date;
-}
-
 interface ChatResponse {
   message: string;
   messageId: string;

@@ -176,7 +176,7 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
     <form onSubmit={handleSearch} className="search-form">
       <div className="search-controls">
         <div className="api-select-container">
-          <select
+          {/* <select
             value={selectedApi}
             onChange={handleApiChange}
             className="api-select"
@@ -185,7 +185,7 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
           >
             <option value="unified">Unified Patents Database</option>
             <option value="serpapi">Google Patents (SerpAPI)</option>
-          </select>
+          </select> */}
           <div className="search-type-selector">
             <label>
               <input
