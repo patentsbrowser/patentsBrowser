@@ -1,0 +1,455 @@
+// Variables
+$primary-color: #0078ff;
+$secondary-color: #e6f0ff;
+$gradient-start: #0056b3;
+$gradient-end: #0078ff;
+$border-color: #e0e0e0;
+$text-color: #333;
+$light-text: #555;
+$lighter-text: #777;
+$background-color: #fff;
+$box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+$transition-speed: 0.3s;
+
+// Import SASS color module
+@use "sass:color";
+
+.pb-assistant-container {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  width: 380px;
+  max-height: 540px;
+  background-color: $background-color;
+  border-radius: 12px;
+  box-shadow: $box-shadow;
+  display: flex;
+  flex-direction: column;
+  transition: all $transition-speed ease;
+  z-index: 9999;
+  border: 1px solid color.adjust($border-color, $lightness: 2%);
+  overflow: hidden;
+  transform: translateY(0);
+  opacity: 1;
+
+  &.collapsed {
+    max-height: 65px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  &.hidden {
+    transform: translateY(100px);
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.pb-assistant-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, $gradient-start, $gradient-end);
+  border-bottom: 1px solid color.adjust($gradient-start, $lightness: -5%);
+  cursor: pointer;
+  color: white;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .clear-chat-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: white;
+      cursor: pointer;
+      padding: 5px 8px;
+      font-size: 14px;
+      border-radius: 4px;
+      transition: background $transition-speed;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.25);
+      }
+    }
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+    letter-spacing: 0.2px;
+  }
+
+  .beta-badge {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 6px;
+    backdrop-filter: blur(2px);
+  }
+
+  .assistant-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    color: $primary-color;
+    font-size: 16px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.pb-assistant-messages {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 360px;
+  background-color: color.adjust($background-color, $lightness: -1%);
+
+  .message {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    animation: fadeIn 0.3s ease;
+
+    .message-content {
+      padding: 12px 16px;
+      border-radius: 12px;
+      max-width: 85%;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+      .formatted-message {
+        font-size: 14.5px;
+        line-height: 1.6;
+
+        strong {
+          color: $primary-color;
+          font-weight: 600;
+        }
+
+        .bullet {
+          color: $primary-color;
+          margin-right: 6px;
+          font-weight: bold;
+          display: inline-block;
+        }
+
+        .feature-item {
+          margin: 5px 0;
+          padding-left: 4px;
+        }
+
+        br {
+          display: block;
+          content: "";
+          margin: 8px 0;
+        }
+      }
+
+      p {
+        margin: 0;
+        line-height: 1.5;
+        font-size: 14.5px;
+      }
+    }
+
+    &.user-message {
+      flex-direction: row-reverse;
+      animation: slideInRight 0.3s ease-out forwards;
+
+      .message-content {
+        background: linear-gradient(135deg, $gradient-start, $gradient-end);
+        color: white;
+        border-top-right-radius: 0;
+      }
+    }
+
+    &.assistant-message {
+      animation: slideInLeft 0.3s ease-out forwards;
+
+      .message-content {
+        background-color: white;
+        color: $text-color;
+        border-top-left-radius: 0;
+        border: 1px solid color.adjust($border-color, $lightness: 3%);
+      }
+
+      .assistant-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, $gradient-start, $gradient-end);
+        color: white;
+        font-size: 14px;
+        flex-shrink: 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+    }
+  }
+}
+
+.suggested-questions {
+  padding: 16px;
+  background-color: white;
+  border-top: 1px solid color.adjust($border-color, $lightness: 2%);
+  
+  p {
+    font-size: 13px;
+    color: $light-text;
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+  
+  .suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .suggestion {
+    background-color: color.adjust($secondary-color, $lightness: 2%);
+    padding: 12px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all $transition-speed;
+    border: 1px solid color.adjust($border-color, $lightness: 3%);
+    color: $primary-color;
+    
+    &:hover {
+      background-color: $secondary-color;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      transform: translateY(-1px);
+    }
+  }
+}
+
+.pb-assistant-input {
+  display: flex;
+  padding: 16px;
+  border-top: 1px solid color.adjust($border-color, $lightness: 2%);
+  background-color: white;
+
+  input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1.5px solid color.adjust($border-color, $lightness: 3%);
+    border-radius: 25px;
+    font-size: 14.5px;
+    outline: none;
+    transition: all $transition-speed;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+
+    &:focus {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px color.adjust($primary-color, $alpha: -0.85);
+    }
+  }
+
+  .send-button {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, $gradient-start, $gradient-end);
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 10px;
+    cursor: pointer;
+    transition: all $transition-speed;
+    box-shadow: 0 2px 6px rgba(0, 120, 255, 0.25);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 120, 255, 0.35);
+      background: linear-gradient(135deg, color.adjust($gradient-start, $lightness: 5%), color.adjust($gradient-end, $lightness: 5%));
+    }
+
+    &:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(0, 120, 255, 0.2);
+    }
+
+    &:disabled {
+      background: linear-gradient(135deg, #a0a0a0, #c0c0c0);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+  }
+}
+
+.message-count {
+  padding: 8px 12px;
+  text-align: right;
+  font-size: 12px;
+  color: $lighter-text;
+  background-color: $background-color;
+}
+
+// Typing indicator animation
+.typing-container {
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(0, 120, 255, 0.03) !important;
+  border: 1px solid rgba(0, 120, 255, 0.1) !important;
+}
+
+.typing-text {
+  font-size: 12px !important;
+  color: $light-text;
+  margin-top: 5px !important;
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 0;
+
+  span {
+    width: 7px;
+    height: 7px;
+    background-color: $primary-color;
+    border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out both;
+    opacity: 0.7;
+
+    &:nth-child(1) {
+      animation-delay: 0s;
+    }
+
+    &:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+  }
+}
+
+.message-limit-warning {
+  padding: 20px;
+  background-color: rgba(255, 240, 240, 0.5);
+  border-radius: 10px;
+  margin: 16px;
+  text-align: center;
+  border: 1px solid color.adjust(#e74c3c, $alpha: -0.7);
+
+  p {
+    margin-bottom: 15px;
+    color: #e74c3c;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .clear-chat-button {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all $transition-speed;
+    box-shadow: 0 2px 6px rgba(231, 76, 60, 0.25);
+
+    &:hover {
+      background: linear-gradient(135deg, #e74c3c, color.adjust(#c0392b, $lightness: -10%));
+      box-shadow: 0 4px 8px rgba(231, 76, 60, 0.35);
+      transform: translateY(-2px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Add this new animation
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// And this one
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// Add animation for username highlight
+@keyframes highlight-pulse {
+  0% {
+    color: $primary-color;
+    text-shadow: none;
+  }
+  50% {
+    color: color.adjust($primary-color, $lightness: -15%);
+    text-shadow: 0 0 8px rgba(0, 120, 255, 0.4);
+  }
+  100% {
+    color: $primary-color;
+    text-shadow: none;
+  }
+} 

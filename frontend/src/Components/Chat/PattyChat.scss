@@ -1,0 +1,317 @@
+// Variables
+$primary-color: #0078ff;
+$secondary-color: #e6f0ff;
+$border-color: #e0e0e0;
+$text-color: #333;
+$light-text: #555;
+$lighter-text: #777;
+$background-color: #fff;
+
+// Import SASS color module
+@use "sass:color";
+
+.patty-chat-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 350px;
+  max-height: 500px;
+  background-color: $background-color;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  z-index: 9999;
+  border: 1px solid $border-color;
+  overflow: hidden;
+  transform: translateY(0);
+  opacity: 1;
+
+  &.collapsed {
+    max-height: 60px;
+  }
+
+  &.hidden {
+    transform: translateY(100px);
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.patty-chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: $background-color;
+  border-bottom: 1px solid $border-color;
+  cursor: pointer;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .header-right {
+    color: $lighter-text;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: $text-color;
+  }
+
+  .beta-badge {
+    background-color: $primary-color;
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 4px;
+  }
+
+  .patty-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: $primary-color;
+    color: white;
+    font-size: 14px;
+  }
+}
+
+.patty-chat-messages {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 320px;
+
+  .message {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    animation: fadeIn 0.3s ease;
+
+    .message-content {
+      padding: 10px 12px;
+      border-radius: 8px;
+      max-width: 80%;
+
+      p {
+        margin: 0;
+        line-height: 1.4;
+        font-size: 14px;
+      }
+    }
+  }
+
+  .user-message {
+    flex-direction: row-reverse;
+
+    .message-content {
+      background-color: $primary-color;
+      color: white;
+      border-top-right-radius: 0;
+    }
+  }
+
+  .assistant-message {
+    .message-content {
+      background-color: $secondary-color;
+      color: $text-color;
+      border-top-left-radius: 0;
+    }
+
+    .assistant-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: $primary-color;
+      color: white;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+  }
+}
+
+.suggested-questions {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .suggestion-pill {
+    background-color: $secondary-color;
+    color: $text-color;
+    padding: 8px 12px;
+    border-radius: 18px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: color.adjust($secondary-color, $lightness: -5%);
+    }
+  }
+}
+
+.patty-chat-input {
+  display: flex;
+  padding: 12px;
+  border-top: 1px solid $border-color;
+  background-color: $background-color;
+
+  input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid $border-color;
+    border-radius: 20px;
+    font-size: 14px;
+    outline: none;
+
+    &:focus {
+      border-color: $primary-color;
+    }
+  }
+
+  .send-button {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: $primary-color;
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: color.adjust($primary-color, $lightness: -10%);
+    }
+
+    &:disabled {
+      background-color: $border-color;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.message-count {
+  padding: 8px 12px;
+  text-align: right;
+  font-size: 12px;
+  color: $lighter-text;
+  background-color: $background-color;
+}
+
+// Typing indicator animation
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  span {
+    width: 6px;
+    height: 6px;
+    background-color: $light-text;
+    border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out both;
+
+    &:nth-child(1) {
+      animation-delay: 0s;
+    }
+
+    &:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+  }
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.6;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Toggle switch style for the beta switch
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+  margin-left: auto;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 20px;
+
+    &:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+  }
+
+  input:checked + .slider {
+    background-color: $primary-color;
+  }
+
+  input:checked + .slider:before {
+    transform: translateX(20px);
+  }
+} 

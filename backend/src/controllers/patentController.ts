@@ -201,11 +201,6 @@ export const filterPatentsByFamily = async (req: AuthRequest, res: Response) => 
       return sortedPatents[0].patentId;
     });
 
-    console.log('Filtered patents:', {
-      totalFiltered: filteredPatents.length,
-      patents: filteredPatents
-    });
-
     res.status(200).json({
       statusCode: 200,
       message: 'Patents filtered by family successfully',

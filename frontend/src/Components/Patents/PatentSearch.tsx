@@ -547,16 +547,8 @@ const PatentSearch: React.FC<PatentSearchProps> = ({
         const successfulIds = results.map((result) => result.patentId);
         onSearch(successfulIds);
 
-        // Add each patent to search history
-        try {
-          for (const patentId of successfulIds) {
-            await authApi.addToSearchHistory(patentId, "search");
-          }
-          // Dispatch event to notify history component
-          emitPatentSearchedEvent();
-        } catch (error) {
-          console.error("Error adding patents to search history:", error);
-        }
+        // Dispatch event to notify history component
+        emitPatentSearchedEvent();
       }
     } catch (error) {
       console.error("Search error:", error);
@@ -598,14 +590,8 @@ const PatentSearch: React.FC<PatentSearchProps> = ({
     // Set patent IDs array
     setPatentIds([cleanedId]);
 
-    // Add to search history when selecting a patent
-    try {
-      await authApi.addToSearchHistory(cleanedId, "direct-selection");
-      // Dispatch an event to notify that a patent has been searched
-      emitPatentSearchedEvent();
-    } catch (error) {
-      console.error("Error adding patent to search history:", error);
-    }
+    // Dispatch an event to notify that a patent has been searched
+    emitPatentSearchedEvent();
 
     // Perform a direct search for this patent ID
     handlePerformSearch([cleanedId]);
@@ -617,14 +603,8 @@ const PatentSearch: React.FC<PatentSearchProps> = ({
 
     setSelectedPatent(summary);
 
-    // Add to search history when viewing details
-    try {
-      await authApi.addToSearchHistory(summary.patentId, "view-details");
-      // Dispatch an event to notify that a patent has been searched
-      window.dispatchEvent(new CustomEvent("patent-searched"));
-    } catch (error) {
-      console.error("Error adding patent to search history:", error);
-    }
+    // Dispatch an event to notify that a patent has been searched
+    window.dispatchEvent(new CustomEvent("patent-searched"));
 
     if (selectedApi === "unified") {
       // Use the original patentId directly without any formatting
@@ -849,11 +829,6 @@ const PatentSearch: React.FC<PatentSearchProps> = ({
           );
 
           if (patentIds.length > 0) {
-            // Add each patent to search history individually
-            for (const patentId of patentIds) {
-              await authApi.addToSearchHistory(patentId, "search");
-            }
-
             // If there are multiple patents, create a folder to contain them
             if (patentIds.length > 1) {
               // Generate a folder name with date and time

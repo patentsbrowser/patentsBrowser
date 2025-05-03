@@ -10,6 +10,8 @@
 .env
 .env.local
 .env.*.local
+.env.stage
+.env.production
 
 # Logs
 logs/
@@ -50,4 +52,4 @@ coverage/
 
 # Temporary files
 tmp/
-temp/ 
+temp/ .env*
