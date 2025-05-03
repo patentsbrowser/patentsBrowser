@@ -28,7 +28,7 @@ import AdminDashboard from "./Components/Admin/AdminDashboard";
 import PaymentHistory from "./Components/PaymentHistory";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ChatProvider } from './context/ChatContext';
-import PatentHistory from "./Components/PatentHistory/PatentHistory";
+// import PatentHistory from "./Components/PatentHistory/PatentHistory";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -187,7 +187,7 @@ const App = () => {
                                     <Route path="update-profile" element={<UpdateProfile />} />
                                     <Route path="profile" element={<ProfilePage />} />
                                     <Route path="subscription" element={<SubscriptionPage />} />
-                                    <Route path="patent-history" element={<PatentHistory />} />
+                                    {/* <Route path="patent-history" element={<PatentHistory />} /> */}
                                     <Route path="payment-history" element={<PaymentHistory />} />
                                     
                                     {/* Admin Routes - Protected by AdminGuard */}

@@ -1,10 +1,10 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 // Schema for storing chat messages
 const chatMessageSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
     required: false,
   },
   sessionId: {
@@ -54,8 +54,8 @@ const predefinedQASchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['general', 'patent', 'search', 'technical', 'other'],
-    default: 'general',
+    enum: ["general", "patent", "search", "technical", "other"],
+    default: "general",
     index: true,
   },
   patentId: {
@@ -73,27 +73,27 @@ const predefinedQASchema = new mongoose.Schema({
   },
 });
 
-predefinedQASchema.pre('save', function(next) {
+predefinedQASchema.pre("save", function (next) {
   this.updatedAt = new Date();
   next();
 });
 
 // Create text index for semantic search
-chatMessageSchema.index({ message: 'text', response: 'text' });
-predefinedQASchema.index({ question: 'text', answer: 'text' });
+chatMessageSchema.index({ message: "text", response: "text" });
+predefinedQASchema.index({ question: "text", answer: "text" });
 
-export const ChatMessage = mongoose.model('ChatMessage', chatMessageSchema);
-export const PredefinedQA = mongoose.model('PredefinedQA', predefinedQASchema);
+export const ChatMessage = mongoose.model("ChatMessage", chatMessageSchema);
+export const PredefinedQA = mongoose.model("PredefinedQA", predefinedQASchema);
 
 // Function to initialize predefined Q&A pairs
 export const initializePredefinedQA = async () => {
   try {
     const count = await PredefinedQA.countDocuments();
-    
+
     // Only initialize if the collection is empty
     if (count === 0) {
-      console.log('Initializing predefined Q&A pairs...');
-      
+      console.log("Initializing predefined Q&A pairs...");
+
       const platformQA = [
         {
           question: "What features does PatentsBrowser offer?",
@@ -105,7 +105,7 @@ export const initializePredefinedQA = async () => {
 4) AI Assistant (Beta): Helps generate patent summaries and analysis reports
 5) Batch Processing: Upload files to extract multiple patent IDs with a single click`,
           keywords: ["features", "platform", "capabilities", "benefits"],
-          category: "general"
+          category: "general",
         },
         {
           question: "How does the Patent Highlighter work?",
@@ -119,8 +119,13 @@ export const initializePredefinedQA = async () => {
 • Synonym expansion (finds related terms automatically)
 
 This allows researchers to quickly identify relevant sections within lengthy patent documents, significantly reducing manual review time.`,
-          keywords: ["highlighter", "highlight", "search pattern", "complex search"],
-          category: "technical"
+          keywords: [
+            "highlighter",
+            "highlight",
+            "search pattern",
+            "complex search",
+          ],
+          category: "technical",
         },
         {
           question: "Tell me about Smart Search for patent IDs",
@@ -133,8 +138,14 @@ This allows researchers to quickly identify relevant sections within lengthy pat
 • Process multiple IDs at once, even from unstructured text
 
 This eliminates manual correction and ensures consistent, accurate patent references throughout your research.`,
-          keywords: ["smart search", "patent id", "transform", "format", "correction"],
-          category: "technical"
+          keywords: [
+            "smart search",
+            "patent id",
+            "transform",
+            "format",
+            "correction",
+          ],
+          category: "technical",
         },
         {
           question: "How do folders and workflow management work?",
@@ -148,7 +159,7 @@ This eliminates manual correction and ensures consistent, accurate patent refere
 
 When creating a new workfile inside a folder, the system can automatically filter out patents you've already reviewed, ensuring efficient progression through large patent sets.`,
           keywords: ["folder", "workflow", "organize", "duplicate"],
-          category: "technical"
+          category: "technical",
         },
         {
           question: "What AI features are coming soon?",
@@ -162,7 +173,7 @@ When creating a new workfile inside a folder, the system can automatically filte
 
 This will significantly reduce the time needed to understand complex patents and produce research reports. The feature is currently in beta and will be fully available soon.`,
           keywords: ["ai", "assistant", "report", "summary", "upcoming"],
-          category: "technical"
+          category: "technical",
         },
         {
           question: "How does batch processing of patent IDs work?",
@@ -176,16 +187,16 @@ This will significantly reduce the time needed to understand complex patents and
 
 This is particularly useful when dealing with prior art search results, office actions, or competitor analysis documents that mention multiple patents.`,
           keywords: ["upload", "extract", "batch", "file", "multiple patents"],
-          category: "technical"
-        }
+          category: "technical",
+        },
       ];
-      
+
       await PredefinedQA.insertMany(platformQA);
-      console.log('Predefined Q&A pairs initialized successfully');
+      console.log("Predefined Q&A pairs initialized successfully");
     }
   } catch (error) {
-    console.error('Error initializing predefined Q&A pairs:', error);
+    console.error("Error initializing predefined Q&A pairs:", error);
   }
 };
 
-export default { ChatMessage, PredefinedQA, initializePredefinedQA }; 
+export default { ChatMessage, PredefinedQA, initializePredefinedQA };

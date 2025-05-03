@@ -365,27 +365,7 @@ export const authApi = {
     }
   },
 
-  addToSearchHistory: async (patentId: string, source?: string) => {
-    try {
-      const response = await api.post(`/saved-patents/search-history`, { 
-        patentId, 
-        source 
-      });
-      return response.data;
-    } catch (error: any) {
-      console.error('Error adding to search history:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          data: error.config?.data
-        }
-      });
-      throw error;
-    }
-  },
+  // Removed addToSearchHistory API call that was returning 404
 
   deleteItem: async (params: { itemType: 'folder' | 'workfile' | 'patent', folderId: string, workFileId?: string, patentId?: string }) => {
     const response = await axios.post(`${baseURL}/saved-patents/delete-item`, params, {
