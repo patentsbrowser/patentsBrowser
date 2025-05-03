@@ -640,11 +640,7 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
           onClose={() => setShowWorkFileSelector(false)}
           onSelect={async (folderId: string, workFileName: string) => {
             try {
-              console.log('PatentSummaryList onSelect called with:', {
-                folderId,
-                workFileName,
-                selectedPatentIds
-              });
+              
               
               if (!Array.isArray(selectedPatentIds) || selectedPatentIds.length === 0) {
                 toast.error('No patents selected to add to workfile');

@@ -181,9 +181,6 @@ export const getSavedPatents = async (req: AuthRequest, res: Response) => {
 
 export const saveCustomPatentList = async (req: AuthRequest, res: Response) => {
   try {
-    console.log('customPatentList controller called');
-    console.log('User:', req.user);
-    
     const { name, patentIds, source, workFileName } = req.body;
     const userId = req.user?.userId;
 
@@ -209,10 +206,6 @@ export const saveCustomPatentList = async (req: AuthRequest, res: Response) => {
     
     // Standardize all patent IDs
     const standardizedPatentIds = patentIds.map(id => standardizePatentNumber(id.trim()));
-    console.log('Standardized patent IDs:', standardizedPatentIds);
-    
-    console.log('Creating custom list with:', { userId, name, patentIds: standardizedPatentIds, source: folderSource });
-    
     // Create workfile with user-provided name or default
     const workFile = {
       _id: new mongoose.Types.ObjectId().toString(),

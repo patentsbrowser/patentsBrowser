@@ -51,7 +51,6 @@ const WorkFileSelector: React.FC<WorkFileSelectorProps> = ({
 
   useEffect(() => {
     // Log the selectedPatentIds whenever they change
-    console.log('WorkFileSelector received selectedPatentIds:', selectedPatentIds);
   }, [selectedPatentIds]);
 
   const fetchFolders = async () => {
@@ -109,12 +108,6 @@ const WorkFileSelector: React.FC<WorkFileSelectorProps> = ({
             patentsToAdd = patentsToAdd.filter(id => !existingPatentIds.has(id));
           }
         }
-
-        console.log('Sending API request with:', { 
-          folderId: selectedFolder, 
-          workFileName, 
-          patentIds: patentsToAdd 
-        });
 
         // Call the onSelect callback instead of directly making the API call
         // This allows the parent component to handle the API call with the correct patentIds
