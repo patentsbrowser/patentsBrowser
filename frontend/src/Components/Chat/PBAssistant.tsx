@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPaperPlane, faQuestionCircle, faChevronDown, faChevronUp, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faPaperPlane, faQuestionCircle, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 import './PBAssistant.scss';
 import chatService from '../../services/chatService';
 import { getModalState } from '../../utils/modalHelper';
@@ -103,9 +103,7 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
     const welcomeMessages: Message[] = [
       {
         id: '1',
-        content: user?.name 
-          ? `Hello, <strong>${user.name}</strong>! I'm PB Assistant, your assistant for patent-related questions. How may I assist you today?`
-          : "Hello! I'm PB Assistant, your assistant for patent-related questions. How may I assist you today?",
+        content: chatService.getWelcomeMessage(),
         sender: 'assistant',
         timestamp: new Date()
       }
@@ -204,31 +202,6 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
     }
   };
 
-  const clearChat = async () => {
-    // Confirm with the user
-    if (!window.confirm('Are you sure you want to clear this chat session?')) {
-      return;
-    }
-    
-    try {
-      const success = await chatService.clearSession();
-      if (success) {
-        // Create a new session
-        const newSessionId = chatService.createNewSession();
-        setSessionId(newSessionId);
-        
-        // Clear local messages and add welcome message
-        addWelcomeMessage();
-        toast.success('Chat history cleared successfully');
-      } else {
-        toast.error('Failed to clear chat history');
-      }
-    } catch (error) {
-      console.error('Error clearing chat:', error);
-      toast.error('Failed to clear chat history');
-    }
-  };
-
   const sendMessage = async (content: string) => {
     // Don't allow sending if we've reached the message limit
     if (messageCount >= 10) {
@@ -299,18 +272,6 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
           <div className="beta-badge">Beta</div>
         </div>
         <div className="header-right">
-          {!isCollapsed && (
-            <button 
-              className="clear-chat-btn" 
-              onClick={(e) => { 
-                e.stopPropagation(); 
-                clearChat(); 
-              }}
-              title="Clear chat history"
-            >
-              <FontAwesomeIcon icon={faTrash} />
-            </button>
-          )}
           <FontAwesomeIcon icon={isCollapsed ? faChevronUp : faChevronDown} />
         </div>
       </div>
@@ -398,10 +359,7 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
             </>
           ) : (
             <div className="message-limit-warning">
-              <p>You've reached the maximum number of messages for this session. To continue, please clear the chat history.</p>
-              <button onClick={clearChat} className="clear-chat-button">
-                <FontAwesomeIcon icon={faTrash} /> Clear Chat
-              </button>
+              <p>You've reached the maximum number of messages for this session. To continue, please start a new conversation.</p>
             </div>
           )}
         </>
