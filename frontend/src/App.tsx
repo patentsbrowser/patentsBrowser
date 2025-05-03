@@ -24,13 +24,11 @@ import SessionHandler from "./Components/Authentication/SessionHandler";
 import LandingPage from "./Components/LandingPage/LandingPage";
 import Forum from "./Components/Forum/Forum";
 import SubscriptionPage from "./Components/Subscription/SubscriptionPage";
-import PatentHistory from "./Components/PatentHistory";
 import AdminDashboard from "./Components/Admin/AdminDashboard";
 import PaymentHistory from "./Components/PaymentHistory";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ChatProvider } from './context/ChatContext';
-// import { store } from './Redux/store';
-
+import PatentHistory from "./Components/PatentHistory";
 // Error boundary to catch rendering errors
 interface ErrorBoundaryProps {
   children: ReactNode;
