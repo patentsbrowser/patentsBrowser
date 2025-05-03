@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
-import { ChatMessage, PredefinedQA } from '../models/ChatMessage';
+import { ChatMessage, PredefinedQA } from '../models/ChatMessage.js';
 import { v4 as uuidv4 } from 'uuid';
-import mongoose from 'mongoose';
-import chatAIService from '../services/chatAIService';
+import chatAIService from '../services/chatAIService.js';
 
 export const sendMessage = async (req: Request, res: Response) => {
   try {
@@ -26,8 +25,7 @@ export const sendMessage = async (req: Request, res: Response) => {
       message,
       response,
       metadata: {
-        userAgent: req.headers['user-agent'],
-        ipAddress: req.ip
+        userAgent: req.headers['user-agent']
       }
     });
 
