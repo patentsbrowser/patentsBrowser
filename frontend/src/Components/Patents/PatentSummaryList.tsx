@@ -425,14 +425,6 @@ const PatentSummaryList: React.FC<PatentSummaryListProps> = ({
         // Update Redux state with search results
         dispatch(setSearchResults(patents));
         
-        // Add to search history
-        for (const patentId of patentIds) {
-          await authApi.addToSearchHistory(patentId, 'folder-search');
-        }
-        
-        // Dispatch event to notify history component
-        window.dispatchEvent(new CustomEvent('patent-searched'));
-        
         toast.success('Patents searched successfully');
       } else {
         toast.error('No results found');

@@ -219,6 +219,7 @@ const App = () => {
                       </Routes>
                     </Router>
                   </ChatProvider>
+
                 </ThemeProvider>
               </AdminProvider>
             </AuthProvider>
