@@ -28,8 +28,8 @@ import AdminDashboard from "./Components/Admin/AdminDashboard";
 import PaymentHistory from "./Components/PaymentHistory";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ChatProvider } from './context/ChatContext';
-import PatentHistory from "./Components/PatentHistory";
-// Error boundary to catch rendering errors
+import PatentHistory from "./Components/PatentHistory/PatentHistory";
+
 interface ErrorBoundaryProps {
   children: ReactNode;
 }
