@@ -29,6 +29,21 @@ const chatMessageSchema = new mongoose.Schema({
     type: Object,
     default: {},
   },
+  feedback: {
+    helpful: {
+      type: Boolean,
+      default: null,
+    },
+    comment: {
+      type: String,
+      default: null,
+    }
+  },
+  aiMatchSource: {
+    type: String,
+    enum: ['predefined', 'textSearch', 'aiGenerated', 'fallback'],
+    default: 'fallback'
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -62,6 +77,18 @@ const predefinedQASchema = new mongoose.Schema({
     type: String,
     required: false,
     index: true,
+  },
+  useCount: {
+    type: Number,
+    default: 0,
+  },
+  positiveRating: {
+    type: Number,
+    default: 0,
+  },
+  negativeRating: {
+    type: Number,
+    default: 0,
   },
   createdAt: {
     type: Date,

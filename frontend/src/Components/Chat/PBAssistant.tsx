@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPaperPlane, faQuestionCircle, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
+import { faPaperPlane, faQuestionCircle, faChevronDown, faChevronUp, faThumbsUp, faThumbsDown } from '@fortawesome/free-solid-svg-icons';
 import './PBAssistant.scss';
 import chatService from '../../services/chatService';
 import { getModalState } from '../../utils/modalHelper';
@@ -12,6 +12,7 @@ interface Message {
   content: string;
   sender: 'user' | 'assistant';
   timestamp: Date;
+  feedback?: 'positive' | 'negative' | null;
 }
 
 interface PBAssistantProps {
@@ -57,6 +58,7 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
   const [messageCount, setMessageCount] = useState(0);
   const [isHidden, setIsHidden] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
+  const [feedbackInProgress, setFeedbackInProgress] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastScrollY = useRef(0);
@@ -79,7 +81,9 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
             id: msg._id,
             content: msg.sender === 'user' ? msg.message : msg.response,
             sender: msg.sender === 'user' ? 'user' : 'assistant',
-            timestamp: new Date(msg.createdAt)
+            timestamp: new Date(msg.createdAt),
+            feedback: msg.feedback?.helpful === true ? 'positive' : 
+                      msg.feedback?.helpful === false ? 'negative' : null
           }));
           
           setMessages(formattedMessages);
@@ -202,6 +206,34 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
     }
   };
 
+  const handleFeedback = async (messageId: string, isHelpful: boolean) => {
+    // Prevent multiple feedback submissions for the same message
+    if (feedbackInProgress === messageId) return;
+    
+    setFeedbackInProgress(messageId);
+    
+    // Update UI immediately for better user experience
+    setMessages(prev => 
+      prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, feedback: isHelpful ? 'positive' : 'negative' } 
+          : msg
+      )
+    );
+    
+    try {
+      // Send feedback to backend
+      await chatService.submitFeedback(messageId, { 
+        helpful: isHelpful 
+      });
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      // No need to revert UI as the user already sees their selection
+    } finally {
+      setFeedbackInProgress(null);
+    }
+  };
+
   const sendMessage = async (content: string) => {
     // Don't allow sending if we've reached the message limit
     if (messageCount >= 10) {
@@ -302,6 +334,34 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
                     />
                   ) : (
                     <p dangerouslySetInnerHTML={{ __html: message.content }}></p>
+                  )}
+                  
+                  {message.sender === 'assistant' && message.id !== '1' && message.id !== '2' && (
+                    <div className="message-feedback">
+                      {message.feedback ? (
+                        <div className="feedback-submitted">
+                          {message.feedback === 'positive' ? 'Thanks for the positive feedback!' : 'Thanks for your feedback'}
+                        </div>
+                      ) : (
+                        <>
+                          <span className="feedback-prompt">Was this helpful?</span>
+                          <button 
+                            className={`feedback-btn positive ${feedbackInProgress === message.id ? 'disabled' : ''}`}
+                            onClick={() => handleFeedback(message.id, true)}
+                            disabled={feedbackInProgress === message.id}
+                          >
+                            <FontAwesomeIcon icon={faThumbsUp} />
+                          </button>
+                          <button 
+                            className={`feedback-btn negative ${feedbackInProgress === message.id ? 'disabled' : ''}`}
+                            onClick={() => handleFeedback(message.id, false)}
+                            disabled={feedbackInProgress === message.id}
+                          >
+                            <FontAwesomeIcon icon={faThumbsDown} />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

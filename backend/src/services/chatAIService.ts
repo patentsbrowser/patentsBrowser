@@ -1,12 +1,40 @@
 import axios from 'axios';
-import { PredefinedQA } from '../models/ChatMessage.js';
+import { PredefinedQA, ChatMessage } from '../models/ChatMessage.js';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+const MAX_CONVERSATION_HISTORY = 5; // Number of previous exchanges to include
 
+// Get conversation history for context
+const getConversationHistory = async (sessionId: string, limit = MAX_CONVERSATION_HISTORY) => {
+  try {
+    const history = await ChatMessage.find({ sessionId })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .exec();
+    
+    // Return in chronological order
+    return history.reverse();
+  } catch (error) {
+    console.error('Error fetching conversation history:', error);
+    return [];
+  }
+};
+
+// Format conversation history into messages for OpenAI
+const formatConversationHistory = (history: any[]) => {
+  const messages: {role: string, content: string}[] = [];
+  
+  history.forEach(item => {
+    messages.push({ role: 'user', content: item.message });
+    messages.push({ role: 'assistant', content: item.response });
+  });
+  
+  return messages;
+};
 
 // Function to find the best matching predefined answer using AI
-export const findBestMatch = async (userQuery: string, patentId?: string): Promise<string | null> => {
+export const findBestMatch = async (userQuery: string, patentId?: string, sessionId?: string): Promise<{answer: string | null, source: string}> => {
   try {
     // First, fetch all predefined Q&A pairs
     const query: any = {};
@@ -17,7 +45,7 @@ export const findBestMatch = async (userQuery: string, patentId?: string): Promi
     const predefinedQAs = await PredefinedQA.find(query);
     
     if (predefinedQAs.length === 0) {
-      return null;
+      return { answer: null, source: 'none' };
     }
     
     // Format the Q&A pairs for the AI prompt
@@ -28,6 +56,18 @@ export const findBestMatch = async (userQuery: string, patentId?: string): Promi
     // Use OpenAI to find the best match
     if (OPENAI_API_KEY) {
       try {
+        // Get conversation history if sessionId is provided
+        let conversationContext = '';
+        if (sessionId) {
+          const history = await getConversationHistory(sessionId, 2);
+          if (history.length > 0) {
+            conversationContext = '\n\nRecent conversation history:\n';
+            history.forEach((item, index) => {
+              conversationContext += `User: ${item.message}\nAssistant: ${item.response}\n\n`;
+            });
+          }
+        }
+
         const response = await axios.post(
           OPENAI_ENDPOINT,
           {
@@ -35,7 +75,7 @@ export const findBestMatch = async (userQuery: string, patentId?: string): Promi
             messages: [
               {
                 role: 'system',
-                content: `You are an AI assistant for a patent research platform. Your task is to match user queries to the most relevant predefined answer. Here are the available Q&A pairs:\n\n${qaPairsText}`
+                content: `You are an AI assistant for a patent research platform. Your task is to match user queries to the most relevant predefined answer. Here are the available Q&A pairs:\n\n${qaPairsText}${conversationContext}`
               },
               {
                 role: 'user',
@@ -58,7 +98,17 @@ export const findBestMatch = async (userQuery: string, patentId?: string): Promi
         
         if (matchIndex >= 0 && matchIndex < predefinedQAs.length) {
           console.log(`AI matched query "${userQuery}" to Q&A pair #${matchIndex + 1}`);
-          return predefinedQAs[matchIndex].answer;
+          
+          // Update the useCount for this predefined QA
+          await PredefinedQA.findByIdAndUpdate(
+            predefinedQAs[matchIndex]._id,
+            { $inc: { useCount: 1 } }
+          );
+          
+          return { 
+            answer: predefinedQAs[matchIndex].answer,
+            source: 'predefined'
+          };
         }
       } catch (aiError) {
         console.error('OpenAI API error:', aiError);
@@ -72,7 +122,16 @@ export const findBestMatch = async (userQuery: string, patentId?: string): Promi
       if (qa.keywords && qa.keywords.some(keyword => 
         userQuery.toLowerCase().includes(keyword.toLowerCase())
       )) {
-        return qa.answer;
+        // Update the useCount for this predefined QA
+        await PredefinedQA.findByIdAndUpdate(
+          qa._id,
+          { $inc: { useCount: 1 } }
+        );
+        
+        return { 
+          answer: qa.answer,
+          source: 'keyword' 
+        };
       }
       
       // Check if query contains words from the question
@@ -83,22 +142,31 @@ export const findBestMatch = async (userQuery: string, patentId?: string): Promi
       ).length;
       
       if (matchCount >= 2) {
-        return qa.answer;
+        // Update the useCount for this predefined QA
+        await PredefinedQA.findByIdAndUpdate(
+          qa._id,
+          { $inc: { useCount: 1 } }
+        );
+        
+        return { 
+          answer: qa.answer,
+          source: 'textMatch'
+        };
       }
     }
     
-    return null;
+    return { answer: null, source: 'none' };
   } catch (error) {
     console.error('Error finding best match:', error);
-    return null;
+    return { answer: null, source: 'error' };
   }
 };
 
 // Function to generate a response using AI when no predefined answer is found
-export const generateAIResponse = async (userQuery: string, patentId?: string): Promise<string | null> => {
+export const generateAIResponse = async (userQuery: string, patentId?: string, sessionId?: string): Promise<{answer: string | null, source: string}> => {
   if (!OPENAI_API_KEY) {
     console.log('No OpenAI API key found in environment variables');
-    return null;
+    return { answer: null, source: 'missingApiKey' };
   }
 
   try {
@@ -133,15 +201,27 @@ export const generateAIResponse = async (userQuery: string, patentId?: string): 
 
     systemPrompt += `\nIf you don't have a good answer for the user's question, admit you don't know rather than making up information. Your response should be concise and direct.`;
 
-    // Call OpenAI API with enhanced context
+    // Get conversation history if sessionId is provided
+    let messages = [{ role: 'system', content: systemPrompt }];
+    
+    if (sessionId) {
+      const history = await getConversationHistory(sessionId);
+      
+      if (history.length > 0) {
+        const historyMessages = formatConversationHistory(history);
+        messages = messages.concat(historyMessages);
+      }
+    }
+    
+    // Add the current user query
+    messages.push({ role: 'user', content: userQuery });
+
+    // Call OpenAI API with enhanced context and conversation history
     const response = await axios.post(
       OPENAI_ENDPOINT,
       {
         model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userQuery }
-        ],
+        messages,
         max_tokens: 250,
         temperature: 0.7
       },
@@ -167,13 +247,19 @@ export const generateAIResponse = async (userQuery: string, patentId?: string): 
     ];
     
     if (uncertaintyPhrases.some(phrase => answer.toLowerCase().includes(phrase.toLowerCase()))) {
-      return "Sorry, I don't have specific information related to your question. Is there anything else about the PatentsBrowser platform I can help you with?";
+      return { 
+        answer: "Sorry, I don't have specific information related to your question. Is there anything else about the PatentsBrowser platform I can help you with?",
+        source: 'aiUncertain'
+      };
     }
     
-    return answer;
+    return { answer, source: 'aiGenerated' };
   } catch (error) {
     console.error('Error generating AI response:', error);
-    return "I'm having trouble connecting to my knowledge base. Please try asking your question again or ask something about the PatentsBrowser platform features.";
+    return { 
+      answer: "I'm having trouble connecting to my knowledge base. Please try asking your question again or ask something about the PatentsBrowser platform features.",
+      source: 'aiError'
+    };
   }
 };
 

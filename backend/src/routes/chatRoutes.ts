@@ -21,6 +21,10 @@ router.get('/user/sessions', authenticate, chatController.getUserSessions);
 // This requires authentication to prevent unauthorized deletion
 router.delete('/session/:sessionId', authenticate, chatController.clearSession);
 
+// Route for submitting feedback for a chat message
+// Using optional authentication to allow both guests and authenticated users to provide feedback
+router.post('/feedback/:messageId', optionalAuthenticate, chatController.saveFeedback);
+
 // Admin routes for managing predefined Q&A pairs
 // Get all predefined Q&A pairs with pagination and filtering
 router.get('/qa', authenticate, isAdmin, chatController.getPredefinedQAs);

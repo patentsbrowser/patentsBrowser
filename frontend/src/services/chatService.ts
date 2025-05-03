@@ -14,6 +14,11 @@ interface User {
   isAdmin?: boolean;
 }
 
+interface FeedbackData {
+  helpful: boolean;
+  comment?: string;
+}
+
 // This service is responsible for handling chat interactions with the backend
 export const chatService = {
   // Maintain the current session ID
@@ -96,6 +101,17 @@ export const chatService = {
         messageId: Date.now().toString(),
         sessionId: this._sessionId
       };
+    }
+  },
+
+  // Submit feedback for a chat message
+  async submitFeedback(messageId: string, feedback: FeedbackData): Promise<boolean> {
+    try {
+      const response = await axiosInstance.post(`/chat/feedback/${messageId}`, feedback);
+      return response.status === 200;
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      return false;
     }
   },
 
