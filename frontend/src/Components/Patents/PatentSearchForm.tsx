@@ -1,6 +1,5 @@
 import React, { useRef, useEffect } from "react";
 import { ApiSource } from "./types";
-import { useWindowSize } from "./utils";
 import toast from "react-hot-toast";
 import PatentFigureSearch from "./PatentFigureSearch";
 import { patentApi } from "../../api/patents";
@@ -31,21 +30,14 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
   setPatentIds,
   isLoading,
   selectedApi,
-  setSelectedApi,
   searchType,
   setSearchType,
   setShowSmartSearchModal,
   onSearch,
   formatPatentId,
-  selectedFilter = "grant",
-  setSelectedFilter,
   setIsLoading,
 }) => {
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const selectRef = useRef<HTMLSelectElement>(null);
-  const { width } = useWindowSize();
-  const isMobile = width <= 768;
-
   // Detect theme changes and update select element
   useEffect(() => {
     const isDarkTheme =
@@ -114,10 +106,6 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
     setPatentIds([]);
   };
 
-  const handleApiChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedApi(e.target.value as ApiSource);
-  };
-
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) {
@@ -149,8 +137,8 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
           setShowSmartSearchModal(true);
           // Search with transformed IDs
           await patentApi.searchMultiplePatentsUnified(
-            transformedResponse,
-            "smart"
+            transformedResponse
+            // "smart"
           );
           // Call onSearch with the transformed IDs
           onSearch(transformedResponse);
@@ -176,16 +164,6 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
     <form onSubmit={handleSearch} className="search-form">
       <div className="search-controls">
         <div className="api-select-container">
-          {/* <select
-            value={selectedApi}
-            onChange={handleApiChange}
-            className="api-select"
-            data-theme="light"
-            ref={selectRef}
-          >
-            <option value="unified">Unified Patents Database</option>
-            <option value="serpapi">Google Patents (SerpAPI)</option>
-          </select> */}
           <div className="search-type-selector">
             <label>
               <input
