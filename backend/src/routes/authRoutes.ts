@@ -12,7 +12,7 @@ const authController = new AuthController();
 // Signup route
 router.post('/signup', async (req:any, res:any) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, isOrganization, organizationName, organizationSize, organizationType } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -29,20 +29,27 @@ router.post('/signup', async (req:any, res:any) => {
     trialEndDate.setDate(trialEndDate.getDate() + 14);
 
     // Create new user with trial period
-    const user = new User({
-      name,
+    let userData: any = {
       email,
       password,
       subscriptionStatus: 'trial',
       trialEndDate,
-      trialStartDate: new Date()
-    });
+      trialStartDate: new Date(),
+      isOrganization: !!isOrganization
+    };
+    if (!isOrganization) {
+      userData.name = name;
+    } else {
+      userData.organizationName = organizationName;
+      userData.organizationSize = organizationSize;
+      userData.organizationType = organizationType;
+    }
 
+    const user = new User(userData);
     await user.save();
 
     // Generate and send OTP
     const otp = generateOTP();
-    
     try {
       await sendOTP(email, otp);
       storeOTP(email, otp);
@@ -58,7 +65,11 @@ router.post('/signup', async (req:any, res:any) => {
           id: user._id,
           name: user.name,
           email: user.email,
-          trialEndDate: user.trialEndDate
+          trialEndDate: user.trialEndDate,
+          isOrganization: user.isOrganization,
+          organizationName: user.organizationName,
+          organizationSize: user.organizationSize,
+          organizationType: user.organizationType
         }
       }
     });

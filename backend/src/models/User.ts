@@ -45,7 +45,7 @@ interface IUser extends mongoose.Document {
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true,
+    required: function() { return !this.isOrganization; },
     trim: true
   },
   email: {

@@ -12,12 +12,15 @@ import { GoogleLogin as GoogleOAuthLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../api/axiosConfig';
 
-const Signup: React.FC = () => {
+interface SignupProps {
+  switchToLogin?: () => void;
+}
+
+const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
   const [activeTab, setActiveTab] = useState<'individual' | 'organization'>('individual');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [isOTPSent, setIsOTPSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -65,6 +68,7 @@ const Signup: React.FC = () => {
           setUser(user);
         }
         setShowOTPModal(false); // Close the modal after successful verification
+        navigate('/auth/dashboard'); // Now navigate after OTP verification
       } else if (response.message) {
         toast.error(response.message);
       }
@@ -88,10 +92,8 @@ const Signup: React.FC = () => {
 
   const handleSignupSuccess = (data: any) => {
     toast.success('Account created successfully!');
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    setUser(data.user);
-    navigate('/auth/dashboard');
+    setShowOTPModal(true); // Show OTP modal after signup
+    // Do not navigate or set user yet
   };
 
   const handleTabSwitch = (tab: 'individual' | 'organization') => {
@@ -101,30 +103,7 @@ const Signup: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      // show error
-      return;
-    }
-    if (activeTab === 'individual') {
-      // Submit individual signup
-      const payload = {
-        name: fullName,
-        email,
-        password
-      };
-      // call signup API for individual
-    } else {
-      // Submit organization signup
-      const payload = {
-        name: fullName,
-        email,
-        password,
-        organizationName,
-        organizationSize,
-        organizationType
-      };
-      // call signup API for organization
-    }
+    signupMutation.mutate();
   };
 
   const handleVerifyOTP = async (otp: string) => {
@@ -259,22 +238,24 @@ const Signup: React.FC = () => {
               </motion.div>
             </>
           )}
-          <motion.div 
-            className="form-group"
-            variants={inputVariants}
-          >
-            <label htmlFor="name">Full Name</label>
-            <input
-              type="text"
-              id="name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Enter your full name"
-              required
-              disabled={signupMutation.isPending}
-              className="auth-input"
-            />
-          </motion.div>
+          {activeTab === 'individual' && (
+            <motion.div 
+              className="form-group"
+              variants={inputVariants}
+            >
+              <label htmlFor="name">Full Name</label>
+              <input
+                type="text"
+                id="name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Enter your full name"
+                required
+                disabled={signupMutation.isPending}
+                className="auth-input"
+              />
+            </motion.div>
+          )}
           <motion.div 
             className="form-group"
             variants={inputVariants}
@@ -320,22 +301,6 @@ const Signup: React.FC = () => {
               </motion.button>
             </div>
           </motion.div>
-          <motion.div 
-            className="form-group"
-            variants={inputVariants}
-          >
-            <label htmlFor="confirmPassword">Confirm Password</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirm your password"
-              required
-              disabled={signupMutation.isPending}
-              className="auth-input"
-            />
-          </motion.div>
           <motion.button 
             type="submit" 
             className="submit-btn"
@@ -353,16 +318,16 @@ const Signup: React.FC = () => {
           <div className="divider">
             <span>Or</span>
           </div>
-          <div className="google-login-container">
-            <GoogleOAuthLogin
-              onSuccess={(credentialResponse) => {
-                // Handle Google signup
-                console.log(credentialResponse);
-              }}
-              onError={() => {
-                toast.error("Google signup failed");
-              }}
-            />
+          <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+            <span>Already have an account? </span>
+            <button
+              type="button"
+              className="switch-btn"
+              onClick={typeof switchToLogin === 'function' ? switchToLogin : undefined}
+              style={{ background: 'none', border: 'none', color: '#ffd700', cursor: 'pointer', fontWeight: 600 }}
+            >
+              Sign In
+            </button>
           </div>
         </motion.form>
       </motion.div>
