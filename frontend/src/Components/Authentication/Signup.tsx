@@ -12,10 +12,12 @@ import { GoogleLogin as GoogleOAuthLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../api/axiosConfig';
 
-const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
+const Signup: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'individual' | 'organization'>('individual');
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [isOTPSent, setIsOTPSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -31,7 +33,7 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
       return authApi.signup({
         email,
         password,
-        name,
+        name: fullName,
         isOrganization,
         organizationName: isOrganization ? organizationName : undefined,
         organizationSize: isOrganization ? organizationSize : undefined,
@@ -63,7 +65,6 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
           setUser(user);
         }
         setShowOTPModal(false); // Close the modal after successful verification
-        switchToLogin();
       } else if (response.message) {
         toast.error(response.message);
       }
@@ -93,13 +94,37 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
     navigate('/auth/dashboard');
   };
 
+  const handleTabSwitch = (tab: 'individual' | 'organization') => {
+    setActiveTab(tab);
+    // Optionally reset org fields when switching
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isOrganization && (!organizationName || !organizationSize || !organizationType)) {
-      toast.error('Please fill in all organization details');
+    if (password !== confirmPassword) {
+      // show error
       return;
     }
-    signupMutation.mutate();
+    if (activeTab === 'individual') {
+      // Submit individual signup
+      const payload = {
+        name: fullName,
+        email,
+        password
+      };
+      // call signup API for individual
+    } else {
+      // Submit organization signup
+      const payload = {
+        name: fullName,
+        email,
+        password,
+        organizationName,
+        organizationSize,
+        organizationType
+      };
+      // call signup API for organization
+    }
   };
 
   const handleVerifyOTP = async (otp: string) => {
@@ -166,79 +191,21 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
           initial="hidden"
           animate="visible"
         >
-          <motion.div 
-            className="form-group"
-            variants={inputVariants}
-          >
-            <label htmlFor="name">Full Name</label>
-            <input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter your full name"
-              required
-              disabled={signupMutation.isPending}
-              className="auth-input"
-            />
-          </motion.div>
-          <motion.div 
-            className="form-group"
-            variants={inputVariants}
-          >
-            <label htmlFor="email">Email Address</label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              required
-              disabled={signupMutation.isPending}
-              className="auth-input"
-            />
-          </motion.div>
-          <motion.div 
-            className="form-group"
-            variants={inputVariants}
-          >
-            <label htmlFor="password">Password</label>
-            <div className="password-input-container">
-              <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                required
-                minLength={6}
-                disabled={signupMutation.isPending}
-                className="auth-input"
-              />
-              <motion.button 
-                type="button" 
-                className="password-toggle-btn" 
-                onClick={togglePasswordVisibility}
-                tabIndex={-1}
-                whileHover={{ scale: 1.2, rotate: 5 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </motion.button>
-            </div>
-          </motion.div>
-          <motion.div className="form-group" variants={inputVariants}>
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={isOrganization}
-                onChange={(e) => setIsOrganization(e.target.checked)}
-                disabled={signupMutation.isPending}
-              />
-              Sign up as an Organization
-            </label>
-          </motion.div>
-          {isOrganization && (
+          <div className="signup-tabs">
+            <button
+              className={activeTab === 'individual' ? 'active' : ''}
+              onClick={() => handleTabSwitch('individual')}
+            >
+              Individual
+            </button>
+            <button
+              className={activeTab === 'organization' ? 'active' : ''}
+              onClick={() => handleTabSwitch('organization')}
+            >
+              Organization
+            </button>
+          </div>
+          {activeTab === 'organization' && (
             <>
               <motion.div className="form-group" variants={inputVariants}>
                 <label htmlFor="organizationName">Organization Name</label>
@@ -292,6 +259,83 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
               </motion.div>
             </>
           )}
+          <motion.div 
+            className="form-group"
+            variants={inputVariants}
+          >
+            <label htmlFor="name">Full Name</label>
+            <input
+              type="text"
+              id="name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Enter your full name"
+              required
+              disabled={signupMutation.isPending}
+              className="auth-input"
+            />
+          </motion.div>
+          <motion.div 
+            className="form-group"
+            variants={inputVariants}
+          >
+            <label htmlFor="email">Email Address</label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              required
+              disabled={signupMutation.isPending}
+              className="auth-input"
+            />
+          </motion.div>
+          <motion.div 
+            className="form-group"
+            variants={inputVariants}
+          >
+            <label htmlFor="password">Password</label>
+            <div className="password-input-container">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+                minLength={6}
+                disabled={signupMutation.isPending}
+                className="auth-input"
+              />
+              <motion.button 
+                type="button" 
+                className="password-toggle-btn" 
+                onClick={togglePasswordVisibility}
+                tabIndex={-1}
+                whileHover={{ scale: 1.2, rotate: 5 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </motion.button>
+            </div>
+          </motion.div>
+          <motion.div 
+            className="form-group"
+            variants={inputVariants}
+          >
+            <label htmlFor="confirmPassword">Confirm Password</label>
+            <input
+              type="password"
+              id="confirmPassword"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirm your password"
+              required
+              disabled={signupMutation.isPending}
+              className="auth-input"
+            />
+          </motion.div>
           <motion.button 
             type="submit" 
             className="submit-btn"
@@ -321,25 +365,6 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
             />
           </div>
         </motion.form>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-        >
-          Already have an account?{' '}
-          <motion.button 
-            className="switch-btn"
-            onClick={switchToLogin}
-            disabled={signupMutation.isPending}
-            whileHover={{ 
-              scale: 1.1,
-              color: "#ffffff",
-              textShadow: "0 0 8px rgba(255, 215, 0, 0.8)" 
-            }}
-          >
-            Sign In
-          </motion.button>
-        </motion.p>
       </motion.div>
 
       <OTPModal
