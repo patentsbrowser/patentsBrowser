@@ -14,6 +14,9 @@ interface Plan {
   discountPercentage: number;
   features: string[];
   popular: boolean;
+  isOrganizationPlan?: boolean;
+  organizationPrice?: number;
+  memberPrice?: number;
 }
 
 interface Subscription {
@@ -34,6 +37,7 @@ interface PaymentModalProps {
   onPaymentComplete: () => void;
   isTrialActive: boolean;
   trialDaysRemaining: number;
+  isOrganizationPlan: boolean;
 }
 
 // Helper functions
@@ -104,7 +108,7 @@ export function validateUPIReference(refNumber: string) {
 }
 
 // UPI Payment Modal Component
-const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPaymentComplete, isTrialActive, trialDaysRemaining }) => {
+const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPaymentComplete, isTrialActive, trialDaysRemaining, isOrganizationPlan }) => {
   const [transactionId, setTransactionId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [upiOrderId, setUpiOrderId] = useState('');
@@ -765,6 +769,7 @@ const SubscriptionPage: React.FC = () => {
   const [trialDaysRemaining, setTrialDaysRemaining] = useState(0);
   const [stackedPlans, setStackedPlans] = useState<Subscription[]>([]);
   const [totalBenefits, setTotalBenefits] = useState<any>(null);
+  const [showOrganizationPlans, setShowOrganizationPlans] = useState(false);
   
   // Use ref to track if data has been fetched to prevent duplicate calls
   const dataFetchedRef = useRef(false);
@@ -827,7 +832,13 @@ const SubscriptionPage: React.FC = () => {
         const result = await SubscriptionService.getSubscriptionPlans();
         
         if (result.success) {
-          setPlans(result.data);
+          // Transform the plans to include organization pricing
+          const transformedPlans = result.data.map((plan: Plan) => ({
+            ...plan,
+            organizationPrice: plan.price * 2, // Double the price for organization admin
+            memberPrice: 1000, // ₹1000 per member per month
+          }));
+          setPlans(transformedPlans);
         } else {
           console.error('Failed to load plans:', result.message);
         }
@@ -842,11 +853,7 @@ const SubscriptionPage: React.FC = () => {
     };
 
     fetchPlans();
-    
-    // Cleanup function
-    return () => {
-    };
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, []);
 
   const handleSubscribeClick = (plan: Plan) => {
     // Don't allow new subscription if there's a pending payment
@@ -880,6 +887,21 @@ const SubscriptionPage: React.FC = () => {
         <div className="subscription-header">
           <h1>Subscription Plans</h1>
           <p>Choose the perfect plan for your patent search needs</p>
+          
+          <div className="plan-type-toggle">
+            <button
+              className={`toggle-btn ${!showOrganizationPlans ? 'active' : ''}`}
+              onClick={() => setShowOrganizationPlans(false)}
+            >
+              Individual Plans
+            </button>
+            <button
+              className={`toggle-btn ${showOrganizationPlans ? 'active' : ''}`}
+              onClick={() => setShowOrganizationPlans(true)}
+            >
+              Organization Plans
+            </button>
+          </div>
         </div>
 
         {isLoadingSubscription ? (
@@ -985,7 +1007,9 @@ const SubscriptionPage: React.FC = () => {
             )}
 
             <div className="subscription-plans">
-              {plans.map((plan) => (
+              {plans
+                .filter(plan => showOrganizationPlans ? plan.isOrganizationPlan : !plan.isOrganizationPlan)
+                .map((plan) => (
                 <div 
                   key={plan._id} 
                   className={`plan-card ${plan.popular ? 'popular' : ''}`}
@@ -994,9 +1018,16 @@ const SubscriptionPage: React.FC = () => {
                   <h3>{plan.name}</h3>
                   <div className="price">
                     <span className="currency">₹</span>
-                    <span className="amount">{formatIndianPrice(plan.price)}</span>
+                    <span className="amount">
+                      {showOrganizationPlans ? formatIndianPrice(plan.organizationPrice || plan.price * 2) : formatIndianPrice(plan.price)}
+                    </span>
                     <span className="period">/{getPlanTypeDisplay(plan.type)}</span>
                   </div>
+                  {showOrganizationPlans && (
+                    <div className="member-price">
+                      <span>+ ₹{formatIndianPrice(plan.memberPrice || 1000)} per member/month</span>
+                    </div>
+                  )}
                   {plan.discountPercentage > 0 && (
                     <div className="discount">{plan.discountPercentage}% discount</div>
                   )}
@@ -1004,6 +1035,14 @@ const SubscriptionPage: React.FC = () => {
                     {plan.features.map((feature, index) => (
                       <li key={index}>{feature}</li>
                     ))}
+                    {showOrganizationPlans && (
+                      <>
+                        <li>Organization-wide access</li>
+                        <li>Member management dashboard</li>
+                        <li>Invite system for team members</li>
+                        <li>Usage analytics and reporting</li>
+                      </>
+                    )}
                   </ul>
                   <button 
                     className="subscribe-btn"
@@ -1033,6 +1072,7 @@ const SubscriptionPage: React.FC = () => {
             onPaymentComplete={handlePaymentComplete}
             isTrialActive={isTrialActive}
             trialDaysRemaining={trialDaysRemaining}
+            isOrganizationPlan={showOrganizationPlans}
           />
         )}
       </div>

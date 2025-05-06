@@ -33,6 +33,13 @@ interface IUser extends mongoose.Document {
   subscriptionEndDate: Date;
   trialStartDate: Date;
   isPendingPayment: boolean;
+  // Organization fields
+  isOrganization: boolean;
+  organizationName?: string;
+  organizationSize?: string;
+  organizationType?: string;
+  organizationId?: mongoose.Types.ObjectId;
+  organizationRole?: 'admin' | 'member';
 }
 
 const userSchema = new mongoose.Schema({
@@ -157,6 +164,31 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // Organization fields
+  isOrganization: {
+    type: Boolean,
+    default: false
+  },
+  organizationName: {
+    type: String,
+    trim: true
+  },
+  organizationSize: {
+    type: String,
+    enum: ['1-10', '11-50', '51-200', '201-500', '501+']
+  },
+  organizationType: {
+    type: String,
+    enum: ['startup', 'enterprise', 'government', 'educational', 'research', 'other']
+  },
+  organizationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Organization'
+  },
+  organizationRole: {
+    type: String,
+    enum: ['admin', 'member']
+  }
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next) {

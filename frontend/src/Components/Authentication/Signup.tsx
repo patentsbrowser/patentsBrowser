@@ -8,6 +8,9 @@ import OTPModal from './OTPModal/OTPModal';
 import Loader from '../Loader/Loader';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import { GoogleLogin as GoogleOAuthLogin } from '@react-oauth/google';
+import { useNavigate } from 'react-router-dom';
+import axiosInstance from '../../api/axiosConfig';
 
 const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
   const [email, setEmail] = useState('');
@@ -16,25 +19,37 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [isOTPSent, setIsOTPSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isOrganization, setIsOrganization] = useState(false);
+  const [organizationName, setOrganizationName] = useState('');
+  const [organizationSize, setOrganizationSize] = useState('');
+  const [organizationType, setOrganizationType] = useState('');
   const { setUser } = useAuth();
+  const navigate = useNavigate();
 
   const signupMutation = useMutation({
-    mutationFn: authApi.signup,
-    onSuccess: (response: any) => {
-      if (response.statusCode === 200 || response.statusCode === 201) {
-        toast.success('Account created! Please verify your email.');
-        setIsOTPSent(true);
-        setShowOTPModal(true);
-      } else if (response.message) {
-        // Handle non-error but non-success responses with messages
-        toast.error(response.message);
+    mutationFn: () => {
+      return authApi.signup({
+        email,
+        password,
+        name,
+        isOrganization,
+        organizationName: isOrganization ? organizationName : undefined,
+        organizationSize: isOrganization ? organizationSize : undefined,
+        organizationType: isOrganization ? organizationType : undefined,
+      });
+    },
+    onSuccess: (response) => {
+      if (response.statusCode === 200) {
+        handleSignupSuccess(response.data);
+      } else {
+        toast.error(response.message || 'Signup failed. Please try again.');
       }
     },
     onError: (error: any) => {
       console.error('Signup error:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Registration failed. Please try again.';
+      const errorMessage = error.response?.data?.message || error.message || 'Signup failed. Please try again.';
       toast.error(errorMessage);
-    }
+    },
   });
 
   const verifyOTPMutation = useMutation({
@@ -70,9 +85,21 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
     }
   });
 
+  const handleSignupSuccess = (data: any) => {
+    toast.success('Account created successfully!');
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    setUser(data.user);
+    navigate('/auth/dashboard');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    signupMutation.mutate({ email, password, name });
+    if (isOrganization && (!organizationName || !organizationSize || !organizationType)) {
+      toast.error('Please fill in all organization details');
+      return;
+    }
+    signupMutation.mutate();
   };
 
   const handleVerifyOTP = async (otp: string) => {
@@ -143,13 +170,13 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
             className="form-group"
             variants={inputVariants}
           >
-            <label htmlFor="name">Name</label>
+            <label htmlFor="name">Full Name</label>
             <input
               type="text"
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Enter your name"
+              placeholder="Enter your full name"
               required
               disabled={signupMutation.isPending}
               className="auth-input"
@@ -182,8 +209,9 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Create a password"
+                placeholder="Enter your password"
                 required
+                minLength={6}
                 disabled={signupMutation.isPending}
                 className="auth-input"
               />
@@ -199,6 +227,71 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
               </motion.button>
             </div>
           </motion.div>
+          <motion.div className="form-group" variants={inputVariants}>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={isOrganization}
+                onChange={(e) => setIsOrganization(e.target.checked)}
+                disabled={signupMutation.isPending}
+              />
+              Sign up as an Organization
+            </label>
+          </motion.div>
+          {isOrganization && (
+            <>
+              <motion.div className="form-group" variants={inputVariants}>
+                <label htmlFor="organizationName">Organization Name</label>
+                <input
+                  type="text"
+                  id="organizationName"
+                  value={organizationName}
+                  onChange={(e) => setOrganizationName(e.target.value)}
+                  placeholder="Enter organization name"
+                  required
+                  disabled={signupMutation.isPending}
+                  className="auth-input"
+                />
+              </motion.div>
+              <motion.div className="form-group" variants={inputVariants}>
+                <label htmlFor="organizationSize">Organization Size</label>
+                <select
+                  id="organizationSize"
+                  value={organizationSize}
+                  onChange={(e) => setOrganizationSize(e.target.value)}
+                  required
+                  disabled={signupMutation.isPending}
+                  className="auth-input"
+                >
+                  <option value="">Select organization size</option>
+                  <option value="1-10">1-10 employees</option>
+                  <option value="11-50">11-50 employees</option>
+                  <option value="51-200">51-200 employees</option>
+                  <option value="201-500">201-500 employees</option>
+                  <option value="501+">501+ employees</option>
+                </select>
+              </motion.div>
+              <motion.div className="form-group" variants={inputVariants}>
+                <label htmlFor="organizationType">Organization Type</label>
+                <select
+                  id="organizationType"
+                  value={organizationType}
+                  onChange={(e) => setOrganizationType(e.target.value)}
+                  required
+                  disabled={signupMutation.isPending}
+                  className="auth-input"
+                >
+                  <option value="">Select organization type</option>
+                  <option value="startup">Startup</option>
+                  <option value="enterprise">Enterprise</option>
+                  <option value="government">Government</option>
+                  <option value="educational">Educational</option>
+                  <option value="research">Research Institution</option>
+                  <option value="other">Other</option>
+                </select>
+              </motion.div>
+            </>
+          )}
           <motion.button 
             type="submit" 
             className="submit-btn"
@@ -213,6 +306,20 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
           >
             {signupMutation.isPending ? 'Creating Account...' : 'Create Account'}
           </motion.button>
+          <div className="divider">
+            <span>Or</span>
+          </div>
+          <div className="google-login-container">
+            <GoogleOAuthLogin
+              onSuccess={(credentialResponse) => {
+                // Handle Google signup
+                console.log(credentialResponse);
+              }}
+              onError={() => {
+                toast.error("Google signup failed");
+              }}
+            />
+          </div>
         </motion.form>
         <motion.p
           initial={{ opacity: 0 }}
