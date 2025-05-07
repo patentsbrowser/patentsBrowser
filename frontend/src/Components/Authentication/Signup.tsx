@@ -24,7 +24,6 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
   const [organizationName, setOrganizationName] = useState('');
   const [organizationSize, setOrganizationSize] = useState('');
   const [organizationType, setOrganizationType] = useState('');
-  const { setUser } = useAuth();
   const navigate = useNavigate();
   const [pendingEmail, setPendingEmail] = useState("");
 

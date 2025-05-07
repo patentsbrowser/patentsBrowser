@@ -14,10 +14,6 @@
 }
 
 .otp-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   width: 90%;
   max-width: 500px;
   padding: 2.5rem;
@@ -29,6 +25,7 @@
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(89, 46, 131, 0.4);
   color: white;
   animation: modalAppear 0.3s ease-out;
+  margin: auto;
   
   @keyframes modalAppear {
     from {
