@@ -259,6 +259,8 @@ $transition-speed: 0.3s;
     outline: none;
     transition: all $transition-speed;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    color: #000000 !important;
+    background-color: white !important;
 
     &:focus {
       border-color: $primary-color;
@@ -451,5 +453,54 @@ $transition-speed: 0.3s;
   100% {
     color: $primary-color;
     text-shadow: none;
+  }
+}
+
+.message-feedback {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: $light-text;
+  
+  .feedback-prompt {
+    margin-right: 10px;
+  }
+  
+  .feedback-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    margin-right: 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    
+    &.positive {
+      color: #4CAF50;
+      
+      &:hover {
+        background-color: rgba(76, 175, 80, 0.1);
+      }
+    }
+    
+    &.negative {
+      color: #F44336;
+      
+      &:hover {
+        background-color: rgba(244, 67, 54, 0.1);
+      }
+    }
+    
+    &.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+  
+  .feedback-submitted {
+    font-style: italic;
+    color: $primary-color;
   }
 } 

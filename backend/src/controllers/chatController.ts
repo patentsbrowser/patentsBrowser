@@ -15,7 +15,7 @@ export const sendMessage = async (req: Request, res: Response) => {
     }
 
     // Process the message and generate a response
-    const response = await processMessage(message, patentId, userId);
+    const { response, source } = await processMessage(message, patentId, userId, sessionId);
 
     // Save the message and response to the database
     const chatMessage = new ChatMessage({
@@ -24,6 +24,7 @@ export const sendMessage = async (req: Request, res: Response) => {
       patentId,
       message,
       response,
+      aiMatchSource: source,
       metadata: {
         userAgent: req.headers['user-agent']
       }
@@ -351,50 +352,163 @@ export const deletePredefinedQA = async (req: Request, res: Response) => {
 };
 
 // Helper function to process messages and generate responses
-const processMessage = async (message: string, patentId?: string, userId?: string): Promise<string> => {
+const processMessage = async (message: string, patentId?: string, userId?: string, sessionId?: string): Promise<{response: string, source: string}> => {
   try {
     // Step 1: Try to find a matching predefined answer using AI and our database
-    const aiMatch = await chatAIService.findBestMatch(message, patentId);
-    if (aiMatch) {
-      console.log('AI found a matching predefined answer');
-      return aiMatch;
+    try {
+      const aiMatch = await chatAIService.findBestMatch(message, patentId, sessionId);
+      if (aiMatch.answer) {
+        console.log('AI found a matching predefined answer');
+        return { response: aiMatch.answer, source: aiMatch.source };
+      }
+    } catch (matchError) {
+      console.error('Error in findBestMatch:', matchError);
+      // Continue to next method if this fails
     }
 
     // Step 2: If no direct match, try the database text search
-    if (patentId) {
-      const patentSpecificQA = await PredefinedQA.findOne({
-        $and: [
-          { patentId },
-          { $text: { $search: message } }
-        ]
+    try {
+      if (patentId) {
+        const patentSpecificQA = await PredefinedQA.findOne({
+          $and: [
+            { patentId },
+            { $text: { $search: message } }
+          ]
+        }).sort({ score: { $meta: "textScore" } });
+
+        if (patentSpecificQA) {
+          // Update usage count
+          await PredefinedQA.findByIdAndUpdate(
+            patentSpecificQA._id,
+            { $inc: { useCount: 1 } }
+          );
+          return { response: patentSpecificQA.answer, source: 'textSearch' };
+        }
+      }
+
+      // Look for general predefined QA
+      const generalQA = await PredefinedQA.findOne({
+        $text: { $search: message }
       }).sort({ score: { $meta: "textScore" } });
 
-      if (patentSpecificQA) {
-        return patentSpecificQA.answer;
+      if (generalQA) {
+        // Update usage count
+        await PredefinedQA.findByIdAndUpdate(
+          generalQA._id,
+          { $inc: { useCount: 1 } }
+        );
+        return { response: generalQA.answer, source: 'textSearch' };
       }
-    }
-
-    // Look for general predefined QA
-    const generalQA = await PredefinedQA.findOne({
-      $text: { $search: message }
-    }).sort({ score: { $meta: "textScore" } });
-
-    if (generalQA) {
-      return generalQA.answer;
+    } catch (dbError) {
+      console.error('Error in database text search:', dbError);
+      // Continue to next method if this fails
     }
 
     // Step 3: If still no match, try to generate a response with AI
-    const aiResponse = await chatAIService.generateAIResponse(message, patentId);
-    if (aiResponse) {
-      console.log('Using AI-generated response');
-      return aiResponse;
+    try {
+      const aiResponse = await chatAIService.generateAIResponse(message, patentId, sessionId);
+      if (aiResponse.answer) {
+        console.log('Using AI-generated response');
+        return { response: aiResponse.answer, source: aiResponse.source };
+      }
+    } catch (aiError) {
+      console.error('Error in generateAIResponse:', aiError);
+      // Fall through to fallback response
     }
 
-    // Step 4: Fallback to a simple response
-    return "I'm sorry, I don't have enough information to answer that question. Is there something specific about the PatentsBrowser platform you'd like to know?";
+    // Step 4: Fallback to a simple response based on predefined set
+    console.log('Using fallback response');
+    const fallbackResponses = [
+      "I'm here to help with questions about PatentsBrowser. You can ask about the Patent Highlighter, Smart Search, or Workflow Management features.",
+      "PatentsBrowser offers tools like Patent Highlighter, Smart Search, and Workflow Management. Is there anything specific about these features you'd like to know?",
+      "I can help answer questions about PatentsBrowser features. What would you like to know about our patent research tools?",
+      "I'm sorry, I don't have enough information to answer that specific question. I can tell you about PatentsBrowser features like patent highlighting or smart search if you're interested."
+    ];
+    
+    // Select a random fallback response
+    const randomIndex = Math.floor(Math.random() * fallbackResponses.length);
+    return { 
+      response: fallbackResponses[randomIndex],
+      source: 'fallback'
+    };
   } catch (error) {
     console.error('Error processing message:', error);
-    return "I apologize, but I encountered an issue processing your request. Please try again with a different question.";
+    return { 
+      response: "I'm here to assist with PatentsBrowser. You can ask me about our features like Patent Highlighter or Smart Search.",
+      source: 'error'
+    };
+  }
+};
+
+// Save user feedback for a specific chat message
+export const saveFeedback = async (req: Request, res: Response) => {
+  try {
+    const { messageId } = req.params;
+    const { helpful, comment } = req.body;
+    
+    if (helpful === undefined) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Feedback helpful status is required',
+        data: null
+      });
+    }
+    
+    // Find the message
+    const message = await ChatMessage.findById(messageId);
+    
+    if (!message) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'Message not found',
+        data: null
+      });
+    }
+    
+    // Update the message with feedback
+    message.feedback = {
+      helpful,
+      comment: comment || null
+    };
+    
+    await message.save();
+    
+    // If this response came from a predefined QA, update its rating
+    if (message.aiMatchSource === 'predefined' || message.aiMatchSource === 'textSearch') {
+      // Find the QA that was used
+      // This is an approximation, as we don't store the exact QA ID used
+      const qa = await PredefinedQA.findOne({
+        answer: message.response
+      });
+      
+      if (qa) {
+        // Update the rating counter based on feedback
+        if (helpful) {
+          await PredefinedQA.findByIdAndUpdate(
+            qa._id,
+            { $inc: { positiveRating: 1 } }
+          );
+        } else {
+          await PredefinedQA.findByIdAndUpdate(
+            qa._id,
+            { $inc: { negativeRating: 1 } }
+          );
+        }
+      }
+    }
+    
+    res.status(200).json({
+      statusCode: 200,
+      message: 'Feedback saved successfully',
+      data: null
+    });
+  } catch (error) {
+    console.error('Error saving feedback:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Failed to save feedback',
+      data: null
+    });
   }
 };
 
@@ -406,5 +520,6 @@ export default {
   getPredefinedQAs,
   createPredefinedQA,
   updatePredefinedQA,
-  deletePredefinedQA
+  deletePredefinedQA,
+  saveFeedback
 }; 

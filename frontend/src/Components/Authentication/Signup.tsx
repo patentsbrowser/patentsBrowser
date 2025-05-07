@@ -8,47 +8,72 @@ import OTPModal from './OTPModal/OTPModal';
 import Loader from '../Loader/Loader';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+interface SignupProps {
+  switchToLogin?: () => void;
+}
 
-const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
+const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
+  const [activeTab, setActiveTab] = useState<'individual' | 'organization'>('individual');
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
   const [showOTPModal, setShowOTPModal] = useState(false);
-  const [isOTPSent, setIsOTPSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isOrganization, setIsOrganization] = useState(false);
+  const [organizationName, setOrganizationName] = useState('');
+  const [organizationSize, setOrganizationSize] = useState('');
+  const [organizationType, setOrganizationType] = useState('');
   const { setUser } = useAuth();
+  const navigate = useNavigate();
+  const [pendingEmail, setPendingEmail] = useState("");
 
   const signupMutation = useMutation({
-    mutationFn: authApi.signup,
-    onSuccess: (response: any) => {
-      if (response.statusCode === 200 || response.statusCode === 201) {
-        toast.success('Account created! Please verify your email.');
-        setIsOTPSent(true);
+    mutationFn: () => {
+      const payload: any = {
+        email,
+        password,
+        isOrganization,
+        organizationName: isOrganization ? organizationName : undefined,
+        organizationSize: isOrganization ? organizationSize : undefined,
+        organizationType: isOrganization ? organizationType : undefined,
+      };
+      if (!isOrganization) {
+        payload.name = fullName;
+      }
+      return authApi.signup(payload);
+    },
+    onSuccess: (response) => {
+      if (response.statusCode === 200 && response.data?.mode === 'verify') {
+        setPendingEmail(email);
         setShowOTPModal(true);
-      } else if (response.message) {
-        // Handle non-error but non-success responses with messages
-        toast.error(response.message);
+        return;
+      }
+      if (response.data?.mode === 'login') {
+        toast.error('Account already exists. Please login.');
+        return;
+      }
+      if (response.statusCode === 200) {
+        handleSignupSuccess(response.data);
+        setShowOTPModal(true);
+      } else {
+        toast.error(response.message || 'Signup failed. Please try again.');
       }
     },
     onError: (error: any) => {
       console.error('Signup error:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Registration failed. Please try again.';
+      const errorMessage = error.response?.data?.message || error.message || 'Signup failed. Please try again.';
       toast.error(errorMessage);
-    }
+    },
   });
 
   const verifyOTPMutation = useMutation({
-    mutationFn: (otp: string) => authApi.verifyOTP(email, otp),
+    mutationFn: (otp: string) => authApi.verifyOTP(pendingEmail, otp),
     onSuccess: (response: any) => {
       if (response.statusCode === 200) {
         toast.success(response.message);
-        // Set user state from localStorage
-        const user = JSON.parse(localStorage.getItem('user') || 'null');
-        if (user) {
-          setUser(user);
-        }
-        setShowOTPModal(false); // Close the modal after successful verification
-        switchToLogin();
+        setShowOTPModal(false);
+        navigate('/auth/login');
       } else if (response.message) {
         toast.error(response.message);
       }
@@ -60,7 +85,7 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
   });
 
   const resendOTPMutation = useMutation({
-    mutationFn: () => authApi.resendOTP(email),
+    mutationFn: () => authApi.resendOTP(pendingEmail),
     onSuccess: (response: any) => {
       toast.success(response.message || 'OTP resent successfully!');
     },
@@ -70,9 +95,34 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
     }
   });
 
+  const handleSignupSuccess = (data: any) => {
+    console.log('Handling signup success:', data); // Debug log
+    toast.success('Account created successfully! Please verify your email.');
+    setShowOTPModal(true); // Show OTP modal after signup
+    // Store user data in localStorage
+    localStorage.setItem('user', JSON.stringify(data.user));
+  };
+
+  const handleTabSwitch = (tab: 'individual' | 'organization') => {
+    setActiveTab(tab);
+    setIsOrganization(tab === 'organization');
+    // Optionally reset org fields when switching
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    signupMutation.mutate({ email, password, name });
+    if (activeTab === 'organization') {
+      if (!organizationName || !organizationSize || !organizationType) {
+        toast.error('Please fill all organization details.');
+        return;
+      }
+    } else {
+      if (!fullName) {
+        toast.error('Please enter your full name.');
+        return;
+      }
+    }
+    signupMutation.mutate();
   };
 
   const handleVerifyOTP = async (otp: string) => {
@@ -139,22 +189,92 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
           initial="hidden"
           animate="visible"
         >
-          <motion.div 
-            className="form-group"
-            variants={inputVariants}
-          >
-            <label htmlFor="name">Name</label>
-            <input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter your name"
-              required
-              disabled={signupMutation.isPending}
-              className="auth-input"
-            />
-          </motion.div>
+          <div className="signup-tabs">
+            <button
+              className={activeTab === 'individual' ? 'active' : ''}
+              onClick={() => handleTabSwitch('individual')}
+            >
+              Individual
+            </button>
+            <button
+              className={activeTab === 'organization' ? 'active' : ''}
+              onClick={() => handleTabSwitch('organization')}
+            >
+              Organization
+            </button>
+          </div>
+          {activeTab === 'organization' && (
+            <>
+              <motion.div className="form-group" variants={inputVariants}>
+                <label htmlFor="organizationName">Organization Name</label>
+                <input
+                  type="text"
+                  id="organizationName"
+                  value={organizationName}
+                  onChange={(e) => setOrganizationName(e.target.value)}
+                  placeholder="Enter organization name"
+                  required
+                  disabled={signupMutation.isPending}
+                  className="auth-input"
+                />
+              </motion.div>
+              <motion.div className="form-group" variants={inputVariants}>
+                <label htmlFor="organizationSize">Organization Size</label>
+                <select
+                  id="organizationSize"
+                  value={organizationSize}
+                  onChange={(e) => setOrganizationSize(e.target.value)}
+                  required
+                  disabled={signupMutation.isPending}
+                  className="auth-input"
+                >
+                  <option value="">Select organization size</option>
+                  <option value="1-10">1-10 employees</option>
+                  <option value="11-50">11-50 employees</option>
+                  <option value="51-200">51-200 employees</option>
+                  <option value="201-500">201-500 employees</option>
+                  <option value="501+">501+ employees</option>
+                </select>
+              </motion.div>
+              <motion.div className="form-group" variants={inputVariants}>
+                <label htmlFor="organizationType">Organization Type</label>
+                <select
+                  id="organizationType"
+                  value={organizationType}
+                  onChange={(e) => setOrganizationType(e.target.value)}
+                  required
+                  disabled={signupMutation.isPending}
+                  className="auth-input"
+                >
+                  <option value="">Select organization type</option>
+                  <option value="startup">Startup</option>
+                  <option value="enterprise">Enterprise</option>
+                  <option value="government">Government</option>
+                  <option value="educational">Educational</option>
+                  <option value="research">Research Institution</option>
+                  <option value="other">Other</option>
+                </select>
+              </motion.div>
+            </>
+          )}
+          {activeTab === 'individual' && (
+            <motion.div 
+              className="form-group"
+              variants={inputVariants}
+            >
+              <label htmlFor="name">Full Name</label>
+              <input
+                type="text"
+                id="name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Enter your full name"
+                required
+                disabled={signupMutation.isPending}
+                className="auth-input"
+              />
+            </motion.div>
+          )}
           <motion.div 
             className="form-group"
             variants={inputVariants}
@@ -182,8 +302,9 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Create a password"
+                placeholder="Enter your password"
                 required
+                minLength={6}
                 disabled={signupMutation.isPending}
                 className="auth-input"
               />
@@ -213,37 +334,46 @@ const Signup = ({ switchToLogin }: { switchToLogin: () => void }) => {
           >
             {signupMutation.isPending ? 'Creating Account...' : 'Create Account'}
           </motion.button>
+          <div className="divider">
+            <span>Or</span>
+          </div>
+          <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+            <span>Already have an account? </span>
+            <button
+              type="button"
+              className="switch-btn"
+              onClick={typeof switchToLogin === 'function' ? switchToLogin : undefined}
+              style={{ background: 'none', border: 'none', color: '#ffd700', cursor: 'pointer', fontWeight: 600 }}
+            >
+              Sign In
+            </button>
+          </div>
         </motion.form>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-        >
-          Already have an account?{' '}
-          <motion.button 
-            className="switch-btn"
-            onClick={switchToLogin}
-            disabled={signupMutation.isPending}
-            whileHover={{ 
-              scale: 1.1,
-              color: "#ffffff",
-              textShadow: "0 0 8px rgba(255, 215, 0, 0.8)" 
-            }}
-          >
-            Sign In
-          </motion.button>
-        </motion.p>
       </motion.div>
 
-      <OTPModal
-        isOpen={showOTPModal}
-        onClose={() => setShowOTPModal(false)}
-        onVerify={handleVerifyOTP}
-        onResend={handleResendOTP}
-        email={email}
-        isResendDisabled={resendOTPMutation.isPending}
-        mode="signup"
-      />
+      {showOTPModal && (
+        <OTPModal
+          isOpen={showOTPModal}
+          onClose={() => setShowOTPModal(false)}
+          onVerify={async (otp: string) => {
+            try {
+              await verifyOTPMutation.mutateAsync(otp);
+            } catch (error) {
+              console.error('OTP verification failed:', error);
+            }
+          }}
+          onResend={async () => {
+            try {
+              await resendOTPMutation.mutateAsync();
+            } catch (error) {
+              console.error('Failed to resend OTP:', error);
+            }
+          }}
+          email={pendingEmail}
+          isResendDisabled={resendOTPMutation.isPending}
+          mode="signup"
+        />
+      )}
     </>
   );
 };

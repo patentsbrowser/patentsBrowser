@@ -7,6 +7,18 @@ interface ChatResponse {
   sessionId: string;
 }
 
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  isAdmin?: boolean;
+}
+
+interface FeedbackData {
+  helpful: boolean;
+  comment?: string;
+}
+
 // This service is responsible for handling chat interactions with the backend
 export const chatService = {
   // Maintain the current session ID
@@ -32,6 +44,22 @@ export const chatService = {
     this._sessionId = uuidv4();
     localStorage.setItem('chatSessionId', this._sessionId);
     return this._sessionId;
+  },
+
+  // Get welcome message based on user authentication status
+  getWelcomeMessage(): string {
+    try {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user: User = JSON.parse(userData);
+        return `Welcome back, ${user.name}! How can I help you today?`;
+      } else {
+        return "Welcome! How can I assist you with your patent search today?";
+      }
+    } catch (error) {
+      console.error('Error getting welcome message:', error);
+      return "Welcome! How can I assist you with your patent search today?";
+    }
   },
 
   // Send a message to the AI and get a response
@@ -76,6 +104,17 @@ export const chatService = {
     }
   },
 
+  // Submit feedback for a chat message
+  async submitFeedback(messageId: string, feedback: FeedbackData): Promise<boolean> {
+    try {
+      const response = await axiosInstance.post(`/chat/feedback/${messageId}`, feedback);
+      return response.status === 200;
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      return false;
+    }
+  },
+
   // Get all messages for the current session
   async getSessionMessages(): Promise<any[]> {
     try {
@@ -100,22 +139,6 @@ export const chatService = {
     } catch (error) {
       console.error('Error fetching user sessions:', error);
       return [];
-    }
-  },
-
-  // Clear the current session
-  async clearSession(): Promise<boolean> {
-    try {
-      // Make sure we have a session ID
-      if (!this._sessionId) {
-        return true; // Nothing to clear
-      }
-
-      await axiosInstance.delete(`/chat/session/${this._sessionId}`);
-      return true;
-    } catch (error) {
-      console.error('Error clearing session:', error);
-      return false;
     }
   }
 };

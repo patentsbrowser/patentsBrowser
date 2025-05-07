@@ -1,104 +1,202 @@
-import axios from 'axios';
-import { PredefinedQA } from '../models/ChatMessage.js';
+import axios from "axios";
+import { PredefinedQA, ChatMessage } from "../models/ChatMessage.js";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+const OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions";
+const MAX_CONVERSATION_HISTORY = 100; // Number of previous exchanges to include
 
+// Get conversation history for context
+const getConversationHistory = async (
+  sessionId: string,
+  limit = MAX_CONVERSATION_HISTORY
+) => {
+  try {
+    const history = await ChatMessage.find({ sessionId })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .exec();
+
+    // Return in chronological order
+    return history.reverse();
+  } catch (error) {
+    console.error("Error fetching conversation history:", error);
+    return [];
+  }
+};
+
+// Format conversation history into messages for OpenAI
+const formatConversationHistory = (history: any[]) => {
+  const messages: { role: string; content: string }[] = [];
+
+  history.forEach((item) => {
+    messages.push({ role: "user", content: item.message });
+    messages.push({ role: "assistant", content: item.response });
+  });
+
+  return messages;
+};
 
 // Function to find the best matching predefined answer using AI
-export const findBestMatch = async (userQuery: string, patentId?: string): Promise<string | null> => {
+export const findBestMatch = async (
+  userQuery: string,
+  patentId?: string,
+  sessionId?: string
+): Promise<{ answer: string | null; source: string }> => {
   try {
     // First, fetch all predefined Q&A pairs
     const query: any = {};
     if (patentId) {
       query.$or = [{ patentId }, { patentId: { $exists: false } }];
     }
-    
+
     const predefinedQAs = await PredefinedQA.find(query);
-    
+
     if (predefinedQAs.length === 0) {
-      return null;
+      return { answer: null, source: "none" };
     }
-    
+
+    // If no API key or invalid key, fall back to keyword matching
+    if (!OPENAI_API_KEY || OPENAI_API_KEY === "No api key") {
+      console.log(
+        "No valid OpenAI API key found. Using keyword matching fallback."
+      );
+      return await keywordMatchFallback(userQuery, predefinedQAs);
+    }
+
     // Format the Q&A pairs for the AI prompt
-    const qaPairsText = predefinedQAs.map((qa, index) => 
-      `${index + 1}. Q: ${qa.question}\nA: ${qa.answer}`
-    ).join('\n\n');
-    
+    const qaPairsText = predefinedQAs
+      .map((qa, index) => `${index + 1}. Q: ${qa.question}\nA: ${qa.answer}`)
+      .join("\n\n");
+
     // Use OpenAI to find the best match
-    if (OPENAI_API_KEY) {
-      try {
-        const response = await axios.post(
-          OPENAI_ENDPOINT,
-          {
-            model: 'gpt-3.5-turbo',
-            messages: [
-              {
-                role: 'system',
-                content: `You are an AI assistant for a patent research platform. Your task is to match user queries to the most relevant predefined answer. Here are the available Q&A pairs:\n\n${qaPairsText}`
-              },
-              {
-                role: 'user',
-                content: `The user asked: "${userQuery}". What is the index number of the most relevant predefined answer? Only respond with the number, nothing else.`
-              }
-            ],
-            max_tokens: 10,
-            temperature: 0.3
-          },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${OPENAI_API_KEY}`
-            }
-          }
-        );
-        
-        const aiResponse = response.data.choices[0].message.content.trim();
-        const matchIndex = parseInt(aiResponse.match(/\d+/)?.[0] || '0', 10) - 1;
-        
-        if (matchIndex >= 0 && matchIndex < predefinedQAs.length) {
-          console.log(`AI matched query "${userQuery}" to Q&A pair #${matchIndex + 1}`);
-          return predefinedQAs[matchIndex].answer;
+    try {
+      // Get conversation history if sessionId is provided
+      let conversationContext = "";
+      if (sessionId) {
+        const history = await getConversationHistory(sessionId, 2);
+        if (history.length > 0) {
+          conversationContext = "\n\nRecent conversation history:\n";
+          history.forEach((item, index) => {
+            conversationContext += `User: ${item.message}\nAssistant: ${item.response}\n\n`;
+          });
         }
-      } catch (aiError) {
-        console.error('OpenAI API error:', aiError);
-        // Fall back to keyword matching if AI fails
       }
+
+      const response = await axios.post(
+        OPENAI_ENDPOINT,
+        {
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "system",
+              content: `You are an AI assistant for a patent research platform. Your task is to match user queries to the most relevant predefined answer. Here are the available Q&A pairs:\n\n${qaPairsText}${conversationContext}`,
+            },
+            {
+              role: "user",
+              content: `The user asked: "${userQuery}". What is the index number of the most relevant predefined answer? Only respond with the number, nothing else.`,
+            },
+          ],
+          max_tokens: 10,
+          temperature: 0.3,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+          },
+        }
+      );
+
+      const aiResponse = response.data.choices[0].message.content.trim();
+      const matchIndex = parseInt(aiResponse.match(/\d+/)?.[0] || "0", 10) - 1;
+
+      if (matchIndex >= 0 && matchIndex < predefinedQAs.length) {
+        console.log(
+          `AI matched query "${userQuery}" to Q&A pair #${matchIndex + 1}`
+        );
+
+        // Update the useCount for this predefined QA
+        await PredefinedQA.findByIdAndUpdate(predefinedQAs[matchIndex]._id, {
+          $inc: { useCount: 1 },
+        });
+
+        return {
+          answer: predefinedQAs[matchIndex].answer,
+          source: "predefined",
+        };
+      }
+    } catch (aiError) {
+      console.error("OpenAI API error:", aiError);
+      // Fall back to keyword matching if AI fails
+      return await keywordMatchFallback(userQuery, predefinedQAs);
     }
-    
-    // Fallback: Simple keyword matching
-    for (const qa of predefinedQAs) {
-      // Check if any keywords match
-      if (qa.keywords && qa.keywords.some(keyword => 
-        userQuery.toLowerCase().includes(keyword.toLowerCase())
-      )) {
-        return qa.answer;
-      }
-      
-      // Check if query contains words from the question
-      const questionWords = qa.question.toLowerCase().split(/\s+/);
-      const queryWords = userQuery.toLowerCase().split(/\s+/);
-      const matchCount = questionWords.filter(word => 
-        queryWords.includes(word) && word.length > 3
-      ).length;
-      
-      if (matchCount >= 2) {
-        return qa.answer;
-      }
-    }
-    
-    return null;
+
+    // If we get here, AI didn't find a good match, so fallback to keyword matching
+    return await keywordMatchFallback(userQuery, predefinedQAs);
   } catch (error) {
-    console.error('Error finding best match:', error);
-    return null;
+    console.error("Error finding best match:", error);
+    return { answer: null, source: "fallback" };
   }
 };
 
+// Helper function for keyword matching fallback
+const keywordMatchFallback = async (
+  userQuery: string,
+  predefinedQAs: any[]
+): Promise<{ answer: string | null; source: string }> => {
+  // Check for keyword matches
+  for (const qa of predefinedQAs) {
+    // Check if any keywords match
+    if (
+      qa.keywords &&
+      qa.keywords.some((keyword) =>
+        userQuery.toLowerCase().includes(keyword.toLowerCase())
+      )
+    ) {
+      // Update the useCount for this predefined QA
+      await PredefinedQA.findByIdAndUpdate(qa._id, { $inc: { useCount: 1 } });
+
+      return {
+        answer: qa.answer,
+        source: "keyword",
+      };
+    }
+
+    // Check if query contains words from the question
+    const questionWords = qa.question.toLowerCase().split(/\s+/);
+    const queryWords = userQuery.toLowerCase().split(/\s+/);
+    const matchCount = questionWords.filter(
+      (word) => queryWords.includes(word) && word.length > 3
+    ).length;
+
+    if (matchCount >= 2) {
+      // Update the useCount for this predefined QA
+      await PredefinedQA.findByIdAndUpdate(qa._id, { $inc: { useCount: 1 } });
+
+      return {
+        answer: qa.answer,
+        source: "textMatch",
+      };
+    }
+  }
+
+  return { answer: null, source: "none" };
+};
+
 // Function to generate a response using AI when no predefined answer is found
-export const generateAIResponse = async (userQuery: string, patentId?: string): Promise<string | null> => {
-  if (!OPENAI_API_KEY) {
-    console.log('No OpenAI API key found in environment variables');
-    return null;
+export const generateAIResponse = async (
+  userQuery: string,
+  patentId?: string,
+  sessionId?: string
+): Promise<{ answer: string | null; source: string }> => {
+  // Check if we have a valid API key
+  if (!OPENAI_API_KEY || OPENAI_API_KEY === "your-openai-api-key-here") {
+    console.log("No valid OpenAI API key found in environment variables");
+    return {
+      answer:
+        "I can answer questions about PatentsBrowser features. For example, you can ask about the Patent Highlighter, Smart Search, or Workflow Management features.",
+      source: "fallbackNoApiKey",
+    };
   }
 
   try {
@@ -107,11 +205,11 @@ export const generateAIResponse = async (userQuery: string, patentId?: string): 
     if (patentId) {
       query.$or = [{ patentId }, { patentId: { $exists: false } }];
     }
-    
+
     const relevantQAs = await PredefinedQA.find(query)
       .sort({ score: { $meta: "textScore" } })
       .limit(3);
-    
+
     // Create context for OpenAI with information about patent platform and any relevant stored QAs
     let systemPrompt = `You are PB Assistant, a helpful assistant for the PatentsBrowser platform, which offers patent research tools including:
     
@@ -133,28 +231,40 @@ export const generateAIResponse = async (userQuery: string, patentId?: string): 
 
     systemPrompt += `\nIf you don't have a good answer for the user's question, admit you don't know rather than making up information. Your response should be concise and direct.`;
 
-    // Call OpenAI API with enhanced context
+    // Get conversation history if sessionId is provided
+    let messages = [{ role: "system", content: systemPrompt }];
+
+    if (sessionId) {
+      const history = await getConversationHistory(sessionId);
+
+      if (history.length > 0) {
+        const historyMessages = formatConversationHistory(history);
+        messages = messages.concat(historyMessages);
+      }
+    }
+
+    // Add the current user query
+    messages.push({ role: "user", content: userQuery });
+
+    // Call OpenAI API with enhanced context and conversation history
     const response = await axios.post(
       OPENAI_ENDPOINT,
       {
-        model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userQuery }
-        ],
+        model: "gpt-3.5-turbo",
+        messages,
         max_tokens: 250,
-        temperature: 0.7
+        temperature: 0.7,
       },
       {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
-        }
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+        },
       }
     );
-    
+
     const answer = response.data.choices[0].message.content.trim();
-    
+
     // If the answer contains uncertainty phrases, provide more explicit message
     const uncertaintyPhrases = [
       "I don't have information",
@@ -163,21 +273,33 @@ export const generateAIResponse = async (userQuery: string, patentId?: string): 
       "I don't have enough information",
       "I cannot provide",
       "no information available",
-      "cannot find information"
+      "cannot find information",
     ];
-    
-    if (uncertaintyPhrases.some(phrase => answer.toLowerCase().includes(phrase.toLowerCase()))) {
-      return "Sorry, I don't have specific information related to your question. Is there anything else about the PatentsBrowser platform I can help you with?";
+
+    if (
+      uncertaintyPhrases.some((phrase) =>
+        answer.toLowerCase().includes(phrase.toLowerCase())
+      )
+    ) {
+      return {
+        answer:
+          "Sorry, I don't have specific information related to your question. Is there anything else about the PatentsBrowser platform I can help you with?",
+        source: "aiUncertain",
+      };
     }
-    
-    return answer;
+
+    return { answer, source: "aiGenerated" };
   } catch (error) {
-    console.error('Error generating AI response:', error);
-    return "I'm having trouble connecting to my knowledge base. Please try asking your question again or ask something about the PatentsBrowser platform features.";
+    console.error("Error generating AI response:", error);
+    return {
+      answer:
+        "I'm here to help with questions about the PatentsBrowser platform. You can ask about features like the Patent Highlighter, Smart Search, or batch processing of patent IDs.",
+      source: "fallback",
+    };
   }
 };
 
 export default {
   findBestMatch,
-  generateAIResponse
-}; 
+  generateAIResponse,
+};

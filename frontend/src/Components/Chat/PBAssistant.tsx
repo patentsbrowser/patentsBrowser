@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPaperPlane, faQuestionCircle, faChevronDown, faChevronUp, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faPaperPlane, faQuestionCircle, faChevronDown, faChevronUp, faThumbsUp, faThumbsDown } from '@fortawesome/free-solid-svg-icons';
 import './PBAssistant.scss';
 import chatService from '../../services/chatService';
 import { getModalState } from '../../utils/modalHelper';
@@ -12,6 +12,7 @@ interface Message {
   content: string;
   sender: 'user' | 'assistant';
   timestamp: Date;
+  feedback?: 'positive' | 'negative' | null;
 }
 
 interface PBAssistantProps {
@@ -57,6 +58,7 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
   const [messageCount, setMessageCount] = useState(0);
   const [isHidden, setIsHidden] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
+  const [feedbackInProgress, setFeedbackInProgress] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastScrollY = useRef(0);
@@ -79,7 +81,9 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
             id: msg._id,
             content: msg.sender === 'user' ? msg.message : msg.response,
             sender: msg.sender === 'user' ? 'user' : 'assistant',
-            timestamp: new Date(msg.createdAt)
+            timestamp: new Date(msg.createdAt),
+            feedback: msg.feedback?.helpful === true ? 'positive' : 
+                      msg.feedback?.helpful === false ? 'negative' : null
           }));
           
           setMessages(formattedMessages);
@@ -103,9 +107,7 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
     const welcomeMessages: Message[] = [
       {
         id: '1',
-        content: user?.name 
-          ? `Hello, <strong>${user.name}</strong>! I'm PB Assistant, your assistant for patent-related questions. How may I assist you today?`
-          : "Hello! I'm PB Assistant, your assistant for patent-related questions. How may I assist you today?",
+        content: chatService.getWelcomeMessage(),
         sender: 'assistant',
         timestamp: new Date()
       }
@@ -204,28 +206,31 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
     }
   };
 
-  const clearChat = async () => {
-    // Confirm with the user
-    if (!window.confirm('Are you sure you want to clear this chat session?')) {
-      return;
-    }
+  const handleFeedback = async (messageId: string, isHelpful: boolean) => {
+    // Prevent multiple feedback submissions for the same message
+    if (feedbackInProgress === messageId) return;
+    
+    setFeedbackInProgress(messageId);
+    
+    // Update UI immediately for better user experience
+    setMessages(prev => 
+      prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, feedback: isHelpful ? 'positive' : 'negative' } 
+          : msg
+      )
+    );
     
     try {
-      const success = await chatService.clearSession();
-      if (success) {
-        // Create a new session
-        const newSessionId = chatService.createNewSession();
-        setSessionId(newSessionId);
-        
-        // Clear local messages and add welcome message
-        addWelcomeMessage();
-        toast.success('Chat history cleared successfully');
-      } else {
-        toast.error('Failed to clear chat history');
-      }
+      // Send feedback to backend
+      await chatService.submitFeedback(messageId, { 
+        helpful: isHelpful 
+      });
     } catch (error) {
-      console.error('Error clearing chat:', error);
-      toast.error('Failed to clear chat history');
+      console.error('Error submitting feedback:', error);
+      // No need to revert UI as the user already sees their selection
+    } finally {
+      setFeedbackInProgress(null);
     }
   };
 
@@ -299,18 +304,6 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
           <div className="beta-badge">Beta</div>
         </div>
         <div className="header-right">
-          {!isCollapsed && (
-            <button 
-              className="clear-chat-btn" 
-              onClick={(e) => { 
-                e.stopPropagation(); 
-                clearChat(); 
-              }}
-              title="Clear chat history"
-            >
-              <FontAwesomeIcon icon={faTrash} />
-            </button>
-          )}
           <FontAwesomeIcon icon={isCollapsed ? faChevronUp : faChevronDown} />
         </div>
       </div>
@@ -341,6 +334,34 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
                     />
                   ) : (
                     <p dangerouslySetInnerHTML={{ __html: message.content }}></p>
+                  )}
+                  
+                  {message.sender === 'assistant' && message.id !== '1' && message.id !== '2' && (
+                    <div className="message-feedback">
+                      {message.feedback ? (
+                        <div className="feedback-submitted">
+                          {message.feedback === 'positive' ? 'Thanks for the positive feedback!' : 'Thanks for your feedback'}
+                        </div>
+                      ) : (
+                        <>
+                          <span className="feedback-prompt">Was this helpful?</span>
+                          <button 
+                            className={`feedback-btn positive ${feedbackInProgress === message.id ? 'disabled' : ''}`}
+                            onClick={() => handleFeedback(message.id, true)}
+                            disabled={feedbackInProgress === message.id}
+                          >
+                            <FontAwesomeIcon icon={faThumbsUp} />
+                          </button>
+                          <button 
+                            className={`feedback-btn negative ${feedbackInProgress === message.id ? 'disabled' : ''}`}
+                            onClick={() => handleFeedback(message.id, false)}
+                            disabled={feedbackInProgress === message.id}
+                          >
+                            <FontAwesomeIcon icon={faThumbsDown} />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -398,10 +419,7 @@ const PBAssistant: React.FC<PBAssistantProps> = ({
             </>
           ) : (
             <div className="message-limit-warning">
-              <p>You've reached the maximum number of messages for this session. To continue, please clear the chat history.</p>
-              <button onClick={clearChat} className="clear-chat-button">
-                <FontAwesomeIcon icon={faTrash} /> Clear Chat
-              </button>
+              <p>You've reached the maximum number of messages for this session. To continue, please start a new conversation.</p>
             </div>
           )}
         </>

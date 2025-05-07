@@ -67,19 +67,20 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // Generate a new token regardless of email verification status
+    // Only allow login if email is verified
+    if (!user.isEmailVerified) {
+      return res.status(403).json({
+        statusCode: 403,
+        message: 'Please verify your email before logging in.',
+        data: null
+      });
+    }
+
+    // Generate a new token
     const token = jwt.sign({ userId: user._id }, JWT_SECRET);
-    
     // Update the user's activeToken and lastLogin
     user.activeToken = token;
     user.lastLogin = new Date();
-    
-    // If email is not verified, mark it as verified since we're allowing login
-    // without OTP verification
-    if (!user.isEmailVerified) {
-      user.isEmailVerified = true;
-    }
-    
     await user.save();
     
     const responseData = {

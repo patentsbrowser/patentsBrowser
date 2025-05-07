@@ -64,6 +64,8 @@
     }
 
     .error-message {
+      width: 100%;
+      box-sizing: border-box;
       background-color: rgba(231, 76, 60, 0.1);
       border-left: 4px solid #e74c3c;
       color: #c0392b;

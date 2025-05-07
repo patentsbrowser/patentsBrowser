@@ -1,7 +1,7 @@
-# Patty Chat - Patent Assistant Widget
+# PB Assistant - Patent Browser Assistant Widget
 
 ## Overview
-Patty Chat is an AI-powered chat assistant for the patentsBrowser platform. It provides contextual responses to user questions about patent details, helping users extract valuable information and insights from patents.
+PB Assistant is an AI-powered chat assistant for the patentsBrowser platform. It provides contextual responses to user questions about patent details, helping users extract valuable information and insights from patents.
 
 ## Features
 - Collapsible chat widget that can be toggled from the patent details page
@@ -9,10 +9,11 @@ Patty Chat is an AI-powered chat assistant for the patentsBrowser platform. It p
 - Suggested questions for new users
 - Message count limitation (10 messages per conversation)
 - Patent-specific responses based on context
+- User authentication integration with personalized welcome messages
 
 ## Components
 
-### PattyChat.tsx
+### PBAssistant.tsx
 The main chat component that manages the conversation UI and state.
 
 **Props:**
@@ -23,7 +24,7 @@ The main chat component that manages the conversation UI and state.
 - `isOpen`: Boolean to control if the chat is expanded or collapsed
 - `onToggle`: Callback function when the collapse state changes
 
-### PattyChat.scss
+### PBAssistant.scss
 Styles for the chat widget, including animations, layout, and responsive design.
 
 ## Services
@@ -33,18 +34,21 @@ Service that handles sending messages to the backend AI service and receiving re
 
 **Methods:**
 - `sendMessage(message: string, patentId?: string)`: Sends a message to the AI and returns a promise with the response
+- `getWelcomeMessage()`: Returns a personalized welcome message based on user authentication status
+- `initSession()`: Initializes or retrieves the current chat session ID
+- `getSessionMessages()`: Retrieves message history for the current session
 
 ## Integration
 To add the chat widget to a page:
 
 ```tsx
-import PattyChat from '../Chat/PattyChat';
+import { PBAssistant } from '../Chat';
 
 // Inside your component:
 const [isChatOpen, setIsChatOpen] = useState(false);
 
 // In your JSX:
-<PattyChat 
+<PBAssistant 
   patentId={patentId}
   patentTitle={title}
   patentAbstract={abstract}
@@ -57,18 +61,15 @@ const [isChatOpen, setIsChatOpen] = useState(false);
 ## Development and Customization
 
 ### Adding New Response Types
-To add new types of responses to the chat service, modify the pattern matching in the `mockResponse` method in `chatService.ts`. For a real implementation, you would replace this with API calls to an AI service.
+To add new types of responses to the chat service, update the backend API that handles the chat responses. The frontend component will display the responses returned from the server.
 
 ### Styling Customization
-The chat widget uses SCSS variables that can be customized to match your application's theme. Update the variables at the top of `PattyChat.scss`.
+The chat widget uses SCSS variables that can be customized to match your application's theme. Update the variables at the top of `PBAssistant.scss`.
 
 ### Known Limitations
-- Currently using mock responses for demonstration
 - Limited to 10 messages per conversation
-- No persistence of chat history between sessions
 
 ## Future Enhancements
-- Add real AI backend integration
-- Implement chat history persistence
 - Add support for rich content (images, links, etc.)
-- Implement typing support for better UX 
+- Add user feedback functionality for responses
+- Implement voice input support 

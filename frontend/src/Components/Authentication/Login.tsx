@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "../../AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { GoogleLogin as GoogleOAuthLogin } from "@react-oauth/google";
 import axiosInstance from "../../api/axiosConfig";
 import ForgotPassword from "./ForgotPassword";
+import OTPModal from "./OTPModal/OTPModal";
 
 const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
   const [email, setEmail] = useState("");
@@ -21,28 +22,65 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { setUser, forceAdminCheck } = useAuth();
   const navigate = useNavigate();
+  const [showOTPModal, setShowOTPModal] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState("");
 
   const loginMutation = useMutation({
     mutationFn: () => {
       return authApi.login({ email, password });
     },
     onSuccess: (response) => {
+      if (response.statusCode === 200 && response.data?.mode === 'verify') {
+        setPendingEmail(email);
+        setShowOTPModal(true);
+        return;
+      }
       if (response.statusCode === 200) {
         handleLoginSuccess(response.data);
+      } else if (response.data?.mode === 'signup') {
+        toast.error('Account not found. Please sign up.');
+      } else if (response.data?.mode === 'login') {
+        toast.error('Account already exists. Please login.');
       } else {
-        toast.error(
-          response.message || "Login failed. Please check your credentials."
-        );
+        toast.error(response.message || "Login failed. Please check your credentials.");
       }
     },
     onError: (error: any) => {
-      console.error("Login error:", error);
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
         "Login failed. Please check your credentials.";
       toast.error(errorMessage);
     },
+  });
+
+  const verifyOTPMutation = useMutation({
+    mutationFn: (otp: string) => authApi.verifyOTP(pendingEmail, otp),
+    onSuccess: (response: any) => {
+      if (response.statusCode === 200) {
+        toast.success('Email verified successfully! Please login again.');
+        setShowOTPModal(false);
+        setEmail('');
+        setPassword('');
+      } else {
+        toast.error(response.message || 'Verification failed');
+      }
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Invalid OTP';
+      toast.error(errorMessage);
+    }
+  });
+
+  const resendOTPMutation = useMutation({
+    mutationFn: () => authApi.resendOTP(pendingEmail),
+    onSuccess: (response: any) => {
+      toast.success('New OTP sent to your email!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to resend OTP';
+      toast.error(errorMessage);
+    }
   });
 
   const handleLoginSuccess = (data: any) => {
@@ -208,7 +246,7 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
 
   return (
     <>
-      <Loader isLoading={loginMutation.isPending} />
+      <Loader isLoading={loginMutation.isPending || verifyOTPMutation.isPending || resendOTPMutation.isPending} />
       <motion.div
         className="auth-box"
         initial={{ opacity: 0, rotateY: 30, scale: 0.9 }}
@@ -331,6 +369,29 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
       </motion.div>
       {showForgotPassword && (
         <ForgotPassword onClose={() => setShowForgotPassword(false)} />
+      )}
+      {showOTPModal && (
+        <OTPModal
+          isOpen={showOTPModal}
+          onClose={() => setShowOTPModal(false)}
+          onVerify={async (otp: string) => {
+            try {
+              await verifyOTPMutation.mutateAsync(otp);
+            } catch (error) {
+              console.error('OTP verification failed:', error);
+            }
+          }}
+          onResend={async () => {
+            try {
+              await resendOTPMutation.mutateAsync();
+            } catch (error) {
+              console.error('Failed to resend OTP:', error);
+            }
+          }}
+          email={pendingEmail}
+          isResendDisabled={resendOTPMutation.isPending}
+          mode="signup"
+        />
       )}
     </>
   );

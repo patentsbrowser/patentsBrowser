@@ -25,6 +25,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const { value } = e.target;
@@ -102,7 +103,32 @@ const OTPModal: React.FC<OTPModalProps> = ({
     };
   }, [onClose]);
   
-  if (!isOpen) return null;
+  // Create portal root if it doesn't exist
+  useEffect(() => {
+    let root = document.getElementById('modal-root');
+    if (!root) {
+      root = document.createElement('div');
+      root.id = 'modal-root';
+      document.body.appendChild(root);
+    }
+    setPortalRoot(root);
+
+    return () => {
+      if (root && !root.hasChildNodes()) {
+        root.remove();
+      }
+    };
+  }, []);
+  
+  // Debug log to check modal state
+  useEffect(() => {
+    console.log('OTPModal state:', { isOpen, portalRoot, email });
+  }, [isOpen, portalRoot, email]);
+  
+  if (!isOpen || !portalRoot) {
+    console.log('OTPModal not rendering:', { isOpen, portalRoot });
+    return null;
+  }
   
   const modalTitle = mode === 'signup' 
     ? 'Verify Your Email' 
@@ -112,169 +138,112 @@ const OTPModal: React.FC<OTPModalProps> = ({
     ? `We've sent a 6-digit verification code to <strong>${email}</strong>. Please enter it below to confirm your email.`
     : `Enter the 6-digit code sent to <strong>${email}</strong> to reset your password.`;
   
-  const backdrop = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1 },
-    exit: { opacity: 0 }
-  };
-  
-  const modal = {
-    hidden: { 
-      opacity: 0, 
-      y: 50, 
-      rotateX: 10,
-      scale: 0.9 
-    },
-    visible: { 
-      opacity: 1, 
-      y: 0, 
-      rotateX: 0,
-      scale: 1,
-      transition: {
-        type: "spring",
-        damping: 20,
-        stiffness: 100
-      }
-    },
-    exit: { 
-      opacity: 0, 
-      y: 50, 
-      rotateX: -10,
-      scale: 0.9,
-      transition: { duration: 0.3 }
-    }
-  };
-
-  const inputVariants = {
-    focus: { 
-      scale: 1.1, 
-      boxShadow: "0 0 0 3px rgba(89, 46, 131, 0.4), 0 0 20px rgba(89, 46, 131, 0.2)",
-      y: -5,
-      transition: { type: "spring", stiffness: 300, damping: 10 }
-    },
-    tap: { scale: 0.95 }
-  };
-  
-  return ReactDOM.createPortal(
-    <AnimatePresence>
-      {isOpen && (
+  const modalContent = (
+    <AnimatePresence mode="wait">
+      <motion.div 
+        className="otp-modal-backdrop"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      >
         <motion.div 
-          className="otp-modal-backdrop"
-          variants={backdrop}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          onClick={onClose}
+          className="otp-modal"
+          initial={{ opacity: 0, y: 50, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 50, scale: 0.9 }}
+          onClick={e => e.stopPropagation()}
         >
-          <motion.div 
-            className="otp-modal"
-            variants={modal}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            onClick={e => e.stopPropagation()}
-            style={{ perspective: "1000px" }}
+          <motion.h3
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
           >
-            <motion.h3
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              {modalTitle}
-            </motion.h3>
-            
-            <motion.p 
-              className="otp-instructions"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              dangerouslySetInnerHTML={{ __html: instruction }}
-            />
-            
-            <div className="otp-input-container">
-              {[0, 1, 2, 3, 4, 5].map((index) => (
-                <motion.input
-                  key={index}
-                  type="text"
-                  maxLength={1}
-                  value={otp[index]}
-                  onChange={(e) => handleInputChange(e, index)}
-                  onKeyDown={(e) => handleKeyDown(e, index)}
-                  onPaste={index === 0 ? handlePaste : undefined}
-                  ref={(el) => inputRefs.current[index] = el}
-                  className="otp-input"
-                  required
-                  autoComplete="off"
-                  whileFocus="focus"
-                  whileTap="tap"
-                  variants={inputVariants}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ 
-                    opacity: 1, 
-                    y: 0,
-                    transition: { 
-                      delay: 0.4 + (index * 0.05),
-                      type: "spring",
-                      stiffness: 200,
-                      damping: 15
-                    }
-                  }}
-                />
-              ))}
-            </div>
-            
-            <motion.div
-              className="resend-section"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
-            >
-              <p>
-                Didn't receive the code?{' '}
-                <motion.button
-                  className="resend-btn"
-                  onClick={onResend}
-                  disabled={isResendDisabled}
-                  whileHover={{ 
-                    scale: 1.05, 
-                    color: "#ffffff",
-                    textShadow: "0 0 8px rgba(255, 215, 0, 0.8)"
-                  }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  Resend
-                </motion.button>
-              </p>
-            </motion.div>
-            
-            <motion.button
-              className="close-btn"
-              onClick={onClose}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.7 }}
-              transition={{ delay: 0.8 }}
-              whileHover={{ 
-                opacity: 1,
-                scale: 1.1,
-                rotate: 5
-              }}
-              whileTap={{ scale: 0.9 }}
-            >
-              ×
-            </motion.button>
-
-            <motion.div 
-              className="patent-decoration"
-              initial={{ opacity: 0, rotate: -10 }}
-              animate={{ opacity: 0.5, rotate: 0 }}
-              transition={{ delay: 0.9, duration: 0.5 }}
-            />
+            {modalTitle}
+          </motion.h3>
+          
+          <motion.p 
+            className="otp-instructions"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            dangerouslySetInnerHTML={{ __html: instruction }}
+          />
+          
+          <div className="otp-input-container">
+            {[0, 1, 2, 3, 4, 5].map((index) => (
+              <motion.input
+                key={index}
+                type="text"
+                maxLength={1}
+                value={otp[index]}
+                onChange={(e) => handleInputChange(e, index)}
+                onKeyDown={(e) => handleKeyDown(e, index)}
+                onPaste={index === 0 ? handlePaste : undefined}
+                ref={(el) => inputRefs.current[index] = el}
+                className="otp-input"
+                required
+                autoComplete="off"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ 
+                  opacity: 1, 
+                  y: 0,
+                  transition: { 
+                    delay: 0.4 + (index * 0.05),
+                    type: "spring",
+                    stiffness: 200,
+                    damping: 15
+                  }
+                }}
+              />
+            ))}
+          </div>
+          
+          <motion.div
+            className="resend-section"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
+          >
+            <p>
+              Didn't receive the code?{' '}
+              <motion.button
+                className="resend-btn"
+                onClick={onResend}
+                disabled={isResendDisabled}
+                whileHover={{ 
+                  scale: 1.05, 
+                  color: "#ffffff",
+                  textShadow: "0 0 8px rgba(255, 215, 0, 0.8)"
+                }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Resend
+              </motion.button>
+            </p>
           </motion.div>
+          
+          <motion.button
+            className="close-btn"
+            onClick={onClose}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.7 }}
+            transition={{ delay: 0.8 }}
+            whileHover={{ 
+              opacity: 1,
+              scale: 1.1,
+              rotate: 5
+            }}
+            whileTap={{ scale: 0.9 }}
+          >
+            ×
+          </motion.button>
         </motion.div>
-      )}
-    </AnimatePresence>,
-    document.body
+      </motion.div>
+    </AnimatePresence>
   );
+
+  return ReactDOM.createPortal(modalContent, portalRoot);
 };
 
 export default OTPModal; 
