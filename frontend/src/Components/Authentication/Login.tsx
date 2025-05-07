@@ -20,22 +20,29 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
   const [showPasswordSetup, setShowPasswordSetup] = useState(false);
   const [tempUserId, setTempUserId] = useState("");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [showOTPModal, setShowOTPModal] = useState(false);
-  const [pendingEmail, setPendingEmail] = useState("");
   const { setUser, forceAdminCheck } = useAuth();
   const navigate = useNavigate();
+  const [showOTPModal, setShowOTPModal] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState("");
 
   const loginMutation = useMutation({
     mutationFn: () => {
       return authApi.login({ email, password });
     },
     onSuccess: (response) => {
+      if (response.statusCode === 200 && response.data?.mode === 'verify') {
+        setPendingEmail(email);
+        setShowOTPModal(true);
+        return;
+      }
       if (response.statusCode === 200) {
         handleLoginSuccess(response.data);
+      } else if (response.data?.mode === 'signup') {
+        toast.error('Account not found. Please sign up.');
+      } else if (response.data?.mode === 'login') {
+        toast.error('Account already exists. Please login.');
       } else {
-        toast.error(
-          response.message || "Login failed. Please check your credentials."
-        );
+        toast.error(response.message || "Login failed. Please check your credentials.");
       }
     },
     onError: (error: any) => {
@@ -43,34 +50,9 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
         error.response?.data?.message ||
         error.message ||
         "Login failed. Please check your credentials.";
-      
-      console.log('Login error:', { 
-        status: error.response?.status, 
-        message: errorMessage,
-        email 
-      });
-      
-      // Check specifically for 403 unverified email error
-      if (error.response?.status === 403 && errorMessage.includes('verify your email')) {
-        console.log('Unverified email detected, showing OTP modal');
-        // Set the email for OTP verification
-        setPendingEmail(email);
-        // Show OTP modal
-        setShowOTPModal(true);
-        // Automatically trigger OTP resend
-        resendOTPMutation.mutate();
-        // Show a more informative message
-        toast.error('Please verify your email first. A new OTP has been sent.');
-      } else {
-        toast.error(errorMessage);
-      }
+      toast.error(errorMessage);
     },
   });
-
-  // Debug log for OTP modal state
-  useEffect(() => {
-    console.log('OTP Modal state:', { showOTPModal, pendingEmail });
-  }, [showOTPModal, pendingEmail]);
 
   const verifyOTPMutation = useMutation({
     mutationFn: (otp: string) => authApi.verifyOTP(pendingEmail, otp),
@@ -78,7 +60,6 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
       if (response.statusCode === 200) {
         toast.success('Email verified successfully! Please login again.');
         setShowOTPModal(false);
-        // Clear the form
         setEmail('');
         setPassword('');
       } else {

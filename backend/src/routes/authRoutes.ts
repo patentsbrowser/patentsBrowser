@@ -9,74 +9,55 @@ import { generateOTP, sendOTP, storeOTP, verifyOTP, resendOTP } from '../service
 const router = express.Router();
 const authController = new AuthController();
 
+// Temporary in-memory store for pending signups (for production, use Redis)
+const pendingSignups = {};
+
 // Signup route
-router.post('/signup', async (req:any, res:any) => {
+router.post('/signup', async (req, res) => {
   try {
     const { name, email, password, isOrganization, organizationName, organizationSize, organizationType } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({
-        statusCode: 400,
-        message: 'User already exists',
-        data: null
-      });
-    }
-
-    // Calculate trial end date (14 days from now)
-    const trialEndDate = new Date();
-    trialEndDate.setDate(trialEndDate.getDate() + 14);
-
-    // Create new user with trial period
-    let userData: any = {
-      email,
-      password,
-      subscriptionStatus: 'trial',
-      trialEndDate,
-      trialStartDate: new Date(),
-      isOrganization: !!isOrganization
-    };
-    if (!isOrganization) {
-      userData.name = name;
-    } else {
-      userData.organizationName = organizationName;
-      userData.organizationSize = organizationSize;
-      userData.organizationType = organizationType;
-    }
-
-    const user = new User(userData);
-    await user.save();
-
-    // Generate and send OTP
-    const otp = generateOTP();
-    try {
-      await sendOTP(email, otp);
-      storeOTP(email, otp);
-    } catch (emailError) {
-      // Continue with the response even if email fails
-    }
-
-    res.status(200).json({
-      statusCode: 200,
-      message: 'Account created! Please verify your email.',
-      data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          trialEndDate: user.trialEndDate,
-          isOrganization: user.isOrganization,
-          organizationName: user.organizationName,
-          organizationSize: user.organizationSize,
-          organizationType: user.organizationType
-        }
+      if (!existingUser.isEmailVerified) {
+        // Resend OTP for unverified user
+        const otp = generateOTP();
+        storeOTP(email, otp);
+        try { await sendOTP(email, otp); } catch (e) {}
+        return res.status(200).json({
+          statusCode: 200,
+          message: 'OTP sent to your email. Please verify to complete signup.',
+          data: { mode: 'verify' }
+        });
+      } else {
+        // Already registered and verified
+        return res.status(409).json({
+          statusCode: 409,
+          message: 'Account already exists',
+          data: { mode: 'login' }
+        });
       }
+    }
+
+    // Store signup data in pendingSignups
+    const otp = generateOTP();
+    pendingSignups[email] = {
+      signupData: { name, email, password, isOrganization, organizationName, organizationSize, organizationType },
+      otp,
+      expiresAt: Date.now() + 10 * 60 * 1000 // 10 min
+    };
+    storeOTP(email, otp);
+    try { await sendOTP(email, otp); } catch (e) {}
+    return res.status(200).json({
+      statusCode: 200,
+      message: 'OTP sent to your email. Please verify to complete signup.',
+      data: { mode: 'verify' }
     });
   } catch (error) {
     res.status(500).json({
       statusCode: 500,
-      message: 'Error creating account',
+      message: 'Error initiating signup',
       data: null
     });
   }
@@ -86,7 +67,6 @@ router.post('/signup', async (req:any, res:any) => {
 router.post('/verify-otp', async (req, res) => {
   try {
     const { email, otp } = req.body;
-
     if (!email || !otp) {
       return res.status(400).json({
         statusCode: 400,
@@ -94,9 +74,7 @@ router.post('/verify-otp', async (req, res) => {
         data: null
       });
     }
-
     const isValid = verifyOTP(email, otp);
-    
     if (!isValid) {
       return res.status(400).json({
         statusCode: 400,
@@ -104,14 +82,50 @@ router.post('/verify-otp', async (req, res) => {
         data: null
       });
     }
-
-    // Update user's email verification status
+    // If user is in pendingSignups, create user now
+    if (pendingSignups[email]) {
+      const { signupData } = pendingSignups[email];
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 14);
+      let userData = {
+        ...signupData,
+        subscriptionStatus: 'trial',
+        trialEndDate,
+        trialStartDate: new Date(),
+        isEmailVerified: true
+      };
+      const user = new User(userData);
+      await user.save();
+      delete pendingSignups[email];
+      // Generate JWT token
+      const token = jwt.sign(
+        { userId: user._id },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '24h' }
+      );
+      user.activeToken = token;
+      user.lastLogin = new Date();
+      await user.save();
+      return res.status(200).json({
+        statusCode: 200,
+        message: 'Signup complete and email verified!',
+        data: {
+          token,
+          user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            isAdmin: user.isAdmin
+          }
+        }
+      });
+    }
+    // If user exists but not verified, mark as verified
     const user = await User.findOneAndUpdate(
       { email },
       { $set: { isEmailVerified: true } },
       { new: true }
     );
-
     if (!user) {
       return res.status(404).json({
         statusCode: 404,
@@ -119,22 +133,18 @@ router.post('/verify-otp', async (req, res) => {
         data: null
       });
     }
-
     // Generate JWT token
     const token = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '24h' }
     );
-
-    // Update the user's activeToken and lastLogin
     user.activeToken = token;
     user.lastLogin = new Date();
     await user.save();
-    
-    res.status(200).json({
+    return res.status(200).json({
       statusCode: 200,
-      message: 'OTP verified successfully',
+      message: 'Email verified successfully',
       data: {
         token,
         user: {
@@ -155,7 +165,62 @@ router.post('/verify-otp', async (req, res) => {
 });
 
 // Login route
-router.post('/login', login);
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'Email not found',
+        data: { mode: 'signup' }
+      });
+    }
+    const isValidPassword = await user.comparePassword(password);
+    if (!isValidPassword) {
+      return res.status(401).json({
+        statusCode: 401,
+        message: 'Invalid password',
+        data: null
+      });
+    }
+    if (!user.isEmailVerified) {
+      // Resend OTP for unverified user
+      const otp = generateOTP();
+      storeOTP(email, otp);
+      try { await sendOTP(email, otp); } catch (e) {}
+      return res.status(200).json({
+        statusCode: 200,
+        message: 'OTP sent to your email. Please verify to login.',
+        data: { mode: 'verify' }
+      });
+    }
+    // Normal login
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || 'your-secret-key');
+    user.activeToken = token;
+    user.lastLogin = new Date();
+    await user.save();
+    return res.status(200).json({
+      statusCode: 200,
+      message: 'Successfully logged in!',
+      data: {
+        token,
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+          isAdmin: user.isAdmin
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Login failed. Please try again.',
+      data: null
+    });
+  }
+});
 
 // Resend OTP route
 router.post('/resend-otp', async (req, res) => {

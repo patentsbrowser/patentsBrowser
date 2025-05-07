@@ -19,7 +19,6 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showOTPModal, setShowOTPModal] = useState(false);
-  const [isOTPSent, setIsOTPSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isOrganization, setIsOrganization] = useState(false);
   const [organizationName, setOrganizationName] = useState('');
@@ -27,25 +26,36 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
   const [organizationType, setOrganizationType] = useState('');
   const { setUser } = useAuth();
   const navigate = useNavigate();
+  const [pendingEmail, setPendingEmail] = useState("");
 
   const signupMutation = useMutation({
     mutationFn: () => {
-      return authApi.signup({
+      const payload: any = {
         email,
         password,
-        name: fullName,
         isOrganization,
         organizationName: isOrganization ? organizationName : undefined,
         organizationSize: isOrganization ? organizationSize : undefined,
         organizationType: isOrganization ? organizationType : undefined,
-      });
+      };
+      if (!isOrganization) {
+        payload.name = fullName;
+      }
+      return authApi.signup(payload);
     },
     onSuccess: (response) => {
-      console.log('Signup response:', response); // Debug log
+      if (response.statusCode === 200 && response.data?.mode === 'verify') {
+        setPendingEmail(email);
+        setShowOTPModal(true);
+        return;
+      }
+      if (response.data?.mode === 'login') {
+        toast.error('Account already exists. Please login.');
+        return;
+      }
       if (response.statusCode === 200) {
         handleSignupSuccess(response.data);
-        setShowOTPModal(true); // Close the modal after successful verification
-
+        setShowOTPModal(true);
       } else {
         toast.error(response.message || 'Signup failed. Please try again.');
       }
@@ -58,17 +68,12 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
   });
 
   const verifyOTPMutation = useMutation({
-    mutationFn: (otp: string) => authApi.verifyOTP(email, otp),
+    mutationFn: (otp: string) => authApi.verifyOTP(pendingEmail, otp),
     onSuccess: (response: any) => {
       if (response.statusCode === 200) {
         toast.success(response.message);
-        // Set user state from localStorage
-        const user = JSON.parse(localStorage.getItem('user') || 'null');
-        if (user) {
-          setUser(user);
-        }
-        setShowOTPModal(false); // Close the modal after successful verification
-        navigate('/auth/dashboard'); // Now navigate after OTP verification
+        setShowOTPModal(false);
+        navigate('/auth/login');
       } else if (response.message) {
         toast.error(response.message);
       }
@@ -80,7 +85,7 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
   });
 
   const resendOTPMutation = useMutation({
-    mutationFn: () => authApi.resendOTP(email),
+    mutationFn: () => authApi.resendOTP(pendingEmail),
     onSuccess: (response: any) => {
       toast.success(response.message || 'OTP resent successfully!');
     },
@@ -100,11 +105,23 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
 
   const handleTabSwitch = (tab: 'individual' | 'organization') => {
     setActiveTab(tab);
+    setIsOrganization(tab === 'organization');
     // Optionally reset org fields when switching
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (activeTab === 'organization') {
+      if (!organizationName || !organizationSize || !organizationType) {
+        toast.error('Please fill all organization details.');
+        return;
+      }
+    } else {
+      if (!fullName) {
+        toast.error('Please enter your full name.');
+        return;
+      }
+    }
     signupMutation.mutate();
   };
 
@@ -338,9 +355,21 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
         <OTPModal
           isOpen={showOTPModal}
           onClose={() => setShowOTPModal(false)}
-          onVerify={handleVerifyOTP}
-          onResend={handleResendOTP}
-          email={email}
+          onVerify={async (otp: string) => {
+            try {
+              await verifyOTPMutation.mutateAsync(otp);
+            } catch (error) {
+              console.error('OTP verification failed:', error);
+            }
+          }}
+          onResend={async () => {
+            try {
+              await resendOTPMutation.mutateAsync();
+            } catch (error) {
+              console.error('Failed to resend OTP:', error);
+            }
+          }}
+          email={pendingEmail}
           isResendDisabled={resendOTPMutation.isPending}
           mode="signup"
         />
