@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticateToken } from '../middleware/auth.js';
+import { auth } from '../middleware/auth.js';
 import {
   createOrganization,
   generateInviteLink,
@@ -12,21 +12,21 @@ import {
 const router = express.Router();
 
 // Create new organization
-router.post('/create', authenticateToken, createOrganization);
+router.post('/create', auth, createOrganization);
 
 // Generate invite link
-router.post('/invite', authenticateToken, generateInviteLink);
+router.post('/invite', auth, generateInviteLink);
 
 // Join organization using invite link
-router.post('/join/:token', authenticateToken, joinOrganization);
+router.post('/join/:token', auth, joinOrganization);
 
 // Get organization details
-router.get('/details', authenticateToken, getOrganizationDetails);
+router.get('/details', auth, getOrganizationDetails);
 
 // Remove member from organization
-router.delete('/members/:memberId', authenticateToken, removeMember);
+router.delete('/members/:memberId', auth, removeMember);
 
 // Update organization subscription
-router.put('/subscription', authenticateToken, updateOrganizationSubscription);
+router.put('/subscription', auth, updateOrganizationSubscription);
 
 export default router; 
