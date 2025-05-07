@@ -57,8 +57,8 @@ router.post('/signup', async (req:any, res:any) => {
       // Continue with the response even if email fails
     }
 
-    res.status(201).json({
-      statusCode: 201,
+    res.status(200).json({
+      statusCode: 200,
       message: 'Account created! Please verify your email.',
       data: {
         user: {

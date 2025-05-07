@@ -8,10 +8,7 @@ import OTPModal from './OTPModal/OTPModal';
 import Loader from '../Loader/Loader';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import { GoogleLogin as GoogleOAuthLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
-import axiosInstance from '../../api/axiosConfig';
-
 interface SignupProps {
   switchToLogin?: () => void;
 }
@@ -44,8 +41,11 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
       });
     },
     onSuccess: (response) => {
+      console.log('Signup response:', response); // Debug log
       if (response.statusCode === 200) {
         handleSignupSuccess(response.data);
+        setShowOTPModal(true); // Close the modal after successful verification
+
       } else {
         toast.error(response.message || 'Signup failed. Please try again.');
       }
@@ -91,9 +91,11 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
   });
 
   const handleSignupSuccess = (data: any) => {
-    toast.success('Account created successfully!');
+    console.log('Handling signup success:', data); // Debug log
+    toast.success('Account created successfully! Please verify your email.');
     setShowOTPModal(true); // Show OTP modal after signup
-    // Do not navigate or set user yet
+    // Store user data in localStorage
+    localStorage.setItem('user', JSON.stringify(data.user));
   };
 
   const handleTabSwitch = (tab: 'individual' | 'organization') => {
@@ -332,15 +334,17 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
         </motion.form>
       </motion.div>
 
-      <OTPModal
-        isOpen={showOTPModal}
-        onClose={() => setShowOTPModal(false)}
-        onVerify={handleVerifyOTP}
-        onResend={handleResendOTP}
-        email={email}
-        isResendDisabled={resendOTPMutation.isPending}
-        mode="signup"
-      />
+      {showOTPModal && (
+        <OTPModal
+          isOpen={showOTPModal}
+          onClose={() => setShowOTPModal(false)}
+          onVerify={handleVerifyOTP}
+          onResend={handleResendOTP}
+          email={email}
+          isResendDisabled={resendOTPMutation.isPending}
+          mode="signup"
+        />
+      )}
     </>
   );
 };

@@ -226,8 +226,8 @@ export const saveCustomPatentList = async (req: AuthRequest, res: Response) => {
 
     await customList.save();
 
-    res.status(201).json({
-      statusCode: 201,
+    res.status(200).json({
+      statusCode: 200,
       message: 'Custom patent list created successfully',
       data: customList
     });
