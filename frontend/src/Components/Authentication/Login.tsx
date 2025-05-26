@@ -50,7 +50,7 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
         error.response?.data?.message ||
         error.message ||
         "Login failed. Please check your credentials.";
-      toast.error(errorMessage);
+        toast.error(errorMessage);
     },
   });
 

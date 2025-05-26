@@ -837,6 +837,7 @@ const SubscriptionPage: React.FC = () => {
             ...plan,
             organizationPrice: plan.price * 2, // Double the price for organization admin
             memberPrice: 1000, // ₹1000 per member per month
+            isOrganizationPlan: true // Mark all plans as available for organization
           }));
           setPlans(transformedPlans);
         } else {

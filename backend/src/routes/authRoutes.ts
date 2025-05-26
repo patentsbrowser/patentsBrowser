@@ -30,7 +30,7 @@ router.post('/signup', async (req, res) => {
           message: 'OTP sent to your email. Please verify to complete signup.',
           data: { mode: 'verify' }
         });
-      } else {
+    } else {
         // Already registered and verified
         return res.status(409).json({
           statusCode: 409,
@@ -47,7 +47,7 @@ router.post('/signup', async (req, res) => {
       otp,
       expiresAt: Date.now() + 10 * 60 * 1000 // 10 min
     };
-    storeOTP(email, otp);
+      storeOTP(email, otp);
     try { await sendOTP(email, otp); } catch (e) {}
     return res.status(200).json({
       statusCode: 200,
