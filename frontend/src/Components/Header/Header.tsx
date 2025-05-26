@@ -29,7 +29,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ isVisible = true }) => {
-  const { logout, user }:any = useAuth();
+  const { logout, user, setUser }:any = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -61,8 +61,9 @@ const Header: React.FC<HeaderProps> = ({ isVisible = true }) => {
         type: 'UPDATE_PROFILE', 
         payload: profileResponse.data 
       });
+      setUser(profileResponse.data); // Keep AuthContext user in sync
     }
-  }, [profileResponse, dispatch]);
+  }, [profileResponse, dispatch, setUser]);
   
   // Use API data if available, otherwise fall back to Redux store
   const apiProfile = profileResponse?.statusCode === 200 ? profileResponse.data : null;
@@ -155,7 +156,6 @@ const Header: React.FC<HeaderProps> = ({ isVisible = true }) => {
   ];
 
   const shouldShowAdminMenu = user?.isAdmin && isAdminMode;
-
   return (
     <header className={`header ${!isVisible ? 'header-hidden' : ''}`}>
       <div className="header-left">
@@ -203,6 +203,11 @@ const Header: React.FC<HeaderProps> = ({ isVisible = true }) => {
               <Link to="/auth/profile" className="dropdown-item" onClick={() => setShowDropdown(false)}>
                 Profile
               </Link>
+              {user?.isOrganization && (
+                <Link to="/auth/invitation" className="dropdown-item" onClick={() => setShowDropdown(false)}>
+                  Invitation
+                </Link>
+              )}
               <button 
                 className="dropdown-item" 
                 onClick={() => {

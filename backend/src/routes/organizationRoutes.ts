@@ -7,6 +7,7 @@ import {
   getOrganizationDetails,
   removeMember,
   updateOrganizationSubscription,
+  getOrganizationMembers,
 } from "../controllers/organizationController.js";
 
 const router = express.Router();
@@ -28,5 +29,8 @@ router.delete("/members/:memberId", auth, removeMember);
 
 // Update organization subscription
 router.put("/subscription", auth, updateOrganizationSubscription);
+
+// Get organization members
+router.get("/members", auth, getOrganizationMembers);
 
 export default router;

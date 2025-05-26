@@ -7,6 +7,12 @@ interface User {
   email: string;
   name: string;
   isAdmin?: boolean;
+  isOrganization?: boolean;
+  organizationName?: string;
+  organizationSize?: string;
+  organizationType?: string;
+  organizationId?: string;
+  organizationRole?: 'admin' | 'member';
 }
 
 interface SignupCredentials {

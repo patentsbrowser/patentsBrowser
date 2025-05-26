@@ -28,6 +28,9 @@ import AdminDashboard from "./Components/Admin/AdminDashboard";
 import PaymentHistory from "./Components/PaymentHistory";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ChatProvider } from './context/ChatContext';
+import JoinOrganization from "./Components/Organization/JoinOrganization";
+import OrganizationDashboard from "./Components/Organization/OrganizationDashboard";
+import Invitation from "./Components/Organization/Invitation";
 // import PatentHistory from "./Components/PatentHistory/PatentHistory";
 
 interface ErrorBoundaryProps {
@@ -140,6 +143,9 @@ const App = () => {
                         
                         {/* Subscription Page - Public with auth features */}
                         <Route path="/subscription" element={<SubscriptionPage />} />
+
+                        {/* Join Organization Page - Public */}
+                        <Route path="/join-organization/:token" element={<JoinOrganization />} />
                         
                         {/* Authentication routes */}
                         <Route 
@@ -174,6 +180,7 @@ const App = () => {
                                     
                                     {/* User Routes */}
                                     <Route path="dashboard" element={<DashboardSelector />} />
+                                    <Route path="organization/dashboard" element={<OrganizationDashboard />} />
                                     <Route 
                                       path="settings" 
                                       element={
@@ -187,6 +194,7 @@ const App = () => {
                                     <Route path="update-profile" element={<UpdateProfile />} />
                                     <Route path="profile" element={<ProfilePage />} />
                                     <Route path="subscription" element={<SubscriptionPage />} />
+                                    <Route path="invitation" element={<Invitation />} />
                                     {/* <Route path="patent-history" element={<PatentHistory />} /> */}
                                     <Route path="payment-history" element={<PaymentHistory />} />
                                     

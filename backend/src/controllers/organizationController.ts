@@ -85,7 +85,7 @@ export const generateInviteLink = async (req: Request, res: Response) => {
 
     // Generate unique token
     const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days expiry
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
 
     // Add invite link
     organization.inviteLinks.push({
@@ -323,5 +323,33 @@ export const updateOrganizationSubscription = async (req: Request, res: Response
       success: false,
       message: 'Failed to update subscription'
     });
+  }
+};
+
+export const getOrganizationMembers = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+    const user = await User.findById(userId);
+    if (!user?.organizationId) {
+      return res.status(404).json({ success: false, message: 'User is not part of any organization' });
+    }
+    const organization = await Organization.findById(user.organizationId)
+      .populate('members.userId', 'name email');
+    if (!organization) {
+      return res.status(404).json({ success: false, message: 'Organization not found' });
+    }
+    const members = organization.members.map(m => ({
+      _id: m.userId._id,
+      name: m.userId.name,
+      email: m.userId.email,
+      role: m.role,
+      joinedAt: m.joinedAt
+    }));
+    res.status(200).json({ success: true, data: members });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to load organization members' });
   }
 }; 
