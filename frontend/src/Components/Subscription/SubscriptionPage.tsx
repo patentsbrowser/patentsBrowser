@@ -5,6 +5,7 @@ import './SubscriptionPage.scss';
 import { toast } from 'react-toastify';
 import { QRCodeSVG } from 'qrcode.react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../AuthContext';
 
 interface Plan {
   _id: string;
@@ -758,6 +759,7 @@ const FreeTrialSection: React.FC<{ isTrialActive: boolean, trialDaysRemaining: n
 };
 
 const SubscriptionPage: React.FC = () => {
+  const { user } = useAuth();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
@@ -882,27 +884,30 @@ const SubscriptionPage: React.FC = () => {
     return <div className="subscription-page loading">Loading subscription plans...</div>;
   }
 
+  // Determine user type/role for filtering
+  const isOrgAdmin = user?.isOrganization && user?.organizationRole === 'admin';
+  const isOrgMember = user?.isOrganization && user?.organizationRole === 'member';
+  const isIndividual = !user?.isOrganization || !user?.organizationRole;
+
+  if (isOrgMember) {
+    // Invited organization member: do not show subscription section
+    return null;
+  }
+
+  // Show only relevant plans if on trial, else show all plans
+  let plansToShow = plans;
+  if (userSubscription?.status === 'trial' || !userSubscription) {
+    plansToShow = plans.filter(plan =>
+      isOrgAdmin ? plan.isOrganizationPlan : !plan.isOrganizationPlan
+    );
+  }
+
   return (
     <div className="subscription-page-wrapper">
       <div className="subscription-page">
         <div className="subscription-header">
           <h1>Subscription Plans</h1>
           <p>Choose the perfect plan for your patent search needs</p>
-          
-          <div className="plan-type-toggle">
-            <button
-              className={`toggle-btn ${!showOrganizationPlans ? 'active' : ''}`}
-              onClick={() => setShowOrganizationPlans(false)}
-            >
-              Individual Plans
-            </button>
-            <button
-              className={`toggle-btn ${showOrganizationPlans ? 'active' : ''}`}
-              onClick={() => setShowOrganizationPlans(true)}
-            >
-              Organization Plans
-            </button>
-          </div>
         </div>
 
         {isLoadingSubscription ? (
@@ -1008,9 +1013,7 @@ const SubscriptionPage: React.FC = () => {
             )}
 
             <div className="subscription-plans">
-              {plans
-                .filter(plan => showOrganizationPlans ? plan.isOrganizationPlan : !plan.isOrganizationPlan)
-                .map((plan) => (
+              {plansToShow.map((plan) => (
                 <div 
                   key={plan._id} 
                   className={`plan-card ${plan.popular ? 'popular' : ''}`}
