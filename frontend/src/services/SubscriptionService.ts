@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { Plan, Subscription, UserSubscription, PlanChangeRequest, PaymentVerification } from '../types/subscription';
 // import { getAuthToken } from '../utils/auth';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -34,7 +35,7 @@ const apiCache: {
 
 // Add auth token to requests
 axiosInstance.interceptors.request.use(
-  (config) => {
+  async (config) => {
     try {
       const token = localStorage.getItem('token');
       
@@ -308,15 +309,173 @@ export const getTotalSubscriptionBenefits = async () => {
   }
 };
 
-export default {
-  getSubscriptionPlans,
-  createPendingSubscription,
-  verifyUpiPayment,
-  getUserSubscription,
-  checkPaymentVerificationStatus,
-  getUserPaymentHistory,
-  getAdditionalPlans,
-  stackNewPlan,
-  getStackedPlans,
-  getTotalSubscriptionBenefits
-}; 
+/**
+ * Request a plan change (upgrade or downgrade)
+ * @param newPlan - The ID of the new plan to change to
+ */
+export const requestPlanChange = async (newPlan: string) => {
+  try {
+    debugLog('Requesting plan change', { newPlan });
+    
+    const response = await axiosInstance.post('/subscriptions/change-plan', {
+      newPlan
+    });
+    
+    debugLog('Plan change request response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error requesting plan change:', error);
+    throw error;
+  }
+};
+
+/**
+ * Verify payment for a plan upgrade
+ * @param subscriptionId - The ID of the subscription to verify
+ * @param transactionId - UPI transaction reference ID
+ * @param paymentScreenshotUrl - URL of the payment screenshot
+ */
+export const verifyPlanChangePayment = async (
+  subscriptionId: string,
+  transactionId: string,
+  paymentScreenshotUrl: string
+) => {
+  try {
+    debugLog('Verifying plan change payment', { subscriptionId, transactionId });
+    
+    const response = await axiosInstance.post('/subscriptions/verify-plan-change', {
+      subscriptionId,
+      upiTransactionRef: transactionId,
+      paymentScreenshotUrl
+    });
+    
+    debugLog('Plan change payment verification response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error verifying plan change payment:', error);
+    throw error;
+  }
+};
+
+class SubscriptionService {
+  async getPlans(accountType: 'individual' | 'organization'): Promise<Plan[]> {
+    const response = await axios.get(`${API_URL}/subscriptions/plans`, {
+      headers: await this.getAuthHeader(),
+      params: { accountType }
+    });
+    return response.data;
+  }
+
+  async getUserSubscription(): Promise<UserSubscription> {
+    const response = await axios.get(`${API_URL}/subscriptions/user-subscription`, {
+      headers: await this.getAuthHeader()
+    });
+    return response.data;
+  }
+
+  async subscribe(planId: string, paymentDetails: {
+    transactionId: string;
+    paymentScreenshotUrl?: string;
+  }): Promise<Subscription> {
+    const response = await axios.post(
+      `${API_URL}/subscriptions/subscribe`,
+      { planId, ...paymentDetails },
+      { headers: await this.getAuthHeader() }
+    );
+    return response.data;
+  }
+
+  async requestPlanChange(request: PlanChangeRequest): Promise<{
+    subscription: Subscription;
+    proratedAmount?: number;
+    effectiveDate?: string;
+  }> {
+    const response = await axios.post(
+      `${API_URL}/subscriptions/change-plan`,
+      request,
+      { headers: await this.getAuthHeader() }
+    );
+    return response.data;
+  }
+
+  async verifyPlanChangePayment(verification: PaymentVerification): Promise<Subscription> {
+    const response = await axios.post(
+      `${API_URL}/subscriptions/verify-plan-change`,
+      verification,
+      { headers: await this.getAuthHeader() }
+    );
+    return response.data;
+  }
+
+  async cancelSubscription(): Promise<Subscription> {
+    const response = await axios.post(
+      `${API_URL}/subscriptions/cancel`,
+      {},
+      { headers: await this.getAuthHeader() }
+    );
+    return response.data;
+  }
+
+  async getStackedPlans(): Promise<Subscription[]> {
+    const response = await axios.get(
+      `${API_URL}/subscriptions/stacked`,
+      { headers: await this.getAuthHeader() }
+    );
+    return response.data;
+  }
+
+  async getTotalBenefits(): Promise<{
+    maxSearches: number;
+    maxExports: number;
+    maxSavedPatents: number;
+    additionalFeatures: string[];
+  }> {
+    const response = await axios.get(
+      `${API_URL}/subscriptions/benefits`,
+      { headers: await this.getAuthHeader() }
+    );
+    return response.data;
+  }
+
+  async verifyPayment(verification: PaymentVerification): Promise<Subscription> {
+    const response = await axios.post(
+      `${API_URL}/subscriptions/verify-payment`,
+      verification,
+      { headers: await this.getAuthHeader() }
+    );
+    return response.data;
+  }
+
+  async getPaymentStatus(subscriptionId: string): Promise<{
+    status: 'pending' | 'verified' | 'rejected';
+    message?: string;
+  }> {
+    const response = await axios.get(
+      `${API_URL}/subscriptions/payment-status/${subscriptionId}`,
+      { headers: await this.getAuthHeader() }
+    );
+    return response.data;
+  }
+
+  async getOrganizationDetails(): Promise<{
+    name: string;
+    size: string;
+    type: string;
+    memberCount: number;
+    role: 'admin' | 'member';
+  }> {
+    const response = await axios.get(
+      `${API_URL}/organizations/details`,
+      { headers: await this.getAuthHeader() }
+    );
+    return response.data;
+  }
+
+  private async getAuthHeader() {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+}
+
+export const subscriptionService = new SubscriptionService();
+export default subscriptionService; 

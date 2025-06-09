@@ -1,35 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import * as SubscriptionService from '../../services/SubscriptionService';
+import subscriptionService from '../../services/SubscriptionService';
 import './SubscriptionPage.scss';
 // import './CurrentSubscription.scss';
 import { toast } from 'react-toastify';
 import { QRCodeSVG } from 'qrcode.react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthContext';
-
-interface Plan {
-  _id: string;
-  name: string;
-  type: string;
-  price: number;
-  discountPercentage: number;
-  features: string[];
-  popular: boolean;
-  isOrganizationPlan?: boolean;
-  organizationPrice?: number;
-  memberPrice?: number;
-}
-
-interface Subscription {
-  _id: string;
-  plan: Plan;
-  planName: string;
-  status: string;
-  startDate: string;
-  endDate: string;
-  isPendingPayment: boolean;
-  trialDaysRemaining?: number;
-}
+import PlanChangeModal from './PlanChangeModal';
+import type { Plan, Subscription, UserSubscription, SubscriptionStatus } from '../../types/subscription';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -39,8 +17,8 @@ interface PaymentModalProps {
   isTrialActive: boolean;
   trialDaysRemaining: number;
   isOrganizationPlan: boolean;
+  onSuccess?: () => Promise<void>;
 }
-
 // Helper functions
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -56,25 +34,6 @@ const calculateDaysLeft = (endDate: string) => {
   const end = new Date(endDate);
   const diffTime = end.getTime() - today.getTime();
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-};
-
-const formatIndianPrice = (price: number): string => {
-  return price.toLocaleString('en-IN');
-};
-
-const getPlanTypeDisplay = (planType: string) => {
-  switch (planType) {
-    case 'monthly':
-      return 'Monthly';
-    case 'quarterly':
-      return 'Quarterly';
-    case 'half_yearly':
-      return 'Half Yearly';
-    case 'yearly':
-      return 'Yearly';
-    default:
-      return planType;
-  }
 };
 
 // UPI Reference validation function
@@ -172,19 +131,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
     if (!upiOrderId || requestInProgressRef.current) return;
     
     const createPendingSubscription = async () => {
-      // Set flag to prevent duplicate requests
-      requestInProgressRef.current = true;
-      
       try {
         setPaymentStep('creating');
-        await SubscriptionService.createPendingSubscription(plan._id, upiOrderId);
+        await subscriptionService.subscribe(plan._id, { transactionId: upiOrderId });
         setPaymentStep('ready');
       } catch (error) {
         console.error('Error creating pending subscription:', error);
         toast.error('Failed to initialize payment. Please try again.');
         onClose();
-      } finally {
-        requestInProgressRef.current = false;
       }
     };
     
@@ -231,127 +185,67 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
     setPaymentStep('verifying');
     
     try {
-      const result = await SubscriptionService.verifyUpiPayment(trimmedId);
+      const result = await subscriptionService.verifyPayment({
+        subscriptionId: plan._id,
+        transactionId: trimmedId,
+        amount: plan.price,
+        status: 'pending'
+      });
       
-      if (result.success) {
-        // Store the transaction ID for status checks
+      if (result && 'status' in result) {
         setSubmittedTransactionId(trimmedId);
-        
-        // All payments now require admin verification
         setPaymentStep('pending');
         setVerificationStatus('Your payment reference has been submitted to the admin for verification. This usually takes 10-15 minutes. Until verification is complete, you can continue to use the free trial version.');
         
-        // Start polling for status updates
         const intervalId = window.setInterval(async () => {
-          // Check if user is still logged in
-          const token = localStorage.getItem('token');
-          if (!token) {
-            clearInterval(intervalId);
-            setStatusCheckInterval(null);
-            return;
-          }
-
-          // Check if transaction ID is still available
-          if (!submittedTransactionId) {
-            clearInterval(intervalId);
-            setStatusCheckInterval(null);
-            return;
-          }
-
           try {
-            const statusResult = await SubscriptionService.checkPaymentVerificationStatus(submittedTransactionId);
+            const statusResult = await subscriptionService.getPaymentStatus(plan._id);
             
-            if (statusResult.success) {
-              switch(statusResult.data.status) {
-                case 'active':
-                  // Payment has been verified by admin
-                  clearInterval(intervalId);
-                  setStatusCheckInterval(null);
-                  setPaymentStep('complete');
-                  toast.success('Payment verified! Your subscription is now active.');
-                  setTimeout(() => {
-                    if (onPaymentComplete) {
-                      onPaymentComplete();
-                    }
-                    if (onClose) {
-                      onClose();
-                    }
-                  }, 2000);
-                  setTrialDaysAddedMessage(`${trialDaysRemaining} trial days will be added to your subscription`);
-                  break;
-                
-                case 'rejected':
-                  // Payment has been rejected by admin
-                  clearInterval(intervalId);
-                  setStatusCheckInterval(null);
-                  setVerificationStatus('Your payment was rejected. Please check your payment history for details.');
-                  toast.error('Payment was rejected by admin. Please check payment history for details.');
-                  setIsSubmitting(false);
-                  setPaymentStep('ready');
-                  // Reset the form
-                  setTransactionId('');
-                  // Close modal after a delay
-                  setTimeout(() => {
-                    if (onPaymentComplete) {
-                      onPaymentComplete();
-                    }
-                    if (onClose) {
-                      onClose();
-                    }
-                  }, 3000);
-                  break;
-                
-                case 'cancelled':
-                  // Payment has been cancelled
-                  clearInterval(intervalId);
-                  setStatusCheckInterval(null);
-                  setVerificationStatus('Your payment was cancelled. Please try again or contact support.');
-                  toast.error('Payment was cancelled. Please try again or contact support.');
-                  setIsSubmitting(false);
-                  setPaymentStep('ready');
-                  setTransactionId('');
-                  break;
-                
-                case 'inactive':
-                  // Payment is inactive
-                  clearInterval(intervalId);
-                  setStatusCheckInterval(null);
-                  setVerificationStatus('Your payment is inactive. Please contact support for assistance.');
-                  toast.error('Payment is inactive. Please contact support for assistance.');
-                  setIsSubmitting(false);
-                  setPaymentStep('ready');
-                  setTransactionId('');
-                  break;
-                
-                case 'payment_pending':
-                  // Continue polling
-                  break;
-                
-                default:
-                  // Handle unknown status
-                  console.warn('Unknown payment status:', statusResult.data.status);
-                  break;
-              }
+            switch(statusResult.status) {
+              case 'verified':
+                clearInterval(intervalId);
+                setStatusCheckInterval(null);
+                setPaymentStep('complete');
+                toast.success('Payment verified! Your subscription is now active.');
+                setTimeout(() => {
+                  if (onPaymentComplete) onPaymentComplete();
+                  if (onClose) onClose();
+                }, 2000);
+                break;
+              
+              case 'rejected':
+                clearInterval(intervalId);
+                setStatusCheckInterval(null);
+                setVerificationStatus(statusResult.message || 'Your payment was rejected. Please check your payment history for details.');
+                toast.error(statusResult.message || 'Payment was rejected by admin. Please check payment history for details.');
+                setIsSubmitting(false);
+                setPaymentStep('ready');
+                setTransactionId('');
+                setTimeout(() => {
+                  if (onPaymentComplete) onPaymentComplete();
+                  if (onClose) onClose();
+                }, 3000);
+                break;
+              
+              case 'pending':
+                // Continue polling
+                break;
             }
           } catch (error) {
             console.error('Error checking payment status:', error);
-            // Don't stop polling on error, just log it
           }
-        }, 20000); // Check every 20 seconds
+        }, 20000);
         
         setStatusCheckInterval(intervalId);
       } else {
-        toast.error(result.message || 'Payment verification failed. Please try again.');
+        toast.error('Payment verification failed. Please try again.');
         setIsSubmitting(false);
         setPaymentStep('ready');
       }
     } catch (error: any) {
       console.error('Error verifying payment:', error);
-      
-      // Display the specific error message from the backend if available
       const errorMessage = error.response?.data?.message || 
                          'Failed to verify payment. Please try again or contact support.';
-      
       toast.error(errorMessage);
       setIsSubmitting(false);
       setPaymentStep('ready');
@@ -524,9 +418,9 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
     const fetchAdditionalPlans = async () => {
       try {
         setLoadingAdditionalPlans(true);
-        const result: any = await SubscriptionService.getAdditionalPlans(subscription._id);
-        if (result.success) {
-          setAdditionalPlans(result.data);
+        const result = await subscriptionService.getStackedPlans();
+        if (result) {
+          setAdditionalPlans(result);
         }
       } catch (error) {
         console.error('Error fetching additional plans:', error);
@@ -716,370 +610,307 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
   );
 };
 
-// Free Trial Section Component - updated to show automatically activated trial
-const FreeTrialSection: React.FC<{ isTrialActive: boolean, trialDaysRemaining: number }> = ({ isTrialActive, trialDaysRemaining }) => {
-  return (
-    <div className="free-trial-card">
-      {isTrialActive ? (
-        <>
-          <h2>Your 14-Day Free Trial is Active!</h2>
-          <div className="trial-features">
-            <h3>Your trial includes:</h3>
-            <ul>
-              <li>Full access to premium search features</li>
-              <li>Unlimited searches during trial period</li>
-              <li>Access to all patent databases</li>
-              <li>Export and save search results</li>
-            </ul>
-          </div>
-          
-          <div className="trial-active-message">
-            <p>Subscribe to a paid plan below to keep your access. Any remaining trial days will be added to your subscription!</p>
-          </div>
-        </>
-      ) : (
-        <>
-          <h2>Get Premium Access</h2>
-          <p>New accounts automatically receive a 14-day free trial with full access to premium features.</p>
-          
-          <ul className="trial-features">
-            <li>Full access to premium search features</li>
-            <li>Unlimited searches during trial period</li>
-            <li>Access to all patent databases</li>
-            <li>Export and save search results</li>
-          </ul>
-          
-          <div className="trial-upgrade-message">
-            <p>Subscribe now to get access to premium features.</p>
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
 
 const SubscriptionPage: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [userSubscription, setUserSubscription] = useState<UserSubscription | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [userSubscription, setUserSubscription] = useState<Subscription | null>(null);
-  const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
-  const [isTrialActive, setIsTrialActive] = useState(false);
-  const [hasPendingPayment, setHasPendingPayment] = useState(false);
-  const [trialDaysRemaining, setTrialDaysRemaining] = useState(0);
-  const [stackedPlans, setStackedPlans] = useState<Subscription[]>([]);
-  const [totalBenefits, setTotalBenefits] = useState<any>(null);
-  const [showOrganizationPlans, setShowOrganizationPlans] = useState(false);
-  
-  // Use ref to track if data has been fetched to prevent duplicate calls
-  const dataFetchedRef = useRef(false);
-
-  const fetchUserSubscription = async () => {
-    try {
-      setIsLoadingSubscription(true);
-      const result = await SubscriptionService.getUserSubscription();
-      
-      if (result.success) {
-        setUserSubscription(result.data);
-        setIsTrialActive(result.data?.status === 'trial');
-        setHasPendingPayment(result.data?.isPendingPayment || false);
-        
-        if (result.data?.status === 'trial' && result.data?.trialDaysRemaining) {
-          setTrialDaysRemaining(result.data.trialDaysRemaining);
-        }
-        
-        // Fetch stacked plans if user has an active subscription
-        if (result.data?.status === 'active') {
-          const stackedResult = await SubscriptionService.getStackedPlans();
-          if (stackedResult.success) {
-            setStackedPlans(stackedResult.data);
-          }
-          
-          // Fetch total benefits
-          const benefitsResult = await SubscriptionService.getTotalSubscriptionBenefits();
-          if (benefitsResult.success) {
-            setTotalBenefits(benefitsResult.data);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching user subscription:', error);
-      toast.error('Failed to load subscription details');
-    } finally {
-      setIsLoadingSubscription(false);
-    }
-  };
+  const [planChangeState, setPlanChangeState] = useState<{
+    isOpen: boolean;
+    currentPlan: Plan | null;
+    newPlan: Plan | null;
+    isUpgrade: boolean;
+  }>({
+    isOpen: false,
+    currentPlan: null,
+    newPlan: null,
+    isUpgrade: false
+  });
 
   useEffect(() => {
-    fetchUserSubscription();
-    
-    // Set up interval to check subscription status (every 5 minutes)
-    const intervalId = setInterval(() => {
-      fetchUserSubscription();
-    }, 5 * 60 * 1000);
-    
-    return () => clearInterval(intervalId);
-  }, []);
-
-  useEffect(() => {
-    // Only fetch if we haven't already done so
-    if (dataFetchedRef.current) {
-      return;
-    }
-
-    const fetchPlans = async () => {
+    const fetchData = async () => {
       try {
-        const result = await SubscriptionService.getSubscriptionPlans();
-        
-        if (result.success) {
-          // Transform the plans to include organization pricing
-          const transformedPlans = result.data.map((plan: Plan) => ({
-            ...plan,
-            organizationPrice: plan.price * 2, // Double the price for organization admin
-            memberPrice: 1000, // ₹1000 per member per month
-            isOrganizationPlan: true // Mark all plans as available for organization
-          }));
-          setPlans(transformedPlans);
-        } else {
-          console.error('Failed to load plans:', result.message);
+        setLoading(true);
+        const accountType = user?.isOrganization ? 'organization' : 'individual';
+        console.log('Fetching plans for account type:', accountType);
+        const [plansData, subscriptionData] = await Promise.all([
+          subscriptionService.getPlans(accountType),
+          subscriptionService.getUserSubscription()
+        ]);
+        console.log('Plans API Response:', plansData);
+        console.log('User Subscription API Response:', subscriptionData);
+        setPlans(plansData);
+        setUserSubscription(subscriptionData);
+
+        if (subscriptionData.subscription.status === 'trial') {
+          const daysRemaining = subscriptionData.subscription.trialDaysRemaining || 0;
+          if (daysRemaining <= 3) {
+            toast.warning(`Your trial period ends in ${daysRemaining} days. Consider upgrading to continue using premium features.`);
+          }
         }
-      } catch (error) {
-        toast.error('Failed to load subscription plans');
-        console.error('Error fetching plans:', error);
+      } catch (err) {
+        setError('Failed to load subscription data');
+        toast.error('Failed to load subscription data');
       } finally {
         setLoading(false);
-        // Mark that we've fetched the data
-        dataFetchedRef.current = true;
       }
     };
 
-    fetchPlans();
-  }, []);
+    fetchData();
+  }, [user?.isOrganization]);
 
   const handleSubscribeClick = (plan: Plan) => {
-    // Don't allow new subscription if there's a pending payment
-    if (hasPendingPayment) {
-      toast.error('You have a pending payment. Please wait for verification or check payment history.');
+    if (userSubscription?.isOrganization && userSubscription.organizationRole === 'member') {
+      toast.info('Organization members cannot purchase plans. Please contact your organization admin.');
       return;
     }
-    
-    // Simply open payment modal for both new subscriptions and stacking
     setSelectedPlan(plan);
-    setIsPaymentModalOpen(true);
-  };
-  
-  const closePaymentModal = () => {
-    setIsPaymentModalOpen(false);
-    setSelectedPlan(null);
+    setShowPaymentModal(true);
   };
 
-  const handlePaymentComplete = () => {
-    // Refetch subscription data after payment completion or rejection
-    fetchUserSubscription();
+  const handlePlanChangeClick = (plan: Plan) => {
+    if (!userSubscription?.subscription) return;
+
+    const currentPlan = userSubscription.subscription.plan;
+    const isUpgrade = plan.price > currentPlan.price;
+
+    if (userSubscription.isOrganization && userSubscription.organizationRole === 'member') {
+      toast.info('Organization members cannot change plans. Please contact your organization admin.');
+      return;
+    }
+
+    setPlanChangeState({
+      isOpen: true,
+      currentPlan,
+      newPlan: plan,
+      isUpgrade
+    });
+  };
+
+  const closePlanChangeModal = () => {
+    setPlanChangeState({
+      isOpen: false,
+      currentPlan: null,
+      newPlan: null,
+      isUpgrade: false
+    });
+  };
+
+  const handlePlanChangeComplete = async () => {
+    try {
+      const updatedSubscription = await subscriptionService.getUserSubscription();
+      setUserSubscription(updatedSubscription);
+      toast.success('Plan change completed successfully');
+    } catch (err) {
+      toast.error('Failed to update subscription status');
+    }
+    closePlanChangeModal();
+  };
+
+  const getPlanPrice = (plan: Plan) => {
+    if (userSubscription?.isOrganization) {
+      if (userSubscription.organizationRole === 'member') {
+        return plan.memberPrice || plan.price;
+      }
+      return plan.organizationPrice || plan.price;
+    }
+    return plan.price;
+  };
+
+  const getStatusBadge = (status: SubscriptionStatus) => {
+    const statusConfig: Record<SubscriptionStatus, { color: string; text: string }> = {
+      active: { color: 'bg-green-100 text-green-800', text: 'Active' },
+      inactive: { color: 'bg-gray-100 text-gray-800', text: 'Inactive' },
+      payment_pending: { color: 'bg-yellow-100 text-yellow-800', text: 'Payment Pending' },
+      upgrade_pending: { color: 'bg-blue-100 text-blue-800', text: 'Upgrade Pending' },
+      downgrade_pending: { color: 'bg-purple-100 text-purple-800', text: 'Downgrade Pending' },
+      trial: { color: 'bg-indigo-100 text-indigo-800', text: 'Trial' },
+      cancelled: { color: 'bg-red-100 text-red-800', text: 'Cancelled' },
+      rejected: { color: 'bg-red-100 text-red-800', text: 'Rejected' },
+      paid: { color: 'bg-green-100 text-green-800', text: 'Paid' }
+    };
+
+    const config = statusConfig[status];
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+        {config.text}
+      </span>
+    );
+  };
+
+  const renderPlanCard = (plan: Plan) => {
+    const isCurrentPlan = userSubscription?.subscription?.plan._id === plan._id;
+    const canUpgrade = userSubscription?.subscription && 
+      plan.price > userSubscription.subscription.plan.price;
+    const canDowngrade = userSubscription?.subscription && 
+      plan.price < userSubscription.subscription.plan.price;
+    const price = getPlanPrice(plan);
+
+    return (
+      <div key={plan._id} className={`rounded-lg shadow-lg p-6 ${
+        plan.popular ? 'border-2 border-blue-500' : 'border border-gray-200'
+      }`}>
+        {plan.popular && (
+          <div className="absolute top-0 right-0 bg-blue-500 text-white px-3 py-1 rounded-bl-lg rounded-tr-lg text-sm">
+            Popular
+          </div>
+        )}
+        <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
+        <div className="mb-4">
+          <span className="text-3xl font-bold">₹{price}</span>
+          {plan.discountPercentage > 0 && (
+            <span className="ml-2 text-sm text-gray-500 line-through">
+              ₹{price * (1 + plan.discountPercentage / 100)}
+            </span>
+          )}
+          <span className="text-sm text-gray-500">/{plan.type}</span>
+        </div>
+        <ul className="mb-6 space-y-2">
+          {plan.features.map((feature, index) => (
+            <li key={index} className="flex items-center">
+              <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              </svg>
+              {feature}
+            </li>
+          ))}
+        </ul>
+        {isCurrentPlan ? (
+          <div className="text-center">
+            <span className="text-green-600 font-medium">Current Plan</span>
+            {userSubscription?.subscription.status === 'trial' && (
+              <div className="mt-2 text-sm text-gray-600">
+                Trial ends in {userSubscription.subscription.trialDaysRemaining} days
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={() => {
+              if (userSubscription?.subscription) {
+                handlePlanChangeClick(plan);
+              } else {
+                handleSubscribeClick(plan);
+              }
+            }}
+            className={`w-full py-2 px-4 rounded-md font-medium ${
+              canUpgrade
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : canDowngrade
+                ? 'bg-purple-600 text-white hover:bg-purple-700'
+                : 'bg-gray-600 text-white hover:bg-gray-700'
+            }`}
+          >
+            {canUpgrade ? 'Upgrade' : canDowngrade ? 'Downgrade' : 'Subscribe'}
+          </button>
+        )}
+      </div>
+    );
   };
 
   if (loading) {
-    return <div className="subscription-page loading">Loading subscription plans...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
-  // Determine user type/role for filtering
-  const isOrgAdmin = user?.isOrganization && user?.organizationRole === 'admin';
-  const isOrgMember = user?.isOrganization && user?.organizationRole === 'member';
-  const isIndividual = !user?.isOrganization || !user?.organizationRole;
-
-  if (isOrgMember) {
-    // Invited organization member: do not show subscription section
-    return null;
-  }
-
-  // Show only relevant plans if on trial, else show all plans
-  let plansToShow = plans;
-  if (userSubscription?.status === 'trial' || !userSubscription) {
-    plansToShow = plans.filter(plan =>
-      isOrgAdmin ? plan.isOrganizationPlan : !plan.isOrganizationPlan
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-red-500">{error}</div>
+      </div>
     );
   }
 
   return (
-    <div className="subscription-page-wrapper">
-      <div className="subscription-page">
-        <div className="subscription-header">
-          <h1>Subscription Plans</h1>
-          <p>Choose the perfect plan for your patent search needs</p>
-        </div>
-
-        {isLoadingSubscription ? (
-          <div className="loading-subscription">Loading your subscription details...</div>
-        ) : (
-          <>
-            {userSubscription && userSubscription.status !== 'trial' && (
-              <div className="current-subscription-container">
-                <div className="subscription-box">
-                  <div className="section current-plan">
-                    <h2>Current Subscription</h2>
-                    <div className="subscription-details">
-                      <div className="plan-name">
-                        <h3>{userSubscription.planName}</h3>
-                        <div className="plan-type">
-                          {getPlanTypeDisplay(userSubscription.plan.type)}
-                        </div>
-                      </div>
-                      <div className="date-info">
-                        <div className="date-item">
-                          <span className="date-label">Started:</span>
-                          <span className="date-value">{formatDate(userSubscription.startDate)}</span>
-                        </div>
-                        <div className="date-item">
-                          <span className="date-label">Expires:</span>
-                          <span className="date-value">{formatDate(userSubscription.endDate)}</span>
-                        </div>
-                      </div>
-                      <div className="time-remaining">
-                        <div className="days-left">{calculateDaysLeft(userSubscription.endDate)}</div>
-                        <div className="days-label">days remaining</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="section stacked-plans">
-                    {stackedPlans.length > 0 && (
-                      <div className="stacked-plans">
-                        <h3>Stacked Plans</h3>
-                        <div className="stacked-plans-list">
-                          {stackedPlans.map((plan) => (
-                            <div key={plan._id} className="stacked-plan-card">
-                              <h4>{plan.plan.name} Plan</h4>
-                              <div className="plan-type">
-                                {getPlanTypeDisplay(plan.plan.type)}
-                              </div>
-                              <div className="date-info">
-                                <div className="date-item">
-                                  <span className="date-label">Started:</span>
-                                  <span className="date-value">{formatDate(plan.startDate)}</span>
-                                </div>
-                                <div className="date-item">
-                                  <span className="date-label">Expires:</span>
-                                  <span className="date-value">{formatDate(plan.endDate)}</span>
-                                </div>
-                              </div>
-                              <div className="time-remaining">
-                                <div className="days-left">{calculateDaysLeft(plan.endDate)}</div>
-                                <div className="days-label">days remaining</div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="section total-benefits">
-                    {totalBenefits && (
-                      <div className="total-benefits">
-                        <h3>Total Benefits</h3>
-                        <div className="benefits-details">
-                          <div className="benefit-item">
-                            <span className="benefit-label">Total Amount:</span>
-                            <span className="benefit-value">₹{formatIndianPrice(totalBenefits.totalAmount)}</span>
-                          </div>
-                          <div className="benefit-item">
-                            <span className="benefit-label">Total Days:</span>
-                            <span className="benefit-value">{totalBenefits.totalDays} days</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Show free trial section if user is on trial or has no subscription */}
-            {(!userSubscription || userSubscription.status === 'trial') && (
-              <FreeTrialSection 
-                isTrialActive={isTrialActive} 
-                trialDaysRemaining={trialDaysRemaining} 
-              />
-            )}
-
-            {/* Show pending payment banner if applicable */}
-            {hasPendingPayment && (
-              <div className="pending-payment-banner">
-                <p>You have a pending payment. Your subscription will be activated once the admin verifies your payment.</p>
-                <p>You can continue using the trial version until then.</p>
-              </div>
-            )}
-
-            <div className="subscription-plans">
-              {plansToShow.map((plan) => (
-                <div 
-                  key={plan._id} 
-                  className={`plan-card ${plan.popular ? 'popular' : ''}`}
-                >
-                  {plan.popular && <div className="popular-badge">Most Popular</div>}
-                  <h3>{plan.name}</h3>
-                  <div className="price">
-                    <span className="currency">₹</span>
-                    <span className="amount">
-                      {showOrganizationPlans ? formatIndianPrice(plan.organizationPrice || plan.price * 2) : formatIndianPrice(plan.price)}
-                    </span>
-                    <span className="period">/{getPlanTypeDisplay(plan.type)}</span>
-                  </div>
-                  {showOrganizationPlans && (
-                    <div className="member-price">
-                      <span>+ ₹{formatIndianPrice(plan.memberPrice || 1000)} per member/month</span>
-                    </div>
-                  )}
-                  {plan.discountPercentage > 0 && (
-                    <div className="discount">{plan.discountPercentage}% discount</div>
-                  )}
-                  <ul className="features">
-                    {plan.features.map((feature, index) => (
-                      <li key={index}>{feature}</li>
-                    ))}
-                    {showOrganizationPlans && (
-                      <>
-                        <li>Organization-wide access</li>
-                        <li>Member management dashboard</li>
-                        <li>Invite system for team members</li>
-                        <li>Usage analytics and reporting</li>
-                      </>
-                    )}
-                  </ul>
-                  <button 
-                    className="subscribe-btn"
-                    onClick={() => handleSubscribeClick(plan)}
-                    disabled={hasPendingPayment}
-                  >
-                    {hasPendingPayment ? 'Payment Pending' :
-                      userSubscription?.status === 'trial' ? 'Upgrade Now' :
-                      userSubscription?.status === 'active' ? 'Add Plan' : 'Subscribe Now'}
-                  </button>
-                  {isTrialActive && !hasPendingPayment && trialDaysRemaining > 0 && (
-                    <div className="trial-upgrade-note">
-                      {trialDaysRemaining} trial days will be added to your subscription
-                    </div>
-                  )}
-                </div>
-              ))}
+    <div className="container mx-auto px-4 py-8">
+      {userSubscription?.subscription && (
+        <div className="mb-8 p-6 bg-white rounded-lg shadow-md">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold">Current Subscription</h2>
+            {getStatusBadge(userSubscription.subscription.status)}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-gray-600">Plan: {userSubscription.subscription.planName}</p>
+              <p className="text-gray-600">
+                {userSubscription.isOrganization ? 'Organization' : 'Individual'} Account
+              </p>
+              {userSubscription.isOrganization && (
+                <>
+                  <p className="text-gray-600">Organization: {userSubscription.organizationName}</p>
+                  <p className="text-gray-600">Role: {userSubscription.organizationRole}</p>
+                </>
+              )}
             </div>
-          </>
-        )}
-        
-        {selectedPlan && (
-          <PaymentModal 
-            isOpen={isPaymentModalOpen} 
-            onClose={closePaymentModal} 
-            plan={selectedPlan}
-            onPaymentComplete={handlePaymentComplete}
-            isTrialActive={isTrialActive}
-            trialDaysRemaining={trialDaysRemaining}
-            isOrganizationPlan={showOrganizationPlans}
-          />
-        )}
+            <div>
+              <p className="text-gray-600">
+                Start Date: {new Date(userSubscription.subscription.startDate).toLocaleDateString()}
+              </p>
+              <p className="text-gray-600">
+                End Date: {new Date(userSubscription.subscription.endDate).toLocaleDateString()}
+              </p>
+              {userSubscription.subscription.trialDaysRemaining !== undefined && (
+                <p className="text-gray-600">
+                  Trial Days Remaining: {userSubscription.subscription.trialDaysRemaining}
+                </p>
+              )}
+            </div>
+          </div>
+          {userSubscription.subscription.stackedPlans && userSubscription.subscription.stackedPlans.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold mb-2">Stacked Plans</h3>
+              <div className="space-y-2">
+                {userSubscription.subscription.stackedPlans.map((stackedPlan) => (
+                  <div key={stackedPlan._id} className="p-2 bg-gray-50 rounded">
+                    <p className="text-sm">{stackedPlan.planName}</p>
+                    <p className="text-xs text-gray-500">
+                      Valid until: {new Date(stackedPlan.endDate).toLocaleDateString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <h2 className="text-2xl font-bold mb-6">Available Plans</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {plans.map(renderPlanCard)}
       </div>
+
+      {showPaymentModal && selectedPlan && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          plan={selectedPlan}
+          onClose={() => setShowPaymentModal(false)}
+          onPaymentComplete={handlePlanChangeComplete}
+          isTrialActive={userSubscription?.subscription?.status === 'trial'}
+          trialDaysRemaining={userSubscription?.subscription?.trialDaysRemaining || 0}
+          isOrganizationPlan={userSubscription?.isOrganization || false}
+          onSuccess={handlePlanChangeComplete}
+        />
+      )}
+
+      {planChangeState.isOpen && planChangeState.currentPlan && planChangeState.newPlan && (
+        <PlanChangeModal
+          isOpen={planChangeState.isOpen}
+          onPlanChangeComplete={handlePlanChangeComplete}
+          currentPlan={planChangeState.currentPlan}
+          newPlan={planChangeState.newPlan}
+          isUpgrade={planChangeState.isUpgrade}
+          onClose={closePlanChangeModal}
+          onSuccess={handlePlanChangeComplete}
+        />
+      )}
     </div>
   );
 };

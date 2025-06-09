@@ -7,8 +7,14 @@ import { checkSubscription } from '../middleware/subscriptionCheck.js';
 
 const router = express.Router();
 
-// Get pricing plans (public)
+// Get pricing plans (public) - can filter by account type
 router.get('/plans', subscriptionController.getPricingPlans);
+
+// Get landing page plans (public) - shows both individual and organization plans
+router.get('/landing-plans', subscriptionController.getLandingPagePlans);
+
+// Get pricing plans for authenticated user (based on their account type)
+router.get('/user-plans', auth, subscriptionController.getUserPricingPlans);
 
 // Create pending subscription (requires auth)
 router.post('/create-pending', auth, subscriptionController.createPendingSubscription);
@@ -25,8 +31,17 @@ router.get('/payment-status/:transactionId', auth, subscriptionController.getPay
 // Get user's payment history (requires auth)
 router.get('/payment-history', auth, subscriptionController.getUserPaymentHistory);
 
-// Admin routes (requires auth and admin privileges)
-// Get all pending payments for admin verification
+// Stack new plan on existing subscription (requires auth)
+router.post('/stack-plan', auth, subscriptionController.stackNewPlan);
+
+// Get stacked plans (requires auth)
+router.get('/stacked-plans', auth, subscriptionController.getStackedPlans);
+
+// Get total subscription benefits (requires auth)
+router.get('/total-benefits', auth, subscriptionController.getTotalSubscriptionBenefits);
+
+// Admin routes
+// Get all pending payments (admin only)
 router.get('/pending-payments', auth, adminAuth, subscriptionController.getPendingPayments);
 
 // Update payment verification status (admin only)
@@ -51,13 +66,9 @@ router.post('/users/:userId/pause-subscription', auth, adminAuth, subscriptionCo
 router.post('/users/:userId/enable-subscription', auth, adminAuth, subscriptionController.enableSubscription);
 router.post('/users/:userId/cancel-subscription', auth, adminAuth, subscriptionController.cancelSubscription);
 
-// Stack a new plan on top of existing subscription (requires auth)
-router.post('/stack-plan', auth, subscriptionController.stackNewPlan);
-
-// Get all stacked plans for the current user (requires auth)
-router.get('/stacked-plans', auth, subscriptionController.getStackedPlans);
-
-// Get total subscription benefits across all stacked plans (requires auth)
-router.get('/total-benefits', auth, subscriptionController.getTotalSubscriptionBenefits);
+// Plan change routes
+router.post('/change-plan', auth, subscriptionController.requestPlanChange);
+router.post('/verify-plan-change', auth, subscriptionController.verifyPlanChangePayment);
+router.post('/process-downgrade/:subscriptionId', auth, adminAuth, subscriptionController.processDowngradeRequest);
 
 export default router; 

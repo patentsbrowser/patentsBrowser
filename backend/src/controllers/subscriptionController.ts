@@ -1,40 +1,59 @@
 import { Request, Response } from 'express';
-import PricingPlan from '../models/PricingPlan.js';
+import PricingPlan, { AccountType } from '../models/PricingPlan.js';
 import { Subscription, SubscriptionPlan, SubscriptionStatus } from '../models/Subscription.js';
 import { User } from '../models/User.js';
 import Payment from '../models/Payment.js';
 
 // Simple in-memory cache to minimize database queries
 let plansCache = {
-  data: null as any[] | null,
+  individual: null as any[] | null,
+  organization: null as any[] | null,
+  landing: null as any[] | null,
   timestamp: 0
 };
 
 // Cache expiration time in milliseconds (5 minutes)
 const CACHE_EXPIRY = 5 * 60 * 1000;
 
-// Get all pricing plans
+// Get pricing plans based on account type
 export const getPricingPlans = async (req: Request, res: Response) => {
-  
   try {
+    const { accountType } = req.query;
     const now = Date.now();
 
-    // Check if we have a valid cache
-    if (plansCache.data && (now - plansCache.timestamp) < CACHE_EXPIRY) {
-      return res.status(200).json({
-        success: true,
-        data: plansCache.data
+    // Validate account type
+    if (accountType && !Object.values(AccountType).includes(accountType as AccountType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid account type. Must be "individual" or "organization"'
       });
     }
 
-    // If no valid cache, fetch from database
-    const plans = await PricingPlan.find({}).sort({ price: 1 });
+    // Check if we have a valid cache for the requested account type
+    const cacheKey = accountType as AccountType || 'landing';
+    if (plansCache[cacheKey] && (now - plansCache.timestamp) < CACHE_EXPIRY) {
+      return res.status(200).json({
+        success: true,
+        data: plansCache[cacheKey]
+      });
+    }
+
+    // Build query based on account type
+    let query: any = { isActive: true };
+    if (accountType) {
+      query.accountType = accountType;
+    }
+
+    // Fetch plans from database
+    const plans = await PricingPlan.find(query).sort({ price: 1 });
     
     // Update cache
-    plansCache = {
-      data: plans,
-      timestamp: now
-    };
+    if (accountType) {
+      plansCache[accountType as AccountType] = plans;
+    } else {
+      plansCache.landing = plans;
+    }
+    plansCache.timestamp = now;
     
     return res.status(200).json({
       success: true,
@@ -44,6 +63,97 @@ export const getPricingPlans = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: 'Error fetching pricing plans'
+    });
+  }
+};
+
+// Get pricing plans for authenticated user (based on their account type)
+export const getUserPricingPlans = async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - User ID is added by auth middleware
+    const userId = req.user._id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+
+    // Get user to determine account type
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Determine account type
+    const accountType = user.isOrganization ? AccountType.ORGANIZATION : AccountType.INDIVIDUAL;
+    
+    // Check if user is organization member (not admin) - they shouldn't see plans
+    if (user.isOrganization && user.organizationRole === 'member') {
+      return res.status(200).json({
+        success: true,
+        data: [],
+        message: 'Organization members cannot purchase plans directly'
+      });
+    }
+
+    // Get plans for the user's account type
+    const plans = await PricingPlan.find({ 
+      accountType, 
+      isActive: true 
+    }).sort({ price: 1 });
+    
+    return res.status(200).json({
+      success: true,
+      data: plans
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching user pricing plans'
+    });
+  }
+};
+
+// Get all plans for landing page (both individual and organization)
+export const getLandingPagePlans = async (req: Request, res: Response) => {
+  try {
+    const now = Date.now();
+
+    // Check if we have a valid cache
+    if (plansCache.landing && (now - plansCache.timestamp) < CACHE_EXPIRY) {
+      return res.status(200).json({
+        success: true,
+        data: plansCache.landing
+      });
+    }
+
+    // Fetch all active plans
+    const allPlans = await PricingPlan.find({ isActive: true }).sort({ price: 1 });
+    
+    // Group plans by account type
+    const individualPlans = allPlans.filter(plan => plan.accountType === AccountType.INDIVIDUAL);
+    const organizationPlans = allPlans.filter(plan => plan.accountType === AccountType.ORGANIZATION);
+    
+    // Update cache
+    plansCache.landing = allPlans;
+    plansCache.timestamp = now;
+    
+    return res.status(200).json({
+      success: true,
+      data: {
+        individual: individualPlans,
+        organization: organizationPlans
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching landing page plans'
     });
   }
 };
@@ -100,7 +210,7 @@ const calculateEndDate = (plan: SubscriptionPlan, trialDaysRemaining: number = 0
  * 3. The user's account reflects the latest expiry date from all active subscriptions
  */
 
-// Create or update a pending subscription with UPI order ID
+// Create pending subscription
 export const createPendingSubscription = async (req: Request, res: Response) => {
   try {
     const { planId, upiOrderId } = req.body;
@@ -131,13 +241,39 @@ export const createPendingSubscription = async (req: Request, res: Response) => 
         message: 'Plan not found'
       });
     }
+
+    // Check if plan is active
+    if (!plan.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: 'This plan is currently not available'
+      });
+    }
     
-    // Get user to check trial status
+    // Get user to check trial status and account type
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
+      });
+    }
+
+    // Validate account type compatibility
+    const userAccountType = user.isOrganization ? AccountType.ORGANIZATION : AccountType.INDIVIDUAL;
+    
+    if (plan.accountType !== userAccountType) {
+      return res.status(400).json({
+        success: false,
+        message: `This plan is only available for ${plan.accountType} accounts. Your account type is ${userAccountType}.`
+      });
+    }
+
+    // Check if user is organization member (not admin) - they shouldn't purchase plans
+    if (user.isOrganization && user.organizationRole === 'member') {
+      return res.status(403).json({
+        success: false,
+        message: 'Organization members cannot purchase plans directly. Please contact your organization admin.'
       });
     }
     
@@ -165,60 +301,53 @@ export const createPendingSubscription = async (req: Request, res: Response) => 
       userId,
       status: SubscriptionStatus.ACTIVE 
     });
-
-    // If there's an existing subscription, make this a stacked plan
+    
     if (existingSubscription) {
-      // Create new subscription as a stacked plan with the same dates as a normal plan
-      // The actual stacking of dates will happen when the admin verifies the payment
-      const newSubscription = new Subscription({
-        userId,
-        plan: plan.type,
-        startDate,
-        endDate,  // Use regular end date calculation - will be updated during verification
-        status: SubscriptionStatus.PAYMENT_PENDING,
-        upiOrderId,
-        amount: plan.price,
-        parentSubscriptionId: existingSubscription._id
-      });
-
-      await newSubscription.save();
-
-      return res.status(200).json({
-        success: true,
-        message: 'Stacked subscription created successfully',
-        data: {
-          subscription: newSubscription,
-          isStacked: true,
-          parentSubscriptionId: existingSubscription._id
-        }
+      return res.status(400).json({
+        success: false,
+        message: 'You already have an active subscription. Please use the stack plan feature to add additional time.'
       });
     }
-
-    // If no existing subscription, create a new one
-    const newSubscription = new Subscription({
+    
+    // Create new subscription
+    const subscription = new Subscription({
       userId,
       plan: plan.type,
       startDate,
       endDate,
       status: SubscriptionStatus.PAYMENT_PENDING,
       upiOrderId,
-      amount: plan.price
+      amount: plan.price,
+      isPendingPayment: true
     });
-
-    await newSubscription.save();
-
-    return res.status(200).json({
+    
+    await subscription.save();
+    
+    // Update user's pending payment status
+    await User.findByIdAndUpdate(userId, {
+      isPendingPayment: true
+    });
+    
+    return res.status(201).json({
       success: true,
-      message: 'Subscription created successfully',
+      message: 'Pending subscription created successfully',
       data: {
-        subscription: newSubscription,
-        isStacked: false
+        subscriptionId: subscription._id,
+        plan: plan.name,
+        planType: plan.type,
+        accountType: plan.accountType,
+        status: subscription.status,
+        startDate: subscription.startDate,
+        endDate: subscription.endDate,
+        amount: plan.price,
+        features: plan.features
       }
     });
   } catch (error) {
+    console.error('Error creating pending subscription:', error);
     return res.status(500).json({
       success: false,
-      message: 'Error creating subscription'
+      message: 'Error creating pending subscription'
     });
   }
 };
@@ -1062,6 +1191,41 @@ export const stackNewPlan = async (req: Request, res: Response) => {
         message: 'Plan not found'
       });
     }
+
+    // Check if plan is active
+    if (!plan.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: 'This plan is currently not available'
+      });
+    }
+    
+    // Get user to check account type
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Validate account type compatibility
+    const userAccountType = user.isOrganization ? AccountType.ORGANIZATION : AccountType.INDIVIDUAL;
+    
+    if (plan.accountType !== userAccountType) {
+      return res.status(400).json({
+        success: false,
+        message: `This plan is only available for ${plan.accountType} accounts. Your account type is ${userAccountType}.`
+      });
+    }
+
+    // Check if user is organization member (not admin) - they shouldn't purchase plans
+    if (user.isOrganization && user.organizationRole === 'member') {
+      return res.status(403).json({
+        success: false,
+        message: 'Organization members cannot purchase plans directly. Please contact your organization admin.'
+      });
+    }
     
     // Find user's active subscription
     const existingSubscription = await Subscription.findOne({ 
@@ -1106,13 +1270,19 @@ export const stackNewPlan = async (req: Request, res: Response) => {
       data: {
         subscriptionId: stackedSubscription._id,
         plan: plan.name,
+        planType: plan.type,
+        accountType: plan.accountType,
         status: stackedSubscription.status,
         startDate: stackedSubscription.startDate,
         endDate: stackedSubscription.endDate,
-        amount: plan.price
+        amount: plan.price,
+        features: plan.features,
+        isStacked: true,
+        parentSubscriptionId: existingSubscription._id
       }
     });
   } catch (error) {
+    console.error('Error creating stacked plan subscription:', error);
     return res.status(500).json({
       success: false,
       message: 'Error creating stacked plan subscription'
@@ -1204,9 +1374,261 @@ export const getTotalSubscriptionBenefits = async (req: Request, res: Response) 
   }
 };
 
+// Calculate prorated amount for plan changes
+const calculateProratedAmount = (
+  currentPlan: SubscriptionPlan,
+  newPlan: SubscriptionPlan,
+  currentAmount: number,
+  newAmount: number,
+  daysRemaining: number,
+  totalDays: number
+): number => {
+  // Calculate unused amount from current plan
+  const unusedAmount = (currentAmount / totalDays) * daysRemaining;
+  
+  // Calculate new plan's prorated amount
+  const newPlanProratedAmount = (newAmount / totalDays) * daysRemaining;
+  
+  // For upgrades, user pays the difference
+  // For downgrades, we credit the difference
+  return newPlanProratedAmount - unusedAmount;
+};
+
+// Calculate total days in subscription period
+const getTotalDaysInPeriod = (plan: SubscriptionPlan): number => {
+  switch(plan) {
+    case SubscriptionPlan.MONTHLY:
+      return 30;
+    case SubscriptionPlan.QUARTERLY:
+      return 90;
+    case SubscriptionPlan.HALF_YEARLY:
+      return 180;
+    case SubscriptionPlan.YEARLY:
+      return 365;
+    default:
+      return 30;
+  }
+};
+
+// Request plan change (upgrade/downgrade)
+export const requestPlanChange = async (req: Request, res: Response) => {
+  try {
+    const { newPlan } = req.body;
+    // @ts-ignore - User ID is added by auth middleware
+    const userId = req.user._id;
+
+    // Validate new plan
+    if (!Object.values(SubscriptionPlan).includes(newPlan)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid plan type'
+      });
+    }
+
+    // Get user's current subscription
+    const currentSubscription = await Subscription.findOne({
+      userId,
+      status: SubscriptionStatus.ACTIVE
+    });
+
+    if (!currentSubscription) {
+      return res.status(404).json({
+        success: false,
+        message: 'No active subscription found'
+      });
+    }
+
+    // Get pricing plan details
+    const user = await User.findById(userId);
+    const accountType = user?.isOrganization ? AccountType.ORGANIZATION : AccountType.INDIVIDUAL;
+    const newPricingPlan = await PricingPlan.findOne({
+      plan: newPlan,
+      accountType,
+      isActive: true
+    });
+
+    if (!newPricingPlan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pricing plan not found'
+      });
+    }
+
+    // Determine if this is an upgrade or downgrade
+    const isUpgrade = newPricingPlan.price > currentSubscription.amount;
+    const changeType = isUpgrade ? 'upgrade' : 'downgrade';
+
+    // Calculate days remaining in current subscription
+    const now = new Date();
+    const daysRemaining = Math.ceil((currentSubscription.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const totalDays = getTotalDaysInPeriod(currentSubscription.plan);
+
+    // Calculate prorated amount
+    const proratedAmount = calculateProratedAmount(
+      currentSubscription.plan,
+      newPlan,
+      currentSubscription.amount,
+      newPricingPlan.price,
+      daysRemaining,
+      totalDays
+    );
+
+    // Create new subscription record for the plan change
+    const newSubscription = new Subscription({
+      userId,
+      plan: newPlan,
+      status: isUpgrade ? SubscriptionStatus.UPGRADE_PENDING : SubscriptionStatus.DOWNGRADE_PENDING,
+      startDate: now,
+      endDate: currentSubscription.endDate, // Keep the same end date
+      amount: Math.abs(proratedAmount), // Store absolute value
+      previousPlan: currentSubscription.plan,
+      previousAmount: currentSubscription.amount,
+      proratedAmount,
+      changeType,
+      effectiveDate: now,
+      isPendingPayment: isUpgrade, // Only require payment for upgrades
+      parentSubscriptionId: currentSubscription._id
+    });
+
+    await newSubscription.save();
+
+    return res.status(200).json({
+      success: true,
+      message: isUpgrade ? 'Upgrade request created' : 'Downgrade request processed',
+      data: {
+        subscription: newSubscription,
+        requiresPayment: isUpgrade,
+        proratedAmount: Math.abs(proratedAmount),
+        effectiveDate: now
+      }
+    });
+  } catch (error) {
+    console.error('Error in requestPlanChange:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error processing plan change request'
+    });
+  }
+};
+
+// Verify plan change payment
+export const verifyPlanChangePayment = async (req: Request, res: Response) => {
+  try {
+    const { subscriptionId, upiTransactionRef, paymentScreenshotUrl } = req.body;
+    // @ts-ignore - User ID is added by auth middleware
+    const userId = req.user._id;
+
+    // Find the pending subscription change
+    const subscription = await Subscription.findOne({
+      _id: subscriptionId,
+      userId,
+      status: SubscriptionStatus.UPGRADE_PENDING
+    });
+
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pending upgrade not found'
+      });
+    }
+
+    // Update subscription with payment details
+    subscription.status = SubscriptionStatus.ACTIVE;
+    subscription.upiTransactionRef = upiTransactionRef;
+    subscription.paymentScreenshotUrl = paymentScreenshotUrl;
+    subscription.verificationDate = new Date();
+    subscription.isPendingPayment = false;
+
+    // Update the parent subscription
+    const parentSubscription = await Subscription.findById(subscription.parentSubscriptionId);
+    if (parentSubscription) {
+      parentSubscription.status = SubscriptionStatus.INACTIVE;
+      await parentSubscription.save();
+    }
+
+    // Update user's current plan
+    await User.findByIdAndUpdate(userId, {
+      currentPlan: subscription.plan,
+      subscriptionStartDate: subscription.startDate,
+      subscriptionEndDate: subscription.endDate
+    });
+
+    await subscription.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Plan upgrade completed successfully',
+      data: subscription
+    });
+  } catch (error) {
+    console.error('Error in verifyPlanChangePayment:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error verifying plan change payment'
+    });
+  }
+};
+
+// Process downgrade request (admin only)
+export const processDowngradeRequest = async (req: Request, res: Response) => {
+  try {
+    const { subscriptionId } = req.params;
+    // @ts-ignore - Admin ID is added by auth middleware
+    const adminId = req.user._id;
+
+    // Find the pending downgrade
+    const subscription = await Subscription.findOne({
+      _id: subscriptionId,
+      status: SubscriptionStatus.DOWNGRADE_PENDING
+    });
+
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pending downgrade not found'
+      });
+    }
+
+    // Update subscription status
+    subscription.status = SubscriptionStatus.ACTIVE;
+    subscription.verifiedBy = adminId;
+    subscription.verificationDate = new Date();
+
+    // Update the parent subscription
+    const parentSubscription = await Subscription.findById(subscription.parentSubscriptionId);
+    if (parentSubscription) {
+      parentSubscription.status = SubscriptionStatus.INACTIVE;
+      await parentSubscription.save();
+    }
+
+    // Update user's current plan
+    await User.findByIdAndUpdate(subscription.userId, {
+      currentPlan: subscription.plan,
+      subscriptionStartDate: subscription.startDate,
+      subscriptionEndDate: subscription.endDate
+    });
+
+    await subscription.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Plan downgrade processed successfully',
+      data: subscription
+    });
+  } catch (error) {
+    console.error('Error in processDowngradeRequest:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error processing downgrade request'
+    });
+  }
+};
+
 // Export all controller methods
 export default {
   getPricingPlans,
+  getUserPricingPlans,
+  getLandingPagePlans,
   createPendingSubscription,
   verifyUpiPayment,
   getUserSubscription,
@@ -1220,5 +1642,8 @@ export default {
   cancelSubscription,
   stackNewPlan,
   getStackedPlans,
-  getTotalSubscriptionBenefits
+  getTotalSubscriptionBenefits,
+  requestPlanChange,
+  verifyPlanChangePayment,
+  processDowngradeRequest
 }; 

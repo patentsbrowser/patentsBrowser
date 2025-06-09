@@ -14,7 +14,9 @@ export enum SubscriptionStatus {
   PAYMENT_PENDING = 'payment_pending',
   REJECTED = 'rejected',
   CANCELLED = 'cancelled',
-  TRIAL = 'trial'
+  TRIAL = 'trial',
+  UPGRADE_PENDING = 'upgrade_pending',
+  DOWNGRADE_PENDING = 'downgrade_pending'
 }
 
 export interface ISubscription extends Document {
@@ -36,6 +38,11 @@ export interface ISubscription extends Document {
   verificationDate?: Date;
   verifiedBy?: mongoose.Types.ObjectId;
   isPendingPayment: boolean;
+  previousPlan?: SubscriptionPlan;
+  previousAmount?: number;
+  proratedAmount?: number;
+  changeType?: 'upgrade' | 'downgrade';
+  effectiveDate?: Date;
 }
 
 const subscriptionSchema = new Schema<ISubscription>(
@@ -91,6 +98,23 @@ const subscriptionSchema = new Schema<ISubscription>(
     parentSubscriptionId: {
       type: Schema.Types.ObjectId,
       ref: 'Subscription'
+    },
+    previousPlan: {
+      type: String,
+      enum: Object.values(SubscriptionPlan)
+    },
+    previousAmount: {
+      type: Number
+    },
+    proratedAmount: {
+      type: Number
+    },
+    changeType: {
+      type: String,
+      enum: ['upgrade', 'downgrade']
+    },
+    effectiveDate: {
+      type: Date
     }
   },
   { timestamps: true }

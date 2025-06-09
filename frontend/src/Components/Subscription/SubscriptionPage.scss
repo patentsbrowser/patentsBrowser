@@ -1161,4 +1161,190 @@
     --accent-primary: #6200ea;
     --accent-primary-dark: #4a00b3;
   }
-} 
+}
+
+// Plan change styles
+.change-plan-button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 15px;
+
+  &.upgrade {
+    background-color: #4CAF50;
+    color: white;
+
+    &:hover {
+      background-color: #45a049;
+    }
+  }
+
+  &.downgrade {
+    background-color: #f5f5f5;
+    color: #333;
+    border: 1px solid #ddd;
+
+    &:hover {
+      background-color: #e8e8e8;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+.current-plan-button {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background-color: #f5f5f5;
+  color: #666;
+  font-weight: 600;
+  cursor: not-allowed;
+  margin-top: 15px;
+}
+
+// Plan change modal styles
+.plan-change-details {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  margin: 15px 0;
+
+  p {
+    margin: 8px 0;
+    font-size: 14px;
+    color: #333;
+
+    &:first-child {
+      color: #666;
+    }
+  }
+}
+
+.downgrade-notice {
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  color: #856404;
+  padding: 15px;
+  border-radius: 8px;
+  margin: 15px 0;
+
+  p {
+    margin: 8px 0;
+    font-size: 14px;
+  }
+
+  .submit-button {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+    font-weight: 600;
+
+    &:hover {
+      background-color: #c82333;
+    }
+
+    &:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Update existing modal styles
+.modal-overlay {
+  // ... existing styles ...
+
+  .modal-content {
+    // ... existing styles ...
+
+    .payment-modal-content {
+      h3 {
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 24px;
+      }
+
+      .upi-payment-section {
+        text-align: center;
+        margin: 20px 0;
+
+        h4 {
+          color: #666;
+          margin-bottom: 15px;
+        }
+
+        .upi-id {
+          margin-top: 10px;
+          font-family: monospace;
+          color: #666;
+        }
+      }
+
+      .payment-form {
+        .form-group {
+          margin-bottom: 15px;
+
+          label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+          }
+
+          input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+
+            &:focus {
+              border-color: #4CAF50;
+              outline: none;
+            }
+          }
+
+          .error-message {
+            color: #dc3545;
+            font-size: 12px;
+            margin-top: 5px;
+          }
+        }
+
+        .submit-button {
+          width: 100%;
+          padding: 12px;
+          background-color: #4CAF50;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          font-weight: 600;
+          cursor: pointer;
+
+          &:hover {
+            background-color: #45a049;
+          }
+
+          &:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ... rest of the styles ... 

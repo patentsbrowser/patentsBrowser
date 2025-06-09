@@ -111,6 +111,14 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+  trialEndDate: {
+    type: Date,
+    default: function() {
+      const d = new Date();
+      d.setDate(d.getDate() + 14);
+      return d;
+    }
+  },
   isPendingPayment: {
     type: Boolean,
     default: false
