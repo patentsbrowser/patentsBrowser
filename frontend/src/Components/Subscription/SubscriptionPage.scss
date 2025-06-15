@@ -68,6 +68,59 @@
       max-width: 600px;
       margin: 0 auto;
     }
+
+    .organization-member-message {
+      max-width: 600px;
+      margin: 2rem auto;
+
+      .message-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--border-color);
+
+        h2 {
+          color: var(--accent-primary);
+          margin-bottom: 1rem;
+          font-size: 1.5rem;
+        }
+
+        p {
+          margin-bottom: 1rem;
+          line-height: 1.6;
+          color: var(--text-primary);
+        }
+
+        .contact-admin {
+          background: rgba(59, 130, 246, 0.1);
+          border-radius: 8px;
+          padding: 1rem;
+          border-left: 4px solid var(--accent-primary);
+
+          p {
+            margin: 0;
+            font-style: italic;
+            color: var(--accent-primary);
+          }
+        }
+      }
+    }
+
+    .user-type-indicator {
+      background: var(--accent-primary);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      display: inline-block;
+      margin-bottom: 1rem;
+
+      p {
+        margin: 0;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+    }
   }
 
   // Current Subscription Container Styles

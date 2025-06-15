@@ -7,6 +7,9 @@ interface User {
   email: string;
   name: string;
   isAdmin?: boolean;
+  userType?: 'individual' | 'organization_admin' | 'organization_member' | 'platform_admin';
+  isOrganization?: boolean;
+  organizationRole?: 'admin' | 'member';
 }
 
 interface SignupCredentials {
@@ -50,11 +53,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
-    
+
     if (token && storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
+        // Ensure backward compatibility with existing stored users
+        const userData = {
+          ...parsedUser,
+          userType: parsedUser.userType || 'individual',
+          isOrganization: parsedUser.isOrganization || false,
+          organizationRole: parsedUser.organizationRole
+        };
+        setUser(userData);
         setAdminCheckPerformed(true);
       } catch (error) {
         console.error('Error parsing stored user data:', error);
@@ -83,16 +93,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginMutation = useMutation({
     mutationFn: (credentials: { email: string; password: string }) => authApi.login(credentials),
     onSuccess: (data) => {
-      // Ensure we're storing the complete user object with admin status
+      // Ensure we're storing the complete user object with all new fields
       const userData = {
         ...data.user,
-        isAdmin: data.user?.isAdmin || false
+        isAdmin: data.user?.isAdmin || false,
+        userType: data.user?.userType || 'individual',
+        isOrganization: data.user?.isOrganization || false,
+        organizationRole: data.user?.organizationRole
       };
-      
+
       localStorage.setItem('token', data.data.token);
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
-      
+
       // Set admin check as performed since we have the status from login
       setAdminCheckPerformed(true);
     }

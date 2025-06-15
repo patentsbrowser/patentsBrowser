@@ -5,6 +5,7 @@ import './SubscriptionPage.scss';
 import { toast } from 'react-toastify';
 import { QRCodeSVG } from 'qrcode.react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../AuthContext';
 
 interface Plan {
   _id: string;
@@ -758,6 +759,7 @@ const FreeTrialSection: React.FC<{ isTrialActive: boolean, trialDaysRemaining: n
 };
 
 const SubscriptionPage: React.FC = () => {
+  const { user } = useAuth();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
@@ -770,7 +772,9 @@ const SubscriptionPage: React.FC = () => {
   const [stackedPlans, setStackedPlans] = useState<Subscription[]>([]);
   const [totalBenefits, setTotalBenefits] = useState<any>(null);
   const [showOrganizationPlans, setShowOrganizationPlans] = useState(false);
-  
+  const [userType, setUserType] = useState<string>('individual');
+  const [canViewPlans, setCanViewPlans] = useState(true);
+
   // Use ref to track if data has been fetched to prevent duplicate calls
   const dataFetchedRef = useRef(false);
 
@@ -822,25 +826,46 @@ const SubscriptionPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Only fetch if we haven't already done so
-    if (dataFetchedRef.current) {
+    // Only fetch if we haven't already done so or if user is not available
+    if (dataFetchedRef.current || !user) {
       return;
     }
 
-    const fetchPlans = async () => {
+    const fetchUserSpecificPlans = async () => {
       try {
-        const result = await SubscriptionService.getSubscriptionPlans();
-        
+        // Check user type and determine if they can view plans
+        const currentUserType = user.userType || 'individual';
+        setUserType(currentUserType);
+
+        // Organization members cannot view or purchase plans
+        if (currentUserType === 'organization_member') {
+          setCanViewPlans(false);
+          setLoading(false);
+          dataFetchedRef.current = true;
+          return;
+        }
+
+        setCanViewPlans(true);
+
+        // Fetch user-specific plans based on their type
+        const result = await SubscriptionService.getUserSpecificPlans();
+
         if (result.success) {
-          // Transform the plans to include organization pricing
+          // Transform the plans to include organization pricing for organization admins
           const transformedPlans = result.data.map((plan: Plan) => ({
             ...plan,
-            organizationPrice: plan.price * 2, // Double the price for organization admin
-            memberPrice: 1000, // ₹1000 per member per month
+            organizationPrice: plan.organizationBasePrice || plan.price * 2,
+            memberPrice: plan.memberPrice || 1000,
           }));
           setPlans(transformedPlans);
+
+          // Set the toggle based on user type
+          if (currentUserType === 'organization_admin') {
+            setShowOrganizationPlans(true);
+          }
         } else {
           console.error('Failed to load plans:', result.message);
+          toast.error('Failed to load subscription plans');
         }
       } catch (error) {
         toast.error('Failed to load subscription plans');
@@ -852,8 +877,8 @@ const SubscriptionPage: React.FC = () => {
       }
     };
 
-    fetchPlans();
-  }, []);
+    fetchUserSpecificPlans();
+  }, [user]);
 
   const handleSubscribeClick = (plan: Plan) => {
     // Don't allow new subscription if there's a pending payment
@@ -881,27 +906,59 @@ const SubscriptionPage: React.FC = () => {
     return <div className="subscription-page loading">Loading subscription plans...</div>;
   }
 
+  // Show message for organization members who cannot view plans
+  if (!canViewPlans && userType === 'organization_member') {
+    return (
+      <div className="subscription-page-wrapper">
+        <div className="subscription-page">
+          <div className="subscription-header">
+            <h1>Subscription Plans</h1>
+            <div className="organization-member-message">
+              <div className="message-card">
+                <h2>Organization Member Access</h2>
+                <p>As an organization member, you have access to all premium features through your organization's subscription.</p>
+                <p>Individual plan purchases are managed by your organization administrator.</p>
+                <div className="contact-admin">
+                  <p>If you need additional features or have questions about your access, please contact your organization administrator.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="subscription-page-wrapper">
       <div className="subscription-page">
         <div className="subscription-header">
           <h1>Subscription Plans</h1>
           <p>Choose the perfect plan for your patent search needs</p>
-          
-          <div className="plan-type-toggle">
-            <button
-              className={`toggle-btn ${!showOrganizationPlans ? 'active' : ''}`}
-              onClick={() => setShowOrganizationPlans(false)}
-            >
-              Individual Plans
-            </button>
-            <button
-              className={`toggle-btn ${showOrganizationPlans ? 'active' : ''}`}
-              onClick={() => setShowOrganizationPlans(true)}
-            >
-              Organization Plans
-            </button>
-          </div>
+
+          {/* Only show toggle for individual users, organization admins see only their plans */}
+          {userType === 'individual' && (
+            <div className="plan-type-toggle">
+              <button
+                className={`toggle-btn ${!showOrganizationPlans ? 'active' : ''}`}
+                onClick={() => setShowOrganizationPlans(false)}
+              >
+                Individual Plans
+              </button>
+              <button
+                className={`toggle-btn ${showOrganizationPlans ? 'active' : ''}`}
+                onClick={() => setShowOrganizationPlans(true)}
+              >
+                Organization Plans
+              </button>
+            </div>
+          )}
+
+          {userType === 'organization_admin' && (
+            <div className="user-type-indicator">
+              <p>Organization Administrator - Organization Plans</p>
+            </div>
+          )}
         </div>
 
         {isLoadingSubscription ? (
@@ -1007,9 +1064,7 @@ const SubscriptionPage: React.FC = () => {
             )}
 
             <div className="subscription-plans">
-              {plans
-                .filter(plan => showOrganizationPlans ? plan.isOrganizationPlan : !plan.isOrganizationPlan)
-                .map((plan) => (
+              {plans.map((plan) => (
                 <div 
                   key={plan._id} 
                   className={`plan-card ${plan.popular ? 'popular' : ''}`}
@@ -1019,13 +1074,16 @@ const SubscriptionPage: React.FC = () => {
                   <div className="price">
                     <span className="currency">₹</span>
                     <span className="amount">
-                      {showOrganizationPlans ? formatIndianPrice(plan.organizationPrice || plan.price * 2) : formatIndianPrice(plan.price)}
+                      {userType === 'organization_admin' && plan.organizationPrice
+                        ? formatIndianPrice(plan.organizationPrice)
+                        : formatIndianPrice(plan.price)
+                      }
                     </span>
                     <span className="period">/{getPlanTypeDisplay(plan.type)}</span>
                   </div>
-                  {showOrganizationPlans && (
+                  {userType === 'organization_admin' && plan.memberPrice && (
                     <div className="member-price">
-                      <span>+ ₹{formatIndianPrice(plan.memberPrice || 1000)} per member/month</span>
+                      <span>+ ₹{formatIndianPrice(plan.memberPrice)} per member/month</span>
                     </div>
                   )}
                   {plan.discountPercentage > 0 && (
@@ -1035,7 +1093,7 @@ const SubscriptionPage: React.FC = () => {
                     {plan.features.map((feature, index) => (
                       <li key={index}>{feature}</li>
                     ))}
-                    {showOrganizationPlans && (
+                    {userType === 'organization_admin' && (
                       <>
                         <li>Organization-wide access</li>
                         <li>Member management dashboard</li>
@@ -1065,14 +1123,14 @@ const SubscriptionPage: React.FC = () => {
         )}
         
         {selectedPlan && (
-          <PaymentModal 
-            isOpen={isPaymentModalOpen} 
-            onClose={closePaymentModal} 
+          <PaymentModal
+            isOpen={isPaymentModalOpen}
+            onClose={closePaymentModal}
             plan={selectedPlan}
             onPaymentComplete={handlePaymentComplete}
             isTrialActive={isTrialActive}
             trialDaysRemaining={trialDaysRemaining}
-            isOrganizationPlan={showOrganizationPlans}
+            isOrganizationPlan={userType === 'organization_admin'}
           />
         )}
       </div>

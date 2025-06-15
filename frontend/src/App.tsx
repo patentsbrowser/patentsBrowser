@@ -26,6 +26,7 @@ import Forum from "./Components/Forum/Forum";
 import SubscriptionPage from "./Components/Subscription/SubscriptionPage";
 import AdminDashboard from "./Components/Admin/AdminDashboard";
 import PaymentHistory from "./Components/PaymentHistory";
+import JoinOrganization from "./Components/Organization/JoinOrganization";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ChatProvider } from './context/ChatContext';
 // import PatentHistory from "./Components/PatentHistory/PatentHistory";
@@ -140,7 +141,10 @@ const App = () => {
                         
                         {/* Subscription Page - Public with auth features */}
                         <Route path="/subscription" element={<SubscriptionPage />} />
-                        
+
+                        {/* Organization join route - Public but requires auth */}
+                        <Route path="/join-organization/:token" element={<JoinOrganization />} />
+
                         {/* Authentication routes */}
                         <Route 
                           path="/auth/login" 

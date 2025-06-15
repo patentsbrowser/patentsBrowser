@@ -19,6 +19,7 @@ interface CachedData {
   timestamp: number;
   pendingPromise: Promise<any> | null;
   expiryTime: number;
+  planType?: string;
 }
 
 const apiCache: {
@@ -28,7 +29,8 @@ const apiCache: {
     data: null,
     timestamp: 0,
     pendingPromise: null,
-    expiryTime: 5 * 60 * 1000 // 5 minutes cache
+    expiryTime: 5 * 60 * 1000, // 5 minutes cache
+    planType: 'all'
   }
 };
 
@@ -61,42 +63,53 @@ const debugLog = (message: string, data: any): void => {
 /**
  * Get all available subscription plans
  * Uses caching to prevent duplicate API calls
+ * @param planType - Optional filter for plan type ('individual' or 'organization')
  */
-export const getSubscriptionPlans = async () => {
-  debugLog('getSubscriptionPlans called', { 
+export const getSubscriptionPlans = async (planType?: string) => {
+  debugLog('getSubscriptionPlans called', {
+    planType,
     cached: !!apiCache.subscriptionPlans.data,
-    pendingRequest: !!apiCache.subscriptionPlans.pendingPromise 
+    pendingRequest: !!apiCache.subscriptionPlans.pendingPromise
   });
-  
+
   const now = Date.now();
   const cache = apiCache.subscriptionPlans;
-  
-  // If we have cached data that's still valid, return it
-  if (cache.data && (now - cache.timestamp) < cache.expiryTime) {
-    debugLog('Returning cached subscription plans', { 
+
+  // Create cache key based on plan type
+  const cacheKey = planType || 'all';
+
+  // If we have cached data that's still valid and for the same plan type, return it
+  if (cache.data && (now - cache.timestamp) < cache.expiryTime && cache.planType === cacheKey) {
+    debugLog('Returning cached subscription plans', {
       age: now - cache.timestamp,
-      plansCount: cache.data.data?.length 
+      planType: cacheKey,
+      plansCount: cache.data.data?.length
     });
     return cache.data;
   }
-  
-  // If there's already a request in progress, return that promise to prevent duplicate requests
-  if (cache.pendingPromise) {
-    debugLog('Returning pending subscription plans request', {});
+
+  // If there's already a request in progress for the same plan type, return that promise
+  if (cache.pendingPromise && cache.planType === cacheKey) {
+    debugLog('Returning pending subscription plans request', { planType: cacheKey });
     return cache.pendingPromise;
   }
-  
+
   try {
-    debugLog('Making new API request to /subscriptions/plans', {});
-    
+    debugLog('Making new API request to /subscriptions/plans', { planType });
+
+    // Build query parameters
+    const params = planType ? { planType } : {};
+
     // Store the promise so concurrent calls can use it
-    cache.pendingPromise = axiosInstance.get('/subscriptions/plans')
+    cache.pendingPromise = axiosInstance.get('/subscriptions/plans', { params })
       .then(response => {
         // Update cache with fresh data
         cache.data = response.data;
         cache.timestamp = now;
-        debugLog('API response received and cached', { 
-          plansCount: response.data.data?.length 
+        cache.planType = cacheKey;
+        debugLog('API response received and cached', {
+          planType: cacheKey,
+          plansCount: response.data.data?.length
         });
         return response.data;
       })
@@ -108,7 +121,7 @@ export const getSubscriptionPlans = async () => {
         // Clear the pending promise reference
         cache.pendingPromise = null;
       });
-    
+
     return cache.pendingPromise;
   } catch (error) {
     console.error('Error setting up subscription plans request:', error);
@@ -308,6 +321,23 @@ export const getTotalSubscriptionBenefits = async () => {
   }
 };
 
+/**
+ * Get user-specific subscription plans based on user type
+ */
+export const getUserSpecificPlans = async () => {
+  try {
+    debugLog('Getting user-specific plans', {});
+
+    const response = await axiosInstance.get('/subscriptions/plans/user-specific');
+
+    debugLog('User-specific plans response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error getting user-specific plans:', error);
+    throw error;
+  }
+};
+
 export default {
   getSubscriptionPlans,
   createPendingSubscription,
@@ -318,5 +348,6 @@ export default {
   getAdditionalPlans,
   stackNewPlan,
   getStackedPlans,
-  getTotalSubscriptionBenefits
-}; 
+  getTotalSubscriptionBenefits,
+  getUserSpecificPlans
+};
