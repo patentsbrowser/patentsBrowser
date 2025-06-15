@@ -203,7 +203,7 @@ const Header: React.FC<HeaderProps> = ({ isVisible = true }) => {
               <Link to="/auth/profile" className="dropdown-item" onClick={() => setShowDropdown(false)}>
                 Profile
               </Link>
-              {user?.isOrganization && (
+              {(user?.isOrganization || user?.userType === 'organization_admin' || user?.organizationId) && (
                 <Link to="/auth/invitation" className="dropdown-item" onClick={() => setShowDropdown(false)}>
                   Invitation
                 </Link>

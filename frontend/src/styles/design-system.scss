@@ -1,0 +1,315 @@
+// ===================================
+// UNIFIED DESIGN SYSTEM
+// ===================================
+// This file contains all design tokens, variables, and reusable styles
+// for consistent theming across light and dark modes
+
+// ===================================
+// DESIGN TOKENS
+// ===================================
+
+:root {
+  // ===== SPACING SYSTEM =====
+  --spacing-xs: 0.25rem;    // 4px
+  --spacing-sm: 0.5rem;     // 8px
+  --spacing-md: 1rem;       // 16px
+  --spacing-lg: 1.5rem;     // 24px
+  --spacing-xl: 2rem;       // 32px
+  --spacing-2xl: 3rem;      // 48px
+  --spacing-3xl: 4rem;      // 64px
+
+  // ===== BORDER RADIUS =====
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+  --radius-full: 50%;
+
+  // ===== SHADOWS =====
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.25);
+
+  // ===== TYPOGRAPHY =====
+  --font-size-xs: 0.75rem;   // 12px
+  --font-size-sm: 0.875rem;  // 14px
+  --font-size-md: 1rem;      // 16px
+  --font-size-lg: 1.125rem;  // 18px
+  --font-size-xl: 1.25rem;   // 20px
+  --font-size-2xl: 1.5rem;   // 24px
+  --font-size-3xl: 1.875rem; // 30px
+  --font-size-4xl: 2.25rem;  // 36px
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  // ===== Z-INDEX SCALE =====
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+
+  // ===== TRANSITIONS =====
+  --transition-fast: 150ms ease;
+  --transition-normal: 300ms ease;
+  --transition-slow: 500ms ease;
+  --transition-bounce: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  // ===== GRADIENTS =====
+  --gradient-primary: linear-gradient(135deg, #7c4dff 0%, #448aff 100%);
+  --gradient-secondary: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+  --gradient-success: linear-gradient(135deg, #00c853 0%, #69f0ae 100%);
+  --gradient-warning: linear-gradient(135deg, #ff9800 0%, #ffc107 100%);
+  --gradient-danger: linear-gradient(135deg, #f44336 0%, #e91e63 100%);
+}
+
+// ===================================
+// LIGHT THEME COLORS
+// ===================================
+
+:root {
+  // ===== BASE COLORS =====
+  --color-white: #ffffff;
+  --color-black: #000000;
+  
+  // ===== GRAY SCALE =====
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  // ===== BRAND COLORS =====
+  --primary-50: #f0f4ff;
+  --primary-100: #e0e7ff;
+  --primary-200: #c7d2fe;
+  --primary-300: #a5b4fc;
+  --primary-400: #818cf8;
+  --primary-500: #6366f1;
+  --primary-600: #4f46e5;
+  --primary-700: #4338ca;
+  --primary-800: #3730a3;
+  --primary-900: #312e81;
+
+  // ===== SEMANTIC COLORS =====
+  --success-50: #f0fdf4;
+  --success-500: #22c55e;
+  --success-600: #16a34a;
+  --success-700: #15803d;
+
+  --warning-50: #fffbeb;
+  --warning-500: #f59e0b;
+  --warning-600: #d97706;
+  --warning-700: #b45309;
+
+  --error-50: #fef2f2;
+  --error-500: #ef4444;
+  --error-600: #dc2626;
+  --error-700: #b91c1c;
+
+  --info-50: #eff6ff;
+  --info-500: #3b82f6;
+  --info-600: #2563eb;
+  --info-700: #1d4ed8;
+
+  // ===== LIGHT THEME SEMANTIC TOKENS (Update Profile Style) =====
+  --bg-primary: #f5f6fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f0f0f0;
+  --bg-elevated: #ffffff;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+
+  --text-primary: #232326;
+  --text-secondary: #666666;
+  --text-tertiary: #888888;
+  --text-inverse: #ffffff;
+  --text-disabled: #cccccc;
+
+  --border-primary: #e0e0e0;
+  --border-secondary: #d0d0d0;
+  --border-focus: #7c4dff;
+  --border-error: #ff4d4f;
+
+  --surface-primary: #ffffff;
+  --surface-secondary: #f5f6fa;
+  --surface-elevated: #ffffff;
+  --surface-overlay: rgba(255, 255, 255, 0.9);
+
+  // ===== COMPONENT SPECIFIC LIGHT (Update Profile Style) =====
+  --card-bg: #ffffff;
+  --card-border: #e0e0e0;
+  --card-shadow: 0 8px 32px rgba(124, 77, 255, 0.08);
+
+  --button-primary-bg: #7c4dff;
+  --button-primary-hover: #6200ea;
+  --button-primary-text: #ffffff;
+
+  --input-bg: #ffffff;
+  --input-border: #e0e0e0;
+  --input-focus: #7c4dff;
+  --input-text: #232326;
+
+  --modal-bg: #ffffff;
+  --modal-overlay: rgba(0, 0, 0, 0.5);
+  --modal-shadow: 0 8px 32px rgba(124, 77, 255, 0.08);
+
+  // ===== STATUS COLORS =====
+  --status-success-bg: var(--success-50);
+  --status-success-text: var(--success-700);
+  --status-success-border: var(--success-500);
+
+  --status-warning-bg: var(--warning-50);
+  --status-warning-text: var(--warning-700);
+  --status-warning-border: var(--warning-500);
+
+  --status-error-bg: var(--error-50);
+  --status-error-text: var(--error-700);
+  --status-error-border: var(--error-500);
+
+  --status-info-bg: var(--info-50);
+  --status-info-text: var(--info-700);
+  --status-info-border: var(--info-500);
+
+  // ===== UPDATE PROFILE SPECIFIC VARIABLES (LIGHT THEME) =====
+  --sub-bg: #f5f6fa;
+  --sub-card-bg: #ffffff;
+  --sub-card-shadow: 0 8px 32px rgba(124, 77, 255, 0.08);
+  --sub-border: #e0e0e0;
+  --sub-accent: #7c4dff;
+  --sub-accent-light: #ede7f6;
+  --sub-success: #00c853;
+  --sub-text: #232326;
+  --sub-text-secondary: #666666;
+  --sub-label: #7c4dff;
+  --sub-section-bg: #ffffff;
+  --text-on-accent: #ffffff;
+  --gradient-primary: linear-gradient(135deg, #7c4dff 0%, #448aff 100%);
+  --gradient-success: linear-gradient(135deg, #00c853 0%, #00e676 100%);
+  --gradient-warning: linear-gradient(135deg, #ffd600 0%, #ffab00 100%);
+}
+
+// ===================================
+// DARK THEME COLORS
+// ===================================
+
+[data-theme="dark"] {
+  // ===== DARK GRAY SCALE =====
+  --gray-50: #18181b;
+  --gray-100: #27272a;
+  --gray-200: #3f3f46;
+  --gray-300: #52525b;
+  --gray-400: #71717a;
+  --gray-500: #a1a1aa;
+  --gray-600: #d4d4d8;
+  --gray-700: #e4e4e7;
+  --gray-800: #f4f4f5;
+  --gray-900: #fafafa;
+
+  // ===== DARK THEME SEMANTIC TOKENS (Update Profile Style) =====
+  --bg-primary: #18171b;
+  --bg-secondary: #232326;
+  --bg-tertiary: #2a2a3a;
+  --bg-elevated: #232326;
+  --bg-overlay: rgba(0, 0, 0, 0.8);
+
+  --text-primary: #f5f5f7;
+  --text-secondary: #bdbdbd;
+  --text-tertiary: #888888;
+  --text-inverse: #ffffff;
+  --text-disabled: #666666;
+
+  --border-primary: #353545;
+  --border-secondary: #404040;
+  --border-focus: #7c4dff;
+  --border-error: #ff4d4f;
+
+  --surface-primary: #232326;
+  --surface-secondary: #2a2a3a;
+  --surface-elevated: #232326;
+  --surface-overlay: rgba(0, 0, 0, 0.9);
+
+  // ===== COMPONENT SPECIFIC DARK (Update Profile Style) =====
+  --card-bg: #232326;
+  --card-border: #353545;
+  --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+
+  --button-primary-bg: #7c4dff;
+  --button-primary-hover: #6200ea;
+  --button-primary-text: #ffffff;
+
+  --input-bg: #232326;
+  --input-border: #353545;
+  --input-focus: #7c4dff;
+  --input-text: #f5f5f7;
+
+  --modal-bg: #232326;
+  --modal-overlay: rgba(0, 0, 0, 0.8);
+  --modal-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+
+  // ===== STATUS COLORS DARK =====
+  --status-success-bg: rgba(34, 197, 94, 0.1);
+  --status-success-text: #4ade80;
+  --status-success-border: rgba(34, 197, 94, 0.3);
+
+  --status-warning-bg: rgba(245, 158, 11, 0.1);
+  --status-warning-text: #fbbf24;
+  --status-warning-border: rgba(245, 158, 11, 0.3);
+
+  --status-error-bg: rgba(239, 68, 68, 0.1);
+  --status-error-text: #f87171;
+  --status-error-border: rgba(239, 68, 68, 0.3);
+
+  --status-info-bg: rgba(59, 130, 246, 0.1);
+  --status-info-text: #60a5fa;
+  --status-info-border: rgba(59, 130, 246, 0.3);
+
+  // ===== UPDATE PROFILE SPECIFIC VARIABLES DARK =====
+  --sub-bg: #18171b;
+  --sub-card-bg: #232326;
+  --sub-card-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+  --sub-border: #353545;
+  --sub-accent: #7c4dff;
+  --sub-accent-light: #b39ddb;
+  --sub-success: #00c853;
+  --sub-text: #f5f5f7;
+  --sub-text-secondary: #bdbdbd;
+  --sub-label: #b39ddb;
+  --sub-section-bg: linear-gradient(135deg, #232326 80%, #2a2a3a 100%);
+  --text-on-accent: #ffffff;
+  --gradient-primary: linear-gradient(135deg, #7c4dff 0%, #448aff 100%);
+  --gradient-success: linear-gradient(135deg, #00c853 0%, #00e676 100%);
+  --gradient-warning: linear-gradient(135deg, #ffd600 0%, #ffab00 100%);
+}
+
+// ===================================
+// GLOBAL TRANSITIONS
+// ===================================
+
+* {
+  transition: 
+    background-color var(--transition-normal),
+    color var(--transition-normal),
+    border-color var(--transition-normal),
+    box-shadow var(--transition-normal),
+    transform var(--transition-fast);
+}

@@ -5,6 +5,7 @@ import './ChangePassword.scss';
 import toast from 'react-hot-toast';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import Loader from '../Common/Loader';
+import { Button, Input } from '../Common';
 
 interface ChangePasswordProps {
   isOpen: boolean;
@@ -74,27 +75,27 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({ isOpen, onClose }) => {
   return (
     <div className="change-password-modal">
       <div className="change-password-content">
-        <button className="close-button" onClick={handleClose}>×</button>
+        <Button variant="ghost" size="sm" className="close-button" onClick={handleClose}>×</Button>
         <h2>Change Password</h2>
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Current Password</label>
-            <div className="password-input">
-              <input
-                type={showCurrentPassword ? 'text' : 'password'}
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                required
-              />
+          <Input
+            label="Current Password"
+            type={showCurrentPassword ? 'text' : 'password'}
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            required
+            fullWidth
+            rightIcon={
               <button
                 type="button"
                 className="toggle-password"
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 {showCurrentPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
-            </div>
-          </div>
+            }
+          />
 
           <div className="form-group">
             <label>New Password</label>
@@ -135,16 +136,22 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({ isOpen, onClose }) => {
           </div>
 
           <div className="button-group">
-            <button type="button" className="cancel-btn" onClick={handleClose}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleClose}
+              fullWidth
+            >
               Cancel
-            </button>
-            <button type="submit" className="submit-btn">
-              {changePasswordMutation.isPending ? (
-                <Loader size="small" text="Changing..." />
-              ) : (
-                'Change Password'
-              )}
-            </button>
+            </Button>
+            <Button
+              type="submit"
+              variant="gradient"
+              loading={changePasswordMutation.isPending}
+              fullWidth
+            >
+              Change Password
+            </Button>
           </div>
         </form>
       </div>

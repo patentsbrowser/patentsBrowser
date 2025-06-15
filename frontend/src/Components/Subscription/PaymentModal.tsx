@@ -3,6 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import * as SubscriptionService from '../../services/SubscriptionService';
+import { Button, Input } from '../Common';
 import './PaymentModal.scss';
 
 interface Plan {
@@ -300,32 +301,29 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         </div>
 
         <form className="transaction-form" onSubmit={handleSubmit}>
-          <div className="input-group">
-            <label htmlFor="transaction-id">UPI Transaction Reference ID</label>
-            <input
-              id="transaction-id"
-              type="text"
-              value={transactionId}
-              onChange={handleTransactionIdChange}
-              placeholder="e.g. 123456789012"
-              required
-              disabled={paymentStep === 'verifying'}
-              className={validationError ? "error" : ""}
-            />
-            {validationError && (
-              <div className="validation-error">{validationError}</div>
-            )}
-            <div className="input-hint">
-              Enter the UTR or reference number from your UPI payment app (12-18 digits)
-            </div>
-          </div>
-          <button
+          <Input
+            label="UPI Transaction Reference ID"
+            type="text"
+            value={transactionId}
+            onChange={handleTransactionIdChange}
+            placeholder="e.g. 123456789012"
+            hint="Enter the UTR or reference number from your UPI payment app (12-18 digits)"
+            error={validationError || undefined}
+            disabled={paymentStep === 'verifying'}
+            fullWidth
+            size="lg"
+          />
+
+          <Button
             type="submit"
-            className="verify-button"
+            variant="gradient"
+            size="lg"
+            fullWidth
+            loading={isSubmitting || paymentStep === 'verifying'}
             disabled={isSubmitting || paymentStep === 'verifying'}
           >
             {paymentStep === 'verifying' ? 'Verifying...' : 'Verify Payment'}
-          </button>
+          </Button>
         </form>
       </>
     );
@@ -337,7 +335,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         <div className="payment-modal-header">
           <h2>Pay with UPI</h2>
           {paymentStep !== 'verifying' && (
-            <button className="close-button" onClick={onClose}>&times;</button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="close-button"
+              onClick={onClose}
+            >
+              &times;
+            </Button>
           )}
         </div>
         <div className="payment-modal-body">

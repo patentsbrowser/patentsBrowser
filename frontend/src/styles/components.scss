@@ -1,0 +1,365 @@
+// ===================================
+// REUSABLE COMPONENT STYLES
+// ===================================
+// Standardized component styles using design system
+
+@import './design-system.scss';
+@import './mixins.scss';
+
+// ===================================
+// BUTTON COMPONENTS
+// ===================================
+
+.btn {
+  @include button-base;
+  
+  &.btn-primary {
+    @include button-primary;
+  }
+  
+  &.btn-secondary {
+    @include button-secondary;
+  }
+  
+  &.btn-ghost {
+    @include button-ghost;
+  }
+  
+  &.btn-gradient {
+    @include button-gradient;
+  }
+  
+  // Size variants
+  &.btn-sm {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+  }
+  
+  &.btn-lg {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-lg);
+  }
+  
+  &.btn-xl {
+    padding: var(--spacing-lg) var(--spacing-xl);
+    font-size: var(--font-size-xl);
+  }
+  
+  // Full width
+  &.btn-full {
+    width: 100%;
+  }
+  
+  // Loading state
+  &.btn-loading {
+    position: relative;
+    color: transparent;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      @include loading-spinner;
+    }
+  }
+}
+
+// ===================================
+// CARD COMPONENTS
+// ===================================
+
+.card {
+  @include card-base;
+  
+  &.card-interactive {
+    @include card-hover;
+    cursor: pointer;
+  }
+  
+  &.card-elevated {
+    background: var(--surface-elevated);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  &.card-gradient {
+    background: linear-gradient(135deg, var(--surface-primary) 0%, var(--surface-secondary) 100%);
+  }
+}
+
+.card-header {
+  @include flex-between;
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.card-body {
+  flex: 1;
+}
+
+.card-footer {
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-primary);
+  margin-top: var(--spacing-md);
+}
+
+// ===================================
+// INPUT COMPONENTS
+// ===================================
+
+.input {
+  @include input-base;
+  
+  &.input-error {
+    @include input-error;
+  }
+  
+  &.input-sm {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+  }
+  
+  &.input-lg {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-lg);
+  }
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  
+  .input-label {
+    @include body-small;
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+  }
+  
+  .input-hint {
+    @include caption;
+    color: var(--text-tertiary);
+  }
+  
+  .input-error-message {
+    @include caption;
+    color: var(--status-error-text);
+    @include flex-start;
+    gap: var(--spacing-xs);
+    
+    &::before {
+      content: "⚠️";
+      font-size: var(--font-size-xs);
+    }
+  }
+}
+
+// ===================================
+// STATUS COMPONENTS
+// ===================================
+
+.status {
+  @include status-base;
+  
+  &.status-success {
+    @include status-success;
+  }
+  
+  &.status-warning {
+    @include status-warning;
+  }
+  
+  &.status-error {
+    @include status-error;
+  }
+  
+  &.status-info {
+    @include status-info;
+  }
+}
+
+// ===================================
+// MODAL COMPONENTS
+// ===================================
+
+.modal-overlay {
+  @include modal-overlay;
+}
+
+.modal {
+  @include modal-content;
+  @include flex-column;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  padding: 0;
+}
+
+.modal-header {
+  @include flex-between;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--gradient-primary);
+  color: var(--color-white);
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  
+  .modal-title {
+    @include heading-3;
+    color: var(--color-white);
+    margin: 0;
+  }
+  
+  .modal-close {
+    @include button-ghost;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-white);
+    border: none;
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-full);
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: rotate(90deg);
+    }
+  }
+}
+
+.modal-body {
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  @include flex-between;
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--border-primary);
+  gap: var(--spacing-md);
+}
+
+// ===================================
+// LOADING COMPONENTS
+// ===================================
+
+.loading-spinner {
+  @include loading-spinner;
+  
+  &.spinner-sm {
+    width: 16px;
+    height: 16px;
+    border-width: 2px;
+  }
+  
+  &.spinner-lg {
+    width: 32px;
+    height: 32px;
+    border-width: 3px;
+  }
+  
+  &.spinner-xl {
+    width: 48px;
+    height: 48px;
+    border-width: 4px;
+  }
+}
+
+.loading-overlay {
+  @include flex-center;
+  @include flex-column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-2xl);
+  text-align: center;
+  
+  .loading-text {
+    @include body-normal;
+    color: var(--text-secondary);
+  }
+}
+
+// ===================================
+// TYPOGRAPHY COMPONENTS
+// ===================================
+
+.heading-1 { @include heading-1; }
+.heading-2 { @include heading-2; }
+.heading-3 { @include heading-3; }
+.body-large { @include body-large; }
+.body-normal { @include body-normal; }
+.body-small { @include body-small; }
+.caption { @include caption; }
+
+// ===================================
+// LAYOUT COMPONENTS
+// ===================================
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+  
+  &.container-sm {
+    max-width: 640px;
+  }
+  
+  &.container-lg {
+    max-width: 1400px;
+  }
+  
+  &.container-full {
+    max-width: none;
+  }
+}
+
+.section {
+  padding: var(--spacing-2xl) 0;
+  
+  &.section-sm {
+    padding: var(--spacing-lg) 0;
+  }
+  
+  &.section-lg {
+    padding: var(--spacing-3xl) 0;
+  }
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-primary);
+  border: none;
+  margin: var(--spacing-lg) 0;
+  
+  &.divider-vertical {
+    width: 1px;
+    height: auto;
+    margin: 0 var(--spacing-lg);
+  }
+}
+
+// ===================================
+// RESPONSIVE HELPERS
+// ===================================
+
+.mobile-only {
+  @include tablet-up {
+    display: none !important;
+  }
+}
+
+.tablet-up {
+  @include mobile {
+    display: none !important;
+  }
+}
+
+.desktop-only {
+  @include mobile {
+    display: none !important;
+  }
+  
+  @include tablet {
+    display: none !important;
+  }
+}

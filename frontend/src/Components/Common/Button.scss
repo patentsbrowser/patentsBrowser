@@ -1,0 +1,266 @@
+// ===================================
+// REUSABLE BUTTON COMPONENT
+// ===================================
+
+@import '../../styles/design-system.scss';
+@import '../../styles/mixins.scss';
+
+.btn {
+  @include button-base;
+  position: relative;
+  
+  // ===== VARIANTS =====
+  &.btn-primary {
+    background: var(--sub-accent);
+    color: var(--text-on-accent);
+    border: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &:hover:not(:disabled) {
+      background: #6200ea;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(124, 77, 255, 0.3);
+    }
+  }
+  
+  &.btn-secondary {
+    @include button-secondary;
+  }
+  
+  &.btn-ghost {
+    @include button-ghost;
+  }
+  
+  &.btn-gradient {
+    background: var(--gradient-primary);
+    color: var(--text-on-accent);
+    border: none;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(124, 77, 255, 0.3);
+    }
+  }
+  
+  &.btn-danger {
+    background: var(--error-500);
+    color: var(--color-white);
+    
+    &:hover:not(:disabled) {
+      background: var(--error-600);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+  }
+  
+  &.btn-success {
+    background: var(--success-500);
+    color: var(--color-white);
+    
+    &:hover:not(:disabled) {
+      background: var(--success-600);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+  }
+  
+  // ===== SIZES =====
+  &.btn-sm {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    border-radius: var(--radius-sm);
+    min-height: 32px;
+  }
+  
+  &.btn-md {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-md);
+    border-radius: var(--radius-md);
+    min-height: 40px;
+  }
+  
+  &.btn-lg {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-lg);
+    border-radius: var(--radius-lg);
+    min-height: 48px;
+  }
+  
+  &.btn-xl {
+    padding: var(--spacing-lg) var(--spacing-xl);
+    font-size: var(--font-size-xl);
+    border-radius: var(--radius-xl);
+    min-height: 56px;
+  }
+  
+  // ===== MODIFIERS =====
+  &.btn-full {
+    width: 100%;
+  }
+  
+  &.btn-loading {
+    color: transparent;
+    pointer-events: none;
+    
+    .btn-text,
+    .btn-icon {
+      opacity: 0;
+    }
+  }
+  
+  // ===== ICON SUPPORT =====
+  .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    
+    &.btn-icon-left {
+      margin-right: var(--spacing-xs);
+    }
+    
+    &.btn-icon-right {
+      margin-left: var(--spacing-xs);
+    }
+  }
+  
+  .btn-text {
+    display: inline-flex;
+    align-items: center;
+  }
+  
+  // ===== LOADING SPINNER =====
+  .btn-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: btn-spin 1s linear infinite;
+  }
+  
+  // Size-specific spinners
+  &.btn-sm .btn-spinner {
+    width: 14px;
+    height: 14px;
+    border-width: 1.5px;
+  }
+  
+  &.btn-lg .btn-spinner {
+    width: 18px;
+    height: 18px;
+    border-width: 2.5px;
+  }
+  
+  &.btn-xl .btn-spinner {
+    width: 20px;
+    height: 20px;
+    border-width: 3px;
+  }
+  
+  // ===== FOCUS STATES =====
+  &:focus-visible {
+    outline: 2px solid var(--primary-500);
+    outline-offset: 2px;
+  }
+  
+  // ===== DISABLED STATE =====
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+}
+
+// ===== ANIMATIONS =====
+@keyframes btn-spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+// ===== RESPONSIVE =====
+@include mobile {
+  .btn {
+    &.btn-responsive-sm {
+      padding: var(--spacing-xs) var(--spacing-sm);
+      font-size: var(--font-size-sm);
+    }
+  }
+}
+
+// ===== BUTTON GROUPS =====
+.btn-group {
+  display: inline-flex;
+  
+  .btn {
+    border-radius: 0;
+    
+    &:first-child {
+      border-top-left-radius: var(--radius-md);
+      border-bottom-left-radius: var(--radius-md);
+    }
+    
+    &:last-child {
+      border-top-right-radius: var(--radius-md);
+      border-bottom-right-radius: var(--radius-md);
+    }
+    
+    &:not(:last-child) {
+      border-right: 1px solid rgba(255, 255, 255, 0.2);
+    }
+  }
+}
+
+// ===== FLOATING ACTION BUTTON =====
+.btn-fab {
+  @include button-primary;
+  border-radius: var(--radius-full);
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  position: fixed;
+  bottom: var(--spacing-xl);
+  right: var(--spacing-xl);
+  z-index: var(--z-fixed);
+  box-shadow: var(--shadow-lg);
+  
+  &:hover {
+    box-shadow: var(--shadow-xl);
+    transform: translateY(-2px) scale(1.05);
+  }
+  
+  &.btn-fab-sm {
+    width: 40px;
+    height: 40px;
+  }
+  
+  &.btn-fab-lg {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+// ===== ICON ONLY BUTTONS =====
+.btn-icon-only {
+  padding: var(--spacing-sm);
+  aspect-ratio: 1;
+  
+  &.btn-sm {
+    padding: var(--spacing-xs);
+  }
+  
+  &.btn-lg {
+    padding: var(--spacing-md);
+  }
+  
+  &.btn-xl {
+    padding: var(--spacing-lg);
+  }
+}

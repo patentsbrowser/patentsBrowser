@@ -76,11 +76,39 @@ export const generateInviteLink = async (req: Request, res: Response) => {
       });
     }
 
-    const organization = await Organization.findOne({ adminId: userId });
+    // Check if user is organization admin or member
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    let organization;
+
+    // If user is organization admin, find by adminId
+    if (user.userType === 'organization_admin' || user.organizationRole === 'admin') {
+      organization = await Organization.findOne({ adminId: userId });
+    }
+    // If user is organization member, find by organizationId
+    else if (user.organizationId) {
+      organization = await Organization.findById(user.organizationId);
+      // Check if user has permission to generate invite links (only admins)
+      if (organization && !organization.members.some(member =>
+        member.userId.toString() === userId && member.role === 'admin'
+      )) {
+        return res.status(403).json({
+          success: false,
+          message: 'Only organization admins can generate invite links'
+        });
+      }
+    }
+
     if (!organization) {
       return res.status(404).json({
         success: false,
-        message: 'Organization not found'
+        message: 'Organization not found or you are not authorized'
       });
     }
 
@@ -98,7 +126,8 @@ export const generateInviteLink = async (req: Request, res: Response) => {
 
     await organization.save();
 
-    const inviteLink = `${process.env.FRONTEND_URL}/join-organization/${token}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
+    const inviteLink = `${frontendUrl}/join-organization/${token}`;
 
     res.status(200).json({
       success: true,
@@ -335,15 +364,32 @@ export const getOrganizationMembers = async (req, res) => {
     if (!userId) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
+
     const user = await User.findById(userId);
-    if (!user?.organizationId) {
-      return res.status(404).json({ success: false, message: 'User is not part of any organization' });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
-    const organization = await Organization.findById(user.organizationId)
-      .populate('members.userId', 'name email');
+
+    let organization;
+
+    // If user is organization admin, find by adminId
+    if (user.userType === 'organization_admin' || user.organizationRole === 'admin') {
+      organization = await Organization.findOne({ adminId: userId })
+        .populate('members.userId', 'name email');
+    }
+    // If user is organization member, find by organizationId
+    else if (user.organizationId) {
+      organization = await Organization.findById(user.organizationId)
+        .populate('members.userId', 'name email');
+    }
+
     if (!organization) {
-      return res.status(404).json({ success: false, message: 'Organization not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Organization not found or you are not part of any organization'
+      });
     }
+
     const members = organization.members.map(m => ({
       _id: m.userId._id,
       name: m.userId.name,

@@ -1,0 +1,143 @@
+// ===================================
+// COLOR TEST PAGE
+// ===================================
+// Test page to verify Update Profile color scheme
+
+@import '../../styles/design-system.scss';
+@import '../../styles/mixins.scss';
+
+.color-test-page {
+  background: var(--sub-bg);
+  min-height: 100vh;
+  padding: var(--spacing-xl);
+  
+  .color-test-container {
+    max-width: 800px;
+    margin: 0 auto;
+    
+    h1 {
+      @include heading-1;
+      color: var(--sub-text);
+      text-align: center;
+      margin-bottom: var(--spacing-md);
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    p {
+      @include body-normal;
+      color: var(--sub-text-secondary);
+      text-align: center;
+      margin-bottom: var(--spacing-2xl);
+    }
+  }
+}
+
+.test-card {
+  background: var(--sub-card-bg);
+  border: 1px solid var(--sub-border);
+  border-radius: 20px;
+  padding: var(--spacing-2xl);
+  margin-bottom: var(--spacing-xl);
+  box-shadow: var(--sub-card-shadow);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(124, 77, 255, 0.15);
+  }
+  
+  h3 {
+    @include heading-3;
+    color: var(--sub-text);
+    margin-bottom: var(--spacing-md);
+  }
+  
+  p {
+    @include body-normal;
+    color: var(--sub-text-secondary);
+    margin-bottom: var(--spacing-lg);
+  }
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.button-section {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.color-variables {
+  background: var(--sub-card-bg);
+  border: 1px solid var(--sub-border);
+  border-radius: 20px;
+  padding: var(--spacing-2xl);
+  box-shadow: var(--sub-card-shadow);
+  
+  h3 {
+    @include heading-3;
+    color: var(--sub-text);
+    margin-bottom: var(--spacing-lg);
+    text-align: center;
+  }
+}
+
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.color-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  
+  .color-box {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-lg);
+    border: 2px solid var(--sub-border);
+    box-shadow: var(--shadow-md);
+  }
+  
+  span {
+    @include caption;
+    color: var(--sub-text-secondary);
+    font-family: monospace;
+    text-align: center;
+  }
+}
+
+// Responsive
+@include mobile {
+  .color-test-page {
+    padding: var(--spacing-md);
+  }
+  
+  .button-section {
+    flex-direction: column;
+    
+    .btn {
+      width: 100%;
+    }
+  }
+  
+  .color-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

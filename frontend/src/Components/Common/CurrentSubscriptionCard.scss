@@ -1,13 +1,21 @@
-// Current Subscription Card Styles
+// ===================================
+// CURRENT SUBSCRIPTION CARD - OPTIMIZED
+// ===================================
+// Uses unified design system for consistent theming
+
+@import '../../styles/design-system.scss';
+@import '../../styles/mixins.scss';
+
 .current-subscription-card {
-  background: linear-gradient(135deg, #232326 0%, #2a2a3a 100%);
+  background: var(--sub-card-bg);
+  border: 1px solid var(--sub-border);
   border-radius: 20px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  border: 1px solid var(--sub-border, #353545);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--sub-card-shadow);
+  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-xl);
   position: relative;
   overflow: hidden;
+  transition: all 0.3s ease;
 
   &::before {
     content: '';
@@ -16,7 +24,12 @@
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(135deg, #7c4dff 0%, #448aff 100%);
+    background: var(--gradient-primary);
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(124, 77, 255, 0.15);
   }
 
   .card-header {

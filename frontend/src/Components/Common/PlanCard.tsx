@@ -1,4 +1,5 @@
 import React from 'react';
+import Button from './Button';
 import './PlanCard.scss';
 
 export interface Plan {
@@ -90,6 +91,14 @@ const PlanCard: React.FC<PlanCardProps> = ({
     return 'Subscribe Now';
   };
 
+  const getButtonVariant = () => {
+    if (isCurrentPlan) return 'secondary';
+    if (userType === 'organization_member') return 'ghost';
+    if (canUpgrade) return 'gradient';
+    if (canDowngrade) return 'secondary';
+    return 'primary';
+  };
+
   const getButtonClass = () => {
     if (isCurrentPlan) return 'btn btn-primary current-plan-btn';
     if (canUpgrade) return 'btn btn-primary upgrade-btn';
@@ -132,13 +141,15 @@ const PlanCard: React.FC<PlanCardProps> = ({
         ))}
       </ul>
       
-      <button
-        className={getButtonClass()}
+      <Button
+        variant={getButtonVariant()}
+        size="lg"
+        fullWidth
         onClick={handleButtonClick}
         disabled={isCurrentPlan || userType === 'organization_member'}
       >
         {getButtonText()}
-      </button>
+      </Button>
       
       {userType === 'organization_member' && (
         <div className="member-notice">

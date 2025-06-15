@@ -11,6 +11,7 @@ import { Country, ICountry } from 'country-state-city';
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import { parsePhoneNumber } from 'libphonenumber-js';
+import { Button, Input } from '../Common';
 
 // Helper function to get country flag emoji from country code
 const getCountryFlagEmoji = (countryCode: string): string => {
@@ -307,33 +308,27 @@ const UpdateProfile = () => {
           </div>
           
           <div className="form-fields">
-            <label>
-              Name
-              <input
-                type="text"
-                name="name"
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                value={formik.values.name}
-              />
-              {formik.touched.name && formik.errors.name ? (
-                <div className="error">{formik.errors.name as string}</div>
-              ) : null}
-            </label>
+            <Input
+              label="Name"
+              type="text"
+              name="name"
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              value={formik.values.name}
+              error={formik.touched.name && formik.errors.name ? formik.errors.name as string : undefined}
+              fullWidth
+            />
             
-            <label>
-              Email
-              <input
-                type="email"
-                name="email"
-                onBlur={formik.handleBlur}
-                value={formik.values.email}
-                disabled={true}
-              />
-              {formik.touched.email && formik.errors.email ? (
-                <div className="error">{formik.errors.email as string}</div>
-              ) : null}
-            </label>
+            <Input
+              label="Email"
+              type="email"
+              name="email"
+              onBlur={formik.handleBlur}
+              value={formik.values.email}
+              disabled={true}
+              error={formik.touched.email && formik.errors.email ? formik.errors.email as string : undefined}
+              fullWidth
+            />
             
             <label>
               Phone Number
@@ -418,19 +413,16 @@ const UpdateProfile = () => {
               ) : null}
             </label>
             
-            <label>
-              Address
-              <input
-                type="text"
-                name="address"
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                value={formik.values.address}
-              />
-              {formik.touched.address && formik.errors.address ? (
-                <div className="error">{formik.errors.address as string}</div>
-              ) : null}
-            </label>
+            <Input
+              label="Address"
+              type="text"
+              name="address"
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              value={formik.values.address}
+              error={formik.touched.address && formik.errors.address ? formik.errors.address as string : undefined}
+              fullWidth
+            />
             
             <label>
               Gender
@@ -451,12 +443,16 @@ const UpdateProfile = () => {
             </label>
           </div>
           
-          <button 
-            type="submit" 
+          <Button
+            type="submit"
+            variant="gradient"
+            size="lg"
+            fullWidth
+            loading={updateProfileMutation.isPending}
             disabled={updateProfileMutation.isPending}
           >
             {updateProfileMutation.isPending ? 'Updating...' : 'Update Profile'}
-          </button>
+          </Button>
         </form>
       </div>
     </div>

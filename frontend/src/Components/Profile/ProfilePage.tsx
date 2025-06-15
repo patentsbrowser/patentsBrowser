@@ -104,9 +104,10 @@ const ProfilePage = () => {
 
   return (
     <div className="profile-page">
-      <h2>Profile</h2>
+      <div className="profile-container">
+        <h2>Profile</h2>
 
-      <div className="profile-card">
+        <div className="profile-card">
         <div className="profile-header">
           <div className="profile-image-container" onClick={handleImageClick}>
             {profile?.imageUrl ? (
@@ -177,6 +178,7 @@ const ProfilePage = () => {
               </span>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

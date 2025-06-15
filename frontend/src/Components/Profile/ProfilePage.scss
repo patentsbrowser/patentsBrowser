@@ -1,44 +1,61 @@
 .profile-page {
+  margin-top: 78px;
+  min-height: calc(100vh - 78px);
   width: 100%;
-  min-height: 100vh;
-  margin: 0;
-  padding: 2rem;
-  margin-top: 80px;
-  background: var(--sub-bg);
-  background-image: 
-    radial-gradient(circle at 10% 20%, rgba(124, 77, 255, 0.05) 0%, transparent 20%),
-    radial-gradient(circle at 90% 80%, rgba(68, 138, 255, 0.05) 0%, transparent 20%);
   overflow-y: auto;
-  overflow-x: hidden;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: relative;
+  padding: 2rem 1rem 4rem 1rem;
+  background: var(--sub-bg);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(124, 77, 255, 0.03) 0%, rgba(68, 138, 255, 0.03) 100%);
+    pointer-events: none;
+  }
 
   h2 {
-    color: var(--text-color);
-    margin-bottom: 2rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    width: 100%;
     font-size: 2.5rem;
     font-weight: 700;
     background: var(--gradient-primary);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     position: relative;
     display: inline-block;
-    padding: 0 2rem;
-    margin-left: 2rem;
-    
+
     &::after {
       content: '';
       position: absolute;
-      bottom: -10px;
-      left: 2rem;
-      width: 100px;
-      height: 4px;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 3px;
       background: var(--gradient-primary);
       border-radius: 2px;
     }
+  }
+
+  .profile-container {
+    width: 100%;
+    min-height: calc(100vh - 78px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+    box-sizing: border-box;
+    max-width: 1000px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
   }
 
   &.loading, &.error {
@@ -51,23 +68,42 @@
   }
 
   .profile-card {
-    margin: 0 2rem;
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto 2rem auto;
     background: var(--sub-card-bg);
-    border-radius: 2rem;
+    backdrop-filter: blur(10px);
+    border-radius: 1.5rem;
     box-shadow: var(--sub-card-shadow);
     border: 1px solid var(--sub-border);
     overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    min-height: calc(100vh - 280px);
-
-    @media (min-width: 1200px) {
-      margin: 0 auto;
-      max-width: 1100px;
-    }
+    transition: all 0.3s ease;
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+    position: relative;
+    z-index: 1;
 
     &:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 20px 40px var(--shadow-color);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(124, 77, 255, 0.15);
+    }
+
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: var(--sub-bg);
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--sub-accent);
+      border-radius: 4px;
+
+      &:hover {
+        background: var(--sub-accent-light);
+      }
     }
   }
 
@@ -175,28 +211,8 @@
   }
 
   .profile-details {
-    padding: 2rem 2.5rem;
+    padding: 2rem;
     background: var(--sub-card-bg);
-    overflow-y: auto;
-    max-height: calc(100vh - 300px);
-
-    &::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: var(--sub-bg);
-      border-radius: 4px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: var(--sub-accent);
-      border-radius: 4px;
-      
-      &:hover {
-        background: var(--sub-accent-light);
-      }
-    }
   }
 
   .detail-item {
@@ -270,20 +286,16 @@
   }
 
   @media (max-width: 768px) {
-    padding: 1rem;
-    
+    padding: 0.5rem;
+
     h2 {
       font-size: 2rem;
-      margin-left: 1rem;
-      margin-bottom: 1.5rem;
-      
-      &::after {
-        left: 1rem;
-      }
+      margin-bottom: 1rem;
     }
 
     .profile-card {
-      margin: 0 1rem;
+      max-height: calc(100vh - 180px);
+      margin-bottom: 3rem;
     }
 
     .profile-header {
@@ -292,10 +304,14 @@
       text-align: center;
     }
 
+    .profile-details {
+      padding: 1.5rem;
+    }
+
     .detail-item {
       flex-direction: column;
       align-items: flex-start;
-      
+
       .detail-label {
         width: 100%;
         margin-bottom: 0.5rem;
@@ -337,25 +353,30 @@
   --gradient-success: linear-gradient(135deg, #00c853 0%, #00e676 100%);
   --gradient-warning: linear-gradient(135deg, #ffd600 0%, #ffab00 100%);
 
-  // Light theme overrides
-  [data-theme="light"] & {
-    --sub-bg: #f5f6fa;
-    --sub-card-bg: #ffffff;
-    --sub-card-shadow: 0 8px 32px rgba(124,77,255,0.08);
-    --sub-border: #e0e0e0;
-    --sub-accent: #7c4dff;
-    --sub-accent-light: #ede7f6;
-    --sub-success: #00c853;
-    --sub-text: #232326;
-    --sub-text-secondary: #666;
-    --sub-label: #7c4dff;
-    --sub-section-bg: linear-gradient(135deg, #fff 80%, #ede7f6 100%);
-    --bg-primary: #ffffff;
-    --card-bg: #f5f5f5;
-    --card-bg-hover: #eeeeee;
-    --text-primary: #1a1a1a;
-    --text-secondary: #666666;
-    --border-color: rgba(0, 0, 0, 0.1);
-    --shadow-color: rgba(0, 0, 0, 0.1);
-  }
-} 
+}
+
+// Light theme overrides
+[data-theme="light"] {
+  --sub-bg: #f5f6fa;
+  --sub-card-bg: #ffffff;
+  --sub-card-shadow: 0 8px 32px rgba(124,77,255,0.12);
+  --sub-border: #e0e0e0;
+  --sub-accent: #7c4dff;
+  --sub-accent-light: #ede7f6;
+  --sub-success: #00c853;
+  --sub-text: #232326;
+  --sub-text-secondary: #666;
+  --sub-label: #7c4dff;
+  --sub-section-bg: linear-gradient(135deg, #fff 80%, #f8f9fa 100%);
+  --bg-primary: #ffffff;
+  --card-bg: #f5f5f5;
+  --card-bg-hover: #eeeeee;
+  --text-primary: #1a1a1a;
+  --text-secondary: #666666;
+  --border-color: rgba(0, 0, 0, 0.1);
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --text-color: #1a1a1a;
+  --gradient-primary: linear-gradient(135deg, #7c4dff 0%, #448aff 100%);
+  --gradient-success: linear-gradient(135deg, #00c853 0%, #00e676 100%);
+}
+ 

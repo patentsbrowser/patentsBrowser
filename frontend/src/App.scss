@@ -1,13 +1,25 @@
-@use './styles/theme';
+// ===================================
+// MAIN APP STYLES - OPTIMIZED
+// ===================================
+// Import unified design system and components
 
-// Update existing styles to use CSS variables
+@import './styles/design-system.scss';
+@import './styles/mixins.scss';
+@import './styles/utilities.scss';
+@import './styles/components.scss';
+@import './styles/theme.scss'; // Legacy support
+
+// Update existing styles to use unified design system
 body {
-  background-color: var(--primary-bg);
-  color: var(--text-color);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   margin: 0;
   padding: 0;
   height: 100vh;
   overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
   
   &.figure-viewer-open {
     overflow: hidden;
@@ -65,9 +77,8 @@ body {
 
 .app {
   height: 120vh;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--primary-bg);
+  @include flex-column;
+  background-color: var(--bg-primary);
   overflow: hidden;
 
   .app-content {
@@ -168,26 +179,8 @@ body {
   }
 }
 
-// Dark mode styles
-.dark-mode {
-  --primary-bg: #1a1a1a;
-  --secondary-bg: #2d2d2d;
-  --text-color: #ffffff;
-  --border-color: #404040;
-  --hover-bg: #3d3d3d;
-  --link-color: #66b3ff;
-  --error-color: #ff6b6b;
-  --success-color: #69db7c;
-}
-
-// Light mode styles
-.light-mode {
-  --primary-bg: #ffffff;
-  --secondary-bg: #f8f9fa;
-  --text-color: #333333;
-  --border-color: #e9ecef;
-  --hover-bg: #e9ecef;
-  --link-color: #0066cc;
-  --error-color: #dc3545;
-  --success-color: #28a745;
-} 
+// ===================================
+// LEGACY STYLES REMOVED
+// ===================================
+// Dark/Light mode now handled by unified design system
+// via [data-theme="dark"] and :root selectors

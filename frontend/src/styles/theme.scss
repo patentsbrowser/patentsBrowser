@@ -1,55 +1,65 @@
+// ===================================
+// LEGACY THEME VARIABLES
+// ===================================
+// This file is kept for backward compatibility
+// New components should use design-system.scss
+
+@import './design-system.scss';
+@import './mixins.scss';
+@import './utilities.scss';
+
 :root {
-  /* Base colors */
-  --primary-bg: #ffffff;
-  --secondary-bg: #ffffff;
-  --text-color: #2d3748;
-  --text-color-strong: #1a202c;
-  --text-secondary: #4a5568;
-  --border-color: #e2e8f0;
-  
-  /* Accent colors */
-  --accent-color: #4a90e2;
-  --accent-rgb: 74, 144, 226;
-  --accent-secondary: #f6ad55;
-  --accent-secondary-rgb: 246, 173, 85;
-  --accent-hover: #357abd;
-  
-  /* Background colors */
+  /* Legacy Base colors - mapped to new design system */
+  --primary-bg: var(--bg-primary);
+  --secondary-bg: var(--bg-secondary);
+  --text-color: var(--text-primary);
+  --text-color-strong: var(--text-primary);
+  --text-secondary: var(--text-secondary);
+  --border-color: var(--border-primary);
+
+  /* Legacy Accent colors - mapped to new design system */
+  --accent-color: var(--primary-600);
+  --accent-rgb: 99, 102, 241;
+  --accent-secondary: var(--warning-500);
+  --accent-secondary-rgb: 245, 158, 11;
+  --accent-hover: var(--primary-700);
+
+  /* Legacy Background colors - mapped to new design system */
   --bg-rgb: 255, 255, 255;
-  --hover-bg: rgba(0, 0, 0, 0.04);
+  --hover-bg: var(--bg-secondary);
   --shadow-color: rgba(0, 0, 0, 0.08);
-  
-  /* Status colors */
-  --error-color: #e53e3e;
-  --error-color-dark: #c53030;
-  --success-color: #38a169;
-  --warning-color: #d69e2e;
-  --info-color: #4299e1;
-  
-  /* Component specific */
-  --tag-bg: #edf2f7;
-  --input-bg: #ffffff;
-  --input-border: #cbd5e0;
-  --input-focus: #4a90e2;
-  --button-bg: #4a90e2;
-  --button-hover: #357abd;
-  --button-text: #ffffff;
-  --card-bg: #ffffff;
-  --card-bg-hover: #ffffff;
-  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  
-  /* Subscription specific */
-  --sub-bg: #ffffff;
-  --sub-card-bg: #ffffff;
-  --sub-card-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  --sub-border: #e2e8f0;
-  --sub-accent: #4a90e2;
-  --sub-accent-light: #ebf8ff;
-  --sub-success: #38a169;
-  --sub-text: #2d3748;
-  --sub-text-secondary: #718096;
-  --sub-label: #4a5568;
-  --sub-section-bg: #ffffff;
+
+  /* Legacy Status colors - mapped to new design system */
+  --error-color: var(--error-500);
+  --error-color-dark: var(--error-600);
+  --success-color: var(--success-500);
+  --warning-color: var(--warning-500);
+  --info-color: var(--info-500);
+
+  /* Legacy Component specific - mapped to new design system */
+  --tag-bg: var(--bg-tertiary);
+  --input-bg: var(--input-bg);
+  --input-border: var(--input-border);
+  --input-focus: var(--input-focus);
+  --button-bg: var(--button-primary-bg);
+  --button-hover: var(--button-primary-hover);
+  --button-text: var(--button-primary-text);
+  --card-bg: var(--card-bg);
+  --card-bg-hover: var(--surface-elevated);
+  --card-shadow: var(--card-shadow);
+
+  /* Legacy Subscription specific - mapped to new design system */
+  --sub-bg: var(--bg-primary);
+  --sub-card-bg: var(--card-bg);
+  --sub-card-shadow: var(--card-shadow);
+  --sub-border: var(--border-primary);
+  --sub-accent: var(--primary-600);
+  --sub-accent-light: var(--primary-50);
+  --sub-success: var(--success-500);
+  --sub-text: var(--text-primary);
+  --sub-text-secondary: var(--text-secondary);
+  --sub-label: var(--text-secondary);
+  --sub-section-bg: var(--surface-secondary);
   
   /* Text on colored backgrounds */
   --text-on-accent: #ffffff;
@@ -74,13 +84,13 @@
 }
 
 [data-theme="dark"] {
-  /* Base colors */
-  --primary-bg: #1a202c;
-  --secondary-bg: #2d3748;
-  --text-color: #e2e8f0;
-  --text-color-strong: #ffffff;
-  --text-secondary: #a0aec0;
-  --border-color: #4a5568;
+  /* Legacy Base colors - mapped to new design system dark theme */
+  --primary-bg: var(--bg-primary);
+  --secondary-bg: var(--bg-secondary);
+  --text-color: var(--text-primary);
+  --text-color-strong: var(--text-primary);
+  --text-secondary: var(--text-secondary);
+  --border-color: var(--border-primary);
   
   /* Accent colors */
   --accent-color: #4a90e2;
