@@ -3,6 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import * as SubscriptionService from '../../services/SubscriptionService';
+import './PaymentModal.scss';
 
 interface Plan {
   _id: string;
@@ -18,10 +19,12 @@ interface PaymentModalProps {
   onPaymentComplete: () => void;
   isTrialActive: boolean;
   trialDaysRemaining: number;
+  isOrganizationPlan: boolean;
+  onSuccess?: () => Promise<void>;
 }
 
 // UPI Reference validation function
-function validateUPIReference(refNumber: string) {
+export function validateUPIReference(refNumber: string) {
   const ref = refNumber.trim();
   const digitOnlyPattern = /^\d{12,18}$/;
   const alphaNumericPattern = /^[A-Z]{3,6}\d{9,15}$/;
@@ -50,7 +53,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   plan, 
   onPaymentComplete, 
   isTrialActive, 
-  trialDaysRemaining 
+  trialDaysRemaining, 
+  isOrganizationPlan,
+  onSuccess
 }) => {
   const [transactionId, setTransactionId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -112,6 +117,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     };
   }, [upiOrderId, plan._id, onClose]);
   
+  console.log('PaymentModal render:', { isOpen, planName: plan?.name, paymentStep });
+
   if (!isOpen) return null;
   
   const generateUpiLink = (amount: number, planName: string, orderId: string) => {
@@ -231,17 +238,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const renderContent = () => {
     if (paymentStep === 'creating') {
       return (
-        <div>
-          <div>Loading...</div>
+        <div className="creating-payment">
+          <div className="spinner"></div>
           <p>Initializing payment...</p>
         </div>
       );
     }
-    
+
     if (paymentStep === 'complete') {
       return (
-        <div>
-          <div>✓</div>
+        <div className="payment-success">
+          <div className="success-icon">✓</div>
           <h3>Payment Successful!</h3>
           <p>Your subscription is now active.</p>
         </div>
@@ -250,30 +257,39 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
     if (paymentStep === 'pending') {
       return (
-        <div>
-          <div>⏳</div>
+        <div className="payment-pending">
+          <div className="pending-icon">⏳</div>
           <h3>Verification in Progress</h3>
           <p>{verificationStatus}</p>
-          <p>You can close this window. Your subscription will be activated automatically once verified.</p>
-          <Link to="/auth/payment-history">View Payment History</Link>
+          <p className="pending-note">You can close this window. Your subscription will be activated automatically once verified.</p>
+          <div className="payment-history-link">
+            <Link to="/auth/payment-history" className="view-history-link">
+              View Payment History
+            </Link>
+          </div>
         </div>
       );
     }
     
     return (
       <>
-        <div>
-          <div>
+        <div className="qr-code-container">
+          <div className="qr-code-wrapper">
             <QRCodeSVG value={upiLink} size={180} />
           </div>
-          <div>
+          <div className="payment-info">
             <h3>{plan.name} Plan</h3>
-            <div>₹{plan.price.toLocaleString('en-IN')}</div>
-            <div>Order ID: {upiOrderId}</div>
+            <div className="amount">₹{plan.price.toLocaleString('en-IN')}</div>
+            <div className="plan-name">
+              {plan.type === 'monthly' ? 'Monthly' :
+                plan.type === 'quarterly' ? 'Quarterly' :
+                plan.type === 'half_yearly' ? 'Half Yearly' : 'Yearly'} Plan
+            </div>
+            <div className="order-id">Order ID: {upiOrderId}</div>
           </div>
         </div>
-        
-        <div>
+
+        <div className="payment-instructions">
           <h4>How to pay:</h4>
           <ol>
             <li>Open your UPI app (Google Pay, PhonePe, etc.)</li>
@@ -282,28 +298,30 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             <li>Enter the UPI Reference ID below</li>
           </ol>
         </div>
-        
-        <form onSubmit={handleSubmit}>
-          <div>
+
+        <form className="transaction-form" onSubmit={handleSubmit}>
+          <div className="input-group">
             <label htmlFor="transaction-id">UPI Transaction Reference ID</label>
-            <input 
+            <input
               id="transaction-id"
-              type="text" 
+              type="text"
               value={transactionId}
               onChange={handleTransactionIdChange}
               placeholder="e.g. 123456789012"
               required
               disabled={paymentStep === 'verifying'}
+              className={validationError ? "error" : ""}
             />
             {validationError && (
-              <div>{validationError}</div>
+              <div className="validation-error">{validationError}</div>
             )}
-            <div>
+            <div className="input-hint">
               Enter the UTR or reference number from your UPI payment app (12-18 digits)
             </div>
           </div>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
+            className="verify-button"
             disabled={isSubmitting || paymentStep === 'verifying'}
           >
             {paymentStep === 'verifying' ? 'Verifying...' : 'Verify Payment'}
@@ -314,20 +332,20 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   };
   
   return (
-    <div onClick={paymentStep !== 'verifying' ? onClose : undefined}>
-      <div onClick={(e) => e.stopPropagation()}>
-        <div>
+    <div className="payment-modal-overlay" onClick={paymentStep !== 'verifying' ? onClose : undefined}>
+      <div className="payment-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="payment-modal-header">
           <h2>Pay with UPI</h2>
           {paymentStep !== 'verifying' && (
-            <button onClick={onClose}>×</button>
+            <button className="close-button" onClick={onClose}>&times;</button>
           )}
         </div>
-        <div>
+        <div className="payment-modal-body">
           {isTrialActive && trialDaysRemaining > 0 && (
-            <div>
+            <div className="trial-carryover-notice">
               <h3>Good news! Trial days will be added</h3>
-              <p>You have <strong>{trialDaysRemaining} days</strong> remaining in your free trial. 
-                 These days will be added to your subscription.</p>
+              <p>You have <strong>{trialDaysRemaining} days</strong> remaining in your free trial.
+                 These days will be added to your subscription, giving you extra value!</p>
             </div>
           )}
           {renderContent()}

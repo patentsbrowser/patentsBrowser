@@ -1,0 +1,306 @@
+// Plan Card Component Styles
+// Import CSS variables from subscription page
+:root {
+  --sub-bg: #18171b;
+  --sub-card-bg: #232326;
+  --sub-card-bg-hover: #2a2a2d;
+  --sub-card-shadow: 0 8px 32px rgba(0,0,0,0.28);
+  --sub-border: #353545;
+  --sub-accent: #7c4dff;
+  --sub-accent-hover: #6200ea;
+  --sub-accent-light: #b39ddb;
+  --sub-success: #00c853;
+  --sub-text: #f5f5f7;
+  --sub-text-secondary: #bdbdbd;
+  --sub-label: #b39ddb;
+}
+
+.pricing-card {
+  background: var(--sub-card-bg, #232326);
+  border-radius: 20px;
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  border: 1px solid var(--sub-border, #353545);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  min-height: 500px;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(135deg, #7c4dff 0%, #448aff 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  &:hover {
+    transform: translateY(-8px);
+    background: var(--sub-card-bg-hover, #2a2a2d);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    
+    &::before {
+      opacity: 1;
+    }
+    
+    .btn {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(124, 77, 255, 0.3);
+    }
+  }
+
+  &.popular {
+    border: 2px solid var(--sub-accent, #7c4dff);
+    
+    &::before {
+      opacity: 1;
+    }
+    
+    .popular-badge {
+      position: absolute;
+      top: 1rem;
+      right: -2rem;
+      background: linear-gradient(135deg, #7c4dff 0%, #448aff 100%);
+      color: white;
+      padding: 0.5rem 3rem;
+      transform: rotate(45deg);
+      font-size: 0.9rem;
+      font-weight: 600;
+      box-shadow: 0 2px 10px rgba(124, 77, 255, 0.3);
+    }
+  }
+
+  h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: var(--sub-text, #f5f5f7);
+    text-align: center;
+  }
+
+  .price {
+    text-align: center;
+    margin-bottom: 2rem;
+
+    .currency {
+      font-size: 1.8rem;
+      vertical-align: top;
+      margin-right: 0.2rem;
+      color: var(--sub-accent, #7c4dff);
+    }
+
+    .amount {
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: var(--sub-accent, #7c4dff);
+    }
+
+    .period {
+      color: var(--sub-text-secondary, #bdbdbd);
+      font-size: 1.1rem;
+      margin-left: 0.3rem;
+    }
+  }
+
+  .member-info {
+    background: rgba(124, 77, 255, 0.1);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    border: 1px solid rgba(124, 77, 255, 0.2);
+
+    .member-count {
+      font-weight: 600;
+      color: var(--sub-accent, #7c4dff);
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+    }
+
+    .additional-price {
+      font-size: 0.9rem;
+      color: var(--sub-text-secondary, #bdbdbd);
+      font-style: italic;
+    }
+  }
+
+  .discount {
+    background: linear-gradient(135deg, #00c853, #00e676);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 200, 83, 0.3);
+  }
+
+  .features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2.5rem 0;
+    flex-grow: 1;
+
+    li {
+      color: var(--sub-text, #f5f5f7);
+      margin-bottom: 1.2rem;
+      padding-left: 2rem;
+      position: relative;
+      font-size: 1.1rem;
+      line-height: 1.4;
+
+      &::before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: var(--sub-success, #00c853);
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+    }
+  }
+
+  .btn {
+    background: var(--sub-accent, #7c4dff);
+    color: white;
+    border: none;
+    padding: 1.2rem;
+    border-radius: 12px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100%;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      background: var(--sub-accent-hover, #6200ea);
+      box-shadow: 0 8px 20px rgba(124, 77, 255, 0.3);
+    }
+
+    &.current-plan-btn {
+      background: var(--sub-text-secondary, #666);
+      cursor: not-allowed;
+      
+      &:hover {
+        transform: none;
+        box-shadow: none;
+      }
+    }
+
+    &.upgrade-btn {
+      background: linear-gradient(135deg, #00c853, #00e676);
+      
+      &:hover {
+        background: linear-gradient(135deg, #00a040, #00c853);
+        box-shadow: 0 8px 20px rgba(0, 200, 83, 0.3);
+      }
+    }
+
+    &.downgrade-btn {
+      background: transparent;
+      border: 2px solid var(--sub-border, #353545);
+      color: var(--sub-text, #f5f5f7);
+      
+      &:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--sub-accent, #7c4dff);
+        color: var(--sub-accent, #7c4dff);
+      }
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+  }
+
+  .member-notice {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: 8px;
+    color: #ffc107;
+    font-size: 0.9rem;
+    text-align: center;
+    font-style: italic;
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .pricing-card {
+    padding: 2rem;
+    min-height: auto;
+    
+    h3 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .price {
+      margin-bottom: 1.5rem;
+      
+      .amount {
+        font-size: 2.5rem;
+      }
+      
+      .currency {
+        font-size: 1.4rem;
+      }
+    }
+    
+    .features {
+      margin-bottom: 2rem;
+      
+      li {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+      }
+    }
+    
+    .btn {
+      padding: 1rem;
+      font-size: 1.1rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .pricing-card {
+    padding: 1.5rem;
+    
+    h3 {
+      font-size: 1.3rem;
+    }
+    
+    .price {
+      .amount {
+        font-size: 2rem;
+      }
+    }
+    
+    .member-info {
+      padding: 0.75rem;
+      
+      .member-count {
+        font-size: 1rem;
+      }
+      
+      .additional-price {
+        font-size: 0.8rem;
+      }
+    }
+  }
+}

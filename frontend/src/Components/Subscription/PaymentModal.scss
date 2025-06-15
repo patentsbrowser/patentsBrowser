@@ -1,0 +1,388 @@
+.payment-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  overflow-y: auto;
+  padding: 1rem;
+}
+.payment-modal {
+  background: var(--card-bg, #232326);
+  border-radius: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 85vh;
+  overflow: hidden;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+  padding: 0;
+  position: relative;
+  animation: modalFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--sub-border, #353545);
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+}
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.payment-modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(135deg, #7c4dff 0%, #448aff 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 24px 24px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: white;
+  }
+
+  .close-button {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    font-size: 1.8rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    line-height: 1;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: rotate(90deg);
+    }
+  }
+}
+.payment-modal-body {
+  padding: 2rem;
+  overflow-y: auto;
+  flex: 1;
+  .qr-code-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    .qr-code-wrapper {
+      background: #fff;
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .payment-info {
+      text-align: center;
+      h3 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+      .amount { font-size: 2rem; font-weight: 700; color: var(--accent-primary, #7c4dff); }
+      .plan-name { color: var(--text-secondary, #bdbdbd); font-size: 1rem; }
+      .order-id { font-size: 0.9rem; color: #888; margin-top: 0.5rem; }
+    }
+  }
+  .payment-instructions {
+    margin-bottom: 1.5rem;
+    h4 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+    ol { padding-left: 1.2rem; }
+    li { margin-bottom: 0.5rem; }
+  }
+  .transaction-form {
+    margin-top: 1.5rem;
+
+    .input-group {
+      margin-bottom: 1.5rem;
+
+      label {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: block;
+        color: var(--sub-text, #f5f5f7);
+        font-size: 0.95rem;
+      }
+
+      input {
+        width: 100%;
+        padding: 1rem;
+        border-radius: 12px;
+        border: 2px solid var(--sub-border, #353545);
+        background: var(--input-bg, #1a1a1d);
+        color: var(--sub-text, #f5f5f7);
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+
+        &:focus {
+          outline: none;
+          border-color: var(--sub-accent, #7c4dff);
+          box-shadow: 0 0 0 3px rgba(124, 77, 255, 0.1);
+        }
+
+        &.error {
+          border-color: #e74c3c;
+        }
+
+        &::placeholder {
+          color: var(--sub-text-secondary, #bdbdbd);
+        }
+      }
+
+      .validation-error {
+        color: #e74c3c;
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        &::before {
+          content: "⚠️";
+          font-size: 0.8rem;
+        }
+      }
+
+      .input-hint {
+        color: var(--sub-text-secondary, #bdbdbd);
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+        line-height: 1.4;
+      }
+    }
+
+    .verify-button {
+      width: 100%;
+      background: linear-gradient(135deg, #7c4dff 0%, #448aff 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(124, 77, 255, 0.3);
+
+      &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(124, 77, 255, 0.4);
+      }
+
+      &:active:not(:disabled) {
+        transform: translateY(0);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: 0 4px 15px rgba(124, 77, 255, 0.2);
+      }
+    }
+  }
+
+  // Trial carryover notice
+  .trial-carryover-notice {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(124, 77, 255, 0.1));
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+
+    h3 {
+      color: #8b5cf6;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      &::before {
+        content: "🎯";
+        font-size: 1.2rem;
+      }
+    }
+
+    p {
+      color: var(--sub-text-secondary, #bdbdbd);
+      margin: 0;
+      font-size: 0.9rem;
+      line-height: 1.4;
+
+      strong {
+        color: #8b5cf6;
+        font-weight: 600;
+      }
+    }
+  }
+}
+// Payment states styling
+.creating-payment {
+  text-align: center;
+  padding: 2rem;
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(124, 77, 255, 0.2);
+    border-top: 4px solid var(--sub-accent, #7c4dff);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  p {
+    color: var(--sub-text-secondary, #bdbdbd);
+    font-size: 1rem;
+  }
+}
+
+.payment-success, .payment-pending, .payment-failed {
+  text-align: center;
+  padding: 2rem;
+
+  .success-icon {
+    font-size: 3rem;
+    color: #00c853;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  .pending-icon {
+    font-size: 3rem;
+    color: #fbc02d;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  .failed-icon {
+    font-size: 3rem;
+    color: #e74c3c;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  h3 {
+    margin-bottom: 1rem;
+    color: var(--sub-text, #f5f5f7);
+    font-size: 1.3rem;
+  }
+
+  p {
+    color: var(--sub-text-secondary, #bdbdbd);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+
+    &.pending-note {
+      font-style: italic;
+      font-size: 0.9rem;
+    }
+  }
+
+  .payment-history-link {
+    margin-top: 1.5rem;
+
+    .view-history-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--sub-accent, #7c4dff);
+      text-decoration: none;
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--sub-accent, #7c4dff);
+      border-radius: 8px;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background: var(--sub-accent, #7c4dff);
+        color: white;
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// Mobile responsiveness
+@media (max-width: 768px) {
+  .payment-modal-overlay {
+    padding: 0.5rem;
+    align-items: flex-start;
+    padding-top: 2rem;
+  }
+
+  .payment-modal {
+    max-width: 100%;
+    width: 100%;
+    max-height: 95vh;
+    border-radius: 16px;
+  }
+
+  .payment-modal-header {
+    padding: 1rem;
+    border-radius: 16px 16px 0 0;
+
+    h2 {
+      font-size: 1.3rem;
+    }
+  }
+
+  .payment-modal-body {
+    padding: 1rem;
+
+    .qr-code-container {
+      .qr-code-wrapper {
+        padding: 0.75rem;
+      }
+
+      .payment-info {
+        .amount {
+          font-size: 1.5rem;
+        }
+      }
+    }
+
+    .payment-instructions {
+      h4 {
+        font-size: 0.95rem;
+      }
+
+      ol {
+        padding-left: 1rem;
+      }
+
+      li {
+        font-size: 0.9rem;
+      }
+    }
+
+    .transaction-form {
+      .input-group {
+        input {
+          padding: 0.875rem;
+        }
+      }
+
+      .verify-button {
+        padding: 0.875rem 1rem;
+        font-size: 1rem;
+      }
+    }
+  }
+}
