@@ -40,14 +40,15 @@ export const createOrganization = async (req: Request, res: Response) => {
 
     await organization.save();
 
-    // Update user with organization details
+    // Update user with organization details and set as organization admin
     await User.findByIdAndUpdate(userId, {
       isOrganization: true,
       organizationName: name,
       organizationSize: size,
       organizationType: type,
       organizationId: organization._id,
-      organizationRole: 'admin'
+      organizationRole: 'admin',
+      userType: 'organization_admin'
     });
 
     res.status(201).json({
@@ -163,14 +164,15 @@ export const joinOrganization = async (req: Request, res: Response) => {
 
     await organization.save();
 
-    // Update user with organization details
+    // Update user with organization details and userType
     await User.findByIdAndUpdate(userId, {
       isOrganization: true,
       organizationName: organization.name,
       organizationSize: organization.size,
       organizationType: organization.type,
       organizationId: organization._id,
-      organizationRole: 'member'
+      organizationRole: 'member',
+      userType: 'organization_member'
     });
 
     res.status(200).json({
@@ -257,14 +259,15 @@ export const removeMember = async (req: Request, res: Response) => {
 
     await organization.save();
 
-    // Update user's organization details
+    // Update user's organization details and reset userType
     await User.findByIdAndUpdate(memberId, {
       isOrganization: false,
       organizationName: undefined,
       organizationSize: undefined,
       organizationType: undefined,
       organizationId: undefined,
-      organizationRole: undefined
+      organizationRole: undefined,
+      userType: 'individual'
     });
 
     res.status(200).json({

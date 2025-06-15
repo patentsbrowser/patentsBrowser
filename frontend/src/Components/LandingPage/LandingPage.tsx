@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './LandingPage.scss';
 import * as SubscriptionService from '../../services/SubscriptionService';
+import { subscriptionService } from '../../services/SubscriptionService';
 
 const LandingPage = () => {
 
   const [plans, setPlans] = useState<any[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [plansError, setPlansError] = useState<string | null>(null);
+  const [planType, setPlanType] = useState<'individual' | 'organization'>('individual');
   const navigate = useNavigate();
   
   const handleAuthClick = (mode: 'login' | 'signup') => {
@@ -22,26 +24,24 @@ const LandingPage = () => {
     navigate('/auth/signup');
   };
 
-  // Fetch subscription plans from backend
+  // Fetch subscription plans from backend based on plan type
   useEffect(() => {
     const fetchPlans = async () => {
       setLoadingPlans(true);
       setPlansError(null);
       try {
-        const result = await SubscriptionService.getSubscriptionPlans();
-        if (result.success) {
-          setPlans(result.data);
-        } else {
-          setPlansError('Failed to load plans');
-        }
+        // Fetch plans with accountType query parameter
+        const plans = await subscriptionService.getPlans(planType);
+        setPlans(plans);
       } catch (error) {
+        console.error('Error fetching plans:', error);
         setPlansError('Failed to load plans');
       } finally {
         setLoadingPlans(false);
       }
     };
     fetchPlans();
-  }, []);
+  }, [planType]);
 
   const trialFeatures = [
     'Full search functionality',
@@ -128,17 +128,40 @@ const LandingPage = () => {
       <section className="pricing-section">
         <h2>Subscription Plans</h2>
         <p className="pricing-subtitle">Choose the perfect plan for your needs after your free trial</p>
+
+        {/* Plan Type Toggle */}
+        <div className="plan-type-toggle">
+          <button
+            className={`toggle-btn ${planType === 'individual' ? 'active' : ''}`}
+            onClick={() => setPlanType('individual')}
+          >
+            Individual Plans
+          </button>
+          <button
+            className={`toggle-btn ${planType === 'organization' ? 'active' : ''}`}
+            onClick={() => setPlanType('organization')}
+          >
+            Organization Plans
+          </button>
+        </div>
+
         <div className="pricing-cards">
           {loadingPlans && <div>Loading plans...</div>}
           {plansError && <div style={{ color: 'red' }}>{plansError}</div>}
           {!loadingPlans && !plansError && plans.map(plan => (
             <div key={plan._id} className={`pricing-card ${plan.popular ? 'popular' : ''}`}>
+              {plan.popular && <div className="popular-badge">Most Popular</div>}
               <h3>{plan.name}</h3>
               <div className="price">
                 <span className="currency">₹</span>
                 <span className="amount">{plan.price.toLocaleString('en-IN')}</span>
                 <span className="period">/{getPlanTypeDisplay(plan.type)}</span>
               </div>
+              {planType === 'organization' && plan.additionalMemberPrice && (
+                <div className="member-price">
+                  + ₹{plan.additionalMemberPrice.toLocaleString('en-IN')} per additional member/month
+                </div>
+              )}
               {plan.discountPercentage > 0 && (
                 <div className="discount">{plan.discountPercentage}% discount</div>
               )}
@@ -147,7 +170,7 @@ const LandingPage = () => {
                   <li key={index}>{feature}</li>
                 ))}
               </ul>
-              <button 
+              <button
                 className="btn btn-primary"
                 onClick={handleSubscriptionClick}
               >

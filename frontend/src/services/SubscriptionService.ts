@@ -358,12 +358,20 @@ export const verifyPlanChangePayment = async (
 };
 
 class SubscriptionService {
-  async getPlans(accountType: 'individual' | 'organization'): Promise<Plan[]> {
+  async getPlans(accountType?: 'individual' | 'organization'): Promise<Plan[]> {
+    const params = accountType ? { accountType } : {};
     const response = await axios.get(`${API_URL}/subscriptions/plans`, {
       headers: await this.getAuthHeader(),
-      params: { accountType }
+      params
     });
-    return response.data;
+    return response.data.data; // Extract data from response
+  }
+
+  async getUserPlans(): Promise<Plan[]> {
+    const response = await axios.get(`${API_URL}/subscriptions/user-plans`, {
+      headers: await this.getAuthHeader()
+    });
+    return response.data.data; // Extract data from response
   }
 
   async getUserSubscription(): Promise<UserSubscription> {

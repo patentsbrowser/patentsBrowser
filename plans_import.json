@@ -1,0 +1,359 @@
+[
+  {
+    "name": "Individual Basic",
+    "type": "monthly",
+    "accountType": "individual",
+    "price": 999,
+    "discountPercentage": 0,
+    "features": [
+      "100 patent searches per month",
+      "Basic search filters",
+      "Download patents",
+      "Email support",
+      "Save up to 50 patents"
+    ],
+    "popular": false,
+    "isActive": true
+  },
+  {
+    "name": "Individual Pro",
+    "type": "monthly",
+    "accountType": "individual",
+    "price": 1999,
+    "discountPercentage": 10,
+    "features": [
+      "500 patent searches per month",
+      "Advanced search filters",
+      "Patent analytics",
+      "Priority support",
+      "Export to multiple formats",
+      "Save unlimited patents",
+      "Custom patent lists"
+    ],
+    "popular": true,
+    "isActive": true
+  },
+  {
+    "name": "Individual Premium",
+    "type": "monthly",
+    "accountType": "individual",
+    "price": 3999,
+    "discountPercentage": 15,
+    "features": [
+      "Unlimited patent searches",
+      "AI-powered insights",
+      "Custom alerts",
+      "API access",
+      "Dedicated support",
+      "Advanced analytics",
+      "Priority processing"
+    ],
+    "popular": false,
+    "isActive": true
+  },
+  {
+    "name": "Individual Basic Quarterly",
+    "type": "quarterly",
+    "accountType": "individual",
+    "price": 2699,
+    "discountPercentage": 10,
+    "features": [
+      "100 patent searches per month",
+      "Basic search filters",
+      "Download patents",
+      "Email support",
+      "Save up to 50 patents",
+      "3 months validity"
+    ],
+    "popular": false,
+    "isActive": true
+  },
+  {
+    "name": "Individual Pro Quarterly",
+    "type": "quarterly",
+    "accountType": "individual",
+    "price": 5097,
+    "discountPercentage": 15,
+    "features": [
+      "500 patent searches per month",
+      "Advanced search filters",
+      "Patent analytics",
+      "Priority support",
+      "Export to multiple formats",
+      "Save unlimited patents",
+      "Custom patent lists",
+      "3 months validity"
+    ],
+    "popular": true,
+    "isActive": true
+  },
+  {
+    "name": "Individual Premium Quarterly",
+    "type": "quarterly",
+    "accountType": "individual",
+    "price": 9597,
+    "discountPercentage": 20,
+    "features": [
+      "Unlimited patent searches",
+      "AI-powered insights",
+      "Custom alerts",
+      "API access",
+      "Dedicated support",
+      "Advanced analytics",
+      "Priority processing",
+      "3 months validity"
+    ],
+    "popular": false,
+    "isActive": true
+  },
+  {
+    "name": "Individual Basic Yearly",
+    "type": "yearly",
+    "accountType": "individual",
+    "price": 9591,
+    "discountPercentage": 20,
+    "features": [
+      "100 patent searches per month",
+      "Basic search filters",
+      "Download patents",
+      "Email support",
+      "Save up to 50 patents",
+      "12 months validity",
+      "Best value for money"
+    ],
+    "popular": false,
+    "isActive": true
+  },
+  {
+    "name": "Individual Pro Yearly",
+    "type": "yearly",
+    "accountType": "individual",
+    "price": 17991,
+    "discountPercentage": 25,
+    "features": [
+      "500 patent searches per month",
+      "Advanced search filters",
+      "Patent analytics",
+      "Priority support",
+      "Export to multiple formats",
+      "Save unlimited patents",
+      "Custom patent lists",
+      "12 months validity",
+      "Best value for money"
+    ],
+    "popular": true,
+    "isActive": true
+  },
+  {
+    "name": "Individual Premium Yearly",
+    "type": "yearly",
+    "accountType": "individual",
+    "price": 35991,
+    "discountPercentage": 25,
+    "features": [
+      "Unlimited patent searches",
+      "AI-powered insights",
+      "Custom alerts",
+      "API access",
+      "Dedicated support",
+      "Advanced analytics",
+      "Priority processing",
+      "12 months validity",
+      "Maximum savings"
+    ],
+    "popular": false,
+    "isActive": true
+  },
+  {
+    "name": "Organization Starter",
+    "type": "monthly",
+    "accountType": "organization",
+    "price": 5000,
+    "discountPercentage": 0,
+    "features": [
+      "Up to 10 team members",
+      "Advanced patent search",
+      "Team collaboration tools",
+      "Basic analytics dashboard",
+      "Email support",
+      "Organization-wide access"
+    ],
+    "popular": false,
+    "isActive": true,
+    "maxMembers": 10,
+    "additionalMemberPrice": 500
+  },
+  {
+    "name": "Organization Professional",
+    "type": "monthly",
+    "accountType": "organization",
+    "price": 10000,
+    "discountPercentage": 15,
+    "features": [
+      "Up to 50 team members",
+      "Advanced patent search & analytics",
+      "Priority support",
+      "Custom integrations",
+      "Advanced reporting",
+      "Team management dashboard",
+      "API access",
+      "Organization-wide access"
+    ],
+    "popular": true,
+    "isActive": true,
+    "maxMembers": 50,
+    "additionalMemberPrice": 800
+  },
+  {
+    "name": "Organization Enterprise",
+    "type": "monthly",
+    "accountType": "organization",
+    "price": 25000,
+    "discountPercentage": 20,
+    "features": [
+      "Unlimited team members",
+      "Full patent analytics suite",
+      "Dedicated account manager",
+      "Custom development",
+      "Advanced security features",
+      "White-label options",
+      "SLA guarantee",
+      "Organization-wide access"
+    ],
+    "popular": false,
+    "isActive": true,
+    "maxMembers": -1,
+    "additionalMemberPrice": 1000
+  },
+  {
+    "name": "Organization Starter Quarterly",
+    "type": "quarterly",
+    "accountType": "organization",
+    "price": 13500,
+    "discountPercentage": 10,
+    "features": [
+      "Up to 10 team members",
+      "Advanced patent search",
+      "Team collaboration tools",
+      "Basic analytics dashboard",
+      "Email support",
+      "Organization-wide access",
+      "3 months validity"
+    ],
+    "popular": false,
+    "isActive": true,
+    "maxMembers": 10,
+    "additionalMemberPrice": 1350
+  },
+  {
+    "name": "Organization Professional Quarterly",
+    "type": "quarterly",
+    "accountType": "organization",
+    "price": 25500,
+    "discountPercentage": 15,
+    "features": [
+      "Up to 50 team members",
+      "Advanced patent search & analytics",
+      "Priority support",
+      "Custom integrations",
+      "Advanced reporting",
+      "Team management dashboard",
+      "API access",
+      "Organization-wide access",
+      "3 months validity"
+    ],
+    "popular": true,
+    "isActive": true,
+    "maxMembers": 50,
+    "additionalMemberPrice": 2040
+  },
+  {
+    "name": "Organization Enterprise Quarterly",
+    "type": "quarterly",
+    "accountType": "organization",
+    "price": 60000,
+    "discountPercentage": 20,
+    "features": [
+      "Unlimited team members",
+      "Full patent analytics suite",
+      "Dedicated account manager",
+      "Custom development",
+      "Advanced security features",
+      "White-label options",
+      "SLA guarantee",
+      "Organization-wide access",
+      "3 months validity"
+    ],
+    "popular": false,
+    "isActive": true,
+    "maxMembers": -1,
+    "additionalMemberPrice": 2400
+  },
+  {
+    "name": "Organization Starter Yearly",
+    "type": "yearly",
+    "accountType": "organization",
+    "price": 48000,
+    "discountPercentage": 20,
+    "features": [
+      "Up to 10 team members",
+      "Advanced patent search",
+      "Team collaboration tools",
+      "Basic analytics dashboard",
+      "Email support",
+      "Organization-wide access",
+      "12 months validity",
+      "Best value for money"
+    ],
+    "popular": false,
+    "isActive": true,
+    "maxMembers": 10,
+    "additionalMemberPrice": 4800
+  },
+  {
+    "name": "Organization Professional Yearly",
+    "type": "yearly",
+    "accountType": "organization",
+    "price": 90000,
+    "discountPercentage": 25,
+    "features": [
+      "Up to 50 team members",
+      "Advanced patent search & analytics",
+      "Priority support",
+      "Custom integrations",
+      "Advanced reporting",
+      "Team management dashboard",
+      "API access",
+      "Organization-wide access",
+      "12 months validity",
+      "Best value for money"
+    ],
+    "popular": true,
+    "isActive": true,
+    "maxMembers": 50,
+    "additionalMemberPrice": 7200
+  },
+  {
+    "name": "Organization Enterprise Yearly",
+    "type": "yearly",
+    "accountType": "organization",
+    "price": 210000,
+    "discountPercentage": 30,
+    "features": [
+      "Unlimited team members",
+      "Full patent analytics suite",
+      "Dedicated account manager",
+      "Custom development",
+      "Advanced security features",
+      "White-label options",
+      "SLA guarantee",
+      "Organization-wide access",
+      "12 months validity",
+      "Maximum savings"
+    ],
+    "popular": false,
+    "isActive": true,
+    "maxMembers": -1,
+    "additionalMemberPrice": 8400
+  }
+]

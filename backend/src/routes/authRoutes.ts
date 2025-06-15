@@ -24,7 +24,12 @@ router.post('/signup', async (req, res) => {
         // Resend OTP for unverified user
         const otp = generateOTP();
         storeOTP(email, otp);
-        try { await sendOTP(email, otp); } catch (e) {}
+        try {
+          await sendOTP(email, otp);
+          console.log('OTP resent to existing unverified user:', email);
+        } catch (e) {
+          console.error('Failed to send OTP to existing user:', email, e);
+        }
         return res.status(200).json({
           statusCode: 200,
           message: 'OTP sent to your email. Please verify to complete signup.',
@@ -40,15 +45,30 @@ router.post('/signup', async (req, res) => {
       }
     }
 
+    // Determine userType based on registration type
+    let userType = 'individual';
+    if (isOrganization) {
+      userType = 'organization_admin'; // Organization registrants become organization admins
+    }
+
     // Store signup data in pendingSignups
     const otp = generateOTP();
     pendingSignups[email] = {
-      signupData: { name, email, password, isOrganization, organizationName, organizationSize, organizationType },
+      signupData: { name, email, password, isOrganization, organizationName, organizationSize, organizationType, userType },
       otp,
       expiresAt: Date.now() + 10 * 60 * 1000 // 10 min
     };
-      storeOTP(email, otp);
-    try { await sendOTP(email, otp); } catch (e) {}
+
+    storeOTP(email, otp);
+
+    try {
+      await sendOTP(email, otp);
+      console.log('Signup OTP sent successfully to:', email);
+    } catch (e) {
+      console.error('Failed to send signup OTP to:', email, e);
+      // Continue anyway - OTP is stored and can be resent
+    }
+
     return res.status(200).json({
       statusCode: 200,
       message: 'OTP sent to your email. Please verify to complete signup.',
@@ -67,6 +87,8 @@ router.post('/signup', async (req, res) => {
 router.post('/verify-otp', async (req, res) => {
   try {
     const { email, otp } = req.body;
+    console.log('OTP verification attempt for:', email, 'with OTP:', otp);
+
     if (!email || !otp) {
       return res.status(400).json({
         statusCode: 400,
@@ -74,7 +96,10 @@ router.post('/verify-otp', async (req, res) => {
         data: null
       });
     }
+
     const isValid = verifyOTP(email, otp);
+    console.log('OTP verification result for', email, ':', isValid);
+
     if (!isValid) {
       return res.status(400).json({
         statusCode: 400,
@@ -151,7 +176,10 @@ router.post('/verify-otp', async (req, res) => {
           id: user._id,
           name: user.name,
           email: user.email,
-          isAdmin: user.isAdmin
+          isAdmin: user.isAdmin,
+          userType: user.userType,
+          isOrganization: user.isOrganization,
+          organizationRole: user.organizationRole
         }
       }
     });
@@ -188,7 +216,12 @@ router.post('/login', async (req, res) => {
       // Resend OTP for unverified user
       const otp = generateOTP();
       storeOTP(email, otp);
-      try { await sendOTP(email, otp); } catch (e) {}
+      try {
+        await sendOTP(email, otp);
+        console.log('Login OTP sent to unverified user:', email);
+      } catch (e) {
+        console.error('Failed to send login OTP:', email, e);
+      }
       return res.status(200).json({
         statusCode: 200,
         message: 'OTP sent to your email. Please verify to login.',
@@ -209,7 +242,10 @@ router.post('/login', async (req, res) => {
           id: user._id,
           email: user.email,
           name: user.name,
-          isAdmin: user.isAdmin
+          isAdmin: user.isAdmin,
+          userType: user.userType,
+          isOrganization: user.isOrganization,
+          organizationRole: user.organizationRole
         }
       }
     });
@@ -235,25 +271,60 @@ router.post('/resend-otp', async (req, res) => {
       });
     }
 
-    // Check if user exists
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({
-        statusCode: 404,
-        message: 'User not found',
+    // Check if user is in pending signups (for signup flow)
+    if (pendingSignups[email]) {
+      console.log('Resending OTP for pending signup:', email);
+      const otp = generateOTP();
+
+      // Update pending signup with new OTP
+      pendingSignups[email].otp = otp;
+      pendingSignups[email].expiresAt = Date.now() + 10 * 60 * 1000; // 10 min
+
+      storeOTP(email, otp);
+      try {
+        await sendOTP(email, otp);
+        console.log('OTP resent successfully for pending signup:', email);
+      } catch (e) {
+        console.error('Failed to send OTP email:', e);
+      }
+
+      return res.status(200).json({
+        statusCode: 200,
+        message: 'OTP resent successfully',
         data: null
       });
     }
 
-    // Generate and send new OTP
+    // Check if user exists in database (for existing unverified users)
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'User not found. Please signup first.',
+        data: null
+      });
+    }
+
+    // Only resend if user is not verified
+    if (user.isEmailVerified) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Email is already verified',
+        data: null
+      });
+    }
+
+    // Generate and send new OTP for existing unverified user
+    console.log('Resending OTP for existing unverified user:', email);
     await resendOTP(email);
-    
+
     res.status(200).json({
       statusCode: 200,
       message: 'OTP resent successfully',
       data: null
     });
   } catch (error) {
+    console.error('Error in resend OTP:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Failed to resend OTP',

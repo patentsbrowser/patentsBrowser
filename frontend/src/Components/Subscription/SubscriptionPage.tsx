@@ -636,10 +636,10 @@ const SubscriptionPage: React.FC = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const accountType = user?.isOrganization ? 'organization' : 'individual';
-        console.log('Fetching plans for account type:', accountType);
+        // Use getUserPlans which handles user type automatically
+        console.log('Fetching user-specific plans for user type:', user?.userType);
         const [plansData, subscriptionData] = await Promise.all([
-          subscriptionService.getPlans(accountType),
+          subscriptionService.getUserPlans(),
           subscriptionService.getUserSubscription()
         ]);
         console.log('Plans API Response:', plansData);
@@ -665,7 +665,7 @@ const SubscriptionPage: React.FC = () => {
   }, [user?.isOrganization]);
 
   const handleSubscribeClick = (plan: Plan) => {
-    if (userSubscription?.isOrganization && userSubscription.organizationRole === 'member') {
+    if (user?.userType === 'organization_member') {
       toast.info('Organization members cannot purchase plans. Please contact your organization admin.');
       return;
     }
@@ -679,7 +679,7 @@ const SubscriptionPage: React.FC = () => {
     const currentPlan = userSubscription.subscription.plan;
     const isUpgrade = plan.price > currentPlan.price;
 
-    if (userSubscription.isOrganization && userSubscription.organizationRole === 'member') {
+    if (user?.userType === 'organization_member') {
       toast.info('Organization members cannot change plans. Please contact your organization admin.');
       return;
     }

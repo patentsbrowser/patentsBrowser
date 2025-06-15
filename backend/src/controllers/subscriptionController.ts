@@ -89,16 +89,20 @@ export const getUserPricingPlans = async (req: Request, res: Response) => {
       });
     }
 
-    // Determine account type
-    const accountType = user.isOrganization ? AccountType.ORGANIZATION : AccountType.INDIVIDUAL;
-    
-    // Check if user is organization member (not admin) - they shouldn't see plans
-    if (user.isOrganization && user.organizationRole === 'member') {
+    // Organization members cannot view or purchase plans
+    if (user.userType === 'organization_member') {
       return res.status(200).json({
         success: true,
         data: [],
-        message: 'Organization members cannot purchase plans directly'
+        message: 'Organization members cannot purchase individual plans',
+        userType: user.userType
       });
+    }
+
+    // Determine account type based on user's userType
+    let accountType = AccountType.INDIVIDUAL;
+    if (user.userType === 'organization_admin') {
+      accountType = AccountType.ORGANIZATION;
     }
 
     // Get plans for the user's account type
@@ -109,7 +113,9 @@ export const getUserPricingPlans = async (req: Request, res: Response) => {
     
     return res.status(200).json({
       success: true,
-      data: plans
+      data: plans,
+      accountType,
+      userType: user.userType
     });
   } catch (error) {
     return res.status(500).json({
