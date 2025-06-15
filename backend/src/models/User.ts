@@ -33,6 +33,8 @@ interface IUser extends mongoose.Document {
   subscriptionEndDate: Date;
   trialStartDate: Date;
   isPendingPayment: boolean;
+  // User type field
+  userType: 'individual' | 'organization_admin' | 'organization_member' | 'platform_admin';
   // Organization fields
   isOrganization: boolean;
   organizationName?: string;
@@ -65,6 +67,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['user', 'admin'],
     default: 'user'
+  },
+  userType: {
+    type: String,
+    enum: ['individual', 'organization_admin', 'organization_member', 'platform_admin'],
+    default: 'individual'
   },
   isEmailVerified: {
     type: Boolean,

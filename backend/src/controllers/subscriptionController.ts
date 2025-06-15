@@ -7,7 +7,8 @@ import Payment from '../models/Payment.js';
 // Simple in-memory cache to minimize database queries
 let plansCache = {
   data: null as any[] | null,
-  timestamp: 0
+  timestamp: 0,
+  planType: 'all' as string
 };
 
 // Cache expiration time in milliseconds (5 minutes)
@@ -15,27 +16,40 @@ const CACHE_EXPIRY = 5 * 60 * 1000;
 
 // Get all pricing plans
 export const getPricingPlans = async (req: Request, res: Response) => {
-  
+
   try {
     const now = Date.now();
+    const { planType } = req.query; // 'individual' or 'organization'
 
-    // Check if we have a valid cache
-    if (plansCache.data && (now - plansCache.timestamp) < CACHE_EXPIRY) {
+    // Create cache key based on plan type
+    const cacheKey = planType || 'all';
+
+    // Check if we have a valid cache for this plan type
+    if (plansCache.data && (now - plansCache.timestamp) < CACHE_EXPIRY && plansCache.planType === cacheKey) {
       return res.status(200).json({
         success: true,
         data: plansCache.data
       });
     }
 
+    // Build query based on plan type
+    let query = {};
+    if (planType === 'individual') {
+      query = { planCategory: 'individual' };
+    } else if (planType === 'organization') {
+      query = { planCategory: 'organization' };
+    }
+
     // If no valid cache, fetch from database
-    const plans = await PricingPlan.find({}).sort({ price: 1 });
-    
+    const plans = await PricingPlan.find(query).sort({ price: 1 });
+
     // Update cache
     plansCache = {
       data: plans,
-      timestamp: now
+      timestamp: now,
+      planType: cacheKey
     };
-    
+
     return res.status(200).json({
       success: true,
       data: plans
@@ -44,6 +58,58 @@ export const getPricingPlans = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: 'Error fetching pricing plans'
+    });
+  }
+};
+
+// Get pricing plans based on user type
+export const getUserSpecificPlans = async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - User ID is added by auth middleware
+    const userId = req.user._id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+
+    // Get user to determine their type
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    let planCategory = 'individual';
+
+    // Determine plan category based on user type
+    if (user.userType === 'organization_admin') {
+      planCategory = 'organization';
+    } else if (user.userType === 'organization_member') {
+      // Organization members should not see any plans
+      return res.status(200).json({
+        success: true,
+        data: [],
+        message: 'Organization members cannot purchase individual plans'
+      });
+    }
+
+    // Fetch plans based on user type
+    const plans = await PricingPlan.find({ planCategory }).sort({ price: 1 });
+
+    return res.status(200).json({
+      success: true,
+      data: plans,
+      userType: user.userType
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching user-specific pricing plans'
     });
   }
 };
@@ -1207,6 +1273,7 @@ export const getTotalSubscriptionBenefits = async (req: Request, res: Response) 
 // Export all controller methods
 export default {
   getPricingPlans,
+  getUserSpecificPlans,
   createPendingSubscription,
   verifyUpiPayment,
   getUserSubscription,
@@ -1221,4 +1288,4 @@ export default {
   stackNewPlan,
   getStackedPlans,
   getTotalSubscriptionBenefits
-}; 
+};

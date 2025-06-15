@@ -9,6 +9,9 @@ export interface IPricingPlan extends Document {
   features: string[];
   razorpayPlanId?: string;
   popular: boolean;
+  planCategory: 'individual' | 'organization';
+  organizationBasePrice?: number;
+  memberPrice?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +45,18 @@ const pricingPlanSchema = new Schema<IPricingPlan>(
     popular: {
       type: Boolean,
       default: false
+    },
+    planCategory: {
+      type: String,
+      enum: ['individual', 'organization'],
+      default: 'individual'
+    },
+    organizationBasePrice: {
+      type: Number
+    },
+    memberPrice: {
+      type: Number,
+      default: 1000 // ₹1000 per member per month
     }
   },
   { timestamps: true }

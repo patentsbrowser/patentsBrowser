@@ -10,6 +10,9 @@ const router = express.Router();
 // Get pricing plans (public)
 router.get('/plans', subscriptionController.getPricingPlans);
 
+// Get pricing plans based on user type (requires auth)
+router.get('/plans/user-specific', auth, subscriptionController.getUserSpecificPlans);
+
 // Create pending subscription (requires auth)
 router.post('/create-pending', auth, subscriptionController.createPendingSubscription);
 

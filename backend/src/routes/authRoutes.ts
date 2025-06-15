@@ -87,8 +87,16 @@ router.post('/verify-otp', async (req, res) => {
       const { signupData } = pendingSignups[email];
       const trialEndDate = new Date();
       trialEndDate.setDate(trialEndDate.getDate() + 14);
+
+      // Determine userType based on registration type
+      let userType = 'individual';
+      if (signupData.isOrganization) {
+        userType = 'organization_admin'; // Organization registrants become organization admins
+      }
+
       let userData = {
         ...signupData,
+        userType: userType,
         subscriptionStatus: 'trial',
         trialEndDate,
         trialStartDate: new Date(),
@@ -151,7 +159,10 @@ router.post('/verify-otp', async (req, res) => {
           id: user._id,
           name: user.name,
           email: user.email,
-          isAdmin: user.isAdmin
+          isAdmin: user.isAdmin,
+          userType: user.userType,
+          isOrganization: user.isOrganization,
+          organizationRole: user.organizationRole
         }
       }
     });
@@ -209,7 +220,10 @@ router.post('/login', async (req, res) => {
           id: user._id,
           email: user.email,
           name: user.name,
-          isAdmin: user.isAdmin
+          isAdmin: user.isAdmin,
+          userType: user.userType,
+          isOrganization: user.isOrganization,
+          organizationRole: user.organizationRole
         }
       }
     });
