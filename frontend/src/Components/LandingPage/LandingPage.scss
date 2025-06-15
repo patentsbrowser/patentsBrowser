@@ -314,6 +314,19 @@ html, body {
       margin-left: auto;
       margin-right: auto;
       border: 1px solid var(--sub-border);
+      position: relative;
+      overflow: hidden;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(124, 77, 255, 0.05) 0%, rgba(124, 77, 255, 0.02) 100%);
+        pointer-events: none;
+      }
 
       .toggle-btn {
         flex: 1;
@@ -324,18 +337,50 @@ html, body {
         font-weight: 500;
         border-radius: 8px;
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         font-size: 1rem;
+        position: relative;
+        z-index: 1;
+        white-space: nowrap;
 
         &:hover {
           color: var(--sub-accent);
-          background: rgba(124, 77, 255, 0.05);
+          background: rgba(124, 77, 255, 0.08);
+          transform: translateY(-1px);
         }
 
         &.active {
           background: var(--gradient-primary);
           color: var(--sub-text-on-accent);
-          box-shadow: 0 2px 4px rgba(124, 77, 255, 0.2);
+          box-shadow: 0 4px 12px rgba(124, 77, 255, 0.3);
+          transform: translateY(-2px);
+          font-weight: 600;
+        }
+
+        &:active {
+          transform: translateY(0);
+        }
+      }
+
+      // Responsive design for mobile
+      @media (max-width: 768px) {
+        max-width: 100%;
+        margin: 0 1rem 3rem 1rem;
+
+        .toggle-btn {
+          padding: 10px 16px;
+          font-size: 0.9rem;
+        }
+      }
+
+      @media (max-width: 480px) {
+        flex-direction: column;
+        gap: 4px;
+        padding: 6px;
+
+        .toggle-btn {
+          padding: 12px;
+          border-radius: 6px;
         }
       }
     }
@@ -442,16 +487,59 @@ html, body {
           }
         }
 
-        .member-price {
+        .member-info {
           text-align: center;
           margin-bottom: 2rem;
           color: var(--sub-text-secondary);
           font-size: 1rem;
-          font-style: italic;
-          padding: 0.5rem;
-          background: rgba(124, 77, 255, 0.05);
-          border-radius: 8px;
-          border: 1px solid rgba(124, 77, 255, 0.1);
+          padding: 1rem;
+          background: linear-gradient(135deg, rgba(124, 77, 255, 0.08) 0%, rgba(124, 77, 255, 0.04) 100%);
+          border-radius: 12px;
+          border: 1px solid rgba(124, 77, 255, 0.15);
+          position: relative;
+          overflow: hidden;
+
+          &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--gradient-primary);
+            opacity: 0.6;
+          }
+
+          .additional-price {
+            display: block;
+            font-size: 0.9rem;
+            font-style: italic;
+            margin-top: 0.5rem;
+            color: var(--sub-accent);
+            font-weight: 500;
+            padding: 0.25rem 0.5rem;
+            background: rgba(124, 77, 255, 0.1);
+            border-radius: 6px;
+            display: inline-block;
+          }
+
+          // Enhanced styling for organization plans
+          .member-count {
+            font-weight: 600;
+            color: var(--sub-accent);
+            margin-bottom: 0.25rem;
+          }
+
+          // Responsive design
+          @media (max-width: 768px) {
+            padding: 0.75rem;
+            font-size: 0.9rem;
+
+            .additional-price {
+              font-size: 0.8rem;
+              margin-top: 0.25rem;
+            }
+          }
         }
 
         .popular-badge {

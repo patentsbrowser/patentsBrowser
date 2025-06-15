@@ -39,7 +39,7 @@ const OrganizationDashboard = () => {
     try {
       setIsLoading(true);
       // Fetch organization members
-      const membersResponse = await fetch('/api/organization/members', {
+      const membersResponse = await fetch('http://localhost:5000/api/organization/members', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -50,7 +50,7 @@ const OrganizationDashboard = () => {
       }
 
       // Fetch organization subscription
-      const subscriptionResponse = await fetch('/api/organization/subscription', {
+      const subscriptionResponse = await fetch('http://localhost:5000/api/organization/subscription', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

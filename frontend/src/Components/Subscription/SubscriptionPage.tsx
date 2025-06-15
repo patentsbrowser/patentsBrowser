@@ -636,24 +636,35 @@ const SubscriptionPage: React.FC = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Use getUserPlans which handles user type automatically
         console.log('Fetching user-specific plans for user type:', user?.userType);
+
+        // Check if user is organization member - they shouldn't see plans
+        if (user?.userType === 'organization_member') {
+          setPlans([]);
+          setError('Organization members cannot view or purchase plans. Please contact your organization admin.');
+          setLoading(false);
+          return;
+        }
+
         const [plansData, subscriptionData] = await Promise.all([
           subscriptionService.getUserPlans(),
           subscriptionService.getUserSubscription()
         ]);
+
         console.log('Plans API Response:', plansData);
         console.log('User Subscription API Response:', subscriptionData);
+
         setPlans(plansData);
         setUserSubscription(subscriptionData);
 
-        if (subscriptionData.subscription.status === 'trial') {
+        if (subscriptionData.subscription?.status === 'trial') {
           const daysRemaining = subscriptionData.subscription.trialDaysRemaining || 0;
           if (daysRemaining <= 3) {
             toast.warning(`Your trial period ends in ${daysRemaining} days. Consider upgrading to continue using premium features.`);
           }
         }
       } catch (err) {
+        console.error('Error fetching subscription data:', err);
         setError('Failed to load subscription data');
         toast.error('Failed to load subscription data');
       } finally {
@@ -662,7 +673,7 @@ const SubscriptionPage: React.FC = () => {
     };
 
     fetchData();
-  }, [user?.isOrganization]);
+  }, [user?.userType]);
 
   const handleSubscribeClick = (plan: Plan) => {
     if (user?.userType === 'organization_member') {
@@ -823,8 +834,24 @@ const SubscriptionPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-red-500">{error}</div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+            <div className="text-yellow-600 mb-4">
+              <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 19.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-yellow-800 mb-2">Access Restricted</h3>
+            <p className="text-yellow-700 mb-4">{error}</p>
+            {user?.userType === 'organization_member' && (
+              <div className="text-sm text-yellow-600">
+                <p>As an organization member, your subscription is managed by your organization admin.</p>
+                <p className="mt-2">Contact your admin for any subscription-related queries.</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     );
   }

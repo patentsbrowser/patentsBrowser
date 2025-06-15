@@ -38,7 +38,7 @@
     text-align: center;
     margin-bottom: 4rem;
     position: relative;
-    
+
     h1 {
       font-size: 3rem;
       font-weight: 700;
@@ -48,7 +48,7 @@
       -webkit-text-fill-color: transparent;
       position: relative;
       display: inline-block;
-      
+
       &::after {
         content: '';
         position: absolute;
@@ -61,12 +61,105 @@
         border-radius: 2px;
       }
     }
-    
+
     p {
       color: var(--text-secondary);
       font-size: 1.2rem;
       max-width: 600px;
       margin: 0 auto;
+    }
+  }
+
+  // Organization Member Access Restriction Styling
+  .access-restriction-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+
+    .restriction-card {
+      background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+      border: 2px solid #f39c12;
+      border-radius: 20px;
+      padding: 3rem 2rem;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(243, 156, 18, 0.2);
+      position: relative;
+      overflow: hidden;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #f39c12, #e67e22);
+      }
+
+      .warning-icon {
+        color: #f39c12;
+        margin-bottom: 1.5rem;
+        filter: drop-shadow(0 2px 4px rgba(243, 156, 18, 0.3));
+      }
+
+      h3 {
+        color: #d68910;
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+
+      p {
+        color: #b7950b;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+        font-weight: 500;
+      }
+
+      .member-info {
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-top: 2rem;
+        border: 1px solid rgba(243, 156, 18, 0.3);
+
+        p {
+          color: #8e6a00;
+          margin-bottom: 0.5rem;
+          font-size: 1rem;
+
+          &:last-child {
+            margin-bottom: 0;
+            font-weight: 600;
+          }
+        }
+      }
+    }
+
+    [data-theme="dark"] & {
+      .restriction-card {
+        background: linear-gradient(135deg, #2c1810 0%, #3d2817 100%);
+        border-color: #f39c12;
+
+        h3 {
+          color: #f39c12;
+        }
+
+        p {
+          color: #e67e22;
+        }
+
+        .member-info {
+          background: rgba(0, 0, 0, 0.3);
+          border-color: rgba(243, 156, 18, 0.5);
+
+          p {
+            color: #f39c12;
+          }
+        }
+      }
     }
   }
 

@@ -360,11 +360,17 @@ export const verifyPlanChangePayment = async (
 class SubscriptionService {
   async getPlans(accountType?: 'individual' | 'organization'): Promise<Plan[]> {
     const params = accountType ? { accountType } : {};
-    const response = await axios.get(`${API_URL}/subscriptions/plans`, {
-      headers: await this.getAuthHeader(),
-      params
-    });
-    return response.data.data; // Extract data from response
+    try {
+      // For landing page, we don't need authentication
+      const response = await axios.get(`${API_URL}/subscriptions/plans`, {
+        params
+      });
+      console.log('Plans API response:', response.data);
+      return response.data.data || response.data; // Handle different response formats
+    } catch (error) {
+      console.error('Error fetching plans:', error);
+      throw error;
+    }
   }
 
   async getUserPlans(): Promise<Plan[]> {

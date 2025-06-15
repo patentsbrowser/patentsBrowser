@@ -30,8 +30,10 @@ const LandingPage = () => {
       setLoadingPlans(true);
       setPlansError(null);
       try {
+        console.log('Fetching plans for type:', planType);
         // Fetch plans with accountType query parameter
         const plans = await subscriptionService.getPlans(planType);
+        console.log('Received plans:', plans);
         setPlans(plans);
       } catch (error) {
         console.error('Error fetching plans:', error);
@@ -157,9 +159,14 @@ const LandingPage = () => {
                 <span className="amount">{plan.price.toLocaleString('en-IN')}</span>
                 <span className="period">/{getPlanTypeDisplay(plan.type)}</span>
               </div>
-              {planType === 'organization' && plan.additionalMemberPrice && (
-                <div className="member-price">
-                  + ₹{plan.additionalMemberPrice.toLocaleString('en-IN')} per additional member/month
+              {planType === 'organization' && plan.maxMembers && (
+                <div className="member-info">
+                  {plan.maxMembers === -1 ? 'Unlimited members' : `Up to ${plan.maxMembers} members`}
+                  {plan.additionalMemberPrice && plan.maxMembers !== -1 && (
+                    <span className="additional-price">
+                      + ₹{plan.additionalMemberPrice.toLocaleString('en-IN')} per additional member
+                    </span>
+                  )}
                 </div>
               )}
               {plan.discountPercentage > 0 && (

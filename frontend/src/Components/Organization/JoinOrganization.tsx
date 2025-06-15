@@ -30,7 +30,7 @@ const JoinOrganization: React.FC = () => {
       }
 
       try {
-        const response = await fetch(`/api/organization/validate-invite/${token}`, {
+        const response = await fetch(`http://localhost:5000/api/organization/validate-invite/${token}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -58,7 +58,7 @@ const JoinOrganization: React.FC = () => {
 
     try {
       setIsJoining(true);
-      const response = await fetch(`/api/organization/join/${token}`, {
+      const response = await fetch(`http://localhost:5000/api/organization/join/${token}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -67,7 +67,7 @@ const JoinOrganization: React.FC = () => {
       const data = await response.json();
 
       if (data.success) {
-        // Update user context with organization details
+        // Update user context with organization details and userType
         const updatedUser = {
           ...user,
           isOrganization: true,
@@ -75,7 +75,8 @@ const JoinOrganization: React.FC = () => {
           organizationSize: data.data.size,
           organizationType: data.data.type,
           organizationId: data.data._id,
-          organizationRole: 'member'
+          organizationRole: 'member',
+          userType: 'organization_member' // Set userType to organization_member
         };
         setUser(updatedUser);
         localStorage.setItem('user', JSON.stringify(updatedUser));
