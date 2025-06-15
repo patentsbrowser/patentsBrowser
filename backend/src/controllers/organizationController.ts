@@ -76,7 +76,7 @@ export const generateInviteLink = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if user is organization admin or member
+    // Check if user is organization admin
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({
@@ -85,36 +85,41 @@ export const generateInviteLink = async (req: Request, res: Response) => {
       });
     }
 
-    let organization;
+    // Only organization admin can generate invite links
+    if (user.userType !== 'organization_admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only organization administrators can generate invite links'
+      });
+    }
 
-    // If user is organization admin, find by adminId
-    if (user.userType === 'organization_admin' || user.organizationRole === 'admin') {
-      organization = await Organization.findOne({ adminId: userId });
-    }
-    // If user is organization member, find by organizationId
-    else if (user.organizationId) {
-      organization = await Organization.findById(user.organizationId);
-      // Check if user has permission to generate invite links (only admins)
-      if (organization && !organization.members.some(member =>
-        member.userId.toString() === userId && member.role === 'admin'
-      )) {
-        return res.status(403).json({
-          success: false,
-          message: 'Only organization admins can generate invite links'
-        });
-      }
-    }
+    // Debug: Log user data
+    console.log('User data:', {
+      userId,
+      userType: user.userType,
+      organizationId: user.organizationId,
+      isOrganization: user.isOrganization
+    });
+
+    // Find organization by adminId
+    const organization = await Organization.findOne({ adminId: userId });
+    console.log('Organization found:', organization ? 'Yes' : 'No');
 
     if (!organization) {
       return res.status(404).json({
         success: false,
-        message: 'Organization not found or you are not authorized'
+        message: 'Organization not found. Please create an organization first.',
+        debug: {
+          userId,
+          userType: user.userType,
+          organizationId: user.organizationId
+        }
       });
     }
 
-    // Generate unique token
+    // Generate unique token (single use)
     const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days expiry but single use
 
     // Add invite link
     organization.inviteLinks.push({
@@ -203,6 +208,8 @@ export const joinOrganization = async (req: Request, res: Response) => {
       organizationRole: 'member',
       userType: 'organization_member'
     });
+
+    console.log(`User ${userId} successfully joined organization ${organization._id} as member`);
 
     res.status(200).json({
       success: true,
@@ -358,6 +365,109 @@ export const updateOrganizationSubscription = async (req: Request, res: Response
   }
 };
 
+// Get invited members (pending invitations)
+export const getInvitedMembers = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Only organization admin can view invited members
+    if (user.userType !== 'organization_admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only organization administrators can view invited members'
+      });
+    }
+
+    // Find organization by adminId
+    const organization = await Organization.findOne({ adminId: userId });
+
+    if (!organization) {
+      return res.status(404).json({
+        success: false,
+        message: 'Organization not found'
+      });
+    }
+
+    // Get active invite links (not used and not expired)
+    const activeInvites = organization.inviteLinks.filter(invite =>
+      !invite.used && invite.expiresAt > new Date()
+    );
+
+    const invitedMembers = activeInvites.map(invite => ({
+      token: invite.token,
+      createdAt: invite.createdAt,
+      expiresAt: invite.expiresAt,
+      inviteLink: `${process.env.FRONTEND_URL || 'http://localhost:5174'}/join-organization/${invite.token}`,
+      status: 'pending'
+    }));
+
+    res.status(200).json({
+      success: true,
+      message: 'Invited members retrieved successfully',
+      data: invitedMembers
+    });
+  } catch (error) {
+    console.error('Error getting invited members:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get invited members'
+    });
+  }
+};
+
+// Validate invite link
+export const validateInviteLink = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invite token is required'
+      });
+    }
+
+    // Find organization with the invite token
+    const organization = await Organization.findOne({
+      'inviteLinks.token': token,
+      'inviteLinks.used': false,
+      'inviteLinks.expiresAt': { $gt: new Date() }
+    }).populate('adminId', 'name');
+
+    if (!organization) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invalid or expired invite link'
+      });
+    }
+
+    // Return organization details for display
+    res.status(200).json({
+      success: true,
+      data: {
+        name: organization.name,
+        size: organization.size,
+        type: organization.type,
+        adminName: organization.adminId.name
+      }
+    });
+  } catch (error) {
+    console.error('Error validating invite link:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to validate invite link'
+    });
+  }
+};
+
 export const getOrganizationMembers = async (req, res) => {
   try {
     const userId = req.user?.userId;
@@ -370,23 +480,22 @@ export const getOrganizationMembers = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    let organization;
+    // Only organization admin can view members
+    if (user.userType !== 'organization_admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only organization administrators can view members'
+      });
+    }
 
-    // If user is organization admin, find by adminId
-    if (user.userType === 'organization_admin' || user.organizationRole === 'admin') {
-      organization = await Organization.findOne({ adminId: userId })
-        .populate('members.userId', 'name email');
-    }
-    // If user is organization member, find by organizationId
-    else if (user.organizationId) {
-      organization = await Organization.findById(user.organizationId)
-        .populate('members.userId', 'name email');
-    }
+    // Find organization by adminId
+    const organization = await Organization.findOne({ adminId: userId })
+      .populate('members.userId', 'name email');
 
     if (!organization) {
       return res.status(404).json({
         success: false,
-        message: 'Organization not found or you are not part of any organization'
+        message: 'Organization not found'
       });
     }
 
@@ -401,4 +510,4 @@ export const getOrganizationMembers = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to load organization members' });
   }
-}; 
+};

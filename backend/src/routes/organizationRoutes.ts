@@ -8,6 +8,8 @@ import {
   removeMember,
   updateOrganizationSubscription,
   getOrganizationMembers,
+  getInvitedMembers,
+  validateInviteLink,
 } from "../controllers/organizationController.js";
 
 const router = express.Router();
@@ -17,6 +19,9 @@ router.post("/create", auth, createOrganization);
 
 // Generate invite link
 router.post("/invite", auth, generateInviteLink);
+
+// Validate invite link (public route for checking link validity)
+router.get("/validate-invite/:token", validateInviteLink);
 
 // Join organization using invite link
 router.post("/join/:token", auth, joinOrganization);
@@ -32,5 +37,8 @@ router.put("/subscription", auth, updateOrganizationSubscription);
 
 // Get organization members
 router.get("/members", auth, getOrganizationMembers);
+
+// Get invited members (pending invitations)
+router.get("/invited-members", auth, getInvitedMembers);
 
 export default router;

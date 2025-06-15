@@ -121,6 +121,43 @@ router.post('/verify-otp', async (req, res) => {
       };
       const user = new User(userData);
       await user.save();
+
+      // If user is organization admin, create organization automatically
+      if (signupData.userType === 'organization_admin' && signupData.isOrganization) {
+        const { Organization } = await import('../models/Organization.js');
+
+        const organization = new Organization({
+          name: signupData.organizationName,
+          size: signupData.organizationSize,
+          type: signupData.organizationType,
+          adminId: user._id,
+          members: [{
+            userId: user._id,
+            role: 'admin',
+            joinedAt: new Date()
+          }],
+          subscription: {
+            plan: 'trial',
+            startDate: new Date(),
+            endDate: trialEndDate,
+            status: 'trial',
+            basePrice: 4000,
+            memberPrice: 1000
+          }
+        });
+
+        await organization.save();
+
+        // Update user with organization details
+        user.isOrganization = true;
+        user.organizationName = signupData.organizationName;
+        user.organizationSize = signupData.organizationSize;
+        user.organizationType = signupData.organizationType;
+        user.organizationId = organization._id;
+        user.organizationRole = 'admin';
+        await user.save();
+      }
+
       delete pendingSignups[email];
       // Generate JWT token
       const token = jwt.sign(

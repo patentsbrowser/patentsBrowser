@@ -5,18 +5,24 @@ import { motion } from 'framer-motion';
 import {
   FaUserPlus,
   FaCopy,
-  FaEnvelope,
-  FaWhatsapp,
-  FaTelegram,
-  FaInstagram,
-  FaFacebook,
-  FaTwitter,
-  FaLinkedin,
   FaShare,
-  FaLink,
   FaQrcode,
   FaTimes
 } from 'react-icons/fa';
+import {
+  EmailShareButton,
+  FacebookShareButton,
+  LinkedinShareButton,
+  TelegramShareButton,
+  TwitterShareButton,
+  WhatsappShareButton,
+  EmailIcon,
+  FacebookIcon,
+  LinkedinIcon,
+  TelegramIcon,
+  TwitterIcon,
+  WhatsappIcon
+} from 'react-share';
 import './OrganizationDashboard.scss';
 
 interface OrganizationMember {
@@ -25,37 +31,57 @@ interface OrganizationMember {
   email: string;
   role: string;
   joinedAt: string;
+  status?: 'active' | 'pending' | 'inactive';
+  userType?: string;
+}
+
+interface InvitedMember {
+  token: string;
+  createdAt: string;
+  expiresAt: string;
+  inviteLink: string;
+  status: 'pending';
 }
 
 const Invitation: React.FC = () => {
   const { user } = useAuth();
   const [members, setMembers] = useState<OrganizationMember[]>([]);
+  const [invitedMembers, setInvitedMembers] = useState<InvitedMember[]>([]);
   const [inviteLink, setInviteLink] = useState('');
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingInvited, setIsLoadingInvited] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
+  const [showCreateOrganization, setShowCreateOrganization] = useState(false);
+  const [organizationData, setOrganizationData] = useState({
+    name: '',
+    size: '1-10',
+    type: 'startup'
+  });
 
-  // Check if user has permission to access this page
-  const hasOrganizationAccess = user?.isOrganization ||
-                                user?.userType === 'organization_admin' ||
-                                user?.organizationId ||
-                                user?.organizationRole;
+  // Check if user has permission to access this page - Only organization admin
+  const isOrganizationAdmin = user?.userType === 'organization_admin';
 
-  if (!hasOrganizationAccess) {
+  // All hooks must be called before any early returns
+  useEffect(() => {
+    if (isOrganizationAdmin) {
+      fetchOrganizationMembers();
+      fetchInvitedMembers();
+    }
+  }, [isOrganizationAdmin]);
+
+  // Early return after all hooks
+  if (!isOrganizationAdmin) {
     return (
       <div className="organization-dashboard">
         <div className="dashboard-header">
           <h1>Access Denied</h1>
-          <p>You need to be part of an organization to access this page.</p>
+          <p>Only organization administrators can access invitation management.</p>
         </div>
       </div>
     );
   }
-
-  useEffect(() => {
-    fetchOrganizationMembers();
-  }, []);
 
   const fetchOrganizationMembers = async () => {
     try {
@@ -66,16 +92,70 @@ const Invitation: React.FC = () => {
         }
       });
       const membersData = await membersResponse.json();
-      if (membersData.success) {
-        setMembers(membersData.data);
+      if (membersData.success && Array.isArray(membersData.data)) {
+        // Filter out any invalid member data
+        const validMembers = membersData.data.filter(member =>
+          member && member._id && member.name && member.email
+        );
+        setMembers(validMembers);
       } else {
         setMembers([]);
+        if (!membersData.success) {
+          console.log('Members API response:', membersData.message);
+        }
       }
     } catch (error) {
+      console.error('Error fetching members:', error);
       setMembers([]);
       toast.error('Failed to load organization members');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchInvitedMembers = async () => {
+    try {
+      setIsLoadingInvited(true);
+      const invitedResponse = await fetch('http://localhost:5000/api/organization/invited-members', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const invitedData = await invitedResponse.json();
+      if (invitedData.success) {
+        setInvitedMembers(invitedData.data);
+      } else {
+        setInvitedMembers([]);
+      }
+    } catch (error) {
+      setInvitedMembers([]);
+      console.error('Failed to load invited members:', error);
+    } finally {
+      setIsLoadingInvited(false);
+    }
+  };
+
+  const createOrganization = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/organization/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(organizationData)
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Organization created successfully');
+        setShowCreateOrganization(false);
+        // Refresh the page to update user context
+        window.location.reload();
+      } else {
+        toast.error(data.message || 'Failed to create organization');
+      }
+    } catch (error) {
+      toast.error('Failed to create organization');
     }
   };
 
@@ -93,6 +173,10 @@ const Invitation: React.FC = () => {
         setInviteLink(data.data.inviteLink);
         toast.success('Invite link generated successfully');
       } else {
+        // If organization not found, show create organization option
+        if (data.message.includes('Organization not found')) {
+          setShowCreateOrganization(true);
+        }
         toast.error(data.message || 'Failed to generate invite link');
       }
     } catch (error) {
@@ -109,54 +193,12 @@ const Invitation: React.FC = () => {
     }
   };
 
-  const shareViaEmail = () => {
-    const subject = encodeURIComponent('Join Our Organization');
-    const body = encodeURIComponent(`You're invited to join our organization! Click the link below to join:\n\n${inviteLink}`);
-    window.open(`mailto:?subject=${subject}&body=${body}`);
-  };
-
-  const shareViaWhatsApp = () => {
-    const text = encodeURIComponent(`Join our organization! ${inviteLink}`);
-    window.open(`https://wa.me/?text=${text}`, '_blank');
-  };
-
-  const shareViaTelegram = () => {
-    const text = encodeURIComponent(`Join our organization! ${inviteLink}`);
-    window.open(`https://t.me/share/url?url=${inviteLink}&text=${text}`, '_blank');
-  };
-
-  const shareViaInstagram = () => {
-    // Instagram doesn't support direct link sharing, so we copy to clipboard
-    navigator.clipboard.writeText(inviteLink);
-    toast.success('Link copied! You can now paste it in Instagram');
-  };
-
-  const shareViaFacebook = () => {
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(inviteLink)}`, '_blank');
-  };
-
-  const shareViaTwitter = () => {
-    const text = encodeURIComponent('Join our organization!');
-    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(inviteLink)}`, '_blank');
-  };
-
-  const shareViaLinkedIn = () => {
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(inviteLink)}`, '_blank');
-  };
-
   const generateQRCode = () => {
     setShowQRCode(true);
   };
 
-  const shareOptions = [
-    { name: 'Email', icon: FaEnvelope, action: shareViaEmail, color: '#EA4335' },
-    { name: 'WhatsApp', icon: FaWhatsapp, action: shareViaWhatsApp, color: '#25D366' },
-    { name: 'Telegram', icon: FaTelegram, action: shareViaTelegram, color: '#0088CC' },
-    { name: 'Facebook', icon: FaFacebook, action: shareViaFacebook, color: '#1877F2' },
-    { name: 'Twitter', icon: FaTwitter, action: shareViaTwitter, color: '#1DA1F2' },
-    { name: 'LinkedIn', icon: FaLinkedin, action: shareViaLinkedIn, color: '#0A66C2' },
-    { name: 'Instagram', icon: FaInstagram, action: shareViaInstagram, color: '#E4405F' },
-  ];
+  const shareTitle = "Join Our Organization";
+  const shareText = "You're invited to join our organization! Click the link to join:";
 
   return (
     <div className="organization-dashboard">
@@ -223,17 +265,38 @@ const Invitation: React.FC = () => {
               <div className="quick-share-options">
                 <span className="quick-share-label">Quick Share:</span>
                 <div className="quick-share-buttons">
-                  {shareOptions.slice(0, 4).map((option) => (
-                    <button
-                      key={option.name}
-                      className="quick-share-btn"
-                      onClick={option.action}
-                      title={`Share via ${option.name}`}
-                      style={{ backgroundColor: option.color }}
-                    >
-                      <option.icon />
-                    </button>
-                  ))}
+                  <EmailShareButton
+                    url={inviteLink}
+                    subject={shareTitle}
+                    body={shareText}
+                    className="quick-share-btn"
+                  >
+                    <EmailIcon size={45} round />
+                  </EmailShareButton>
+
+                  <WhatsappShareButton
+                    url={inviteLink}
+                    title={shareText}
+                    className="quick-share-btn"
+                  >
+                    <WhatsappIcon size={45} round />
+                  </WhatsappShareButton>
+
+                  <TelegramShareButton
+                    url={inviteLink}
+                    title={shareText}
+                    className="quick-share-btn"
+                  >
+                    <TelegramIcon size={45} round />
+                  </TelegramShareButton>
+
+                  <FacebookShareButton
+                    url={inviteLink}
+                    className="quick-share-btn"
+                  >
+                    <FacebookIcon size={45} round />
+                  </FacebookShareButton>
+
                   <button
                     className="more-options-btn"
                     onClick={() => setShowShareModal(true)}
@@ -249,28 +312,72 @@ const Invitation: React.FC = () => {
             {isLoading ? (
               <div className="loading">Loading organization members...</div>
             ) : members.length === 0 ? (
-              <div className="no-members">No member found</div>
+              <div className="no-members">
+                <div className="no-members-icon">👥</div>
+                <h3>No Members Yet</h3>
+                <p>Generate an invite link to add members to your organization</p>
+              </div>
             ) : (
-              members.map((member) => (
-                <motion.div
-                  key={member._id}
-                  className="member-card"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="member-info">
-                    <h3>{member.name}</h3>
-                    <p>{member.email}</p>
-                    <span className="role-badge">{member.role}</span>
-                  </div>
-                  <div className="member-actions">
-                    <span className="joined-date">
-                      Joined: {new Date(member.joinedAt).toLocaleDateString()}
+              <>
+                <div className="members-header">
+                  <h3>Members ({members.length})</h3>
+                  <div className="members-stats">
+                    <span className="stat">
+                      <strong>{members.filter(m => m.role === 'admin').length}</strong> Admin{members.filter(m => m.role === 'admin').length !== 1 ? 's' : ''}
+                    </span>
+                    <span className="stat">
+                      <strong>{members.filter(m => m.role === 'member').length}</strong> Member{members.filter(m => m.role === 'member').length !== 1 ? 's' : ''}
                     </span>
                   </div>
-                </motion.div>
-              ))
+                </div>
+                {members.map((member) => (
+                  <motion.div
+                    key={member._id}
+                    className="member-card"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="member-info">
+                      <div className="member-avatar">
+                        {member.name ? member.name.charAt(0).toUpperCase() : '?'}
+                      </div>
+                      <div className="member-details">
+                        <h3>{member.name || 'Unknown User'}</h3>
+                        <p>{member.email || 'No email'}</p>
+                        <div className="member-badges">
+                          <span className={`role-badge ${member.role || 'member'}`}>
+                            {member.role || 'member'}
+                          </span>
+                          <span className="status-badge active">Active</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="member-actions">
+                      <span className="joined-date">
+                        Joined: {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        }) : 'Unknown'}
+                      </span>
+                      {member.role !== 'admin' && (
+                        <button
+                          className="remove-btn"
+                          onClick={() => {
+                            if (window.confirm(`Remove ${member.name || 'this member'} from organization?`)) {
+                              // TODO: Implement remove member functionality
+                              toast.info('Remove member functionality coming soon');
+                            }
+                          }}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </>
             )}
           </div>
         </motion.div>
@@ -312,20 +419,78 @@ const Invitation: React.FC = () => {
               </div>
 
               <div className="share-options-grid">
-                {shareOptions.map((option) => (
-                  <button
-                    key={option.name}
+                <div className="share-option-item">
+                  <EmailShareButton
+                    url={inviteLink}
+                    subject={shareTitle}
+                    body={shareText}
                     className="share-option-btn"
-                    onClick={() => {
-                      option.action();
-                      setShowShareModal(false);
-                    }}
-                    style={{ borderColor: option.color }}
+                    onClick={() => setShowShareModal(false)}
                   >
-                    <option.icon style={{ color: option.color }} />
-                    <span>{option.name}</span>
-                  </button>
-                ))}
+                    <EmailIcon size={40} round />
+                    <span>Email</span>
+                  </EmailShareButton>
+                </div>
+
+                <div className="share-option-item">
+                  <WhatsappShareButton
+                    url={inviteLink}
+                    title={shareText}
+                    className="share-option-btn"
+                    onClick={() => setShowShareModal(false)}
+                  >
+                    <WhatsappIcon size={40} round />
+                    <span>WhatsApp</span>
+                  </WhatsappShareButton>
+                </div>
+
+                <div className="share-option-item">
+                  <TelegramShareButton
+                    url={inviteLink}
+                    title={shareText}
+                    className="share-option-btn"
+                    onClick={() => setShowShareModal(false)}
+                  >
+                    <TelegramIcon size={40} round />
+                    <span>Telegram</span>
+                  </TelegramShareButton>
+                </div>
+
+                <div className="share-option-item">
+                  <FacebookShareButton
+                    url={inviteLink}
+                    className="share-option-btn"
+                    onClick={() => setShowShareModal(false)}
+                  >
+                    <FacebookIcon size={40} round />
+                    <span>Facebook</span>
+                  </FacebookShareButton>
+                </div>
+
+                <div className="share-option-item">
+                  <TwitterShareButton
+                    url={inviteLink}
+                    title={shareText}
+                    className="share-option-btn"
+                    onClick={() => setShowShareModal(false)}
+                  >
+                    <TwitterIcon size={40} round />
+                    <span>Twitter</span>
+                  </TwitterShareButton>
+                </div>
+
+                <div className="share-option-item">
+                  <LinkedinShareButton
+                    url={inviteLink}
+                    title={shareTitle}
+                    summary={shareText}
+                    className="share-option-btn"
+                    onClick={() => setShowShareModal(false)}
+                  >
+                    <LinkedinIcon size={40} round />
+                    <span>LinkedIn</span>
+                  </LinkedinShareButton>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -371,6 +536,92 @@ const Invitation: React.FC = () => {
                   }}
                 >
                   Download QR Code
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Create Organization Modal */}
+      {showCreateOrganization && (
+        <div className="modal-overlay" onClick={() => setShowCreateOrganization(false)}>
+          <motion.div
+            className="create-org-modal"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h3>Create Organization</h3>
+              <button
+                className="close-btn"
+                onClick={() => setShowCreateOrganization(false)}
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <div className="modal-content">
+              <p className="create-org-description">
+                You need to create an organization first to generate invite links and manage members.
+              </p>
+
+              <div className="form-group">
+                <label>Organization Name</label>
+                <input
+                  type="text"
+                  value={organizationData.name}
+                  onChange={(e) => setOrganizationData({...organizationData, name: e.target.value})}
+                  placeholder="Enter organization name"
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Organization Size</label>
+                <select
+                  value={organizationData.size}
+                  onChange={(e) => setOrganizationData({...organizationData, size: e.target.value})}
+                  className="form-select"
+                >
+                  <option value="1-10">1-10 employees</option>
+                  <option value="11-50">11-50 employees</option>
+                  <option value="51-200">51-200 employees</option>
+                  <option value="201-500">201-500 employees</option>
+                  <option value="501+">501+ employees</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Organization Type</label>
+                <select
+                  value={organizationData.type}
+                  onChange={(e) => setOrganizationData({...organizationData, type: e.target.value})}
+                  className="form-select"
+                >
+                  <option value="startup">Startup</option>
+                  <option value="enterprise">Enterprise</option>
+                  <option value="government">Government</option>
+                  <option value="educational">Educational</option>
+                  <option value="research">Research</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  className="cancel-btn"
+                  onClick={() => setShowCreateOrganization(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="create-btn"
+                  onClick={createOrganization}
+                  disabled={!organizationData.name.trim()}
+                >
+                  Create Organization
                 </button>
               </div>
             </div>
