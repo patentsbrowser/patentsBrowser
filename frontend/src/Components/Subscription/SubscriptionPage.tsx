@@ -656,6 +656,8 @@ const SubscriptionPage: React.FC = () => {
 
         console.log('Plans API Response:', plansData);
         console.log('User Subscription API Response:', subscriptionData);
+        console.log('Plans length:', plansData?.length);
+        console.log('User subscription exists:', !!subscriptionData?.subscription);
 
         setPlans(plansData);
         setUserSubscription(subscriptionData);
@@ -877,61 +879,168 @@ const SubscriptionPage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {userSubscription?.subscription && (
-        <div className="mb-8 p-6 bg-white rounded-lg shadow-md">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold">Current Subscription</h2>
-            {getStatusBadge(userSubscription.subscription.status)}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-gray-600">Plan: {userSubscription.subscription.planName}</p>
-              <p className="text-gray-600">
-                {userSubscription.isOrganization ? 'Organization' : 'Individual'} Account
-              </p>
-              {userSubscription.isOrganization && (
-                <>
-                  <p className="text-gray-600">Organization: {userSubscription.organizationName}</p>
-                  <p className="text-gray-600">Role: {userSubscription.organizationRole}</p>
-                </>
-              )}
-            </div>
-            <div>
-              <p className="text-gray-600">
-                Start Date: {new Date(userSubscription.subscription.startDate).toLocaleDateString()}
-              </p>
-              <p className="text-gray-600">
-                End Date: {new Date(userSubscription.subscription.endDate).toLocaleDateString()}
-              </p>
-              {userSubscription.subscription.trialDaysRemaining !== undefined && (
-                <p className="text-gray-600">
-                  Trial Days Remaining: {userSubscription.subscription.trialDaysRemaining}
-                </p>
-              )}
-            </div>
-          </div>
-          {userSubscription.subscription.stackedPlans && userSubscription.subscription.stackedPlans.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-lg font-semibold mb-2">Stacked Plans</h3>
-              <div className="space-y-2">
-                {userSubscription.subscription.stackedPlans.map((stackedPlan) => (
-                  <div key={stackedPlan._id} className="p-2 bg-gray-50 rounded">
-                    <p className="text-sm">{stackedPlan.planName}</p>
-                    <p className="text-xs text-gray-500">
-                      Valid until: {new Date(stackedPlan.endDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                ))}
+    <div className="subscription-page-wrapper">
+      <div className="subscription-page">
+
+
+      {/* Current Subscription Section - Only show for paid plans */}
+      {userSubscription?.subscription && userSubscription.subscription.status !== 'trial' && (
+        <div className="current-subscription-container">
+          <div className="subscription-box">
+            <div className="section current-plan">
+              <h3 className="section-title">Current Plan</h3>
+              <div className="plan-name">
+                <h3>{userSubscription.subscription.planName}</h3>
+                <div className="plan-type">
+                  {userSubscription.subscription.plan.type === 'monthly' ? 'Monthly' :
+                    userSubscription.subscription.plan.type === 'quarterly' ? 'Quarterly' :
+                    userSubscription.subscription.plan.type === 'half_yearly' ? 'Half Yearly' : 'Yearly'} Plan
+                </div>
+              </div>
+
+              <div className="date-info">
+                <div className="date-item">
+                  <span className="date-label">Start Date:</span>
+                  <span className="date-value">
+                    {new Date(userSubscription.subscription.startDate).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    })}
+                  </span>
+                </div>
+                <div className="date-item">
+                  <span className="date-label">End Date:</span>
+                  <span className="date-value">
+                    {new Date(userSubscription.subscription.endDate).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    })}
+                  </span>
+                </div>
+              </div>
+
+              <div className="time-remaining">
+                <div className="days-left">
+                  {Math.max(0, Math.ceil((new Date(userSubscription.subscription.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))}
+                </div>
+                <div className="days-label">days remaining</div>
               </div>
             </div>
-          )}
+
+            {/* Account Type and Organization Info */}
+            <div className="section account-info">
+              <h3 className="section-title">Account Details</h3>
+              <div className="account-details">
+                <div className="account-type">
+                  <span className="account-label">Account Type:</span>
+                  <span className="account-value">
+                    {userSubscription.isOrganization ? 'Organization' : 'Individual'}
+                  </span>
+                </div>
+
+                {userSubscription.isOrganization && (
+                  <>
+                    <div className="org-info">
+                      <span className="org-label">Organization:</span>
+                      <span className="org-value">{userSubscription.organizationName}</span>
+                    </div>
+                    <div className="role-info">
+                      <span className="role-label">Role:</span>
+                      <span className="role-value">{userSubscription.organizationRole}</span>
+                    </div>
+                  </>
+                )}
+
+                <div className="status-info">
+                  <span className="status-label">Status:</span>
+                  {getStatusBadge(userSubscription.subscription.status)}
+                </div>
+              </div>
+            </div>
+
+            {/* Stacked Plans if any */}
+            {userSubscription.subscription.stackedPlans && userSubscription.subscription.stackedPlans.length > 0 && (
+              <div className="section stacked-plans">
+                <h3 className="section-title">Additional Plans</h3>
+                <div className="stacked-plans-list">
+                  {userSubscription.subscription.stackedPlans.map((stackedPlan) => (
+                    <div key={stackedPlan._id} className="stacked-plan-item">
+                      <div className="stacked-plan-name">{stackedPlan.planName}</div>
+                      <div className="stacked-plan-validity">
+                        Valid until: {new Date(stackedPlan.endDate).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      <h2 className="text-2xl font-bold mb-6">Available Plans</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {plans.map(renderPlanCard)}
+      {/* Trial Status Section - Only show for trial users */}
+      {userSubscription?.subscription && userSubscription.subscription.status === 'trial' && (
+        <div className="trial-status-container mb-8">
+          <div className="trial-status-card">
+            <div className="trial-icon">🎉</div>
+            <div className="trial-content">
+              <h3>Free Trial Active</h3>
+              <p>
+                You're currently on a free trial with <strong>{userSubscription.subscription.trialDaysRemaining} days remaining</strong>.
+              </p>
+              <p>
+                Upgrade to a paid plan to continue enjoying all premium features after your trial ends.
+              </p>
+            </div>
+            <div className="trial-countdown">
+              <div className="days-remaining">
+                {userSubscription.subscription.trialDaysRemaining}
+              </div>
+              <div className="days-text">days left</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="plans-section">
+        <div className="plans-header">
+          <h2 className="text-2xl font-bold mb-2">
+            {user?.userType === 'organization_admin' || user?.isOrganization
+              ? 'Organization Plans'
+              : 'Individual Plans'}
+          </h2>
+          <p className="text-gray-600 mb-6">
+            {user?.userType === 'organization_admin' || user?.isOrganization
+              ? 'Choose the perfect plan for your organization\'s patent research needs'
+              : 'Select a plan that fits your individual patent research requirements'}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {plans.map(renderPlanCard)}
+        </div>
+
+        {plans.length === 0 && !loading && (
+          <div className="text-center py-8">
+            <div className="text-gray-500 mb-4">
+              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-8l-4 4-4-4m0 0V3" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">No Plans Available</h3>
+            <p className="text-gray-500">
+              {user?.userType === 'organization_admin' || user?.isOrganization
+                ? 'No organization plans are currently available. Please contact support.'
+                : 'No individual plans are currently available. Please contact support.'}
+            </p>
+          </div>
+        )}
       </div>
 
       {showPaymentModal && selectedPlan && (
@@ -958,6 +1067,7 @@ const SubscriptionPage: React.FC = () => {
           onSuccess={handlePlanChangeComplete}
         />
       )}
+      </div>
     </div>
   );
 };
