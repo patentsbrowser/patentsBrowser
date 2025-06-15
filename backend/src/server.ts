@@ -17,6 +17,9 @@ import { setupSwagger } from './config/swagger.js';
 import { startSubscriptionCron } from './cron/subscriptionCron.js';
 import chatRoutes from './routes/chatRoutes.js';
 import { initializePredefinedQA } from './models/ChatMessage.js';
+import { initializeTrialScheduler } from './services/trialScheduler.js';
+import trialRoutes from './routes/trialRoutes.js';
+import organizationRoutes from './routes/organizationRoutes.js';
 
 // Get current directory in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -94,6 +97,8 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/google-patents', googlePatentsRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/trial', trialRoutes);
+app.use('/api/organization', organizationRoutes);
 
 // Make sure uploadedImages directory is served as public
 const uploadDir = path.join(__dirname, '../uploadedImages');
@@ -228,7 +233,10 @@ mongoose.connect(MONGODB_URI)
     
     // Start subscription status update cron job
     startSubscriptionCron();
-    
+
+    // Initialize trial scheduler for email notifications
+    initializeTrialScheduler();
+
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       

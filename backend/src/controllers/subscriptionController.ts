@@ -89,8 +89,11 @@ export const getUserPricingPlans = async (req: Request, res: Response) => {
       });
     }
 
+    console.log('getUserPricingPlans - User type:', user.userType);
+
     // Organization members cannot view or purchase plans
     if (user.userType === 'organization_member') {
+      console.log('Blocking organization member from viewing plans');
       return res.status(200).json({
         success: true,
         data: [],
@@ -104,6 +107,8 @@ export const getUserPricingPlans = async (req: Request, res: Response) => {
     if (user.userType === 'organization_admin') {
       accountType = AccountType.ORGANIZATION;
     }
+
+    console.log('Determined account type:', accountType);
 
     // Get plans for the user's account type
     const plans = await PricingPlan.find({ 

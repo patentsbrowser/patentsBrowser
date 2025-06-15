@@ -374,10 +374,16 @@ class SubscriptionService {
   }
 
   async getUserPlans(): Promise<Plan[]> {
-    const response = await axios.get(`${API_URL}/subscriptions/user-plans`, {
-      headers: await this.getAuthHeader()
-    });
-    return response.data.data; // Extract data from response
+    try {
+      const response = await axios.get(`${API_URL}/subscriptions/user-plans`, {
+        headers: await this.getAuthHeader()
+      });
+      console.log('getUserPlans API response:', response.data);
+      return response.data.data || response.data || []; // Handle different response formats
+    } catch (error) {
+      console.error('Error fetching user plans:', error);
+      throw error;
+    }
   }
 
   async getUserSubscription(): Promise<UserSubscription> {
