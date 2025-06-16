@@ -122,6 +122,43 @@ export const initializePredefinedQA = async () => {
       console.log("Initializing predefined Q&A pairs...");
 
       const platformQA = [
+        // Subscription & Pricing Questions
+        {
+          question: "What subscription plans are available?",
+          answer: `PatentsBrowser offers flexible subscription plans for different needs:
+
+**Individual Plans:**
+• Basic Plan (₹999/month) - Essential patent search and analysis
+• Professional Plan (₹2,999/month) - Advanced features + AI analysis
+• Premium Plan (₹7,999/month) - Full access + priority support
+
+**Organization Plans:**
+• Team Plan (₹9,999/month) - Multi-user access + collaboration tools
+• Enterprise Plan (₹19,999/month) - Advanced team features + custom integrations
+• Corporate Plan (₹49,999/month) - Full enterprise suite + dedicated support
+
+All plans include patent search, smart analysis, and workflow management. Higher tiers add AI features, bulk processing, and team collaboration tools.`,
+          keywords: ["subscription", "plans", "pricing", "cost", "price", "payment", "individual", "organization", "team"],
+          category: "general",
+        },
+        {
+          question: "How do I upgrade or change my subscription plan?",
+          answer: `You can easily manage your subscription:
+
+1. **Upgrade Plans:** Go to Settings → Subscription → View available plans for your account type
+2. **Plan Stacking:** Add new plans to existing subscriptions for combined benefits
+3. **Downgrade:** Contact support for downgrades (processed at next billing cycle)
+4. **Payment Methods:** UPI, bank transfer, and other secure payment options available
+
+**Organization Features:**
+• Organization admins can manage team subscriptions
+• Invite team members to share plan benefits
+• Centralized billing and user management
+
+Need help? Contact our support team for personalized assistance.`,
+          keywords: ["upgrade", "change plan", "downgrade", "billing", "payment", "stack", "organization"],
+          category: "general",
+        },
         {
           question: "What features does PatentsBrowser offer?",
           answer: `PatentsBrowser offers several powerful features to enhance patent research:
@@ -215,6 +252,93 @@ This will significantly reduce the time needed to understand complex patents and
 This is particularly useful when dealing with prior art search results, office actions, or competitor analysis documents that mention multiple patents.`,
           keywords: ["upload", "extract", "batch", "file", "multiple patents"],
           category: "technical",
+        },
+        // API & Settings Questions
+        {
+          question: "How do I configure AI API keys?",
+          answer: `Configure your AI providers in Settings → API Keys:
+
+**Supported AI Providers:**
+• Google AI (Gemini) - FREE tier with generous limits
+• OpenAI (GPT-4) - PREMIUM quality analysis
+• DeepSeek AI - COST-EFFECTIVE option
+• Anthropic (Claude) - PREMIUM with safety features
+• Cohere AI - ENTERPRISE multilingual capabilities
+• Hugging Face - OPEN SOURCE thousands of models
+• Custom API - Your own OpenAI-compatible endpoint
+
+**Setup Steps:**
+1. Go to Settings → API Keys section
+2. Choose your preferred AI provider
+3. Get API key from provider's website
+4. Paste key and save (stored locally only)
+5. Keys automatically work in Patent Analyzer
+
+**Security:** All API keys are stored locally in your browser only - never transmitted to our servers.`,
+          keywords: ["api", "keys", "ai", "openai", "google", "deepseek", "settings", "configuration"],
+          category: "technical",
+        },
+        {
+          question: "What is Patent Analyzer and how does it work?",
+          answer: `Patent Analyzer is our AI-powered patent analysis tool:
+
+**Key Features:**
+• Create custom taxonomies to categorize patents
+• Bulk upload hundreds of patents at once
+• AI analysis using your configured providers
+• Relevance scoring and detailed explanations
+• Export results to CSV for further analysis
+
+**How It Works:**
+1. **Setup:** Configure AI providers in Settings
+2. **Taxonomies:** Define categories for analysis
+3. **Upload Patents:** Add individual or bulk patent numbers
+4. **Analysis Scope:** Choose title+abstract, claims, or full text
+5. **AI Processing:** Automatic analysis using your AI provider
+6. **Results:** Get relevance scores and explanations
+7. **Export:** Download CSV reports
+
+**Analysis Scopes:**
+• Title + Abstract (recommended) - Fast and comprehensive
+• Title + Abstract + Claims - Detailed legal analysis
+• Claims Only - Focused legal relevance
+• Full Text - Most comprehensive (slower)`,
+          keywords: ["patent analyzer", "ai analysis", "taxonomy", "relevance", "scoring", "bulk upload"],
+          category: "technical",
+        },
+        // Organization Features
+        {
+          question: "How do organization features work?",
+          answer: `PatentsBrowser offers powerful organization features:
+
+**Organization Admin Benefits:**
+• Create organization during signup
+• Access to organization-specific subscription plans
+• Invite team members with shareable links
+• Manage team access and permissions
+• Centralized billing and subscription management
+
+**Team Collaboration:**
+• Share subscription benefits with all team members
+• Collaborative patent research and analysis
+• Shared workflows and saved patents
+• Team-wide access to AI features
+
+**Invitation System:**
+• Generate shareable invitation links
+• Share via email, WhatsApp, Telegram, Instagram
+• Single-use invite links for security
+• Automatic team member onboarding
+
+**Member Benefits:**
+• Access to organization's paid plan features
+• Collaborative tools and shared resources
+• No separate subscription needed
+• Professional team environment
+
+Perfect for law firms, research teams, and corporate IP departments.`,
+          keywords: ["organization", "team", "invite", "collaboration", "admin", "members", "sharing"],
+          category: "general",
         },
       ];
 

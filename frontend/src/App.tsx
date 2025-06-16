@@ -32,6 +32,7 @@ import JoinOrganization from "./Components/Organization/JoinOrganization";
 import OrganizationDashboard from "./Components/Organization/OrganizationDashboard";
 import Invitation from "./Components/Organization/Invitation";
 import PatentAnalyzer from "./Components/PatentAnalyzer/PatentAnalyzer";
+import FloatingChatbot from "./Components/Chatbot/FloatingChatbot";
 // import PatentHistory from "./Components/PatentHistory/PatentHistory";
 
 interface ErrorBoundaryProps {
@@ -174,6 +175,7 @@ const App = () => {
                             <AuthGuard>
                               <div className="app-container patent-browser-app">
                                 <Header isVisible={!isModalOpen} />
+                                <FloatingChatbot />
                                 <main className="main-content">
                                   <Routes>
                                     {/* Root path redirects to dashboard */}
