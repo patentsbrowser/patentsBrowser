@@ -33,6 +33,7 @@ import OrganizationDashboard from "./Components/Organization/OrganizationDashboa
 import Invitation from "./Components/Organization/Invitation";
 import PatentAnalyzer from "./Components/PatentAnalyzer/PatentAnalyzer";
 import FloatingChatbot from "./Components/Chatbot/FloatingChatbot";
+import OrganizationSignup from './Components/Organization/OrganizationSignup';
 // import PatentHistory from "./Components/PatentHistory/PatentHistory";
 
 interface ErrorBoundaryProps {
@@ -225,6 +226,9 @@ const App = () => {
                             </AuthGuard>
                           } 
                         />
+
+                        {/* Organization Signup Route */}
+                        <Route path="/organization/signup/:token" element={<OrganizationSignup />} />
 
                         {/* Catch-all route - redirect to landing page */}
                         <Route path="*" element={<Navigate to="/" replace />} />

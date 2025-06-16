@@ -1,5 +1,5 @@
 import express from 'express';
-import { getProfile, login, updateProfile, uploadImage, AuthController, changePassword } from '../controllers/authController.js';
+import { getProfile, login, updateProfile, uploadImage, AuthController, changePassword, signupWithInvite } from '../controllers/authController.js';
 import { auth } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import { User } from '../models/User.js';
@@ -503,5 +503,8 @@ router.post('/reset-password', async (req, res) => {
     });
   }
 });
+
+// Add new route for organization signup with invite
+router.post('/signup-with-invite', signupWithInvite);
 
 export default router; 

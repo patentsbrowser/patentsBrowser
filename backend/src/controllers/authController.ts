@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
 import { generateOTP, sendOTP, storeOTP } from '../services/otpService.js';
 import { googleAuthService } from '../services/googleAuthService.js';
+import { Organization } from '../models/Organization.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -414,6 +415,173 @@ export const changePassword = async (req: Request, res: Response) => {
       statusCode: 500,
       message: 'Failed to change password',
       data: null
+    });
+  }
+};
+
+// Handle organization signup with invite token
+export const signupWithInvite = async (req: Request, res: Response) => {
+  try {
+    const { name, email, password, inviteToken } = req.body;
+
+    // Validate invite token first
+    const organization = await Organization.findOne({
+      'inviteLinks.token': inviteToken,
+      'inviteLinks.used': false,
+      'inviteLinks.expiresAt': { $gt: new Date() }
+    });
+
+    if (!organization) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired invite link'
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: 'Email already registered'
+      });
+    }
+
+    // Store signup data with organization info
+    const otp = generateOTP();
+    pendingSignups[email] = {
+      signupData: {
+        name,
+        email,
+        password,
+        inviteToken,
+        organizationId: organization._id,
+        userType: 'organization_member'
+      },
+      otp,
+      expiresAt: Date.now() + 10 * 60 * 1000 // 10 min
+    };
+
+    storeOTP(email, otp);
+    await sendOTP(email, otp);
+
+    return res.status(200).json({
+      success: true,
+      message: 'OTP sent to your email. Please verify to complete signup.',
+      data: { mode: 'verify' }
+    });
+  } catch (error) {
+    console.error('Error in organization signup:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process signup'
+    });
+  }
+};
+
+// Modify verify-otp to handle organization joins
+export const verifyOTP = async (req: Request, res: Response) => {
+  try {
+    const { email, otp } = req.body;
+    const isValid = await verifyOTP(email, otp);
+
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid OTP'
+      });
+    }
+
+    const pendingSignup = pendingSignups[email];
+    if (!pendingSignup) {
+      return res.status(400).json({
+        success: false,
+        message: 'No pending signup found'
+      });
+    }
+
+    const { signupData } = pendingSignup;
+
+    // Create user
+    const user = new User({
+      name: signupData.name,
+      email: signupData.email,
+      password: signupData.password,
+      isEmailVerified: true,
+      userType: signupData.userType || 'individual'
+    });
+
+    await user.save();
+
+    // If this is an organization signup
+    if (signupData.inviteToken) {
+      const organization = await Organization.findOne({
+        'inviteLinks.token': signupData.inviteToken
+      });
+
+      if (organization) {
+        // Add user as member
+        organization.members.push({
+          userId: user._id,
+          role: 'member',
+          joinedAt: new Date()
+        });
+
+        // Mark invite link as used
+        const inviteLink = organization.inviteLinks.find(
+          link => link.token === signupData.inviteToken
+        );
+        if (inviteLink) {
+          inviteLink.used = true;
+        }
+
+        await organization.save();
+
+        // Update user with organization details
+        user.isOrganization = true;
+        user.organizationName = organization.name;
+        user.organizationSize = organization.size;
+        user.organizationType = organization.type;
+        user.organizationId = organization._id;
+        user.organizationRole = 'member';
+        await user.save();
+      }
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
+    );
+
+    user.activeToken = token;
+    user.lastLogin = new Date();
+    await user.save();
+
+    delete pendingSignups[email];
+
+    return res.status(200).json({
+      success: true,
+      message: 'Signup complete and email verified!',
+      data: {
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          userType: user.userType,
+          isOrganization: user.isOrganization,
+          organizationRole: user.organizationRole,
+          organizationName: user.organizationName
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error in OTP verification:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to verify OTP'
     });
   }
 }; 
