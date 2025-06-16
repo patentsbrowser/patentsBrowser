@@ -142,6 +142,7 @@ const Header: React.FC<HeaderProps> = ({ isVisible = true }) => {
   const userMenuItems: MenuItem[] = [
     { path: '/auth/dashboard', label: 'Dashboard', icon: '📊', exact: false },
     { path: '/auth/patentSaver', label: 'Upload Files', icon: '📑', exact: false },
+    { path: '/auth/patent-analyzer', label: 'Patent Analyzer', icon: '🔍', exact: false },
     { path: '/auth/subscription', label: 'Subscription', icon: '💎', exact: false },
     { path: '/auth/payment-history', label: 'Payment History', icon: '💳', exact: false },
     { path: '/auth/update-profile', label: 'Update Profile', icon: '👤', exact: false },

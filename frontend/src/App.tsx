@@ -31,6 +31,7 @@ import { ChatProvider } from './context/ChatContext';
 import JoinOrganization from "./Components/Organization/JoinOrganization";
 import OrganizationDashboard from "./Components/Organization/OrganizationDashboard";
 import Invitation from "./Components/Organization/Invitation";
+import PatentAnalyzer from "./Components/PatentAnalyzer/PatentAnalyzer";
 // import PatentHistory from "./Components/PatentHistory/PatentHistory";
 
 interface ErrorBoundaryProps {
@@ -191,6 +192,7 @@ const App = () => {
                                       } 
                                     />
                                     <Route path="patentSaver" element={<SavedPatentList />} />
+                                    <Route path="patent-analyzer" element={<PatentAnalyzer />} />
                                     <Route path="update-profile" element={<UpdateProfile />} />
                                     <Route path="profile" element={<ProfilePage />} />
                                     <Route path="subscription" element={<SubscriptionPage />} />

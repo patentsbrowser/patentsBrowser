@@ -1,7 +1,7 @@
 import './Settings.scss';
 import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faCheck, faUndo, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faCheck, faUndo, faTimesCircle, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 
 interface SettingsProps {
   onSidebarBehaviorChange?: (behavior: 'auto' | 'manual') => void;
@@ -36,7 +36,20 @@ const Settings: React.FC<SettingsProps> = ({
   );
   const [isResultsEditMode, setIsResultsEditMode] = useState(false);
   const [isRecordEditMode, setIsRecordEditMode] = useState(false);
+  const [isApiKeysEditMode, setIsApiKeysEditMode] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  // API Keys state
+  const [apiKeys, setApiKeys] = useState({
+    googleAI: localStorage.getItem('patent_analyzer_google_ai_key') || '',
+    openAI: localStorage.getItem('patent_analyzer_openai_key') || '',
+    deepSeek: localStorage.getItem('patent_analyzer_deepseek_key') || ''
+  });
+  const [showApiKeys, setShowApiKeys] = useState({
+    googleAI: false,
+    openAI: false,
+    deepSeek: false
+  });
 
   // Save setting to localStorage when changed
   useEffect(() => {
@@ -123,6 +136,47 @@ const Settings: React.FC<SettingsProps> = ({
     setPreferredPublicationStage('grant');
     setPublicationListOrder('ascending');
     setPreferredLanguage('EN EM');
+  };
+
+  // API Keys handlers
+  const handleApiKeysEditClick = () => {
+    setIsApiKeysEditMode(true);
+  };
+
+  const handleApiKeysConfirm = () => {
+    localStorage.setItem('patent_analyzer_google_ai_key', apiKeys.googleAI);
+    localStorage.setItem('patent_analyzer_openai_key', apiKeys.openAI);
+    localStorage.setItem('patent_analyzer_deepseek_key', apiKeys.deepSeek);
+
+    setShowSuccessMessage(true);
+    setIsApiKeysEditMode(false);
+    setTimeout(() => {
+      setShowSuccessMessage(false);
+    }, 1500);
+  };
+
+  const handleApiKeysCancel = () => {
+    setApiKeys({
+      googleAI: localStorage.getItem('patent_analyzer_google_ai_key') || '',
+      openAI: localStorage.getItem('patent_analyzer_openai_key') || '',
+      deepSeek: localStorage.getItem('patent_analyzer_deepseek_key') || ''
+    });
+    setIsApiKeysEditMode(false);
+  };
+
+  const handleClearApiKeys = () => {
+    setApiKeys({
+      googleAI: '',
+      openAI: '',
+      deepSeek: ''
+    });
+  };
+
+  const toggleApiKeyVisibility = (provider: keyof typeof showApiKeys) => {
+    setShowApiKeys(prev => ({
+      ...prev,
+      [provider]: !prev[provider]
+    }));
   };
 
   return (
@@ -277,6 +331,137 @@ const Settings: React.FC<SettingsProps> = ({
               </div>
             </div>
           )}
+        </div>
+
+        {/* API Keys Section */}
+        <div className="settings-section">
+          <div className="section-header">
+            <h3>🔑 Patent Analyzer API Keys</h3>
+            {!isApiKeysEditMode && (
+              <button className="edit-button" onClick={handleApiKeysEditClick}>
+                <FontAwesomeIcon icon={faEdit} style={{ marginRight: '6px' }} />
+                Edit
+              </button>
+            )}
+          </div>
+          <div className="api-keys-description">
+            <p>Configure your AI provider API keys for patent analysis. Keys are stored securely in your browser.</p>
+          </div>
+
+          {/* Google AI */}
+          <div className="setting-option">
+            <div className="setting-label">
+              🤖 Google AI (Gemini) - <span className="api-badge free">FREE</span>
+            </div>
+            <div className="api-key-input-group">
+              <div className="api-key-input-wrapper">
+                <input
+                  type={showApiKeys.googleAI ? "text" : "password"}
+                  value={apiKeys.googleAI}
+                  onChange={(e) => isApiKeysEditMode && setApiKeys({...apiKeys, googleAI: e.target.value})}
+                  className="settings-text-input api-key-input"
+                  placeholder="AIza..."
+                  disabled={!isApiKeysEditMode}
+                />
+                <button
+                  className="visibility-toggle"
+                  onClick={() => toggleApiKeyVisibility('googleAI')}
+                  type="button"
+                >
+                  <FontAwesomeIcon icon={showApiKeys.googleAI ? faEyeSlash : faEye} />
+                </button>
+              </div>
+              <div className="api-key-status">
+                {apiKeys.googleAI ? '✅ Configured' : '❌ Not configured'}
+              </div>
+            </div>
+          </div>
+
+          {/* OpenAI */}
+          <div className="setting-option">
+            <div className="setting-label">
+              🧠 OpenAI (GPT-4) - <span className="api-badge paid">PAID</span>
+            </div>
+            <div className="api-key-input-group">
+              <div className="api-key-input-wrapper">
+                <input
+                  type={showApiKeys.openAI ? "text" : "password"}
+                  value={apiKeys.openAI}
+                  onChange={(e) => isApiKeysEditMode && setApiKeys({...apiKeys, openAI: e.target.value})}
+                  className="settings-text-input api-key-input"
+                  placeholder="sk-..."
+                  disabled={!isApiKeysEditMode}
+                />
+                <button
+                  className="visibility-toggle"
+                  onClick={() => toggleApiKeyVisibility('openAI')}
+                  type="button"
+                >
+                  <FontAwesomeIcon icon={showApiKeys.openAI ? faEyeSlash : faEye} />
+                </button>
+              </div>
+              <div className="api-key-status">
+                {apiKeys.openAI ? '✅ Configured' : '❌ Not configured'}
+              </div>
+            </div>
+          </div>
+
+          {/* DeepSeek */}
+          <div className="setting-option">
+            <div className="setting-label">
+              🔍 DeepSeek AI - <span className="api-badge paid">PAID</span>
+            </div>
+            <div className="api-key-input-group">
+              <div className="api-key-input-wrapper">
+                <input
+                  type={showApiKeys.deepSeek ? "text" : "password"}
+                  value={apiKeys.deepSeek}
+                  onChange={(e) => isApiKeysEditMode && setApiKeys({...apiKeys, deepSeek: e.target.value})}
+                  className="settings-text-input api-key-input"
+                  placeholder="sk-..."
+                  disabled={!isApiKeysEditMode}
+                />
+                <button
+                  className="visibility-toggle"
+                  onClick={() => toggleApiKeyVisibility('deepSeek')}
+                  type="button"
+                >
+                  <FontAwesomeIcon icon={showApiKeys.deepSeek ? faEyeSlash : faEye} />
+                </button>
+              </div>
+              <div className="api-key-status">
+                {apiKeys.deepSeek ? '✅ Configured' : '❌ Not configured'}
+              </div>
+            </div>
+          </div>
+
+          {isApiKeysEditMode && (
+            <div className="settings-action-buttons">
+              <button className="restore-button" onClick={handleClearApiKeys}>
+                <FontAwesomeIcon icon={faTimesCircle} style={{ marginRight: '6px' }} />
+                Clear all keys
+              </button>
+              <div className="action-right-buttons">
+                <button className="confirm-button" onClick={handleApiKeysConfirm}>
+                  <FontAwesomeIcon icon={faCheck} style={{ marginRight: '6px' }} />
+                  Confirm
+                </button>
+                <button className="cancel-button" onClick={handleApiKeysCancel}>
+                  <FontAwesomeIcon icon={faTimesCircle} style={{ marginRight: '6px' }} />
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="api-keys-help">
+            <h4>🔗 Quick Setup Links:</h4>
+            <ul>
+              <li><a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer">Google AI Studio</a> - Get free API key</li>
+              <li><a href="https://platform.openai.com/" target="_blank" rel="noopener noreferrer">OpenAI Platform</a> - Premium analysis</li>
+              <li><a href="https://platform.deepseek.com/" target="_blank" rel="noopener noreferrer">DeepSeek Platform</a> - Cost-effective option</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
