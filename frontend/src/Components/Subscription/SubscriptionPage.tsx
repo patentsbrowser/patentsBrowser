@@ -1,28 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import subscriptionService from '../../services/SubscriptionService';
 import './SubscriptionPage.scss';
 import '../LandingPage/LandingPage.scss';
 // import './CurrentSubscription.scss';
 import { toast } from 'react-toastify';
-import { QRCodeSVG } from 'qrcode.react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthContext';
 import PlanChangeModal from './PlanChangeModal';
 import PaymentModal from './PaymentModal';
 import PlanGrid from '../Common/PlanGrid';
 import CurrentSubscriptionCard from '../Common/CurrentSubscriptionCard';
-import type { Plan, Subscription, UserSubscription, SubscriptionStatus } from '../../types/subscription';
+import type { Plan as SubscriptionPlan, Subscription, UserSubscription, SubscriptionStatus } from '../../types/subscription';
+import type { Plan as PlanCardPlan } from '../Common/PlanCard';
 
-interface PaymentModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  plan: Plan;
-  onPaymentComplete: () => void;
-  isTrialActive: boolean;
-  trialDaysRemaining: number;
-  isOrganizationPlan: boolean;
-  onSuccess?: () => Promise<void>;
-}
+
 // Helper functions
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -277,17 +268,17 @@ const SubscriptionStatus: React.FC<{ subscription: Subscription }> = ({ subscrip
 const SubscriptionPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [plans, setPlans] = useState<Plan[]>([]);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [userSubscription, setUserSubscription] = useState<UserSubscription | null>(null);
   const [currentSubscription, setCurrentSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [planChangeState, setPlanChangeState] = useState<{
     isOpen: boolean;
-    currentPlan: Plan | null;
-    newPlan: Plan | null;
+    currentPlan: SubscriptionPlan | null;
+    newPlan: SubscriptionPlan | null;
     isUpgrade: boolean;
   }>({
     isOpen: false,
@@ -352,7 +343,7 @@ const SubscriptionPage: React.FC = () => {
     fetchData();
   }, [user?.userType]);
 
-  const handleSubscribeClick = (plan: Plan) => {
+  const handleSubscribeClick = (plan: SubscriptionPlan) => {
     console.log('handleSubscribeClick called:', {
       planId: plan._id,
       planName: plan.name,
@@ -371,7 +362,7 @@ const SubscriptionPage: React.FC = () => {
     setShowPaymentModal(true);
   };
 
-  const handlePlanChangeClick = (plan: Plan) => {
+  const handlePlanChangeClick = (plan: SubscriptionPlan) => {
     if (!userSubscription?.subscription) return;
 
     const currentPlan = userSubscription.subscription.plan;
@@ -419,7 +410,7 @@ const SubscriptionPage: React.FC = () => {
     closePlanChangeModal();
   };
 
-  const getPlanPrice = (plan: Plan) => {
+  const getPlanPrice = (plan: SubscriptionPlan) => {
     if (userSubscription?.isOrganization) {
       if (userSubscription.organizationRole === 'member') {
         return plan.memberPrice || plan.price;
@@ -450,7 +441,18 @@ const SubscriptionPage: React.FC = () => {
     );
   };
 
-  // These functions are now handled by PlanCard component
+  // Map subscription plan to plan card plan
+  const mapToPlanCardPlan = (plan: SubscriptionPlan): PlanCardPlan => ({
+    _id: plan._id,
+    name: plan.name,
+    type: plan.type,
+    price: plan.price,
+    features: plan.features,
+    popular: plan.popular,
+    discountPercentage: plan.discountPercentage,
+    maxMembers: plan.maxMembers,
+    additionalMemberPrice: plan.additionalMemberPrice
+  });
 
   if (loading) {
     return (
@@ -535,46 +537,48 @@ const SubscriptionPage: React.FC = () => {
         <CurrentSubscriptionCard
           userSubscription={currentSubscription}
           loading={loading}
-          error={error}
+          // error={error}
         />
 
         {/* Available Plans */}
         <PlanGrid
-          plans={plans}
+          plans={plans.map(mapToPlanCardPlan)}
           currentPlanId={userSubscription?.subscription?.plan._id}
-          onSubscribeClick={handleSubscribeClick}
-          onPlanChangeClick={handlePlanChangeClick}
+          onSubscribeClick={(plan: PlanCardPlan) => handleSubscribeClick(plans.find(p => p._id === plan._id)!)}
+          onPlanChangeClick={(plan: PlanCardPlan) => handlePlanChangeClick(plans.find(p => p._id === plan._id)!)}
           userType={user?.userType}
           showMemberInfo={user?.userType === 'organization_admin' || user?.isOrganization}
           loading={loading}
-          error={error}
+          error={error || undefined}
           title={title}
           subtitle={subtitle}
-          getPlanPrice={getPlanPrice}
+          getPlanPrice={(plan: PlanCardPlan) => getPlanPrice(plans.find(p => p._id === plan._id)!)}
         />
 
         {/* Payment Modal */}
         {(showPaymentModal && selectedPlan) && (
-          <>
-            {console.log('Rendering PaymentModal:', {
+          (() => {
+            console.log('Rendering PaymentModal:', {
               showPaymentModal,
               selectedPlan: selectedPlan.name,
               isTrialActive: userSubscription?.subscription?.status === 'trial'
-            })}
-            <PaymentModal
-              isOpen={showPaymentModal}
-              plan={selectedPlan}
-              onClose={() => {
-                console.log('PaymentModal onClose called');
-                setShowPaymentModal(false);
-              }}
-              onPaymentComplete={handlePlanChangeComplete}
-              isTrialActive={userSubscription?.subscription?.status === 'trial'}
-              trialDaysRemaining={userSubscription?.subscription?.trialDaysRemaining || 0}
-              isOrganizationPlan={userSubscription?.isOrganization || false}
-              onSuccess={handlePlanChangeComplete}
-            />
-          </>
+            });
+            return (
+              <PaymentModal
+                isOpen={showPaymentModal}
+                plan={selectedPlan}
+                onClose={() => {
+                  console.log('PaymentModal onClose called');
+                  setShowPaymentModal(false);
+                }}
+                onPaymentComplete={handlePlanChangeComplete}
+                isTrialActive={userSubscription?.subscription?.status === 'trial'}
+                trialDaysRemaining={userSubscription?.subscription?.trialDaysRemaining || 0}
+                isOrganizationPlan={userSubscription?.isOrganization || false}
+                onSuccess={handlePlanChangeComplete}
+              />
+            );
+          })()
         )}
 
         {/* Plan Change Modal */}

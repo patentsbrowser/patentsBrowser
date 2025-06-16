@@ -18,9 +18,12 @@
   @include flex-column;
   max-width: 500px;
   width: 90%;
-  max-height: 85vh;
+  max-height: 100vh;
   padding: 0;
   animation: modalFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 @keyframes modalFadeIn {
   from { opacity: 0; transform: translateY(40px); }
@@ -37,6 +40,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 
   h2 {
     margin: 0;
@@ -63,9 +67,10 @@
   }
 }
 .payment-modal-body {
-  padding: 2rem;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
-  flex: 1;
+  padding: 2rem;
   .qr-code-container {
     display: flex;
     flex-direction: column;
@@ -323,8 +328,9 @@
   .payment-modal {
     max-width: 100%;
     width: 100%;
-    max-height: 95vh;
+    max-height: 100vh;
     border-radius: 16px;
+    overflow-y: auto;
   }
 
   .payment-modal-header {
@@ -338,6 +344,8 @@
 
   .payment-modal-body {
     padding: 1rem;
+    max-height: 65vh;
+    overflow-y: auto;
 
     .qr-code-container {
       .qr-code-wrapper {

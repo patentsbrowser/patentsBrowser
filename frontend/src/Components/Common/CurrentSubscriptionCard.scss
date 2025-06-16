@@ -729,3 +729,61 @@
     }
   }
 }
+
+.current-subscription-card.compact {
+  padding: 1.5rem 1.2rem;
+  max-width: 700px;
+  font-size: 1.05rem;
+
+  .card-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.7rem;
+    h2 {
+      font-size: 1.45rem;
+    }
+    .status-badge {
+      font-size: 1rem;
+      padding: 0.4rem 1rem;
+    }
+  }
+
+  .subscription-details.compact-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem 1.5rem;
+    .plan-info {
+      h3 { font-size: 1.18rem; }
+      .plan-type { font-size: 1.05rem; }
+      .trial-badge { font-size: 0.98rem; }
+    }
+    .overview-item {
+      .overview-label { font-size: 0.95rem; }
+      .overview-value { font-size: 1.13rem; }
+      &.trial-progress-inline {
+        .progress-bar-small {
+          width: 90px;
+          height: 9px;
+        }
+        .progress-text { font-size: 1rem; }
+      }
+    }
+  }
+
+  .expiry-warning.compact, .expired-notice.compact {
+    font-size: 1.05rem;
+    padding: 0.7rem 1rem;
+    .warning-icon, .expired-icon { font-size: 1.25rem; }
+    .warning-message, .expired-message { font-size: 1.05rem; }
+  }
+}
+
+@media (max-width: 600px) {
+  .current-subscription-card.compact {
+    padding: 1rem 0.5rem;
+    font-size: 1rem;
+    .subscription-details.compact-grid {
+      grid-template-columns: 1fr;
+      gap: 0.7rem;
+    }
+    .card-header h2 { font-size: 1.15rem; }
+  }
+}
