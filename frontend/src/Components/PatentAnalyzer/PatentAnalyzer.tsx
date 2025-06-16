@@ -3,7 +3,7 @@ import './PatentAnalyzer.scss';
 import Button from '../Common/Button';
 import Input from '../Common/Input';
 import { toast } from 'react-hot-toast';
-import ApiConfigModal from './ApiConfigModal';
+import { useAutoScroll, getScrollStyles, getScrollClassName } from '../../hooks/useAutoScroll';
 
 interface Taxonomy {
   id: string;
@@ -21,20 +21,7 @@ interface Patent {
   provider?: string;
 }
 
-interface ApiConfig {
-  googleAI: {
-    enabled: boolean;
-    apiKey: string;
-  };
-  openAI: {
-    enabled: boolean;
-    apiKey: string;
-  };
-  deepSeek: {
-    enabled: boolean;
-    apiKey: string;
-  };
-}
+// API Config now comes from Settings - no separate interface needed
 
 const PatentAnalyzer: React.FC = () => {
   const [taxonomies, setTaxonomies] = useState<Taxonomy[]>([]);
@@ -43,19 +30,25 @@ const PatentAnalyzer: React.FC = () => {
   const [newPatent, setNewPatent] = useState('');
   const [bulkPatents, setBulkPatents] = useState('');
   const [analysisScope, setAnalysisScope] = useState<'title_abstract' | 'title_abstract_claims' | 'claims_only' | 'full_text'>('title_abstract');
-  const [showApiConfig, setShowApiConfig] = useState(false);
-  const [apiConfig, setApiConfig] = useState<ApiConfig>({
-    googleAI: { enabled: true, apiKey: '' },
-    openAI: { enabled: false, apiKey: '' },
-    deepSeek: { enabled: false, apiKey: '' }
-  });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Auto-scroll hooks for different sections
+  const [taxonomySectionRef, taxonomySectionScrollState] = useAutoScroll({
+    threshold: 400,
+    maxHeight: '80vh',
+    dependencies: [taxonomies.length, newTaxonomy.name, newTaxonomy.definition]
+  });
+
+  const [patentSectionRef, patentSectionScrollState] = useAutoScroll({
+    threshold: 500,
+    maxHeight: '80vh',
+    dependencies: [patents.length, newPatent, bulkPatents]
+  });
 
   // Load saved data from localStorage
   useEffect(() => {
     const savedTaxonomies = localStorage.getItem('patent_analyzer_taxonomies');
     const savedPatents = localStorage.getItem('patent_analyzer_patents');
-    const savedApiConfig = localStorage.getItem('patent_analyzer_api_config');
 
     if (savedTaxonomies) {
       setTaxonomies(JSON.parse(savedTaxonomies));
@@ -63,10 +56,33 @@ const PatentAnalyzer: React.FC = () => {
     if (savedPatents) {
       setPatents(JSON.parse(savedPatents));
     }
-    if (savedApiConfig) {
-      setApiConfig(JSON.parse(savedApiConfig));
-    }
   }, []);
+
+  // Function to get available API providers from Settings
+  const getAvailableProviders = () => {
+    const providers = [];
+
+    const googleKey = localStorage.getItem('patent_analyzer_google_ai_key');
+    const openaiKey = localStorage.getItem('patent_analyzer_openai_key');
+    const deepseekKey = localStorage.getItem('patent_analyzer_deepseek_key');
+    const anthropicKey = localStorage.getItem('patent_analyzer_anthropic_key');
+    const cohereKey = localStorage.getItem('patent_analyzer_cohere_key');
+    const huggingfaceKey = localStorage.getItem('patent_analyzer_huggingface_key');
+    const customKey = localStorage.getItem('patent_analyzer_custom_key');
+
+    if (googleKey?.trim()) providers.push({ name: 'Google AI', key: googleKey, icon: '🤖' });
+    if (openaiKey?.trim()) providers.push({ name: 'OpenAI', key: openaiKey, icon: '🧠' });
+    if (deepseekKey?.trim()) providers.push({ name: 'DeepSeek', key: deepseekKey, icon: '🔍' });
+    if (anthropicKey?.trim()) providers.push({ name: 'Anthropic', key: anthropicKey, icon: '🎭' });
+    if (cohereKey?.trim()) providers.push({ name: 'Cohere', key: cohereKey, icon: '🌐' });
+    if (huggingfaceKey?.trim()) providers.push({ name: 'Hugging Face', key: huggingfaceKey, icon: '🤗' });
+    if (customKey?.trim()) {
+      const customName = localStorage.getItem('patent_analyzer_custom_name') || 'Custom API';
+      providers.push({ name: customName, key: customKey, icon: '⚙️' });
+    }
+
+    return providers;
+  };
 
   // Save data to localStorage
   useEffect(() => {
@@ -76,10 +92,6 @@ const PatentAnalyzer: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('patent_analyzer_patents', JSON.stringify(patents));
   }, [patents]);
-
-  useEffect(() => {
-    localStorage.setItem('patent_analyzer_api_config', JSON.stringify(apiConfig));
-  }, [apiConfig]);
 
   const addTaxonomy = () => {
     if (!newTaxonomy.name.trim() || !newTaxonomy.definition.trim()) {
@@ -177,25 +189,26 @@ const PatentAnalyzer: React.FC = () => {
       return;
     }
 
-    const enabledProviders = Object.entries(apiConfig)
-      .filter(([_, config]) => config.enabled && config.apiKey.trim())
-      .map(([provider, _]) => provider);
+    const availableProviders = getAvailableProviders();
 
-    if (enabledProviders.length === 0) {
-      toast.error('Please configure at least one AI provider');
-      setShowApiConfig(true);
+    if (availableProviders.length === 0) {
+      toast.error('Please configure at least one AI provider in Settings');
+      toast('Go to Settings → API Keys to configure your AI providers', {
+        duration: 4000,
+        icon: '⚙️'
+      });
       return;
     }
 
     setIsAnalyzing(true);
-    toast.success('Analysis started...');
+    toast.success(`Analysis started using ${availableProviders[0].name}...`);
 
     // Simulate analysis process
     for (let i = 0; i < patents.length; i++) {
       const patent = patents[i];
-      
+
       // Update status to analyzing
-      setPatents(prev => prev.map(p => 
+      setPatents(prev => prev.map(p =>
         p.id === patent.id ? { ...p, status: 'analyzing' } : p
       ));
 
@@ -204,15 +217,15 @@ const PatentAnalyzer: React.FC = () => {
 
       // Simulate analysis result
       const relevanceScore = Math.floor(Math.random() * 100);
-      const explanation = `This patent shows ${relevanceScore}% relevance to the defined taxonomies based on ${analysisScope.replace('_', ' ')} analysis.`;
-      
-      setPatents(prev => prev.map(p => 
-        p.id === patent.id ? { 
-          ...p, 
+      const explanation = `This patent shows ${relevanceScore}% relevance to the defined taxonomies based on ${analysisScope.replace('_', ' ')} analysis using ${availableProviders[0].name}.`;
+
+      setPatents(prev => prev.map(p =>
+        p.id === patent.id ? {
+          ...p,
           status: 'completed',
           relevanceScore,
           explanation,
-          provider: enabledProviders[0]
+          provider: availableProviders[0].name
         } : p
       ));
     }
@@ -272,40 +285,69 @@ const PatentAnalyzer: React.FC = () => {
       <div className="patent-analyzer-header">
         <h1>🔍 Patent Insights Analyzer</h1>
         <p>AI-Powered Patent Analysis Tool</p>
-        <div className="header-actions">
-          <Button
-            variant="secondary"
-            onClick={() => setShowApiConfig(true)}
-            className="api-config-btn"
-          >
-            🔑 Configure APIs
-          </Button>
+        <div className="header-info">
+          <div className="api-status">
+            {(() => {
+              const providers = getAvailableProviders();
+              return providers.length > 0 ? (
+                <div className="providers-available">
+                  <span className="status-icon">✅</span>
+                  <span>{providers.length} AI Provider{providers.length > 1 ? 's' : ''} Configured</span>
+                  <div className="providers-list">
+                    {providers.map((provider, index) => (
+                      <span key={index} className="provider-badge">
+                        {provider.icon} {provider.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="no-providers">
+                  <span className="status-icon">⚠️</span>
+                  <span>No AI providers configured</span>
+                  <span className="config-hint">Configure in Settings → API Keys</span>
+                </div>
+              );
+            })()}
+          </div>
         </div>
       </div>
 
       {/* API Configuration Warning */}
-      {Object.values(apiConfig).every(config => !config.enabled || !config.apiKey.trim()) && (
+      {getAvailableProviders().length === 0 && (
         <div className="api-warning">
           <div className="warning-icon">⚠️</div>
           <div className="warning-content">
             <h3>AI API keys required</h3>
-            <p>Configure your Google AI or DeepSeek AI API keys to enable real patent analysis.</p>
-            <Button variant="primary" onClick={() => setShowApiConfig(true)}>
-              Configure Now
-            </Button>
+            <p>Configure your AI provider API keys in Settings to enable real patent analysis.</p>
+            <div className="warning-actions">
+              <Button
+                variant="primary"
+                onClick={() => window.location.href = '/auth/settings'}
+              >
+                Go to Settings
+              </Button>
+              <div className="supported-providers">
+                <span>Supported: Google AI, OpenAI, DeepSeek, Anthropic, Cohere, Hugging Face</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
       <div className="analyzer-content">
         {/* Taxonomy Management */}
-        <div className="analyzer-section">
+        <div
+          ref={taxonomySectionRef}
+          className={getScrollClassName(taxonomySectionScrollState, "analyzer-section taxonomy-section")}
+          style={getScrollStyles(taxonomySectionScrollState)}
+        >
           <div className="section-header">
             <h2>📋 Taxonomy Management</h2>
             <div className="section-actions">
               <Button
                 variant="danger"
-                size="small"
+                size="sm"
                 onClick={clearAllTaxonomies}
                 disabled={taxonomies.length === 0}
               >
@@ -323,14 +365,16 @@ const PatentAnalyzer: React.FC = () => {
                 onChange={(e) => setNewTaxonomy({ ...newTaxonomy, name: e.target.value })}
                 placeholder="e.g., AI Technology"
               />
-              <Input
-                label="Definition"
-                value={newTaxonomy.definition}
-                onChange={(e) => setNewTaxonomy({ ...newTaxonomy, definition: e.target.value })}
-                placeholder="e.g., Patents related to artificial intelligence..."
-                multiline
-                rows={3}
-              />
+              <div className="input-wrapper">
+                <label className="input-label">Definition</label>
+                <textarea
+                  className="input-field textarea-field"
+                  value={newTaxonomy.definition}
+                  onChange={(e) => setNewTaxonomy({ ...newTaxonomy, definition: e.target.value })}
+                  placeholder="e.g., Patents related to artificial intelligence..."
+                  rows={3}
+                />
+              </div>
               <div className="form-actions">
                 <Button variant="primary" onClick={addTaxonomy}>
                   Add Taxonomy
@@ -354,19 +398,21 @@ const PatentAnalyzer: React.FC = () => {
                 <p>No taxonomies added yet. Create your first taxonomy to get started.</p>
               </div>
             ) : (
-              taxonomies.map(taxonomy => (
-                <div key={taxonomy.id} className="taxonomy-item">
-                  <div className="taxonomy-header">
-                    <div className="taxonomy-name">{taxonomy.name}</div>
-                    <div className="taxonomy-actions">
-                      <button onClick={() => removeTaxonomy(taxonomy.id)} title="Delete taxonomy">
-                        🗑️
-                      </button>
+              <div className="taxonomies-container">
+                {taxonomies.map(taxonomy => (
+                  <div key={taxonomy.id} className="taxonomy-item">
+                    <div className="taxonomy-header">
+                      <div className="taxonomy-name">{taxonomy.name}</div>
+                      <div className="taxonomy-actions">
+                        <button onClick={() => removeTaxonomy(taxonomy.id)} title="Delete taxonomy">
+                          🗑️
+                        </button>
+                      </div>
                     </div>
+                    <div className="taxonomy-definition">{taxonomy.definition}</div>
                   </div>
-                  <div className="taxonomy-definition">{taxonomy.definition}</div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -424,7 +470,11 @@ const PatentAnalyzer: React.FC = () => {
         </div>
 
         {/* Patent Management */}
-        <div className="analyzer-section">
+        <div
+          ref={patentSectionRef}
+          className={getScrollClassName(patentSectionScrollState, "analyzer-section patent-section")}
+          style={getScrollStyles(patentSectionScrollState)}
+        >
           <div className="section-header">
             <h2>📄 Patent Analysis</h2>
             <div className="section-actions">
@@ -434,7 +484,7 @@ const PatentAnalyzer: React.FC = () => {
               <Button variant="secondary" onClick={exportResults} disabled={patents.filter(p => p.status === 'completed').length === 0}>
                 📥 Download CSV
               </Button>
-              <Button variant="danger" size="small" onClick={clearAllPatents} disabled={patents.length === 0}>
+              <Button variant="danger" size="sm" onClick={clearAllPatents} disabled={patents.length === 0}>
                 🗑️ Clear Patents
               </Button>
             </div>
@@ -452,7 +502,7 @@ const PatentAnalyzer: React.FC = () => {
                 value={newPatent}
                 onChange={(e) => setNewPatent(e.target.value)}
                 placeholder="US20040105001, US7123456, EP1234567, etc."
-                onKeyPress={(e) => e.key === 'Enter' && addPatent()}
+                onKeyDown={(e) => e.key === 'Enter' && addPatent()}
               />
               <Button variant="primary" onClick={addPatent}>
                 Add Patent
@@ -492,25 +542,27 @@ const PatentAnalyzer: React.FC = () => {
                   <div>Relevance</div>
                   <div>Actions</div>
                 </div>
-                {patents.map(patent => (
-                  <div key={patent.id} className={`table-row status-${patent.status}`}>
-                    <div className="patent-number">{patent.number}</div>
-                    <div className="patent-status">
-                      {patent.status === 'pending' && '⏳ Pending'}
-                      {patent.status === 'analyzing' && '🔄 Analyzing...'}
-                      {patent.status === 'completed' && '✅ Completed'}
-                      {patent.status === 'error' && '❌ Error'}
+                <div className="patents-table-body">
+                  {patents.map(patent => (
+                    <div key={patent.id} className={`table-row status-${patent.status}`}>
+                      <div className="patent-number">{patent.number}</div>
+                      <div className="patent-status">
+                        {patent.status === 'pending' && '⏳ Pending'}
+                        {patent.status === 'analyzing' && '🔄 Analyzing...'}
+                        {patent.status === 'completed' && '✅ Completed'}
+                        {patent.status === 'error' && '❌ Error'}
+                      </div>
+                      <div className="patent-relevance">
+                        {patent.relevanceScore !== undefined ? `${patent.relevanceScore}%` : '-'}
+                      </div>
+                      <div className="patent-actions">
+                        <button onClick={() => removePatent(patent.id)} title="Remove patent">
+                          🗑️
+                        </button>
+                      </div>
                     </div>
-                    <div className="patent-relevance">
-                      {patent.relevanceScore !== undefined ? `${patent.relevanceScore}%` : '-'}
-                    </div>
-                    <div className="patent-actions">
-                      <button onClick={() => removePatent(patent.id)} title="Remove patent">
-                        🗑️
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -524,13 +576,7 @@ const PatentAnalyzer: React.FC = () => {
         </div>
       </div>
 
-      {/* API Configuration Modal */}
-      <ApiConfigModal
-        isOpen={showApiConfig}
-        onClose={() => setShowApiConfig(false)}
-        config={apiConfig}
-        onSave={setApiConfig}
-      />
+      {/* API Configuration now handled in Settings */}
     </div>
   );
 };

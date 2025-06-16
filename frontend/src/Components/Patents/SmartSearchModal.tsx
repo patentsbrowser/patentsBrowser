@@ -8,6 +8,7 @@ import { faSearch, faTimesCircle, faEdit, faCheck, faExchangeAlt, faCheckCircle,
 import toast from 'react-hot-toast';
 import { variationCorrectionForSearch } from '../../utils/patentUtils';
 import { patentApi } from '../../api/patents';
+import { usePatentListScroll, getScrollStyles, getScrollClassName } from '../../hooks/useAutoScroll';
 
 interface SmartSearchModalProps {
   isOpen: boolean;
@@ -45,9 +46,13 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
   const [filterByFamily, setFilterByFamily] = useState(false);
   const [familyFilteredPatents, setFamilyFilteredPatents] = useState<string[]>([]);
   const [isFilteringByFamily, setIsFilteringByFamily] = useState(false);
-  
+
   const dispatch = useAppDispatch();
   const { smartSearchResults } = useAppSelector((state: RootState) => state.patents);
+
+  // Auto-scroll for patents grid
+  const currentPatents = showNotFound ? displayNotFoundPatents : (filterByFamily ? familyFilteredPatents : filteredPatents);
+  const [patentsGridRef, scrollState] = usePatentListScroll(currentPatents);
 
   // Get preferred patent authority from localStorage
   const preferredPatentAuthority = localStorage.getItem('preferredPatentAuthority') || 'US WO EP GB FR DE CH JP RU SU';
@@ -363,7 +368,11 @@ const SmartSearchModal: React.FC<SmartSearchModalProps> = ({
                     />
                   </div>
                 )}
-                <div className="patents-grid">
+                <div
+                  ref={patentsGridRef}
+                  className={getScrollClassName(scrollState, "patents-grid")}
+                  style={getScrollStyles(scrollState)}
+                >
                   {showNotFound ? (
                     (displayNotFoundPatents.filter(id => id.toLowerCase().includes(notFoundSearch.toLowerCase())).length === 0) ? (
                       <div className="no-results">

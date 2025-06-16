@@ -260,6 +260,86 @@
 .overflow-scroll { overflow: scroll; }
 
 .overflow-x-auto { overflow-x: auto; }
+.overflow-x-hidden { overflow-x: hidden; }
+.overflow-x-visible { overflow-x: visible; }
+.overflow-x-scroll { overflow-x: scroll; }
+
+.overflow-y-auto { overflow-y: auto; }
+.overflow-y-hidden { overflow-y: hidden; }
+.overflow-y-visible { overflow-y: visible; }
+.overflow-y-scroll { overflow-y: scroll; }
+
+// ===================================
+// AUTO SCROLL UTILITIES
+// ===================================
+
+.auto-scroll-enabled {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color, #333) var(--secondary-bg, #1e1e1e);
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--secondary-bg, #1e1e1e);
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-color, #333);
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background: var(--accent-color, #7c4dff);
+    }
+  }
+
+  &::-webkit-scrollbar-corner {
+    background: var(--secondary-bg, #1e1e1e);
+  }
+}
+
+.auto-scroll-disabled {
+  overflow: visible;
+  max-height: none;
+}
+
+// Scroll variants for different components
+.auto-scroll-thin {
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+}
+
+.auto-scroll-thick {
+  &::-webkit-scrollbar {
+    width: 12px;
+  }
+}
+
+.auto-scroll-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// ===================================
+// SCROLL BEHAVIOR UTILITIES
+// ===================================
+
+.overflow-auto { overflow: auto; }
+.overflow-hidden { overflow: hidden; }
+.overflow-visible { overflow: visible; }
+.overflow-scroll { overflow: scroll; }
+
+.overflow-x-auto { overflow-x: auto; }
 .overflow-y-auto { overflow-y: auto; }
 .overflow-x-hidden { overflow-x: hidden; }
 .overflow-y-hidden { overflow-y: hidden; }
