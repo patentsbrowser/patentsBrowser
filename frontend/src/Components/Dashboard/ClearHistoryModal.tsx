@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './ClearHistoryModal.scss';
+import { Button } from '../Common';
 
 interface RecentSearch {
   patentId: string;
@@ -75,19 +76,19 @@ const ClearHistoryModal = ({ recentSearches, onClose, onClear }: ClearHistoryMod
           </div>
         </div>
         <div className="modal-footer">
-          <button 
-            className="cancel-button" 
+          <Button
+            variant="secondary"
             onClick={onClose}
           >
             Cancel
-          </button>
-          <button 
-            className="clear-button"
+          </Button>
+          <Button
+            variant="danger"
             onClick={handleClear}
             disabled={selectedIds.length === 0}
           >
             Clear Selected
-          </button>
+          </Button>
         </div>
       </div>
     </div>

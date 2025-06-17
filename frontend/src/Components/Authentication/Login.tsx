@@ -12,6 +12,7 @@ import { GoogleLogin as GoogleOAuthLogin } from "@react-oauth/google";
 import axiosInstance from "../../api/axiosConfig";
 import ForgotPassword from "./ForgotPassword";
 import OTPModal from "./OTPModal/OTPModal";
+import { Button } from "../Common";
 
 const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
   const [email, setEmail] = useState("");
@@ -226,18 +227,14 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
               </div>
             </div>
 
-            <motion.button
+            <Button
               type="submit"
-              className="submit-btn"
-              whileHover={{
-                scale: 1.05,
-                y: -5,
-                boxShadow: "0 10px 25px rgba(106, 38, 205, 0.4)",
-              }}
-              whileTap={{ scale: 0.95 }}
+              variant="gradient"
+              size="lg"
+              fullWidth
             >
               Set Password
-            </motion.button>
+            </Button>
           </form>
         </motion.div>
       </motion.div>
@@ -319,20 +316,16 @@ const Login = ({ switchToSignup }: { switchToSignup: () => void }) => {
               Forgot Password?
             </motion.button>
           </motion.div>
-          <motion.button
+          <Button
             type="submit"
-            className="submit-btn"
+            variant="gradient"
+            size="lg"
+            fullWidth
+            loading={loginMutation.isPending}
             disabled={loginMutation.isPending}
-            variants={inputVariants}
-            whileHover={{
-              scale: 1.05,
-              y: -5,
-              boxShadow: "0 10px 25px rgba(106, 38, 205, 0.4)",
-            }}
-            whileTap={{ scale: 0.95 }}
           >
             {loginMutation.isPending ? "Signing In..." : "Sign In"}
-          </motion.button>
+          </Button>
 
           <div className="divider">
             <span>Or</span>

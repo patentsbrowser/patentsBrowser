@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "./ManageFoldersModal.scss";
+import { Button } from '../Common';
 
 interface PatentFolder {
   id: string;

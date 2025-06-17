@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import PatentFigureSearch from "./PatentFigureSearch";
 import { patentApi } from "../../api/patents";
 import "./PatentSearchForm.scss";
+import { Button } from "../Common";
 
 interface PatentSearchFormProps {
   searchQuery: string;
@@ -207,13 +208,16 @@ const PatentSearchForm: React.FC<PatentSearchFormProps> = ({
             )}
           </div>
           <div className="buttons-column">
-            <button
+            <Button
               type="submit"
-              className="search-button"
+              variant="primary"
+              size="md"
               disabled={isLoading || !searchQuery.trim()}
+              loading={isLoading}
+              className="search-button"
             >
               {isLoading ? "Searching..." : "Search"}
-            </button>
+            </Button>
             {searchType === "full" && (
               <div className="figures-button-container">
                 <PatentFigureSearch patentIds={patentIds} />
