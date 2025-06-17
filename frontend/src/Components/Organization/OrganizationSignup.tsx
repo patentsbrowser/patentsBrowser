@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthContext';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import OTPModal from '../Authentication/OTPModal/OTPModal';
 import './OrganizationSignup.scss';
 
 interface OrganizationDetails {
@@ -15,10 +16,12 @@ interface OrganizationDetails {
 const OrganizationSignup: React.FC = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
+  const { setUser } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [organizationDetails, setOrganizationDetails] = useState<OrganizationDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showOTPModal, setShowOTPModal] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -92,15 +95,7 @@ const OrganizationSignup: React.FC = () => {
 
       if (data.success) {
         toast.success('Signup successful! Please check your email for OTP verification.');
-        // Store email for OTP verification
-        localStorage.setItem('pendingVerificationEmail', formData.email);
-        navigate('/verify-otp', { 
-          state: { 
-            email: formData.email,
-            mode: 'organization-signup',
-            inviteToken: token
-          }
-        });
+        setShowOTPModal(true);
       } else {
         toast.error(data.message || 'Signup failed');
       }
@@ -109,6 +104,65 @@ const OrganizationSignup: React.FC = () => {
       toast.error('Failed to complete signup');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyOTP = async (otp: string) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/verify-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          otp: otp
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Account created and joined organization successfully!');
+        
+        // Set user in context and localStorage
+        setUser(data.data.user);
+        localStorage.setItem('token', data.data.token);
+        localStorage.setItem('user', JSON.stringify(data.data.user));
+        
+        setShowOTPModal(false);
+        navigate('/organization/dashboard');
+      } else {
+        toast.error(data.message || 'Invalid OTP');
+      }
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      toast.error('Failed to verify OTP');
+    }
+  };
+
+  const handleResendOTP = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/resend-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: formData.email
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('OTP resent successfully!');
+      } else {
+        toast.error(data.message || 'Failed to resend OTP');
+      }
+    } catch (error) {
+      console.error('Error resending OTP:', error);
+      toast.error('Failed to resend OTP');
     }
   };
 
@@ -255,6 +309,18 @@ const OrganizationSignup: React.FC = () => {
           </ul>
         </div>
       </motion.div>
+
+      {showOTPModal && (
+        <OTPModal
+          isOpen={showOTPModal}
+          onClose={() => setShowOTPModal(false)}
+          onVerify={handleVerifyOTP}
+          onResend={handleResendOTP}
+          email={formData.email}
+          isResendDisabled={false}
+          mode="signup"
+        />
+      )}
     </div>
   );
 };

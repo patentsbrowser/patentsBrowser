@@ -30,20 +30,11 @@ const JoinOrganization: React.FC = () => {
       }
 
       try {
-        const response = await fetch(`http://localhost:5000/api/organization/validate-invite/${token}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+        const response = await fetch(`http://localhost:5000/api/organization/validate-invite/${token}`);
         const data = await response.json();
 
         if (data.success) {
           setOrganizationDetails(data.data);
-
-          // If user is not logged in, show signup form
-          if (!user) {
-            setShowSignupForm(true);
-          }
         } else {
           setError(data.message || 'Invalid or expired invite link');
         }
@@ -59,7 +50,10 @@ const JoinOrganization: React.FC = () => {
   }, [token]);
 
   const handleJoinOrganization = async () => {
-    if (!token || !user) return;
+    if (!token || !user) {
+      navigate(`/organization-signup/${token}`);
+      return;
+    }
 
     try {
       setIsJoining(true);
@@ -72,7 +66,6 @@ const JoinOrganization: React.FC = () => {
       const data = await response.json();
 
       if (data.success) {
-        // Update user context with organization details and userType
         const updatedUser = {
           ...user,
           isOrganization: true,
@@ -80,8 +73,8 @@ const JoinOrganization: React.FC = () => {
           organizationSize: data.data.size,
           organizationType: data.data.type,
           organizationId: data.data._id,
-          organizationRole: 'member',
-          userType: 'organization_member' // Set userType to organization_member
+          organizationRole: 'member' as const,
+          userType: 'organization_member' as const
         };
         setUser(updatedUser);
         localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -97,6 +90,10 @@ const JoinOrganization: React.FC = () => {
     } finally {
       setIsJoining(false);
     }
+  };
+
+  const handleSignup = () => {
+    navigate(`/organization-signup/${token}`);
   };
 
   if (isLoading) {
@@ -158,22 +155,44 @@ const JoinOrganization: React.FC = () => {
           </div>
         </div>
 
-        <div className="join-actions">
-          <button
-            className="join-btn"
-            onClick={handleJoinOrganization}
-            disabled={isJoining}
-          >
-            {isJoining ? 'Joining...' : 'Join Organization'}
-          </button>
-          <button
-            className="cancel-btn"
-            onClick={() => navigate('/')}
-            disabled={isJoining}
-          >
-            Cancel
-          </button>
-        </div>
+        {user ? (
+          <div className="join-actions">
+            <button
+              className="join-btn"
+              onClick={handleJoinOrganization}
+              disabled={isJoining}
+            >
+              {isJoining ? 'Joining...' : 'Join Organization'}
+            </button>
+            <button
+              className="cancel-btn"
+              onClick={() => navigate('/')}
+              disabled={isJoining}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <div className="auth-actions">
+            <div className="auth-message">
+              <p>You need to create an account or log in to join this organization.</p>
+            </div>
+            <div className="auth-buttons">
+              <button
+                className="signup-btn"
+                onClick={handleSignup}
+              >
+                Create Account & Join
+              </button>
+              <button
+                className="login-btn"
+                onClick={() => navigate('/login', { state: { returnUrl: `/join-organization/${token}` } })}
+              >
+                Login & Join
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="join-info">
           <h3>What happens when you join?</h3>

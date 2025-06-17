@@ -228,7 +228,7 @@ const App = () => {
                         />
 
                         {/* Organization Signup Route */}
-                        <Route path="/organization/signup/:token" element={<OrganizationSignup />} />
+                        <Route path="/organization-signup/:token" element={<OrganizationSignup />} />
 
                         {/* Catch-all route - redirect to landing page */}
                         <Route path="*" element={<Navigate to="/" replace />} />

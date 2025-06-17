@@ -1,9 +1,12 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
-import { generateOTP, sendOTP, storeOTP } from '../services/otpService.js';
+import { generateOTP, sendOTP, storeOTP, verifyOTP as verifyOTPService } from '../services/otpService.js';
 import { googleAuthService } from '../services/googleAuthService.js';
 import { Organization } from '../models/Organization.js';
+
+// Temporary in-memory store for pending signups (for production, use Redis)
+const pendingSignups: { [key: string]: any } = {};
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -483,7 +486,7 @@ export const signupWithInvite = async (req: Request, res: Response) => {
 export const verifyOTP = async (req: Request, res: Response) => {
   try {
     const { email, otp } = req.body;
-    const isValid = await verifyOTP(email, otp);
+    const isValid = verifyOTPService(email, otp);
 
     if (!isValid) {
       return res.status(400).json({

@@ -160,6 +160,63 @@
       }
     }
 
+    .auth-actions {
+      margin-bottom: 2rem;
+
+      .auth-message {
+        text-align: center;
+        margin-bottom: 1.5rem;
+
+        p {
+          color: #666;
+          font-size: 1.1rem;
+          margin: 0;
+        }
+      }
+
+      .auth-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-direction: column;
+
+        @media (min-width: 768px) {
+          flex-direction: row;
+        }
+
+        button {
+          flex: 1;
+          padding: 0.75rem 1.5rem;
+          border: none;
+          border-radius: 6px;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .signup-btn {
+          background: #4a90e2;
+          color: white;
+
+          &:hover {
+            background: #357abd;
+            transform: translateY(-2px);
+          }
+        }
+
+        .login-btn {
+          background: #f8f9fa;
+          color: #333;
+          border: 1px solid #ddd;
+
+          &:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+          }
+        }
+      }
+    }
+
     .join-info {
       background: #f8f9fa;
       border-radius: 8px;
