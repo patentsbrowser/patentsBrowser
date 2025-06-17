@@ -43,14 +43,25 @@ interface InvitedMember {
   status: 'pending';
 }
 
+interface JoinRequest {
+  _id: string;
+  name: string;
+  email: string;
+  requestedAt: string;
+  status: 'pending' | 'approved' | 'rejected';
+  message?: string;
+}
+
 const Invitation: React.FC = () => {
   const { user } = useAuth();
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [invitedMembers, setInvitedMembers] = useState<InvitedMember[]>([]);
+  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
   const [inviteLink, setInviteLink] = useState('');
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingInvited, setIsLoadingInvited] = useState(true);
+  const [isLoadingRequests, setIsLoadingRequests] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const [showCreateOrganization, setShowCreateOrganization] = useState(false);
@@ -70,6 +81,7 @@ const Invitation: React.FC = () => {
     if (isOrganizationAdmin) {
       fetchOrganizationMembers();
       fetchInvitedMembers();
+      fetchJoinRequests();
     }
   }, [isOrganizationAdmin]);
 
@@ -147,6 +159,51 @@ const Invitation: React.FC = () => {
       console.error('Failed to load invited members:', error);
     } finally {
       setIsLoadingInvited(false);
+    }
+  };
+
+  const fetchJoinRequests = async () => {
+    try {
+      setIsLoadingRequests(true);
+      const response = await fetch('http://localhost:5000/api/organization/join-requests', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setJoinRequests(data.data || []);
+      } else {
+        setJoinRequests([]);
+      }
+    } catch (error) {
+      setJoinRequests([]);
+      console.error('Failed to load join requests:', error);
+    } finally {
+      setIsLoadingRequests(false);
+    }
+  };
+
+  const handleJoinRequest = async (requestId: string, action: 'approve' | 'reject') => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/organization/join-requests/${requestId}/${action}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success(`Request ${action}d successfully`);
+        fetchJoinRequests(); // Refresh the list
+        if (action === 'approve') {
+          fetchOrganizationMembers(); // Refresh members list
+        }
+      } else {
+        toast.error(data.message || `Failed to ${action} request`);
+      }
+    } catch (error) {
+      toast.error(`Failed to ${action} request`);
     }
   };
 
@@ -241,22 +298,24 @@ const Invitation: React.FC = () => {
         <p>Generate and share invite links with new members. Manage your organization members below.</p>
       </motion.div>
       <div className="dashboard-content">
-        <motion.div
-          className="members-card"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <div className="card-header">
-            <h2>Organization Members</h2>
-            <button
-              className="generate-invite-btn"
-              onClick={generateInviteLink}
-              disabled={isGeneratingLink}
-            >
-              <FaUserPlus /> Generate Invite Link
-            </button>
-          </div>
+        <div className="dashboard-grid">
+          {/* Left Column - Invite Options */}
+          <motion.div
+            className="invite-section"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <div className="section-header">
+              <h2>Organization Invitation</h2>
+              <button
+                className="generate-invite-btn"
+                onClick={generateInviteLink}
+                disabled={isGeneratingLink}
+              >
+                <FaUserPlus /> Generate Invite Link
+              </button>
+            </div>
           {inviteLink && (
             <div className="invite-link-container">
               <div className="invite-link-section">
@@ -337,7 +396,88 @@ const Invitation: React.FC = () => {
               </div>
             </div>
           )}
-          <div className="members-list">
+          </motion.div>
+
+          {/* Right Column - Join Requests & Members */}
+          <motion.div
+            className="requests-section"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <div className="section-header">
+              <h2>Join Requests</h2>
+              <span className="requests-count">
+                {joinRequests.filter(req => req.status === 'pending').length} pending
+              </span>
+            </div>
+
+            <div className="join-requests-list">
+              {isLoadingRequests ? (
+                <div className="loading">Loading join requests...</div>
+              ) : joinRequests.length === 0 ? (
+                <div className="no-requests">
+                  <div className="no-requests-icon">📝</div>
+                  <h3>No Join Requests</h3>
+                  <p>No one has requested to join your organization yet</p>
+                </div>
+              ) : (
+                <div className="requests-container">
+                  {joinRequests.map((request) => (
+                    <motion.div
+                      key={request._id}
+                      className={`request-card ${request.status}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <div className="request-info">
+                        <div className="request-avatar">
+                          {request.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="request-details">
+                          <h3>{request.name}</h3>
+                          <p className="request-email">{request.email}</p>
+                          <span className="request-date">
+                            Requested: {new Date(request.requestedAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </span>
+                          {request.message && (
+                            <p className="request-message">"{request.message}"</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="request-actions">
+                        <span className={`status-badge ${request.status}`}>
+                          {request.status.toUpperCase()}
+                        </span>
+                        {request.status === 'pending' && (
+                          <div className="action-buttons">
+                            <button
+                              className="approve-btn"
+                              onClick={() => handleJoinRequest(request._id, 'approve')}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              className="reject-btn"
+                              onClick={() => handleJoinRequest(request._id, 'reject')}
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="members-list">
             
             {isLoading ? (
               <div className="loading">Loading organization members...</div>
@@ -459,8 +599,9 @@ const Invitation: React.FC = () => {
                 )}
               </>
             )}
-          </div>
-        </motion.div>
+            </div>
+          </motion.div>
+        </div>
       </div>
 
       {/* Share Modal */}
