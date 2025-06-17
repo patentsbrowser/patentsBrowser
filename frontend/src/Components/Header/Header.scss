@@ -1,5 +1,5 @@
 .header {
-  background-color: var(--primary-bg);
+  background-color: var(--bg-primary);
   padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
@@ -10,8 +10,8 @@
   right: 0;
   height: 78px;
   z-index: 1000;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  border-bottom: 1px solid var(--border-primary);
   box-sizing: border-box;
   transition: transform 0.3s ease;
   
@@ -27,19 +27,19 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: var(--primary-bg);
+    background-color: var(--bg-primary);
     z-index: -1;
   }
   
   // Simplified header when figure viewer is open
   body.figure-viewer-open & {
-    border-bottom: 1px solid var(--border-color);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    background-color: var(--primary-bg);
+    border-bottom: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-md);
+    background-color: var(--bg-primary);
     pointer-events: none;
-    
+
     &::before {
-      background-color: var(--primary-bg);
+      background-color: var(--bg-primary);
     }
     
     // Hide most elements in the header when figure viewer is open
@@ -69,7 +69,7 @@
     gap: 2rem;
     
     h1 {
-      color: var(--accent-color);
+      color: var(--primary-600);
       margin: 0;
       font-size: 1.5rem;
       white-space: nowrap;
@@ -85,20 +85,20 @@
         display: flex;
         align-items: center;
         padding: 0.75rem 1.5rem;
-        color: var(--text-color);
+        color: var(--text-primary);
         text-decoration: none;
         transition: all 0.3s ease;
         border-radius: 0.5rem;
         font-size: 1rem;
         font-weight: 500;
-        
+
         &:hover {
-          background-color: var(--hover-bg);
+          background-color: var(--bg-secondary);
         }
 
         &.active {
-          background-color: var(--accent-color);
-          color: var(--button-text);
+          background-color: var(--primary-600);
+          color: var(--button-primary-text);
         }
 
         .icon {

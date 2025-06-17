@@ -1,159 +1,59 @@
 // ===================================
-// LEGACY THEME VARIABLES
+// LEGACY THEME VARIABLES - SIMPLIFIED
 // ===================================
-// This file is kept for backward compatibility
-// New components should use design-system.scss
+// This file is kept for backward compatibility only
+// All new components should use design-system.scss variables directly
 
-@import './design-system.scss';
-@import './mixins.scss';
-@import './utilities.scss';
+@use './design-system' as *;
 
+// Note: Most legacy variables are now defined in design-system.scss
+// This file only contains additional legacy mappings not covered there
 :root {
-  /* Legacy Base colors - mapped to new design system */
-  --primary-bg: var(--bg-primary);
-  --secondary-bg: var(--bg-secondary);
-  --text-color: var(--text-primary);
-  --text-color-strong: var(--text-primary);
-  --text-secondary: var(--text-secondary);
-  --border-color: var(--border-primary);
-
-  /* Legacy Accent colors - mapped to new design system */
-  --accent-color: var(--primary-600);
-  --accent-rgb: 99, 102, 241;
-  --accent-secondary: var(--warning-500);
-  --accent-secondary-rgb: 245, 158, 11;
-  --accent-hover: var(--primary-700);
-
-  /* Legacy Background colors - mapped to new design system */
-  --bg-rgb: 255, 255, 255;
-  --hover-bg: var(--bg-secondary);
-  --shadow-color: rgba(0, 0, 0, 0.08);
-
-  /* Legacy Status colors - mapped to new design system */
-  --error-color: var(--error-500);
-  --error-color-dark: var(--error-600);
-  --success-color: var(--success-500);
-  --warning-color: var(--warning-500);
-  --info-color: var(--info-500);
-
-  /* Legacy Component specific - mapped to new design system */
-  --tag-bg: var(--bg-tertiary);
-  --input-bg: var(--input-bg);
-  --input-border: var(--input-border);
-  --input-focus: var(--input-focus);
-  --button-bg: var(--button-primary-bg);
-  --button-hover: var(--button-primary-hover);
-  --button-text: var(--button-primary-text);
-  --card-bg: var(--card-bg);
-  --card-bg-hover: var(--surface-elevated);
-  --card-shadow: var(--card-shadow);
-
-  /* Legacy Subscription specific - mapped to new design system */
-  --sub-bg: var(--bg-primary);
-  --sub-card-bg: var(--card-bg);
-  --sub-card-shadow: var(--card-shadow);
-  --sub-border: var(--border-primary);
-  --sub-accent: var(--primary-600);
-  --sub-accent-light: var(--primary-50);
-  --sub-success: var(--success-500);
-  --sub-text: var(--text-primary);
-  --sub-text-secondary: var(--text-secondary);
-  --sub-label: var(--text-secondary);
-  --sub-section-bg: var(--surface-secondary);
-  
-  /* Text on colored backgrounds */
+  /* Additional legacy variables for specific components */
   --text-on-accent: #ffffff;
   --text-on-success: #ffffff;
   --text-on-warning: #1a202c;
-  
+
   /* Success states */
   --success-bg: #f0fff4;
   --success-border: #9ae6b4;
   --success-text: #2f855a;
-  
+
   /* Warning states */
   --warning-bg: #fffaf0;
   --warning-border: #fbd38d;
   --warning-text: #c05621;
-  
+
   /* Highlighter specific colors */
-  --bg-secondary: #ffffff;
   --bg-hover: #f8f9fa;
   --highlight-color: #48bb78;
   --highlight-color-dark: #38a169;
+
+  /* Shadow color for legacy components */
+  --shadow-color: rgba(0, 0, 0, 0.08);
 }
 
 [data-theme="dark"] {
-  /* Legacy Base colors - mapped to new design system dark theme */
-  --primary-bg: var(--bg-primary);
-  --secondary-bg: var(--bg-secondary);
-  --text-color: var(--text-primary);
-  --text-color-strong: var(--text-primary);
-  --text-secondary: var(--text-secondary);
-  --border-color: var(--border-primary);
-  
-  /* Accent colors */
-  --accent-color: #4a90e2;
-  --accent-rgb: 74, 144, 226;
-  --accent-secondary: #f6ad55;
-  --accent-secondary-rgb: 246, 173, 85;
-  --accent-hover: #357abd;
-  
-  /* Background colors */
-  --bg-rgb: 26, 32, 44;
-  --hover-bg: rgba(255, 255, 255, 0.05);
-  --shadow-color: rgba(0, 0, 0, 0.3);
-  
-  /* Status colors */
-  --error-color: #fc8181;
-  --error-color-dark: #f56565;
-  --success-color: #68d391;
-  --warning-color: #f6ad55;
-  --info-color: #63b3ed;
-  
-  /* Component specific */
-  --tag-bg: #2d3748;
-  --input-bg: #2d3748;
-  --input-border: #4a5568;
-  --input-focus: #4a90e2;
-  --button-bg: #4a90e2;
-  --button-hover: #357abd;
-  --button-text: #ffffff;
-  --card-bg: #2d3748;
-  --card-bg-hover: #3a4a63;
-  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  
-  /* Subscription specific */
-  --sub-bg: #1a202c;
-  --sub-card-bg: #2d3748;
-  --sub-card-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
-  --sub-border: #4a5568;
-  --sub-accent: #4a90e2;
-  --sub-accent-light: rgba(74, 144, 226, 0.2);
-  --sub-success: #68d391;
-  --sub-text: #e2e8f0;
-  --sub-text-secondary: #a0aec0;
-  --sub-label: #cbd5e0;
-  --sub-section-bg: #2d3748;
-  
-  /* Text on colored backgrounds */
+  /* Dark theme overrides for legacy variables */
   --text-on-accent: #ffffff;
   --text-on-success: #ffffff;
   --text-on-warning: #1a202c;
-  
+
   /* Success states */
   --success-bg: rgba(104, 211, 145, 0.1);
   --success-border: rgba(104, 211, 145, 0.2);
   --success-text: #68d391;
-  
+
   /* Warning states */
   --warning-bg: rgba(246, 173, 85, 0.1);
   --warning-border: rgba(246, 173, 85, 0.2);
   --warning-text: #f6ad55;
-  
+
   /* Highlighter specific colors */
-  --bg-secondary: #2d3748;
   --bg-hover: #4a5568;
   --highlight-color: #68d391;
   --highlight-color-dark: #48bb78;
-} 
+
+  /* Shadow color for legacy components */
+  --shadow-color: rgba(0, 0, 0, 0.3);
+}

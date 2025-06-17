@@ -79,14 +79,14 @@
 }
 
 // ===================================
-// LIGHT THEME COLORS
+// UNIFIED THEME COLORS - LIGHT MODE DEFAULT
 // ===================================
 
 :root {
   // ===== BASE COLORS =====
   --color-white: #ffffff;
   --color-black: #000000;
-  
+
   // ===== GRAY SCALE =====
   --gray-50: #f9fafb;
   --gray-100: #f3f4f6;
@@ -132,7 +132,7 @@
   --info-600: #2563eb;
   --info-700: #1d4ed8;
 
-  // ===== LIGHT THEME SEMANTIC TOKENS (Update Profile Style) =====
+  // ===== UNIFIED SEMANTIC TOKENS - LIGHT THEME =====
   --bg-primary: #f5f6fa;
   --bg-secondary: #ffffff;
   --bg-tertiary: #f0f0f0;
@@ -155,7 +155,7 @@
   --surface-elevated: #ffffff;
   --surface-overlay: rgba(255, 255, 255, 0.9);
 
-  // ===== COMPONENT SPECIFIC LIGHT (Update Profile Style) =====
+  // ===== COMPONENT TOKENS =====
   --card-bg: #ffffff;
   --card-border: #e0e0e0;
   --card-shadow: 0 8px 32px rgba(124, 77, 255, 0.08);
@@ -172,6 +172,16 @@
   --modal-bg: #ffffff;
   --modal-overlay: rgba(0, 0, 0, 0.5);
   --modal-shadow: 0 8px 32px rgba(124, 77, 255, 0.08);
+
+  // ===== LEGACY COMPATIBILITY VARIABLES =====
+  --primary-bg: var(--bg-primary);
+  --secondary-bg: var(--bg-secondary);
+  --text-color: var(--text-primary);
+  --text-color-strong: var(--text-primary);
+  --border-color: var(--border-primary);
+  --accent-color: var(--primary-600);
+  --accent-rgb: 99, 102, 241;
+  --hover-bg: var(--bg-secondary);
 
   // ===== STATUS COLORS =====
   --status-success-bg: var(--success-50);
@@ -225,7 +235,7 @@
   --gray-800: #f4f4f5;
   --gray-900: #fafafa;
 
-  // ===== DARK THEME SEMANTIC TOKENS (Update Profile Style) =====
+  // ===== UNIFIED SEMANTIC TOKENS - DARK THEME =====
   --bg-primary: #18171b;
   --bg-secondary: #232326;
   --bg-tertiary: #2a2a3a;
@@ -248,7 +258,7 @@
   --surface-elevated: #232326;
   --surface-overlay: rgba(0, 0, 0, 0.9);
 
-  // ===== COMPONENT SPECIFIC DARK (Update Profile Style) =====
+  // ===== COMPONENT TOKENS =====
   --card-bg: #232326;
   --card-border: #353545;
   --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
@@ -265,6 +275,16 @@
   --modal-bg: #232326;
   --modal-overlay: rgba(0, 0, 0, 0.8);
   --modal-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+
+  // ===== LEGACY COMPATIBILITY VARIABLES =====
+  --primary-bg: var(--bg-primary);
+  --secondary-bg: var(--bg-secondary);
+  --text-color: var(--text-primary);
+  --text-color-strong: var(--text-primary);
+  --border-color: var(--border-primary);
+  --accent-color: #4a90e2;
+  --accent-rgb: 74, 144, 226;
+  --hover-bg: rgba(255, 255, 255, 0.05);
 
   // ===== STATUS COLORS DARK =====
   --status-success-bg: rgba(34, 197, 94, 0.1);

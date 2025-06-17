@@ -3,8 +3,8 @@
 // ===================================
 // Standardized component styles using design system
 
-@import './design-system.scss';
-@import './mixins.scss';
+@use './design-system' as *;
+@use './mixins' as *;
 
 // ===================================
 // BUTTON COMPONENTS

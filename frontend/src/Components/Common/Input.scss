@@ -2,8 +2,8 @@
 // REUSABLE INPUT COMPONENT
 // ===================================
 
-@import '../../styles/design-system.scss';
-@import '../../styles/mixins.scss';
+@use '../../styles/design-system' as *;
+@use '../../styles/mixins' as *;
 
 .input-wrapper {
   display: flex;
@@ -19,7 +19,7 @@
   .input-label {
     @include body-small;
     font-weight: var(--font-weight-medium);
-    color: var(--sub-text);
+    color: var(--text-secondary);
     cursor: pointer;
     transition: color var(--transition-normal);
   }
@@ -48,21 +48,21 @@
   
   // ===== VARIANTS =====
   &.input-default .input-field {
-    background: var(--sub-section-bg);
-    border: 1px solid var(--sub-border);
-    color: var(--sub-text);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--input-text);
     font-size: 0.9rem;
     transition: all 0.3s ease;
 
     &:focus {
       outline: none;
-      border-color: var(--sub-accent);
-      background: var(--sub-card-bg);
+      border-color: var(--input-focus);
+      background: var(--input-bg);
       box-shadow: 0 0 0 3px rgba(124, 77, 255, 0.1);
     }
 
     &:disabled {
-      background: var(--sub-card-bg);
+      background: var(--bg-tertiary);
       cursor: not-allowed;
       opacity: 0.7;
     }

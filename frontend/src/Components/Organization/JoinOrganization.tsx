@@ -39,6 +39,11 @@ const JoinOrganization: React.FC = () => {
 
         if (data.success) {
           setOrganizationDetails(data.data);
+
+          // If user is not logged in, show signup form
+          if (!user) {
+            setShowSignupForm(true);
+          }
         } else {
           setError(data.message || 'Invalid or expired invite link');
         }

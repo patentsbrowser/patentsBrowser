@@ -2,10 +2,10 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
   background-image: linear-gradient(
     135deg,
-    rgba(89, 46, 131, 0.15) 0%,
+    rgba(124, 77, 255, 0.15) 0%,
     rgba(40, 167, 69, 0.1) 100%
   );
   position: relative;
@@ -113,8 +113,8 @@
     justify-content: space-between;
     align-items: center;
     padding: 1rem 2rem;
-    background-color: rgba(0, 0, 0, 0.5);
-    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+    background-color: var(--bg-overlay);
+    border-bottom: 1px solid var(--border-primary);
     position: relative;
     z-index: 10;
 
@@ -131,8 +131,8 @@
     .logo {
       font-size: 1.5rem;
       font-weight: 700;
-      color: #ffd700; // Gold
-      text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+      color: var(--primary-600);
+      text-shadow: 0 0 8px rgba(124, 77, 255, 0.5);
       cursor: pointer;
       position: relative;
 
@@ -141,7 +141,7 @@
         position: absolute;
         top: 2px;
         left: 2px;
-        color: #6a26cd; // Violet
+        color: var(--primary-700);
         opacity: 0.6;
         filter: blur(2px);
       }
@@ -180,14 +180,14 @@
 
         &.btn-home {
           background: transparent;
-          border: 1px solid #ffd700; // Gold
-          color: white;
+          border: 1px solid var(--primary-600);
+          color: var(--text-primary);
         }
 
         &.btn-forum {
           background: transparent;
-          border: 1px solid white;
-          color: white;
+          border: 1px solid var(--border-primary);
+          color: var(--text-primary);
         }
       }
     }
@@ -195,16 +195,16 @@
 
   // Main auth box styles
   .auth-box {
-    background-color: rgba(25, 25, 25, 0.9);
+    background-color: var(--card-bg);
     width: 420px;
     border-radius: 12px;
     padding: 2.5rem;
-    color: white;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 15px rgba(89, 46, 131, 0.3);
+    color: var(--text-primary);
+    box-shadow: var(--card-shadow);
     margin: auto;
     position: relative;
     z-index: 10;
-    border: 1px solid rgba(89, 46, 131, 0.3);
+    border: 1px solid var(--card-border);
     transform-style: preserve-3d;
 
     // Patent decoration
@@ -241,7 +241,7 @@
       font-size: 2rem;
       text-align: center;
       margin-bottom: 2rem;
-      color: #ffd700;
+      color: var(--primary-600);
       font-weight: 600;
       position: relative;
       display: inline-block;
@@ -255,9 +255,9 @@
         transform: translateX(-50%);
         width: 80px;
         height: 2px;
-        background: linear-gradient(90deg, transparent, #ffd700, transparent);
+        background: linear-gradient(90deg, transparent, var(--primary-600), transparent);
         border-radius: 2px;
-        box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        box-shadow: 0 0 10px rgba(124, 77, 255, 0.5);
       }
     }
 
@@ -275,7 +275,7 @@
 
         label {
           font-size: 0.95rem;
-          color: #d0d0d0;
+          color: var(--text-secondary);
           font-weight: 500;
           margin-left: 0.3rem;
         }
@@ -284,9 +284,9 @@
           padding: 0.9rem 1rem;
           height: 50px;
           border-radius: 6px;
-          background-color: rgba(240, 240, 245, 0.9) !important;
-          border: 1px solid #444;
-          color: #333;
+          background-color: var(--input-bg) !important;
+          border: 1px solid var(--input-border);
+          color: var(--input-text);
           font-size: 1rem;
           transition: all 0.3s ease;
           width: 100%;
@@ -297,20 +297,14 @@
           -webkit-appearance: none;
           -moz-appearance: none;
 
-          /* Explicitly set these properties to ensure consistency */
-          background: rgba(240, 240, 245, 0.9) !important;
-          border-color: #444 !important;
-
           &:focus {
             outline: none;
-            border-color: #592e83 !important;
-            box-shadow: 0 0 0 3px rgba(89, 46, 131, 0.25),
-              0 0 15px rgba(89, 46, 131, 0.15);
-            background-color: rgba(245, 245, 250, 0.95) !important;
+            border-color: var(--input-focus) !important;
+            box-shadow: 0 0 0 3px rgba(124, 77, 255, 0.25);
           }
 
           &::placeholder {
-            color: #888;
+            color: var(--text-tertiary);
           }
 
           &:disabled {
@@ -327,16 +321,16 @@
           position: absolute;
           right: 1rem;
           bottom: 0.95rem;
-          color: #b0b0b0;
+          color: var(--text-tertiary);
           cursor: pointer;
 
           &:hover {
-            color: #ffd700;
+            color: var(--primary-600);
           }
         }
 
         .input-error {
-          color: #ff6b6b;
+          color: var(--error-500);
           font-size: 0.85rem;
           margin-top: 0.3rem;
           margin-left: 0.3rem;
@@ -347,8 +341,8 @@
       .submit-btn {
         padding: 0.8rem;
         border-radius: 6px;
-        background: linear-gradient(to right, #592e83, #7a3eb3);
-        color: white;
+        background: var(--button-primary-bg);
+        color: var(--button-primary-text);
         font-weight: 600;
         border: none;
         cursor: pointer;
@@ -359,7 +353,7 @@
         max-width: 300px;
         align-self: center;
         font-size: 0.95rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        box-shadow: var(--shadow-md);
 
         &::before {
           content: "";

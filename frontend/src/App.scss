@@ -1,13 +1,13 @@
 // ===================================
 // MAIN APP STYLES - OPTIMIZED
 // ===================================
-// Import unified design system and components
+// Import unified design system and components using modern @use
 
-@import './styles/design-system.scss';
-@import './styles/mixins.scss';
-@import './styles/utilities.scss';
-@import './styles/components.scss';
-@import './styles/theme.scss'; // Legacy support
+@use './styles/design-system' as *;
+@use './styles/mixins' as *;
+@use './styles/utilities' as *;
+@use './styles/components' as *;
+@use './styles/theme' as *; // Legacy support
 
 // Update existing styles to use unified design system
 body {
@@ -15,8 +15,7 @@ body {
   color: var(--text-primary);
   margin: 0;
   padding: 0;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
   font-size: var(--font-size-md);
   line-height: var(--line-height-normal);
@@ -76,18 +75,17 @@ body {
 }
 
 .app {
-  height: 120vh;
+  min-height: 100vh;
   @include flex-column;
   background-color: var(--bg-primary);
-  overflow: hidden;
 
   .app-content {
     display: flex;
     flex: 1;
     position: relative;
     z-index: 1;
-    overflow: hidden;
-    
+    min-height: 0; // Allow flex children to shrink
+
     .main-content {
       flex: 1;
       position: relative;
@@ -95,17 +93,17 @@ body {
       background-color: var(--primary-bg);
       display: flex;
       flex-direction: column;
+      overflow-y: auto; // Allow scrolling when needed
     }
   }
 }
 
 .app-container {
-  height: 100vh;
+  min-height: 100vh;
   position: relative;
   display: flex;
   flex-direction: column;
   background-color: var(--primary-bg);
-  overflow: hidden;
 
   &.patent-browser-app {
     position: relative;
@@ -139,7 +137,8 @@ body {
     background-color: var(--primary-bg);
     padding: 2rem;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow-y: auto; // Allow scrolling when content overflows
+    min-height: 0; // Allow flex children to shrink
 
     .patent-search-container {
       display: flex;

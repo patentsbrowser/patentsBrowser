@@ -3,8 +3,8 @@
 // ===================================
 // Uses unified design system for consistent theming
 
-@import '../../styles/design-system.scss';
-@import '../../styles/mixins.scss';
+@use '../../styles/design-system' as *;
+@use '../../styles/mixins' as *;
 
 .api-config-modal-overlay {
   position: fixed;

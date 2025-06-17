@@ -2,8 +2,8 @@
 // REUSABLE BUTTON COMPONENT
 // ===================================
 
-@import '../../styles/design-system.scss';
-@import '../../styles/mixins.scss';
+@use '../../styles/design-system' as *;
+@use '../../styles/mixins' as *;
 
 .btn {
   @include button-base;
@@ -11,15 +11,15 @@
   
   // ===== VARIANTS =====
   &.btn-primary {
-    background: var(--sub-accent);
-    color: var(--text-on-accent);
+    background: var(--button-primary-bg);
+    color: var(--button-primary-text);
     border: none;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 
     &:hover:not(:disabled) {
-      background: #6200ea;
+      background: var(--button-primary-hover);
       transform: translateY(-2px);
       box-shadow: 0 8px 20px rgba(124, 77, 255, 0.3);
     }
