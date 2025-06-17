@@ -23,7 +23,7 @@ import {
   TwitterIcon,
   WhatsappIcon
 } from 'react-share';
-import './OrganizationDashboard.scss';
+import './Invitation.scss';
 
 interface OrganizationMember {
   _id: string;
@@ -59,6 +59,8 @@ const Invitation: React.FC = () => {
     size: '1-10',
     type: 'startup'
   });
+  const [showAllMembers, setShowAllMembers] = useState(false);
+  const [searchEmail, setSearchEmail] = useState('');
 
   // Check if user has permission to access this page - Only organization admin
   const isOrganizationAdmin = user?.userType === 'organization_admin';
@@ -86,19 +88,32 @@ const Invitation: React.FC = () => {
   const fetchOrganizationMembers = async () => {
     try {
       setIsLoading(true);
+      console.log('🔍 Fetching organization members...');
       const membersResponse = await fetch('http://localhost:5000/api/organization/members', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       const membersData = await membersResponse.json();
+      console.log('📊 Members API Response:', membersData);
+      
       if (membersData.success && Array.isArray(membersData.data)) {
-        // Filter out any invalid member data
-        const validMembers = membersData.data.filter(member =>
-          member && member._id && member.name && member.email
-        );
+        console.log('✅ Raw members data:', membersData.data);
+        // Less strict filtering - just check for required fields
+        const validMembers = membersData.data.filter((member: any) => {
+          const hasId = member && member._id;
+          const hasEmail = member && member.email;
+          const hasName = member && member.name;
+          
+          console.log(`Member ${member?._id}: hasId=${hasId}, hasEmail=${hasEmail}, hasName=${hasName}`);
+          
+          // More lenient check - just need id and email
+          return hasId && hasEmail;
+        });
+        console.log('✅ Valid members after filtering:', validMembers);
         setMembers(validMembers);
       } else {
+        console.log('❌ API failed or data is not array:', membersData);
         setMembers([]);
         if (!membersData.success) {
           console.log('Members API response:', membersData.message);
@@ -199,6 +214,20 @@ const Invitation: React.FC = () => {
 
   const shareTitle = "Join Our Organization";
   const shareText = "You're invited to join our organization! Click the link to join:";
+
+  // Filter members based on search
+  const filteredMembers = members.filter(member => {
+    if (!member) return false;
+    
+    const email = member.email || '';
+    const name = member.name || '';
+    const searchTerm = searchEmail.toLowerCase();
+    
+    return email.toLowerCase().includes(searchTerm) ||
+           name.toLowerCase().includes(searchTerm);
+  });
+
+  const displayedMembers = showAllMembers ? filteredMembers : filteredMembers.slice(0, 10);
 
   return (
     <div className="organization-dashboard">
@@ -309,6 +338,7 @@ const Invitation: React.FC = () => {
             </div>
           )}
           <div className="members-list">
+            
             {isLoading ? (
               <div className="loading">Loading organization members...</div>
             ) : members.length === 0 ? (
@@ -330,53 +360,103 @@ const Invitation: React.FC = () => {
                     </span>
                   </div>
                 </div>
-                {members.map((member) => (
-                  <motion.div
-                    key={member._id}
-                    className="member-card"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <div className="member-info">
-                      <div className="member-avatar">
-                        {member.name ? member.name.charAt(0).toUpperCase() : '?'}
-                      </div>
-                      <div className="member-details">
-                        <h3>{member.name || 'Unknown User'}</h3>
-                        <p>{member.email || 'No email'}</p>
-                        <div className="member-badges">
-                          <span className={`role-badge ${member.role || 'member'}`}>
-                            {member.role || 'member'}
-                          </span>
-                          <span className="status-badge active">Active</span>
+
+                {/* Search Box */}
+                <div className="search-container">
+                  <input
+                    type="text"
+                    placeholder="Search by email or name..."
+                    value={searchEmail}
+                    onChange={(e) => setSearchEmail(e.target.value)}
+                    className="search-input"
+                  />
+                  {searchEmail && (
+                    <button
+                      className="clear-search"
+                      onClick={() => setSearchEmail('')}
+                      title="Clear search"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Members List */}
+                <div className="members-container">
+                  {filteredMembers.length === 0 ? (
+                    <div className="no-search-results">
+                      <p>No members found matching "{searchEmail}"</p>
+                    </div>
+                  ) : (
+                    displayedMembers.map((member, index) => (
+                      <motion.div
+                        key={member._id}
+                        className="member-card"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <div className="member-serial">
+                          #{(showAllMembers ? filteredMembers.indexOf(member) : index) + 1}
                         </div>
-                      </div>
-                    </div>
-                    <div className="member-actions">
-                      <span className="joined-date">
-                        Joined: {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        }) : 'Unknown'}
-                      </span>
-                      {member.role !== 'admin' && (
-                        <button
-                          className="remove-btn"
-                          onClick={() => {
-                            if (window.confirm(`Remove ${member.name || 'this member'} from organization?`)) {
-                              // TODO: Implement remove member functionality
-                              toast.info('Remove member functionality coming soon');
-                            }
-                          }}
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
+                        <div className="member-info">
+                          <div className="member-avatar">
+                            {(member.name || member.email || '?').charAt(0).toUpperCase()}
+                          </div>
+                          <div className="member-details">
+                            <h3>{member.name || member.email || 'Unknown User'}</h3>
+                            <p className="member-email">{member.email || 'No email'}</p>
+                            <div className="member-badges">
+                              <span className={`role-badge ${member.role || 'member'}`}>
+                                {(member.role || 'member').toUpperCase()}
+                              </span>
+                              <span className="status-badge active">Active</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="member-actions">
+                          <span className="joined-date">
+                            Joined: {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            }) : 'Unknown'}
+                          </span>
+                          {member.role !== 'admin' && (
+                            <button
+                              className="remove-btn"
+                              onClick={() => {
+                                if (window.confirm(`Remove ${member.name || 'this member'} from organization?`)) {
+                                  // TODO: Implement remove member functionality
+                                  toast('Remove member functionality coming soon');
+                                }
+                              }}
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
+                </div>
+
+                {/* View All Button */}
+                {filteredMembers.length > 10 && (
+                  <button
+                    className="view-all-btn"
+                    onClick={() => setShowAllMembers((prev) => !prev)}
+                  >
+                    {showAllMembers ? 'Show Less' : `View All (${filteredMembers.length})`}
+                  </button>
+                )}
+
+                {/* Search Results Info */}
+                {searchEmail && (
+                  <div className="search-info">
+                    Showing {filteredMembers.length} of {members.length} members
+                  </div>
+                )}
               </>
             )}
           </div>
