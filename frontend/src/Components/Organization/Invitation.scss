@@ -52,7 +52,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
-    min-height: calc(100vh - 200px);
+    align-items: start;
   }
 
   // Left Column - Invite Section
@@ -63,7 +63,6 @@
     border-radius: 20px;
     padding: 2rem;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    min-height: calc(100vh - 200px);
     display: flex;
     flex-direction: column;
   }
@@ -76,7 +75,7 @@
     border-radius: 20px;
     padding: 2rem;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    min-height: calc(100vh - 200px);
+    min-height: calc(100vh - 300px);
     display: flex;
     flex-direction: column;
   }
