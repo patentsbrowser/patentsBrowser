@@ -55,8 +55,8 @@
     min-height: calc(100vh - 200px);
   }
 
-  // Members Card - Full Width
-  .members-card {
+  // Left Column - Invite Section
+  .invite-section {
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -68,7 +68,20 @@
     flex-direction: column;
   }
 
-  // Section Headers (for both columns)
+  // Right Column - Members Section
+  .members-section {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    min-height: calc(100vh - 200px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  // Section Headers
   .section-header {
     display: flex;
     justify-content: space-between;
@@ -111,16 +124,6 @@
         cursor: not-allowed;
         transform: none;
       }
-    }
-
-    .requests-count {
-      background: rgba(124, 77, 255, 0.2);
-      color: #7c4dff;
-      padding: 0.5rem 1rem;
-      border-radius: 20px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      border: 1px solid rgba(124, 77, 255, 0.4);
     }
   }
 
@@ -578,6 +581,7 @@
     }
   }
 
+
 // Modal Styles
 .modal-overlay {
   position: fixed;
@@ -655,10 +659,17 @@
       padding: 1rem;
     }
 
-    .members-card {
+    // Stack columns vertically on mobile
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .invite-section,
+    .members-section {
       padding: 1.5rem;
 
-      .card-header {
+      .section-header {
         flex-direction: column;
         gap: 1rem;
         text-align: center;
@@ -669,60 +680,60 @@
         }
       }
 
-      .invite-link-container {
-        .invite-link-section {
-          flex-direction: column;
+    .invite-link-container {
+      .invite-link-section {
+        flex-direction: column;
 
-          .link-actions {
-            justify-content: center;
-          }
-        }
-
-        .quick-share-options {
+        .link-actions {
           justify-content: center;
-          text-align: center;
-
-          .quick-share-buttons {
-            justify-content: center;
-          }
         }
       }
 
-      .members-list {
-        .members-header {
-          flex-direction: column;
-          gap: 1rem;
-          text-align: center;
+      .quick-share-options {
+        justify-content: center;
+        text-align: center;
 
-          .members-stats {
-            justify-content: center;
-          }
-        }
-
-        .member-card {
-          flex-direction: column;
-          text-align: center;
-          padding: 1.5rem 1rem 1rem 1rem;
-
-          .member-serial {
-            position: static;
-            margin-bottom: 1rem;
-            align-self: center;
-          }
-
-          .member-info {
-            flex-direction: column;
-            padding-top: 0;
-            text-align: center;
-          }
-
-          .member-actions {
-            align-items: center;
-            text-align: center;
-          }
+        .quick-share-buttons {
+          justify-content: center;
         }
       }
     }
+
+    .members-list {
+      .members-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+
+        .members-stats {
+          justify-content: center;
+        }
+      }
+
+      .member-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.5rem 1rem 1rem 1rem;
+
+        .member-serial {
+          position: static;
+          margin-bottom: 1rem;
+          align-self: center;
+        }
+
+        .member-info {
+          flex-direction: column;
+          padding-top: 0;
+          text-align: center;
+        }
+
+        .member-actions {
+          align-items: center;
+          text-align: center;
+        }
+      }
+    }
+  }
   }
 }
 
@@ -736,10 +747,15 @@
       }
     }
 
-    .members-card {
+    .invite-section,
+    .members-section {
       padding: 1rem;
       margin: 0;
       border-radius: 16px;
     }
+
+    .dashboard-grid {
+      gap: 1rem;
+    }
   }
-} 
+}
