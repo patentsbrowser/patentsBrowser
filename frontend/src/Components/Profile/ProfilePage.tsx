@@ -75,7 +75,7 @@ const ProfilePage = () => {
   };
 
   const profile = {
-    name: profileData?.name || "No Record",
+    name: profileData?.organizationName || profileData?.name || "No Record",
     email: profileData?.email || "No Record",
     number: formatPhoneNumber(profileData?.number, profileData?.phoneCode),
     address: profileData?.address || "No Record",
