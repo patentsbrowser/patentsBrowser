@@ -1,28 +1,7 @@
-import axios from 'axios';
+import api from './axiosConfig';
 
-const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-// Create an axios instance
-const api = axios.create({
-  baseURL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add a request interceptor to attach the token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+// Request-specific locks to prevent race conditions
+const verificationLocks = new Map<string, Promise<any>>();
 
 export interface LoginCredentials {
   email: string;
@@ -32,120 +11,15 @@ export interface LoginCredentials {
 export interface SignupCredentials extends LoginCredentials {
   name: string;
 }
-// Add a request lock
-let isVerifyingOTP = false;
 
-// Auth API functions
 export const authApi = {
-  // Login function
-  login: async (credentials: { email: string; password: string }) => {
-    try {
-      const response = await api.post('/auth/login', credentials);
-      // If login is successful, save the token
-      if (response.data.statusCode === 200) {
-        localStorage.setItem('token', response.data.data.token);
-        const user = response.data.data.user;
-        // Set the user in localStorage (for persistence)
-        localStorage.setItem('user', JSON.stringify(user));
-      }
-      
-      return {
-        data: response.data.data,
-        user: response.data.data.user,
-        message: response.data.message,
-        statusCode: response.data.statusCode
-      };
-    } catch (error: any) {
-      console.error('Login API error:', error);
-      const errorResponse = error.response?.data || { statusCode: 500, message: 'Server error' };
-      return {
-        data: null,
-        user: null,
-        message: errorResponse.message,
-        statusCode: errorResponse.statusCode
-      };
-    }
-  },
-
-  // Signup function
-  signup: async (credentials: any) => {
-    try {
-      const response = await api.post('/auth/signup', credentials);
-      
-      return {
-        data: response.data.data,
-        message: response.data.message,
-        statusCode: response.data.statusCode
-      };
-    } catch (error: any) {
-      const errorResponse = error.response?.data || { statusCode: 500, message: 'Server error' };
-      return {
-        data: null,
-        message: errorResponse.message,
-        statusCode: errorResponse.statusCode
-      };
-    }
-  },
-
-  // Logout function
-  logout: async () => {
-    try {
-      await api.post('/auth/logout');
-      
-      // Clear local storage on logout
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      
-      return {
-        success: true
-      };
-    } catch (error) {
-      // Still clear local storage on failed logout
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      
-      return {
-        success: false,
-        error
-      };
-    }
-  },
-
-  // Get user profile
-  getProfile: async () => {
-    try {
-      const response = await api.get('/auth/profile');
-      return response.data;
-    } catch (error: any) {
-      return {
-        statusCode: error.response?.status || 500,
-        message: error.response?.data?.message || 'Failed to fetch profile',
-        data: null
-      };
-    }
-  },
-
-  // Update user profile
-  updateProfile: async (data: any) => {
-    try {
-      const response = await api.post('/auth/update-profile', data);
-      return response.data;
-    } catch (error: any) {
-      return {
-        statusCode: error.response?.status || 500,
-        message: error.response?.data?.message || 'Failed to update profile',
-        data: null
-      };
-    }
-  },
-
-  // Check admin status - a helper function to check if user is admin
+  // Check if user is admin
   checkAdminStatus: async () => {
     try {
-      const response = await api.get('/auth/check-admin');
+      const { data } = await api.get('/auth/profile');
       return {
-        isAdmin: response.data.isAdmin,
-        statusCode: response.data.statusCode
+        isAdmin: data.data?.isAdmin || false,
+        statusCode: 200
       };
     } catch (error: any) {
       console.error('Error checking admin status:', error);
@@ -157,16 +31,141 @@ export const authApi = {
     }
   },
 
+  signup: async (credentials: SignupCredentials & {
+    isOrganization?: boolean;
+    organizationName?: string;
+    organizationSize?: string;
+    organizationType?: string;
+  }) => {
+    try {
+      const { data } = await api.post('/auth/signup', credentials);
+      return data;
+    } catch (error: any) {
+      console.error('Signup error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      throw error;
+    }
+  },
+
+  login: async (credentials: LoginCredentials) => {
+    try {
+      const { data } = await api.post('/auth/login', credentials);
+      if (data.statusCode === 200 && data.data?.token) {
+        localStorage.setItem('token', data.data.token);
+        localStorage.setItem('user', JSON.stringify(data.data.user));
+      }
+      return data;
+    } catch (error: any) {
+      console.error('Login error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      throw error;
+    }
+  },
+
+  logout: async () => {
+    try {
+      await api.post('/auth/logout');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      return { statusCode: 200, message: 'Logged out successfully' };
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      // Clear local storage even if API call fails
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      throw error;
+    }
+  },
+
+  getProfile: async () => {
+    try {
+      const { data } = await api.get('/auth/profile');
+      return data;
+    } catch (error: any) {
+      console.error('Get profile error:', error);
+      throw error;
+    }
+  },
+
+  updateProfile: async (profileData: any) => {
+    try {
+      const { data } = await api.post('/auth/update-profile', profileData);
+      return data;
+    } catch (error: any) {
+      console.error('Update profile error:', error);
+      throw error;
+    }
+  },
+
+  // uploadProfileImage: async (file: File) => {
+  //   try {
+  //     const formData = new FormData();
+  //     formData.append('profileImage', file);
+  //     const { data } = await api.post('/auth/upload-image', formData, {
+  //       headers: { 'Content-Type': 'multipart/form-data' }
+  //     });
+  //     return data;
+  //   } catch (error: any) {
+  //     console.error('Upload profile image error:', error);
+  //     throw error;
+  //   }
+  // },
+
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    try {
+      const { data } = await api.post('/auth/change-password', {
+        currentPassword,
+        newPassword
+      });
+      return data;
+    } catch (error: any) {
+      console.error('Change password error:', error);
+      throw error;
+    }
+  },
+
+  sendOTP: async (email: string) => {
+    try {
+      const { data } = await api.post('/auth/send-otp', { email });
+      return data;
+    } catch (error: any) {
+      console.error('Send OTP error:', error);
+      throw error;
+    }
+  },
+
+  resetPassword: async (email: string, otp: string, newPassword: string) => {
+    try {
+      const { data } = await api.post('/auth/reset-password', {
+        email,
+        otp,
+        newPassword
+      });
+      return data;
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      throw error;
+    }
+  },
+
   verifyOTP: async (email: string, otp: string) => {
-    // Prevent duplicate verifyOTP requests
-    if (isVerifyingOTP) {
-      return { statusCode: 100, message: 'Request in progress' };
+    // Use request-specific lock to prevent race conditions
+    const lockKey = `${email}-${otp}`;
+    
+    if (verificationLocks.has(lockKey)) {
+      return verificationLocks.get(lockKey);
     }
     
-    try {
-      isVerifyingOTP = true;
+    const verificationPromise = (async () => {
+      try {
       const { data } = await api.post(`/auth/verify-otp`, { email, otp });
-      if (data.statusCode === 200) {
+        if (data.statusCode === 200 && data.data?.token) {
         localStorage.setItem('token', data.data.token);
         localStorage.setItem('user', JSON.stringify(data.data.user));
       }
@@ -179,11 +178,15 @@ export const authApi = {
       });
       throw error;
     } finally {
-      // Reset the lock regardless of success or failure
+        // Remove the lock after a delay to prevent immediate reuse
       setTimeout(() => {
-        isVerifyingOTP = false;
-      }, 500);
+          verificationLocks.delete(lockKey);
+        }, 1000);
     }
+    })();
+    
+    verificationLocks.set(lockKey, verificationPromise);
+    return verificationPromise;
   },
 
   resendOTP: async (email: string) => {
@@ -347,51 +350,32 @@ export const authApi = {
       const response = await api.get(`/saved-patents/get-imported-lists`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching imported lists:', error);
+      console.error('Error getting imported lists:', error);
       throw error;
     }
   },
 
-  addPatentsToWorkFile: async (folderId: string, workFileName: string, patentIds: string[]) => {
+  mergeWorkFiles: async (workFileIds: string[], newWorkFileName: string) => {
     try {
-      const response = await api.post(
-        `/saved-patents/add-patents-to-workfile`,
-        { folderId, workFileName, patentIds }
-      );
+      const response = await api.post(`/saved-patents/merge-workfiles`, {
+        workFileIds,
+        newWorkFileName
+      });
       return response.data;
     } catch (error) {
-      console.error('Error adding patents to work file:', error);
+      console.error('Error merging work files:', error);
       throw error;
     }
   },
 
-  // Removed addToSearchHistory API call that was returning 404
-
-  deleteItem: async (params: { itemType: 'folder' | 'workfile' | 'patent', folderId: string, workFileId?: string, patentId?: string }) => {
-    const response = await axios.post(`${baseURL}/saved-patents/delete-item`, params, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    return response;
-  },
-
-  // Change password function
-  changePassword: async (data: { currentPassword: string; newPassword: string }) => {
+  // Organization signup with invite
+  signupWithInvite: async (credentials: SignupCredentials & { inviteToken: string }) => {
     try {
-      const response = await api.post('/auth/change-password', data);
-      return response.data;
+      const { data } = await api.post('/auth/signup-with-invite', credentials);
+      return data;
     } catch (error: any) {
-      return {
-        statusCode: error.response?.status || 500,
-        message: error.response?.data?.message || 'Failed to change password',
-        data: null
-      };
+      console.error('Organization signup error:', error);
+      throw error;
     }
-  },
-
-  // Remove patent read status APIs
-  // getReadPatents: () => axios.get(`${API_URL}/patent-read-status/list`),
-  // markPatentAsRead: (patentId: string) => axios.post(`${API_URL}/patent-read-status/mark-read`, { patentId }),
-  // checkPatentsReadStatus: (patentIds: string[]) => axios.post(`${API_URL}/patent-read-status/check-status`, { patentIds }),
+  }
 }; 

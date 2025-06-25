@@ -1,62 +1,43 @@
 import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { authApi } from '../../api/auth';
-import './Authentication.scss';
-import toast from 'react-hot-toast';
-import { useAuth } from '../../AuthContext';
-import OTPModal from './OTPModal/OTPModal';
-import Loader from '../Loader/Loader';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { authApi } from '../../api/auth';
+import Loader from '../Common/Loader';
+import OTPModal from './OTPModal/OTPModal';
+import toast from 'react-hot-toast';
+import './Authentication.scss';
+
 interface SignupProps {
   switchToLogin?: () => void;
 }
 
 const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
   const [activeTab, setActiveTab] = useState<'individual' | 'organization'>('individual');
+  const [isOrganization, setIsOrganization] = useState(false);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showOTPModal, setShowOTPModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [isOrganization, setIsOrganization] = useState(false);
+  const [showOTPModal, setShowOTPModal] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState('');
+  
+  // Organization fields
   const [organizationName, setOrganizationName] = useState('');
   const [organizationSize, setOrganizationSize] = useState('');
   const [organizationType, setOrganizationType] = useState('');
+
   const navigate = useNavigate();
-  const [pendingEmail, setPendingEmail] = useState("");
 
   const signupMutation = useMutation({
-    mutationFn: () => {
-      const payload: any = {
-        email,
-        password,
-        isOrganization,
-        organizationName: isOrganization ? organizationName : undefined,
-        organizationSize: isOrganization ? organizationSize : undefined,
-        organizationType: isOrganization ? organizationType : undefined,
-      };
-      if (!isOrganization) {
-        payload.name = fullName;
-      }
-      return authApi.signup(payload);
-    },
-    onSuccess: (response) => {
-      if (response.statusCode === 200 && response.data?.mode === 'verify') {
+    mutationFn: (credentials: any) => authApi.signup(credentials),
+    onSuccess: (response: any) => {
+      if (response.statusCode === 200) {
         setPendingEmail(email);
         setShowOTPModal(true);
-        return;
-      }
-      if (response.data?.mode === 'login') {
-        toast.error('Account already exists. Please login.');
-        return;
-      }
-      if (response.statusCode === 200) {
-        handleSignupSuccess(response.data);
-        setShowOTPModal(true);
+        toast.success('OTP sent to your email. Please verify to complete signup.');
       } else {
-        toast.error(response.message || 'Signup failed. Please try again.');
+        toast.error(response.message || 'Signup failed');
       }
     },
     onError: (error: any) => {
@@ -70,9 +51,9 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
     mutationFn: (otp: string) => authApi.verifyOTP(pendingEmail, otp),
     onSuccess: (response: any) => {
       if (response.statusCode === 200) {
-        toast.success(response.message);
+        toast.success('Account created successfully!');
         setShowOTPModal(false);
-        navigate('/auth/login');
+        navigate('/auth/dashboard');
       } else if (response.message) {
         toast.error(response.message);
       }
@@ -94,22 +75,21 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
     }
   });
 
-  const handleSignupSuccess = (data: any) => {
-    console.log('Handling signup success:', data); // Debug log
-    toast.success('Account created successfully! Please verify your email.');
-    setShowOTPModal(true); // Show OTP modal after signup
-    // Store user data in localStorage
-    localStorage.setItem('user', JSON.stringify(data.user));
-  };
-
   const handleTabSwitch = (tab: 'individual' | 'organization') => {
     setActiveTab(tab);
     setIsOrganization(tab === 'organization');
-    // Optionally reset org fields when switching
+    // Reset organization fields when switching to individual
+    if (tab === 'individual') {
+      setOrganizationName('');
+      setOrganizationSize('');
+      setOrganizationType('');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields based on active tab
     if (activeTab === 'organization') {
       if (!organizationName || !organizationSize || !organizationType) {
         toast.error('Please fill all organization details.');
@@ -121,7 +101,26 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
         return;
       }
     }
-    signupMutation.mutate();
+
+    if (!email || !password) {
+      toast.error('Please fill all required fields.');
+      return;
+    }
+
+    // Prepare signup credentials
+    const credentials = {
+      name: fullName,
+      email,
+      password,
+      isOrganization: activeTab === 'organization',
+      ...(activeTab === 'organization' && {
+        organizationName,
+        organizationSize,
+        organizationType
+      })
+    };
+
+    signupMutation.mutate(credentials);
   };
 
   const handleVerifyOTP = async (otp: string) => {
@@ -164,7 +163,10 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
 
   return (
     <>
-      <Loader isLoading={signupMutation.isPending || verifyOTPMutation.isPending || resendOTPMutation.isPending} />
+      {/* <Loader 
+        fullScreen={signupMutation.isPending || verifyOTPMutation.isPending || resendOTPMutation.isPending}
+        text="Processing..."
+      /> */}
       <motion.div 
         className="auth-box"
         initial={{ opacity: 0, rotateY: -30, scale: 0.9 }}
@@ -190,22 +192,25 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
         >
           <div className="signup-tabs">
             <button
+              type="button"
               className={activeTab === 'individual' ? 'active' : ''}
               onClick={() => handleTabSwitch('individual')}
             >
               Individual
             </button>
             <button
+              type="button"
               className={activeTab === 'organization' ? 'active' : ''}
               onClick={() => handleTabSwitch('organization')}
             >
               Organization
             </button>
           </div>
+          
           {activeTab === 'organization' && (
             <>
               <motion.div className="form-group" variants={inputVariants}>
-                <label htmlFor="organizationName">Organization Name</label>
+                <label htmlFor="organizationName">Organization Name *</label>
                 <input
                   type="text"
                   id="organizationName"
@@ -218,7 +223,7 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
                 />
               </motion.div>
               <motion.div className="form-group" variants={inputVariants}>
-                <label htmlFor="organizationSize">Organization Size</label>
+                <label htmlFor="organizationSize">Organization Size *</label>
                 <select
                   id="organizationSize"
                   value={organizationSize}
@@ -236,7 +241,7 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
                 </select>
               </motion.div>
               <motion.div className="form-group" variants={inputVariants}>
-                <label htmlFor="organizationType">Organization Type</label>
+                <label htmlFor="organizationType">Organization Type *</label>
                 <select
                   id="organizationType"
                   value={organizationType}
@@ -256,12 +261,13 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
               </motion.div>
             </>
           )}
+          
           {activeTab === 'individual' && (
             <motion.div 
               className="form-group"
               variants={inputVariants}
             >
-              <label htmlFor="name">Full Name</label>
+              <label htmlFor="name">Full Name *</label>
               <input
                 type="text"
                 id="name"
@@ -274,11 +280,12 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
               />
             </motion.div>
           )}
+          
           <motion.div 
             className="form-group"
             variants={inputVariants}
           >
-            <label htmlFor="email">Email Address</label>
+            <label htmlFor="email">Email Address *</label>
             <input
               type="email"
               id="email"
@@ -290,84 +297,72 @@ const Signup: React.FC<SignupProps> = ({ switchToLogin }) => {
               className="auth-input"
             />
           </motion.div>
+          
           <motion.div 
             className="form-group"
             variants={inputVariants}
           >
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">Password *</label>
             <div className="password-input-container">
               <input
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? 'text' : 'password'}
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 required
-                minLength={6}
                 disabled={signupMutation.isPending}
                 className="auth-input"
               />
-              <motion.button 
-                type="button" 
-                className="password-toggle-btn" 
+              <button
+                type="button"
+                className="password-toggle"
                 onClick={togglePasswordVisibility}
-                tabIndex={-1}
-                whileHover={{ scale: 1.2, rotate: 5 }}
-                whileTap={{ scale: 0.9 }}
+                disabled={signupMutation.isPending}
               >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </motion.button>
+                {showPassword ? '👁️' : '👁️‍🗨️'}
+              </button>
             </div>
           </motion.div>
-          <motion.button 
-            type="submit" 
-            className="submit-btn"
-            disabled={signupMutation.isPending}
+          
+          <motion.button
+            type="submit"
+            className="auth-button"
             variants={inputVariants}
-            whileHover={{ 
-              scale: 1.05, 
-              y: -5,
-              boxShadow: "0 10px 25px rgba(106, 38, 205, 0.4)"
-            }}
-            whileTap={{ scale: 0.95 }}
+            disabled={signupMutation.isPending}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             {signupMutation.isPending ? 'Creating Account...' : 'Create Account'}
           </motion.button>
-          <div className="divider">
-            <span>Or</span>
-          </div>
-          <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-            <span>Already have an account? </span>
-            <button
-              type="button"
-              className="switch-btn"
-              onClick={typeof switchToLogin === 'function' ? switchToLogin : undefined}
-              style={{ background: 'none', border: 'none', color: '#ffd700', cursor: 'pointer', fontWeight: 600 }}
-            >
-              Sign In
-            </button>
-          </div>
         </motion.form>
+        
+        <motion.div 
+          className="auth-footer"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          <p>
+            Already have an account?{' '}
+            <button 
+              type="button"
+              className="link-button" 
+              onClick={switchToLogin}
+              disabled={signupMutation.isPending}
+            >
+              Login here
+            </button>
+          </p>
+        </motion.div>
       </motion.div>
 
       {showOTPModal && (
         <OTPModal
           isOpen={showOTPModal}
           onClose={() => setShowOTPModal(false)}
-          onVerify={async (otp: string) => {
-            try {
-              await verifyOTPMutation.mutateAsync(otp);
-            } catch (error) {
-              console.error('OTP verification failed:', error);
-            }
-          }}
-          onResend={async () => {
-            try {
-              await resendOTPMutation.mutateAsync();
-            } catch (error) {
-              console.error('Failed to resend OTP:', error);
-            }
-          }}
+          onVerify={handleVerifyOTP}
+          onResend={handleResendOTP}
           email={pendingEmail}
           isResendDisabled={resendOTPMutation.isPending}
           mode="signup"

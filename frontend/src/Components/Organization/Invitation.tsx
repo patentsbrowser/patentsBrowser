@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../AuthContext';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   FaUserPlus,
   FaCopy,
@@ -23,38 +24,17 @@ import {
   TwitterIcon,
   WhatsappIcon
 } from 'react-share';
+import { organizationApi, OrganizationMember, InvitedMember, OrganizationData } from '../../api/organization';
 import './Invitation.scss';
-
-interface OrganizationMember {
-  _id: string;
-  name: string;
-  email: string;
-  role: string;
-  joinedAt: string;
-  status?: 'active' | 'pending' | 'inactive';
-  userType?: string;
-}
-
-interface InvitedMember {
-  token: string;
-  createdAt: string;
-  expiresAt: string;
-  inviteLink: string;
-  status: 'pending';
-}
 
 const Invitation: React.FC = () => {
   const { user } = useAuth();
-  const [members, setMembers] = useState<OrganizationMember[]>([]);
-  const [invitedMembers, setInvitedMembers] = useState<InvitedMember[]>([]);
+  const queryClient = useQueryClient();
   const [inviteLink, setInviteLink] = useState('');
-  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingInvited, setIsLoadingInvited] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const [showCreateOrganization, setShowCreateOrganization] = useState(false);
-  const [organizationData, setOrganizationData] = useState({
+  const [organizationData, setOrganizationData] = useState<OrganizationData>({
     name: '',
     size: '1-10',
     type: 'startup'
@@ -64,14 +44,6 @@ const Invitation: React.FC = () => {
 
   // Check if user has permission to access this page - Only organization admin
   const isOrganizationAdmin = user?.userType === 'organization_admin';
-
-  // All hooks must be called before any early returns
-  useEffect(() => {
-    if (isOrganizationAdmin) {
-      fetchOrganizationMembers();
-      fetchInvitedMembers();
-    }
-  }, [isOrganizationAdmin]);
 
   // Early return after all hooks
   if (!isOrganizationAdmin) {
@@ -85,82 +57,49 @@ const Invitation: React.FC = () => {
     );
   }
 
-  const fetchOrganizationMembers = async () => {
-    try {
-      setIsLoading(true);
-      console.log('🔍 Fetching organization members...');
-      const membersResponse = await fetch('http://localhost:5000/api/organization/members', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const membersData = await membersResponse.json();
-      console.log('📊 Members API Response:', membersData);
-      
-      if (membersData.success && Array.isArray(membersData.data)) {
-        console.log('✅ Raw members data:', membersData.data);
-        // Less strict filtering - just check for required fields
-        const validMembers = membersData.data.filter((member: any) => {
-          const hasId = member && member._id;
-          const hasEmail = member && member.email;
-          const hasName = member && member.name;
-          
-          console.log(`Member ${member?._id}: hasId=${hasId}, hasEmail=${hasEmail}, hasName=${hasName}`);
-          
-          // More lenient check - just need id and email
-          return hasId && hasEmail;
-        });
-        console.log('✅ Valid members after filtering:', validMembers);
-        setMembers(validMembers);
-      } else {
-        console.log('❌ API failed or data is not array:', membersData);
-        setMembers([]);
-        if (!membersData.success) {
-          console.log('Members API response:', membersData.message);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching members:', error);
-      setMembers([]);
-      toast.error('Failed to load organization members');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Fetch organization members
+  const {
+    data: membersData = [],
+    isLoading: isLoadingMembers,
+  } = useQuery({
+    queryKey: ['organizationMembers'],
+    queryFn: organizationApi.getMembers,
+    enabled: isOrganizationAdmin,
+    select: (data) => data.data || []
+  });
 
-  const fetchInvitedMembers = async () => {
-    try {
-      setIsLoadingInvited(true);
-      const invitedResponse = await fetch('http://localhost:5000/api/organization/invited-members', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const invitedData = await invitedResponse.json();
-      if (invitedData.success) {
-        setInvitedMembers(invitedData.data);
-      } else {
-        setInvitedMembers([]);
-      }
-    } catch (error) {
-      setInvitedMembers([]);
-      console.error('Failed to load invited members:', error);
-    } finally {
-      setIsLoadingInvited(false);
-    }
-  };
+  // Fetch invited members
+  useQuery({
+    queryKey: ['invitedMembers'],
+    queryFn: organizationApi.getInvitedMembers,
+    enabled: isOrganizationAdmin,
+    select: (data) => data.data || []
+  });
 
-  const createOrganization = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/organization/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(organizationData)
-      });
-      const data = await response.json();
+  // Generate invite link mutation
+  const generateInviteLinkMutation = useMutation({
+    mutationFn: organizationApi.generateInviteLink,
+    onSuccess: (data) => {
+      if (data.success) {
+        setInviteLink(data.data.inviteLink);
+        toast.success('Invite link generated successfully');
+      } else {
+        // If organization not found, show create organization option
+        if (data.message?.includes('Organization not found')) {
+          setShowCreateOrganization(true);
+        }
+        toast.error(data.message || 'Failed to generate invite link');
+      }
+    },
+    onError: (error: any) => {
+      toast.error('Failed to generate invite link');
+    }
+  });
+
+  // Create organization mutation
+  const createOrganizationMutation = useMutation({
+    mutationFn: () => organizationApi.createOrganization(organizationData),
+    onSuccess: (data) => {
       if (data.success) {
         toast.success('Organization created successfully');
         setShowCreateOrganization(false);
@@ -169,37 +108,28 @@ const Invitation: React.FC = () => {
       } else {
         toast.error(data.message || 'Failed to create organization');
       }
-    } catch (error) {
+    },
+    onError: (error: any) => {
       toast.error('Failed to create organization');
     }
-  };
+  });
 
-  const generateInviteLink = async () => {
-    try {
-      setIsGeneratingLink(true);
-      const response = await fetch('http://localhost:5000/api/organization/invite', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
+  // Remove member mutation
+  const removeMemberMutation = useMutation({
+    mutationFn: organizationApi.removeMember,
+    onSuccess: (data) => {
       if (data.success) {
-        setInviteLink(data.data.inviteLink);
-        toast.success('Invite link generated successfully');
+        toast.success('Member removed successfully');
+        // Invalidate and refetch members
+        queryClient.invalidateQueries({ queryKey: ['organizationMembers'] });
       } else {
-        // If organization not found, show create organization option
-        if (data.message.includes('Organization not found')) {
-          setShowCreateOrganization(true);
-        }
-        toast.error(data.message || 'Failed to generate invite link');
+        toast.error(data.message || 'Failed to remove member');
       }
-    } catch (error) {
-      toast.error('Failed to generate invite link');
-    } finally {
-      setIsGeneratingLink(false);
+    },
+    onError: (error: any) => {
+      toast.error('Failed to remove member');
     }
-  };
+  });
 
   const copyInviteLink = () => {
     if (inviteLink) {
@@ -216,7 +146,7 @@ const Invitation: React.FC = () => {
   const shareText = "You're invited to join our organization! Click the link to join:";
 
   // Filter members based on search
-  const filteredMembers = members.filter(member => {
+  const filteredMembers = membersData.filter((member: OrganizationMember) => {
     if (!member) return false;
     
     const email = member.email || '';
@@ -253,8 +183,8 @@ const Invitation: React.FC = () => {
               <h2>Organization Invitation</h2>
               <button
                 className="generate-invite-btn"
-                onClick={generateInviteLink}
-                disabled={isGeneratingLink}
+                onClick={() => generateInviteLinkMutation.mutate()}
+                disabled={generateInviteLinkMutation.isPending}
               >
                 <FaUserPlus /> Generate Invite Link
               </button>
@@ -350,9 +280,9 @@ const Invitation: React.FC = () => {
           >
             <div className="members-list">
             
-            {isLoading ? (
+            {isLoadingMembers ? (
               <div className="loading">Loading organization members...</div>
-            ) : members.length === 0 ? (
+            ) : membersData.length === 0 ? (
               <div className="no-members">
                 <div className="no-members-icon">👥</div>
                 <h3>No Members Yet</h3>
@@ -361,13 +291,13 @@ const Invitation: React.FC = () => {
             ) : (
               <>
                 <div className="members-header">
-                  <h3>Members ({members.length})</h3>
+                  <h3>Members ({membersData.length})</h3>
                   <div className="members-stats">
                     <span className="stat">
-                      <strong>{members.filter(m => m.role === 'admin').length}</strong> Admin{members.filter(m => m.role === 'admin').length !== 1 ? 's' : ''}
+                      <strong>{membersData.filter((m: OrganizationMember) => m.role === 'admin').length}</strong> Admin{membersData.filter((m: OrganizationMember) => m.role === 'admin').length !== 1 ? 's' : ''}
                     </span>
                     <span className="stat">
-                      <strong>{members.filter(m => m.role === 'member').length}</strong> Member{members.filter(m => m.role === 'member').length !== 1 ? 's' : ''}
+                      <strong>{membersData.filter((m: OrganizationMember) => m.role === 'member').length}</strong> Member{membersData.filter((m: OrganizationMember) => m.role === 'member').length !== 1 ? 's' : ''}
                     </span>
                   </div>
                 </div>
@@ -399,7 +329,7 @@ const Invitation: React.FC = () => {
                       <p>No members found matching "{searchEmail}"</p>
                     </div>
                   ) : (
-                    displayedMembers.map((member, index) => (
+                    displayedMembers.map((member: OrganizationMember, index: number) => (
                       <motion.div
                         key={member._id}
                         className="member-card"
@@ -438,8 +368,7 @@ const Invitation: React.FC = () => {
                               className="remove-btn"
                               onClick={() => {
                                 if (window.confirm(`Remove ${member.name || 'this member'} from organization?`)) {
-                                  // TODO: Implement remove member functionality
-                                  toast('Remove member functionality coming soon');
+                                  removeMemberMutation.mutate(member._id);
                                 }
                               }}
                             >
@@ -465,7 +394,7 @@ const Invitation: React.FC = () => {
                 {/* Search Results Info */}
                 {searchEmail && (
                   <div className="search-info">
-                    Showing {filteredMembers.length} of {members.length} members
+                    Showing {filteredMembers.length} of {membersData.length} members
                   </div>
                 )}
               </>
@@ -710,8 +639,8 @@ const Invitation: React.FC = () => {
                 </button>
                 <button
                   className="create-btn"
-                  onClick={createOrganization}
-                  disabled={!organizationData.name.trim()}
+                  onClick={() => createOrganizationMutation.mutate()}
+                  disabled={!organizationData.name.trim() || createOrganizationMutation.isPending}
                 >
                   Create Organization
                 </button>

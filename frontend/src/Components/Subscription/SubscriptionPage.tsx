@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import subscriptionService from '../../services/SubscriptionService';
+import * as subscriptionService from '../../services/SubscriptionService';
 import './SubscriptionPage.scss';
 import '../LandingPage/LandingPage.scss';
 // import './CurrentSubscription.scss';
@@ -304,26 +304,19 @@ const SubscriptionPage: React.FC = () => {
         console.log('User type:', user?.userType);
         console.log('Fetching plans for user type:', user?.userType);
 
-        const [plansData, subscriptionData, currentSubData] = await Promise.all([
-          subscriptionService.getUserPlans(),
-          subscriptionService.getUserSubscription(),
-          // Fetch current subscription details from the new API
-          fetch(`${import.meta.env.VITE_API_URL}/subscriptions/user-subscription`, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          }).then(res => res.json()).catch(() => null)
+        const [plansData, subscriptionData] = await Promise.all([
+          subscriptionService.getSubscriptionPlans(),
+          subscriptionService.getUserSubscription()
         ]);
 
         console.log('Plans API Response:', plansData);
         console.log('User Subscription API Response:', subscriptionData);
-        console.log('Current Subscription API Response:', currentSubData);
-        console.log('Plans length:', plansData?.length);
+        console.log('Plans length:', plansData?.data?.length);
         console.log('User subscription exists:', !!subscriptionData?.subscription);
 
-        setPlans(plansData);
+        setPlans(plansData.data || []);
         setUserSubscription(subscriptionData);
-        setCurrentSubscription(currentSubData);
+        setCurrentSubscription(subscriptionData);
 
         if (subscriptionData.subscription?.status === 'trial') {
           const daysRemaining = subscriptionData.subscription.trialDaysRemaining || 0;
@@ -392,17 +385,9 @@ const SubscriptionPage: React.FC = () => {
 
   const handlePlanChangeComplete = async () => {
     try {
-      const [updatedSubscription, updatedCurrentSub] = await Promise.all([
-        subscriptionService.getUserSubscription(),
-        fetch(`${import.meta.env.VITE_API_URL}/subscriptions/user-subscription`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        }).then(res => res.json()).catch(() => null)
-      ]);
-
+      const updatedSubscription = await subscriptionService.getUserSubscription();
       setUserSubscription(updatedSubscription);
-      setCurrentSubscription(updatedCurrentSub);
+      setCurrentSubscription(updatedSubscription);
       toast.success('Plan change completed successfully');
     } catch (err) {
       toast.error('Failed to update subscription status');

@@ -358,6 +358,13 @@ export const verifyPlanChangePayment = async (
 };
 
 class SubscriptionService {
+  private async getAuthHeader() {
+    const token = localStorage.getItem('token');
+    return {
+      'Authorization': `Bearer ${token}`
+    };
+  }
+
   async getPlans(accountType?: 'individual' | 'organization'): Promise<Plan[]> {
     const params = accountType ? { accountType } : {};
     try {
@@ -489,11 +496,6 @@ class SubscriptionService {
       { headers: await this.getAuthHeader() }
     );
     return response.data;
-  }
-
-  private async getAuthHeader() {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
   }
 }
 

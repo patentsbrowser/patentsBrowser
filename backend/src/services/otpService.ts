@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { User } from '../models/User.js';
+import { OTP } from '../models/OTP.js';
 import dotenv from 'dotenv';
 
 // Load environment variables based on NODE_ENV
@@ -11,9 +12,6 @@ if (env === 'production') {
 } else {
   dotenv.config();
 }
-
-// Store OTPs temporarily (in production, use Redis or similar)
-const otpStore = new Map<string, { otp: string; timestamp: number }>();
 
 // Configure email transporter
 const createTransporter = async () => {
@@ -172,48 +170,64 @@ export const sendOTP = async (email: string, otp: string) => {
   }
 };
 
-export const storeOTP = (email: string, otp: string) => {
+export const storeOTP = async (email: string, otp: string, type: 'signup' | 'login' | 'password_reset' = 'signup') => {
   console.log('Storing OTP for email:', email);
-  otpStore.set(email, {
-    otp,
-    timestamp: Date.now()
-  });
-  console.log('OTP stored successfully');
+  
+  try {
+    // Delete any existing OTPs for this email and type
+    await OTP.deleteMany({ email, type });
+    
+    // Create new OTP record
+    const otpRecord = new OTP({
+      email,
+      otp,
+      type,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000) // 5 minutes
+    });
+    
+    await otpRecord.save();
+    console.log('OTP stored successfully in database');
+  } catch (error) {
+    console.error('Error storing OTP:', error);
+    throw new Error('Failed to store OTP');
+  }
 };
 
-export const verifyOTP = (email: string, otp: string): boolean => {
+export const verifyOTP = async (email: string, otp: string, type: 'signup' | 'login' | 'password_reset' = 'signup'): Promise<boolean> => {
   console.log('Verifying OTP for email:', email);
-  const storedData = otpStore.get(email);
   
-  if (!storedData) {
-    console.log('No OTP found for email:', email);
+  try {
+    const otpRecord = await OTP.findOne({ 
+      email, 
+      otp, 
+      type,
+      isUsed: false,
+      expiresAt: { $gt: new Date() }
+    });
+  
+    if (!otpRecord) {
+      console.log('No valid OTP found for email:', email);
     return false;
   }
 
-  // Check if OTP has expired (5 minutes)
-  if (Date.now() - storedData.timestamp > 5 * 60 * 1000) {
-    console.log('OTP has expired for email:', email);
-    otpStore.delete(email);
-    return false;
-  }
-
-  const isValid = storedData.otp === otp;
-  if (isValid) {
+    // Mark OTP as used
+    otpRecord.isUsed = true;
+    await otpRecord.save();
+    
     console.log('OTP verified successfully for email:', email);
-    otpStore.delete(email);
-  } else {
-    console.log('Invalid OTP for email:', email);
+    return true;
+  } catch (error) {
+    console.error('Error verifying OTP:', error);
+    return false;
   }
-  
-  return isValid;
 };
 
-export const resendOTP = async (email: string) => {
+export const resendOTP = async (email: string, type: 'signup' | 'login' | 'password_reset' = 'signup') => {
   console.log('Resending OTP for email:', email);
   try {
     const otp = generateOTP();
     await sendOTP(email, otp);
-    storeOTP(email, otp);
+    await storeOTP(email, otp, type);
     console.log('OTP resent successfully');
     return true;
   } catch (error) {

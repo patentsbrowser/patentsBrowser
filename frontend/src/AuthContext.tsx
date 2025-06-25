@@ -12,7 +12,6 @@ interface User {
   organizationName?: string;
   organizationSize?: string;
   organizationType?: string;
-  organizationRole?: 'admin' | 'member';
   organizationId?: string;
   organizationRole?: 'admin' | 'member';
 }

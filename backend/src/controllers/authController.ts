@@ -1,47 +1,91 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
-import { generateOTP, sendOTP, storeOTP, verifyOTP as verifyOTPService } from '../services/otpService.js';
+import { generateOTP, sendOTP, storeOTP, verifyOTP as verifyOTPService, resendOTP as resendOTPService } from '../services/otpService.js';
 import { googleAuthService } from '../services/googleAuthService.js';
 import { Organization } from '../models/Organization.js';
+import { addPendingSignup, getPendingSignup, removePendingSignup, hasPendingSignup } from '../utils/pendingSignups.js';
 
-// Temporary in-memory store for pending signups (for production, use Redis)
-const pendingSignups: { [key: string]: any } = {};
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
 export const signup = async (req: Request, res: Response) => {
   try {
-    const { email, password, name } = req.body;
+    const { name, email, password, isOrganization, organizationName, organizationSize, organizationType } = req.body;
     
+    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      if (!existingUser.isEmailVerified) {
+        // Resend OTP for unverified user
+        const otp = generateOTP();
+        await storeOTP(email, otp, 'signup');
+        try {
+          await sendOTP(email, otp);
+          console.log('OTP resent to existing unverified user:', email);
+        } catch (e) {
+          console.error('Failed to send OTP to existing user:', email, e);
+        }
+        return res.status(200).json({
+          statusCode: 200,
+          message: 'OTP sent to your email. Please verify to complete signup.',
+          data: { mode: 'verify' }
+        });
+      } else {
+        // Already registered and verified
       return res.status(409).json({
         statusCode: 409,
-        message: 'Email already exists',
-        data: null
-      });
+          message: 'Account already exists',
+          data: { mode: 'login' }
+        });
+      }
     }
 
-    const user = new User({ email, password, name });
-    await user.save();
-    
-    // Generate and send OTP
-    const otp = generateOTP();
-    await sendOTP(email, otp);
-    storeOTP(email, otp);
+    // Determine userType based on registration type
+    let userType = 'individual';
+    if (isOrganization) {
+      userType = 'organization_admin'; // Organization registrants become organization admins
+    }
 
-    res.status(201).json({
-      statusCode: 201,
-      message: 'Account created! Please verify your email.',
-      data: {
-        user: { id: user._id, email, name }
-      }
+    // Store signup data in pendingSignups
+    const otp = generateOTP();
+    await addPendingSignup(email, {
+      signupData: { 
+        name, 
+        email, 
+        password, 
+        isOrganization, 
+        organizationName, 
+        organizationSize, 
+        organizationType, 
+        userType 
+      },
+      otp,
+      expiresAt: Date.now() + 10 * 60 * 1000 // 10 min
+    });
+
+    await storeOTP(email, otp, 'signup');
+
+    try {
+    await sendOTP(email, otp);
+      console.log('Signup OTP sent successfully to:', email);
+    } catch (e) {
+      console.error('Failed to send signup OTP to:', email, e);
+      // Continue anyway - OTP is stored and can be resent
+    }
+
+    return res.status(200).json({
+      statusCode: 200,
+      message: 'OTP sent to your email. Please verify to complete signup.',
+      data: { mode: 'verify' }
     });
   } catch (error) {
+    console.error('Error in signup:', error);
     res.status(500).json({
       statusCode: 500,
-      message: 'Registration failed. Please try again.',
+      message: 'Error initiating signup',
       data: null
     });
   }
@@ -73,10 +117,19 @@ export const login = async (req: Request, res: Response) => {
 
     // Only allow login if email is verified
     if (!user.isEmailVerified) {
-      return res.status(403).json({
-        statusCode: 403,
-        message: 'Please verify your email before logging in.',
-        data: null
+      // Resend OTP for unverified user
+      const otp = generateOTP();
+      await storeOTP(email, otp, 'login');
+      try {
+        await sendOTP(email, otp);
+        console.log('Login OTP sent to unverified user:', email);
+      } catch (e) {
+        console.error('Failed to send login OTP:', email, e);
+      }
+      return res.status(200).json({
+        statusCode: 200,
+        message: 'OTP sent to your email. Please verify to login.',
+        data: { mode: 'verify' }
       });
     }
 
@@ -96,13 +149,18 @@ export const login = async (req: Request, res: Response) => {
           id: user._id, 
           email: user.email, 
           name: user.name,
-          isAdmin: user.isAdmin 
+          isAdmin: user.isAdmin,
+          userType: user.userType,
+          isOrganization: user.isOrganization,
+          organizationRole: user.organizationRole,
+          organizationName: user.organizationName
         }
       }
     };
 
     res.status(200).json(responseData);
   } catch (error) {
+    console.error('Error in login:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Login failed. Please try again.',
@@ -143,6 +201,7 @@ export const getProfile = async (req: Request, res: Response) => {
       data: responseData
     });
   } catch (error) {
+    console.error('Error in getProfile:', error);
     res.status(500).json({
       statusCode: 500,    
       message: 'Failed to fetch profile',
@@ -193,6 +252,7 @@ export const updateProfile = async (req: Request, res: Response) => {
       data: user
     });
   } catch (error) {
+    console.error('Error in updateProfile:', error);
     res.status(500).json({
       statusCode: 500,  
       message: 'Failed to update profile',
@@ -203,27 +263,38 @@ export const updateProfile = async (req: Request, res: Response) => {
 
 export const logout = async (req: Request, res: Response) => {
   try {
-    // Verify user is authenticated
     if (!req.user) {
       return res.status(401).json({
         statusCode: 401,
-        message: 'Please authenticate',
+        message: 'Unauthorized',
         data: null
       });
     }
 
-    // You might want to handle token invalidation here
-    // For example, if you're using a token blacklist or session store
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      { $set: { activeToken: null } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'User not found',
+        data: null
+      });
+    }
 
     res.status(200).json({
       statusCode: 200,
-      message: 'Successfully logged out',
+      message: 'Logged out successfully',
       data: null
     });
   } catch (error) {
+    console.error('Error in logout:', error);
     res.status(500).json({
       statusCode: 500,
-      message: 'Failed to logout. Please try again.',
+      message: 'Error logging out',
       data: null
     });
   }
@@ -256,21 +327,19 @@ export const uploadImage = async (req: Request, res: Response) => {
       });
     }
 
-    // Generate the URL for the uploaded file
-    const fileUrl = `/uploadedImages/${req.file.filename}`;
-    
-    // Update user with new image URL
-    user.imageUrl = fileUrl;
+    // Update user's profile picture
+    user.profilePicture = req.file.filename;
     await user.save();
 
     res.status(200).json({
       statusCode: 200,
-      message: 'Profile image uploaded successfully',
+      message: 'Profile picture uploaded successfully',
       data: {
-        imageUrl: fileUrl
+        profilePicture: req.file.filename
       }
     });
   } catch (error) {
+    console.error('Error in uploadImage:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Failed to upload image',
@@ -282,95 +351,139 @@ export const uploadImage = async (req: Request, res: Response) => {
 export class AuthController {
     async googleLogin(req: Request, res: Response) {
         try {
-            const { token } = req.body;
-            if (!token) {
-                return res.status(400).json({ message: 'Token is required' });
+      const { idToken } = req.body;
+      
+      if (!idToken) {
+        return res.status(400).json({
+          statusCode: 400,
+          message: 'ID token is required',
+          data: null
+        });
             }
 
-            const googleUser = await googleAuthService.verifyGoogleToken(token);
-            
-            // Check if user exists
-            let user = await User.findOne({ email: googleUser.email });
-            let isNewUser = false;
+      const userData = await googleAuthService.verifyGoogleToken(idToken);
+      
+      if (!userData) {
+        return res.status(401).json({
+          statusCode: 401,
+          message: 'Invalid ID token',
+          data: null
+        });
+      }
+
+      let user = await User.findOne({ googleId: userData.googleId });
             
             if (!user) {
-                // Create new user if doesn't exist
-                user = await User.create({
-                    email: googleUser.email,
-                    name: googleUser.name,
-                    profilePicture: googleUser.picture,
-                    googleId: googleUser.googleId,
-                    isEmailVerified: true, // Google emails are verified
-                    needsPasswordSetup: true // Flag to indicate password setup is needed
-                });
-                isNewUser = true;
-            } else if (!user.googleId) {
-                // If user exists but hasn't logged in with Google before
-                user.googleId = googleUser.googleId;
-                user.isEmailVerified = true;
-                if (!user.password) {
-                    user.needsPasswordSetup = true;
-                }
+        // Create new user
+        user = new User({
+          googleId: userData.googleId,
+          email: userData.email,
+          name: userData.name,
+          isEmailVerified: true,
+          needsPasswordSetup: true
+        });
                 await user.save();
             }
 
-            // Generate JWT token
-            const jwtToken = jwt.sign(
+      // Generate token
+      const token = jwt.sign(
                 { userId: user._id },
-                process.env.JWT_SECRET || 'your-secret-key',
+        JWT_SECRET,
                 { expiresIn: '24h' }
             );
 
-            res.json({
-                token: jwtToken,
+      user.activeToken = token;
+      user.lastLogin = new Date();
+      await user.save();
+
+      res.status(200).json({
+        statusCode: 200,
+        message: 'Google login successful',
+        data: {
+          token,
                 user: {
                     id: user._id,
                     email: user.email,
                     name: user.name,
-                    profilePicture: user.profilePicture,
-                    needsPasswordSetup: user.needsPasswordSetup,
-                    isAdmin: user.isAdmin
-                },
-                isNewUser
+            needsPasswordSetup: user.needsPasswordSetup
+          }
+        }
             });
         } catch (error) {
-            res.status(500).json({ message: 'Authentication failed' });
+      console.error('Error in googleLogin:', error);
+      res.status(500).json({
+        statusCode: 500,
+        message: 'Google login failed',
+        data: null
+      });
         }
     }
 
     async setPassword(req: Request, res: Response) {
         try {
-            const { userId, password } = req.body;
+      if (!req.user) {
+        return res.status(401).json({
+          statusCode: 401,
+          message: 'Unauthorized',
+          data: null
+        });
+      }
 
-            if (!userId || !password) {
-                return res.status(400).json({ message: 'User ID and password are required' });
+      const { password } = req.body;
+
+      if (!password) {
+        return res.status(400).json({
+          statusCode: 400,
+          message: 'Password is required',
+          data: null
+        });
             }
 
-            const user = await User.findById(userId);
+      const user = await User.findById(req.user.userId);
             if (!user) {
-                return res.status(404).json({ message: 'User not found' });
+        return res.status(404).json({
+          statusCode: 404,
+          message: 'User not found',
+          data: null
+        });
             }
 
-            // Set the password and mark password setup as complete
             user.password = password;
             user.needsPasswordSetup = false;
             await user.save();
 
-            res.json({ message: 'Password set successfully' });
+      res.status(200).json({
+        statusCode: 200,
+        message: 'Password set successfully',
+        data: null
+      });
         } catch (error) {
-            res.status(500).json({ message: 'Failed to set password' });
+      console.error('Error in setPassword:', error);
+      res.status(500).json({
+        statusCode: 500,
+        message: 'Failed to set password',
+        data: null
+      });
         }
     }
 }
 
 export const changePassword = async (req: Request, res: Response) => {
   try {
-    const { currentPassword, newPassword } = req.body;
-    
     if (!req.user) {
       return res.status(401).json({
         statusCode: 401,
         message: 'Unauthorized',
+        data: null
+      });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Current password and new password are required',
         data: null
       });
     }
@@ -414,6 +527,7 @@ export const changePassword = async (req: Request, res: Response) => {
       data: null
     });
   } catch (error) {
+    console.error('Error in changePassword:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Failed to change password',
@@ -436,7 +550,7 @@ export const signupWithInvite = async (req: Request, res: Response) => {
 
     if (!organization) {
       return res.status(400).json({
-        success: false,
+        statusCode: 400,
         message: 'Invalid or expired invite link'
       });
     }
@@ -445,14 +559,14 @@ export const signupWithInvite = async (req: Request, res: Response) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(409).json({
-        success: false,
+        statusCode: 409,
         message: 'Email already registered'
       });
     }
 
     // Store signup data with organization info
     const otp = generateOTP();
-    pendingSignups[email] = {
+    await addPendingSignup(email, {
       signupData: {
         name,
         email,
@@ -463,42 +577,51 @@ export const signupWithInvite = async (req: Request, res: Response) => {
       },
       otp,
       expiresAt: Date.now() + 10 * 60 * 1000 // 10 min
-    };
+    });
 
-    storeOTP(email, otp);
+    await storeOTP(email, otp, 'signup');
     await sendOTP(email, otp);
 
     return res.status(200).json({
-      success: true,
+      statusCode: 200,
       message: 'OTP sent to your email. Please verify to complete signup.',
       data: { mode: 'verify' }
     });
   } catch (error) {
     console.error('Error in organization signup:', error);
     res.status(500).json({
-      success: false,
+      statusCode: 500,
       message: 'Failed to process signup'
     });
   }
 };
 
-// Modify verify-otp to handle organization joins
+// Unified OTP verification for all signup types
 export const verifyOTP = async (req: Request, res: Response) => {
   try {
     const { email, otp } = req.body;
-    const isValid = verifyOTPService(email, otp);
-
-    if (!isValid) {
+    
+    if (!email || !otp) {
       return res.status(400).json({
-        success: false,
-        message: 'Invalid OTP'
+        statusCode: 400,
+        message: 'Email and OTP are required'
       });
     }
 
-    const pendingSignup = pendingSignups[email];
+    // Verify OTP
+    const isValid = await verifyOTPService(email, otp, 'signup');
+    if (!isValid) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Invalid or expired OTP'
+      });
+    }
+
+    // Get pending signup data
+    const pendingSignup = await getPendingSignup(email);
     if (!pendingSignup) {
       return res.status(400).json({
-        success: false,
+        statusCode: 400,
         message: 'No pending signup found'
       });
     }
@@ -514,9 +637,18 @@ export const verifyOTP = async (req: Request, res: Response) => {
       userType: signupData.userType || 'individual'
     });
 
+    // Set organization fields if applicable
+    if (signupData.isOrganization) {
+      user.isOrganization = true;
+      user.organizationName = signupData.organizationName;
+      user.organizationSize = signupData.organizationSize;
+      user.organizationType = signupData.organizationType;
+      user.organizationRole = 'admin';
+    }
+
     await user.save();
 
-    // If this is an organization signup
+    // If this is an organization member signup
     if (signupData.inviteToken) {
       const organization = await Organization.findOne({
         'inviteLinks.token': signupData.inviteToken
@@ -554,7 +686,7 @@ export const verifyOTP = async (req: Request, res: Response) => {
     // Generate JWT token
     const token = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET || 'your-secret-key',
+      JWT_SECRET,
       { expiresIn: '24h' }
     );
 
@@ -562,10 +694,11 @@ export const verifyOTP = async (req: Request, res: Response) => {
     user.lastLogin = new Date();
     await user.save();
 
-    delete pendingSignups[email];
+    // Clean up pending signup
+    await removePendingSignup(email);
 
     return res.status(200).json({
-      success: true,
+      statusCode: 200,
       message: 'Signup complete and email verified!',
       data: {
         token,
@@ -583,7 +716,7 @@ export const verifyOTP = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error in OTP verification:', error);
     res.status(500).json({
-      success: false,
+      statusCode: 500,
       message: 'Failed to verify OTP'
     });
   }

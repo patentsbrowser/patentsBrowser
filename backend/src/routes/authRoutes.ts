@@ -5,17 +5,32 @@ import { upload } from '../middleware/upload.js';
 import { User } from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import { generateOTP, sendOTP, storeOTP, verifyOTP, resendOTP } from '../services/otpService.js';
+import { addPendingSignup, getPendingSignup, hasPendingSignup } from '../utils/pendingSignups.js';
 
 const router = express.Router();
 const authController = new AuthController();
 
-// Temporary in-memory store for pending signups (for production, use Redis)
-const pendingSignups = {};
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
+
+// Use shared pendingSignups module
+// const pendingSignups = {};
 
 // Signup route
 router.post('/signup', async (req, res) => {
   try {
     const { name, email, password, isOrganization, organizationName, organizationSize, organizationType } = req.body;
+
+    // Validate required fields
+    if (!email || !password) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Email and password are required',
+        data: null
+      });
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -23,7 +38,7 @@ router.post('/signup', async (req, res) => {
       if (!existingUser.isEmailVerified) {
         // Resend OTP for unverified user
         const otp = generateOTP();
-        storeOTP(email, otp);
+        await storeOTP(email, otp, 'signup');
         try {
           await sendOTP(email, otp);
           console.log('OTP resent to existing unverified user:', email);
@@ -35,7 +50,7 @@ router.post('/signup', async (req, res) => {
           message: 'OTP sent to your email. Please verify to complete signup.',
           data: { mode: 'verify' }
         });
-    } else {
+      } else {
         // Already registered and verified
         return res.status(409).json({
           statusCode: 409,
@@ -49,17 +64,44 @@ router.post('/signup', async (req, res) => {
     let userType = 'individual';
     if (isOrganization) {
       userType = 'organization_admin'; // Organization registrants become organization admins
+      
+      // Validate organization fields if isOrganization is true
+      if (!organizationName || !organizationSize || !organizationType) {
+        return res.status(400).json({
+          statusCode: 400,
+          message: 'Organization details are required for organization signup',
+          data: null
+        });
+      }
     }
 
     // Store signup data in pendingSignups
     const otp = generateOTP();
-    pendingSignups[email] = {
-      signupData: { name, email, password, isOrganization, organizationName, organizationSize, organizationType, userType },
-      otp,
-      expiresAt: Date.now() + 10 * 60 * 1000 // 10 min
-    };
+    try {
+      await addPendingSignup(email, {
+        signupData: { 
+          ...(name && { name }), // Only include name if provided
+          email, 
+          password, 
+          isOrganization, 
+          organizationName, 
+          organizationSize, 
+          organizationType, 
+          userType 
+        },
+        otp,
+        expiresAt: Date.now() + 10 * 60 * 1000 // 10 min
+      });
+    } catch (error: any) {
+      console.error('Error in pending signup:', error);
+      return res.status(400).json({
+        statusCode: 400,
+        message: error.message || 'Error processing signup data',
+        data: null
+      });
+    }
 
-    storeOTP(email, otp);
+    await storeOTP(email, otp, 'signup');
 
     try {
       await sendOTP(email, otp);
@@ -75,6 +117,7 @@ router.post('/signup', async (req, res) => {
       data: { mode: 'verify' }
     });
   } catch (error) {
+    console.error('Error in signup route:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Error initiating signup',
@@ -109,7 +152,7 @@ router.post('/login', async (req, res) => {
     if (!user.isEmailVerified) {
       // Resend OTP for unverified user
       const otp = generateOTP();
-      storeOTP(email, otp);
+      await storeOTP(email, otp, 'login');
       try {
         await sendOTP(email, otp);
         console.log('Login OTP sent to unverified user:', email);
@@ -123,7 +166,7 @@ router.post('/login', async (req, res) => {
       });
     }
     // Normal login
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || 'your-secret-key');
+    const token = jwt.sign({ userId: user._id }, JWT_SECRET);
     user.activeToken = token;
     user.lastLogin = new Date();
     await user.save();
@@ -139,11 +182,13 @@ router.post('/login', async (req, res) => {
           isAdmin: user.isAdmin,
           userType: user.userType,
           isOrganization: user.isOrganization,
-          organizationRole: user.organizationRole
+          organizationRole: user.organizationRole,
+          organizationName: user.organizationName
         }
       }
     });
   } catch (error) {
+    console.error('Error in login route:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Login failed. Please try again.',
@@ -166,15 +211,20 @@ router.post('/resend-otp', async (req, res) => {
     }
 
     // Check if user is in pending signups (for signup flow)
-    if (pendingSignups[email]) {
+    const hasPending = await hasPendingSignup(email);
+    if (hasPending) {
       console.log('Resending OTP for pending signup:', email);
       const otp = generateOTP();
 
       // Update pending signup with new OTP
-      pendingSignups[email].otp = otp;
-      pendingSignups[email].expiresAt = Date.now() + 10 * 60 * 1000; // 10 min
+      const pendingSignup = await getPendingSignup(email);
+      if (pendingSignup) {
+      pendingSignup.otp = otp;
+      pendingSignup.expiresAt = Date.now() + 10 * 60 * 1000; // 10 min
+        await addPendingSignup(email, pendingSignup);
+      }
 
-      storeOTP(email, otp);
+      await storeOTP(email, otp, 'signup');
       try {
         await sendOTP(email, otp);
         console.log('OTP resent successfully for pending signup:', email);
@@ -210,7 +260,7 @@ router.post('/resend-otp', async (req, res) => {
 
     // Generate and send new OTP for existing unverified user
     console.log('Resending OTP for existing unverified user:', email);
-    await resendOTP(email);
+    await resendOTP(email, 'login');
 
     res.status(200).json({
       statusCode: 200,
@@ -251,6 +301,7 @@ router.post('/logout', auth, async (req, res) => {
       data: null
     });
   } catch (error) {
+    console.error('Error in logout route:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Error logging out',
@@ -294,7 +345,7 @@ router.post('/send-otp', async (req, res) => {
     // Generate and send OTP
     const otp = generateOTP();
     await sendOTP(email, otp);
-    storeOTP(email, otp);
+    await storeOTP(email, otp, 'password_reset');
     
     res.status(200).json({
       statusCode: 200,
@@ -302,6 +353,7 @@ router.post('/send-otp', async (req, res) => {
       data: null
     });
   } catch (error) {
+    console.error('Error in send-otp route:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Failed to send OTP',
@@ -324,7 +376,7 @@ router.post('/reset-password', async (req, res) => {
     }
 
     // Verify OTP
-    const isValid = verifyOTP(email, otp);
+    const isValid = await verifyOTP(email, otp, 'password_reset');
     if (!isValid) {
       return res.status(400).json({
         statusCode: 400,
@@ -353,6 +405,7 @@ router.post('/reset-password', async (req, res) => {
       data: null
     });
   } catch (error) {
+    console.error('Error in reset-password route:', error);
     res.status(500).json({
       statusCode: 500,
       message: 'Failed to reset password',

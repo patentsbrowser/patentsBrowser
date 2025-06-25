@@ -4,6 +4,7 @@
 // Optimized and modular subscription page styles
 
 // Import modular SCSS files using modern @use
+@use '../../styles/design-system' as *;
 @use './subscription-base' as *;
 @use './subscription-plans' as *;
 @use './subscription-status' as *;
@@ -23,3 +24,20 @@
 // - _subscription-status.scss (current subscription display)
 // - _subscription-modals.scss (payment modals & overlays)
 // - _subscription-access-restriction.scss (org member restrictions)
+
+// Fix for subscription page wrapper
+.subscription-page-wrapper {
+  position: relative !important;
+  margin-top: 78px !important;
+  min-height: calc(100vh - 78px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+// Fix for subscription page content
+.subscription-page {
+  min-height: calc(100vh - 78px) !important;
+  position: relative !important;
+  overflow-y: visible !important;
+  padding: 2rem !important;
+}

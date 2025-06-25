@@ -131,11 +131,11 @@ const App = () => {
       <Provider store={store}>
         <QueryClientProvider client={queryClient}>
           <GoogleOAuthProvider clientId={import.meta.env.VITE_APP_GOOGLE_CLIENT_ID}>
-            <AuthProvider>
-              <AdminProvider>
-                <ThemeProvider>
-                  <ChatProvider>
-                    <Router>
+            <Router>
+              <AuthProvider>
+                <AdminProvider>
+                  <ThemeProvider>
+                    <ChatProvider>
                       <SessionHandler />
                       <Routes>
                         {/* Landing Page - Public */}
@@ -198,60 +198,24 @@ const App = () => {
                                     <Route path="patent-analyzer" element={<PatentAnalyzer />} />
                                     <Route path="update-profile" element={<UpdateProfile />} />
                                     <Route path="profile" element={<ProfilePage />} />
-                                    <Route path="subscription" element={<SubscriptionPage />} />
-                                    <Route path="invitation" element={<Invitation />} />
-                                    {/* <Route path="patent-history" element={<PatentHistory />} /> */}
                                     <Route path="payment-history" element={<PaymentHistory />} />
-                                    
-                                    {/* Admin Routes - Protected by AdminGuard */}
-                                    <Route 
-                                      path="admin" 
-                                      element={
-                                        <AdminGuard>
-                                          <Navigate to="/auth/dashboard" replace />
-                                        </AdminGuard>
-                                      } 
-                                    />
-                                    <Route 
-                                      path="admin/*" 
-                                      element={
-                                        <AdminGuard>
-                                          <AdminDashboard />
-                                        </AdminGuard>
-                                      } 
-                                    />
+                                    <Route path="organization/signup" element={<OrganizationSignup />} />
+                                    <Route path="organization/invitation/:token" element={<Invitation />} />
                                   </Routes>
                                 </main>
                               </div>
                             </AuthGuard>
                           } 
                         />
-
-                        {/* Organization Signup Route */}
-                        <Route path="/organization-signup/:token" element={<OrganizationSignup />} />
-
-                        {/* Catch-all route - redirect to landing page */}
-                        <Route path="*" element={<Navigate to="/" replace />} />
                       </Routes>
-                    </Router>
-                  </ChatProvider>
-
-                </ThemeProvider>
-              </AdminProvider>
-            </AuthProvider>
+                      <Toaster position="top-right" />
+                      <ReactQueryDevtools initialIsOpen={false} />
+                    </ChatProvider>
+                  </ThemeProvider>
+                </AdminProvider>
+              </AuthProvider>
+            </Router>
           </GoogleOAuthProvider>
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: 'var(--secondary-bg)',
-                color: 'var(--text-color)',
-                border: '1px solid var(--border-color)',
-              },
-            }}
-          />
-          <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
       </Provider>
     </ErrorBoundary>
